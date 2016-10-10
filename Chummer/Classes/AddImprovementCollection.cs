@@ -1188,7 +1188,7 @@ namespace Chummer.Classes
 			Log.Info("physicallimit = " + bonusNode.OuterXml.ToString());
 			Log.Info("Calling CreateImprovement");
 			CreateImprovement("Physical", _objImprovementSource, SourceName, Improvement.ImprovementType.PhysicalLimit,
-				_strFriendlyName,
+				"",
 				ValueToInt(bonusNode.InnerText, _intRating));
 		}
 
@@ -1199,7 +1199,7 @@ namespace Chummer.Classes
 			Log.Info("mentallimit = " + bonusNode.OuterXml.ToString());
 			Log.Info("Calling CreateImprovement");
 			CreateImprovement("Mental", _objImprovementSource, SourceName, Improvement.ImprovementType.MentalLimit,
-				_strFriendlyName,
+				"",
 				ValueToInt(bonusNode.InnerText, _intRating));
 		}
 
@@ -1210,7 +1210,7 @@ namespace Chummer.Classes
 			Log.Info("sociallimit = " + bonusNode.OuterXml.ToString());
 			Log.Info("Calling CreateImprovement");
 			CreateImprovement("Social", _objImprovementSource, SourceName, Improvement.ImprovementType.SocialLimit,
-				_strFriendlyName,
+				"",
 				ValueToInt(bonusNode.InnerText, _intRating));
 		}
 
@@ -3858,13 +3858,13 @@ namespace Chummer.Classes
 					TreeNode objAddQualityNode = new TreeNode();
 					Quality objAddQuality = new Quality(_objCharacter);
 					objAddQuality.Create(objXmlSelectedQuality, _objCharacter, QualitySource.Selected, objAddQualityNode, null, null, strForceValue);
-					if (objXmlAddQuality.Attributes["contributetobp"] != null)
+
+					bool blnFree = (objXmlAddQuality.Attributes["contributetobp"] == null ||
+					                (objXmlAddQuality.Attributes["contributetobp"]?.InnerText.ToLower() != "true"));
+					if (blnFree)
 					{
-						if (objXmlAddQuality.Attributes["contributetobp"].InnerText.ToLower() == "false")
-						{
-							objAddQuality.BP = 0;
-							objAddQuality.ContributeToLimit = false;
-						}
+						objAddQuality.BP = 0;
+						objAddQuality.ContributeToLimit = false;
 					}
 					_objCharacter.Qualities.Add(objAddQuality);
 					CreateImprovement(objAddQuality.InternalId, Improvement.ImprovementSource.Quality, SourceName,
