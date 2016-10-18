@@ -750,7 +750,7 @@
 			<key>String_StackedFocus</key>
 			<text>Stacked Focus</text>
 		</string>
-		<!-- End Region-->
+		<!-- End Region -->
 		<!-- Region Printout Strings -->
 		<string>
 			<key>String_UnarmedAttack</key>
@@ -1067,6 +1067,32 @@
 			<text>&amp;About...</text>
 		</string>
 		<!-- End Region -->
+    <!-- Region Character Roster -->
+    <string>
+      <key>Label_Roster_File_Name</key>
+      <text>File Name:</text>
+    </string>
+    <string>
+      <key>Tab_Roster_Description</key>
+      <text>Description</text>
+    </string>
+		<string>
+			<key>Tab_Roster_Concept</key>
+			<text>Concept</text>
+		</string>
+		<string>
+			<key>Tab_Roster_Background</key>
+			<text>Background</text>
+		</string>
+		<string>
+			<key>Tab_Roster_CharacterNotes</key>
+			<text>Character Notes</text>
+		</string>
+		<string>
+			<key>Tab_Roster_GameNotes</key>
+			<text>Game Notes</text>
+		</string>
+    <!-- End Region -->
 		<!-- Region Create/Career Window -->
 		<string>
 			<key>Menu_Special</key>
@@ -2306,7 +2332,7 @@
 		</string>
 		<string>
 			<key>Message_ConfirmKarmaExpenseKnowledgeSkill</key>
-			<text>Are you sure you want to spend Karma on improving {0} to {1} for {2} Karma?\nWarning: This will lock the skill's Type to {3}.</text>
+			<text>Are you sure you want to spend Karma on improving {0} to {1} for {2} Karma and lock this skill's Type to {3}?</text>
 		</string>
 		<string>
 			<key>Message_ConfirmKarmaandNuyenExpense</key>
@@ -4283,6 +4309,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
 			<key>String_VehicleWeaponModification</key>
 			<text>Vehicle Weapon Modification</text>
 		</string>
+		<string>
+			<key>Label_VehicleSeats</key>
+			<text>Seats:</text>
+		</string>
 		<!-- End Region-->
 		<!-- Region Character Info Tab -->
 		<string>
@@ -4324,8 +4354,12 @@ Only one attribute may be at its Maximum value during character creation.</text>
 		<string>
 			<key>Label_Description</key>
 			<text>Description:</text>
-		</string>
-		<string>
+		</string>    
+    <string>
+      <key>Label_Biography</key>
+      <text>Biography:</text>
+    </string>
+    <string>
 			<key>Label_Background</key>
 			<text>Background:</text>
 		</string>

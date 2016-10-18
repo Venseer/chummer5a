@@ -72,63 +72,6 @@ namespace Chummer.Classes
 
 		#region
 
-		public void selecttext(XmlNode bonusNode)
-		{
-			Log.Info("selecttext");
-
-			if (_objCharacter != null)
-			{
-				if (ForcedValue != "")
-				{
-					LimitSelection = ForcedValue;
-				}
-				else if (_objCharacter.Pushtext.Count != 0)
-				{
-					LimitSelection = _objCharacter.Pushtext.Pop();
-				}
-			}
-
-			Log.Info("_strForcedValue = " + SelectedValue);
-			Log.Info("_strLimitSelection = " + LimitSelection);
-
-			// Display the Select Text window and record the value that was entered.
-			frmSelectText frmPickText = new frmSelectText();
-			frmPickText.Description = LanguageManager.Instance.GetString("String_Improvement_SelectText")
-				.Replace("{0}", this._strFriendlyName);
-
-			if (LimitSelection != "")
-			{
-				frmPickText.SelectedValue = LimitSelection;
-				frmPickText.Opacity = 0;
-			}
-
-			frmPickText.ShowDialog();
-
-			// Make sure the dialogue window was not canceled.
-			if (frmPickText.DialogResult == DialogResult.Cancel)
-			{
-
-				Rollback();
-				ForcedValue = "";
-				LimitSelection = "";
-				Log.Exit("CreateImprovements");
-				throw new AbortedException();
-			}
-
-			SelectedValue = frmPickText.SelectedValue;
-			if (this._blnConcatSelectedValue)
-				SourceName += " (" + SelectedValue + ")";
-			Log.Info("_strSelectedValue = " + SelectedValue);
-			Log.Info("strSourceName = " +SourceName);
-
-			// Create the Improvement.
-			Log.Info("Calling CreateImprovement");
-
-			CreateImprovement(frmPickText.SelectedValue, _objImprovementSource, SourceName, 
-				Improvement.ImprovementType.Text,
-				_strUnique);
-		}
-
 		public void qualitylevel(XmlNode bonusNode)
 		{
 			//List of qualities to work with
@@ -3533,20 +3476,30 @@ namespace Chummer.Classes
 				LimitSelection = ForcedValue;
 
 			// Display the Select Item window and record the value that was entered.
+			XmlDocument objXmlDocument = XmlManager.Instance.Load("armor.xml");
+			XmlNodeList objXmlNodeList;
+			
+			if (!string.IsNullOrEmpty(bonusNode.InnerText))
+			{
+				objXmlNodeList = objXmlDocument.SelectNodes("/chummer/armors/armor[name starts-with " + bonusNode.InnerText + "(" + _objCharacter.Options.BookXPath() +
+															") and category = 'High-Fashion Armor Clothing' and mods[name = 'Custom Fit']]");
+			}
+			else
+			{
+				objXmlNodeList =
+					objXmlDocument.SelectNodes("/chummer/armors/armor[(" + _objCharacter.Options.BookXPath() +
+											   ") and category = 'High-Fashion Armor Clothing' and mods[name = 'Custom Fit']]");
+			}
+
+			//.SelectNodes("/chummer/skills/skill[not(exotic) and (" + _objCharacter.Options.BookXPath() + ")" + SkillFilter(filter) + "]");
 
 			List<ListItem> lstArmors = new List<ListItem>();
-			foreach (Armor objArmor in _objCharacter.Armor)
+			foreach (XmlNode objNode in objXmlNodeList)
 			{
-				foreach (ArmorMod objMod in objArmor.ArmorMods)
-				{
-					if (objMod.Name.StartsWith("Custom Fit"))
-					{
-						ListItem objItem = new ListItem();
-						objItem.Value = objArmor.Name;
-						objItem.Name = objArmor.DisplayName;
-						lstArmors.Add(objItem);
-					}
-				}
+				ListItem objItem = new ListItem();
+				objItem.Value = objNode["name"].InnerText;
+				objItem.Name = objNode.Attributes["translate"]?.InnerText ?? objNode["name"].InnerText;
+				lstArmors.Add(objItem);
 			}
 
 			if (lstArmors.Count > 0)
@@ -3629,13 +3582,19 @@ namespace Chummer.Classes
 			}
 			else
 			{
-				List<ListItem> lstWeapons = new List<ListItem>();
+				string strExclude = "";
+				List <ListItem> lstWeapons = new List<ListItem>();
+				strExclude = bonusNode.Attributes["excludecategory"]?.InnerText;
 				foreach (Weapon objWeapon in _objCharacter.Weapons)
 				{
-					ListItem objItem = new ListItem();
-					objItem.Value = objWeapon.Name;
-					objItem.Name = objWeapon.DisplayName;
-					lstWeapons.Add(objItem);
+					bool blnAdd = !(strExclude != "" && objWeapon.WeaponType == strExclude);
+					if (blnAdd)
+					{
+						ListItem objItem = new ListItem();
+						objItem.Value = objWeapon.Name;
+						objItem.Name = objWeapon.DisplayName;
+						lstWeapons.Add(objItem);
+					}
 				}
 
 				frmSelectItem frmPickItem = new frmSelectItem();

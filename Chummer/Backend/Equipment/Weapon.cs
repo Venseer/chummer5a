@@ -197,18 +197,21 @@ namespace Chummer.Backend.Equipment
 			objNode.Tag = _guiID.ToString();
 
 			// If the Weapon comes with an Underbarrel Weapon, add it.
-			if (objXmlWeapon.InnerXml.Contains("<underbarrel>") && blnCreateChildren)
+			if (objXmlWeapon.InnerXml.Contains("<underbarrels>") && blnCreateChildren)
 			{
-				XmlNode objXmlUnderbarrel = objXmlWeapon.SelectSingleNode("underbarrel");
-				Weapon objUnderbarrelWeapon = new Weapon(_objCharacter);
-				TreeNode objUnderbarrelNode = new TreeNode();
-				XmlNode objXmlWeaponNode = objXmlDocument.SelectSingleNode("/chummer/weapons/weapon[name = \"" + objXmlUnderbarrel.InnerText + "\"]");
-				objUnderbarrelWeapon.Create(objXmlWeaponNode, _objCharacter, objUnderbarrelNode, cmsWeapon, cmsWeaponAccessory);
-				objUnderbarrelWeapon.IncludedInWeapon = true;
-				objUnderbarrelWeapon.IsUnderbarrelWeapon = true;
-				_lstUnderbarrel.Add(objUnderbarrelWeapon);
-				objUnderbarrelNode.ContextMenuStrip = cmsWeapon;
-				objNode.Nodes.Add(objUnderbarrelNode);
+				foreach (XmlNode objXmlUnderbarrel in objXmlWeapon["underbarrels"].ChildNodes)
+				{
+					Weapon objUnderbarrelWeapon = new Weapon(_objCharacter);
+					TreeNode objUnderbarrelNode = new TreeNode();
+					XmlNode objXmlWeaponNode =
+						objXmlDocument.SelectSingleNode("/chummer/weapons/weapon[name = \"" + objXmlUnderbarrel.InnerText + "\"]");
+					objUnderbarrelWeapon.Create(objXmlWeaponNode, _objCharacter, objUnderbarrelNode, cmsWeapon, cmsWeaponAccessory);
+					objUnderbarrelWeapon.IncludedInWeapon = true;
+					objUnderbarrelWeapon.IsUnderbarrelWeapon = true;
+					_lstUnderbarrel.Add(objUnderbarrelWeapon);
+					objUnderbarrelNode.ContextMenuStrip = cmsWeapon;
+					objNode.Nodes.Add(objUnderbarrelNode);
+				}
 			}
 
 			// If there are any Accessories that come with the Weapon, add them.
@@ -2038,7 +2041,7 @@ namespace Chummer.Backend.Equipment
 					}
 				}
 
-				foreach (WeaponAccessory objAccessory in _lstAccessories)
+				foreach (WeaponAccessory objAccessory in _lstAccessories.Where(objAccessory => objAccessory.Installed))
 				{
 					// Change the Weapon's Damage Type. (flechette rounds cannot affect weapons that have flechette included in their damage)
 					if (!(objAccessory.DamageType.Contains("(f)") && _strDamage.Contains("(f)")))
