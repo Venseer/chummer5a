@@ -31,7 +31,9 @@
 			<karma>4</karma>
 			<category>Positive</category>
 			<limit>no</limit>
-			<bonus />
+			<bonus>
+				<ambidextrous />
+			</bonus>
 			<source>SR5</source>
 			<page>71</page>
 		</quality>
@@ -1146,6 +1148,9 @@
 			<karma>15</karma>
 			<category>Positive</category>
 			<bonus>
+				<enableattribute>
+					<name>MAG</name>
+				</enableattribute>
         <enabletab>
           <name>magician</name>
         </enabletab>
@@ -1544,7 +1549,7 @@
 			<karma>-5</karma>
 			<category>Negative</category>
 			<bonus>
-				<selectskillgroup />
+				<blockskillgroupdefaulting />
 			</bonus>
 			<source>SR5</source>
 			<page>81</page>
