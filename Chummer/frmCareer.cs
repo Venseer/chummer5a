@@ -219,16 +219,10 @@ namespace Chummer
 					objMetatypeDoc = XmlManager.Instance.Load("critters.xml");
 				objMetatypeNode = objMetatypeDoc.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + _objCharacter.Metatype + "\"]");
 
-				if (objMetatypeNode["translate"] != null)
-					strMetatype = objMetatypeNode["translate"].InnerText;
-				else
-					strMetatype = _objCharacter.Metatype;
+				strMetatype = objMetatypeNode["translate"]?.InnerText ?? _objCharacter.Metatype;
 
 				strBook = _objOptions.LanguageBookShort(objMetatypeNode["source"].InnerText);
-				if (objMetatypeNode["altpage"] != null)
-					strPage = objMetatypeNode["altpage"].InnerText;
-				else
-					strPage = objMetatypeNode["page"].InnerText;
+				strPage = objMetatypeNode["altpage"]?.InnerText ?? objMetatypeNode["page"].InnerText;
 
 				if (_objCharacter.Metavariant != "")
 				{
@@ -240,10 +234,7 @@ namespace Chummer
 						strMetatype += " (" + _objCharacter.Metavariant + ")";
 
 					strBook = _objOptions.LanguageBookShort(objMetatypeNode["source"].InnerText);
-					if (objMetatypeNode["altpage"] != null)
-						strPage = objMetatypeNode["altpage"].InnerText;
-					else
-						strPage = objMetatypeNode["page"].InnerText;
+					strPage = objMetatypeNode["altpage"]?.InnerText ?? objMetatypeNode["page"].InnerText;
 				}
 			}
 			lblMetatype.Text = strMetatype;
@@ -8753,8 +8744,10 @@ namespace Chummer
 				frmPickWeaponAccessory.AllowedMounts = strMounts;
 			}
 
-			frmPickWeaponAccessory.WeaponCost = objWeapon.Cost;
+            frmPickWeaponAccessory.CurrentWeaponName = objWeapon.Name;
+            frmPickWeaponAccessory.WeaponCost = objWeapon.Cost;
 			frmPickWeaponAccessory.AccessoryMultiplier = objWeapon.AccessoryMultiplier;
+			frmPickWeaponAccessory.InstalledAccessories = objWeapon.WeaponAccessories;
 			frmPickWeaponAccessory.ShowDialog();
 
 			if (frmPickWeaponAccessory.DialogResult == DialogResult.Cancel)
@@ -9039,8 +9032,9 @@ namespace Chummer
 			frmSelectVehicleMod frmPickVehicleMod = new frmSelectVehicleMod(_objCharacter, true);
 			// Pass the selected vehicle on to the form.
 			frmPickVehicleMod.SelectedVehicle = objSelectedVehicle;
+            frmPickVehicleMod.InstalledMods = objSelectedVehicle.Mods;
 
-			frmPickVehicleMod.ShowDialog(this);
+            frmPickVehicleMod.ShowDialog(this);
 
 			// Make sure the dialogue window was not canceled.
 			if (frmPickVehicleMod.DialogResult == DialogResult.Cancel)
@@ -9323,8 +9317,10 @@ namespace Chummer
 				frmPickWeaponAccessory.AllowedMounts = strMounts;
 			}
 
-			frmPickWeaponAccessory.WeaponCost = objWeapon.Cost;
+            frmPickWeaponAccessory.CurrentWeaponName = objWeapon.Name;
+            frmPickWeaponAccessory.WeaponCost = objWeapon.Cost;
 			frmPickWeaponAccessory.AccessoryMultiplier = objWeapon.AccessoryMultiplier;
+			frmPickWeaponAccessory.InstalledAccessories = objWeapon.WeaponAccessories;
 			frmPickWeaponAccessory.ShowDialog();
 
 			if (frmPickWeaponAccessory.DialogResult == DialogResult.Cancel)
@@ -22728,6 +22724,8 @@ namespace Chummer
 
 			frmPickCyberware.AllowModularPlugins = objSelectedCyberware.AllowModularPlugins;
 
+			frmPickCyberware.Subsystems = objSelectedCyberware.Subsytems;
+
 			frmPickCyberware.ShowDialog(this);
 
 			// Make sure the dialogue window was not canceled.
@@ -22833,10 +22831,7 @@ namespace Chummer
 			}
 
 			// Select the node that was just added.
-			if (objSource == Improvement.ImprovementSource.Cyberware)
-				objNode.ContextMenuStrip = cmsCyberware;
-			else if (objSource == Improvement.ImprovementSource.Bioware)
-				objNode.ContextMenuStrip = cmsBioware;
+			objNode.ContextMenuStrip = cmsCyberware;
 
 			foreach (Weapon objWeapon in objWeapons)
 				_objCharacter.Weapons.Add(objWeapon);
@@ -23814,7 +23809,7 @@ namespace Chummer
 				lblVehiclePilot.Text = objVehicle.Pilot.ToString();
 				lblVehicleBody.Text = objVehicle.TotalBody.ToString();
 				lblVehicleArmor.Text = objVehicle.TotalArmor.ToString();
-				lblVehicleSeats.Text = objVehicle.Seats.ToString();
+				lblVehicleSeats.Text = objVehicle.TotalSeats.ToString();
 
 				lblVehicleSeatsLabel.Visible = true;
 				lblVehicleSeats.Visible = true;
@@ -26458,7 +26453,7 @@ namespace Chummer
 			{
 				if (objCyberware.SourceType == Improvement.ImprovementSource.Bioware)
 				{
-					_objFunctions.BuildCyberwareTree(objCyberware, treCyberware.Nodes[1], cmsBioware, cmsCyberwareGear);
+					_objFunctions.BuildCyberwareTree(objCyberware, treCyberware.Nodes[1], cmsCyberware, cmsCyberwareGear);
 				}
 			}
 		}

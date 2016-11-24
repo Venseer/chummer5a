@@ -1375,8 +1375,8 @@ namespace Chummer
                 if (!_objOptions.ESSLossReducesMaximumOnly)
                     intEssenceLoss = _objCharacter.EssencePenalty;
                 nudMAG.Minimum = _objCharacter.MAG.MetatypeMinimum;
-                nudMAG.Maximum = _objCharacter.MAG.MetatypeMaximum;
-                nudKMAG.Maximum = _objCharacter.MAG.MetatypeMaximum;
+                nudMAG.Maximum = _objCharacter.MAG.MetatypeMaximum + intEssenceLoss;
+                nudKMAG.Maximum = _objCharacter.MAG.MetatypeMaximum + intEssenceLoss;
 
                 // If the character options permit initiation in create mode, show the Initiation page.
                 if (_objOptions.AllowInitiationInCreateMode)
@@ -1424,6 +1424,7 @@ namespace Chummer
                     intEssenceLoss = _objCharacter.EssencePenalty;
                 nudRES.Minimum = _objCharacter.RES.MetatypeMinimum;
                 nudRES.Maximum = _objCharacter.RES.MetatypeMaximum + intEssenceLoss;
+                nudKRES.Maximum = _objCharacter.RES.MetatypeMaximum + intEssenceLoss;
                 // If the character options permit submersion in create mode, show the Initiation page.
                 if (_objOptions.AllowInitiationInCreateMode)
                 {
@@ -7675,14 +7676,16 @@ namespace Chummer
                 return;
             }
 
-            if (treCyberware.SelectedNode.Parent == treCyberware.Nodes[1])
-            {
-                MessageBox.Show(LanguageManager.Instance.GetString("Message_SelectCyberware"), LanguageManager.Instance.GetString("MessageTitle_SelectCyberware"), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            bool blnAddAgain = PickCyberware();
-            if (blnAddAgain)
+	        bool blnAddAgain = false;
+	        if (treCyberware.SelectedNode.Parent == treCyberware.Nodes[1])
+	        {
+				blnAddAgain = PickCyberware(Improvement.ImprovementSource.Bioware);
+			}
+	        else
+	        {
+		        blnAddAgain = PickCyberware();
+	        }
+	        if (blnAddAgain)
             {
                 treCyberware.SelectedNode = treCyberware.SelectedNode.Parent;
                 tsCyberwareAddAsPlugin_Click(sender, e);
@@ -7768,8 +7771,10 @@ namespace Chummer
 				frmPickWeaponAccessory.AllowedMounts = strMounts;
 			}
 
-			frmPickWeaponAccessory.WeaponCost = objWeapon.Cost;
+            frmPickWeaponAccessory.CurrentWeaponName = objWeapon.Name;
+            frmPickWeaponAccessory.WeaponCost = objWeapon.Cost;
 			frmPickWeaponAccessory.AccessoryMultiplier = objWeapon.AccessoryMultiplier;
+	        frmPickWeaponAccessory.InstalledAccessories = objWeapon.WeaponAccessories;
 			frmPickWeaponAccessory.ShowDialog();
 
 			if (frmPickWeaponAccessory.DialogResult == DialogResult.Cancel)
@@ -7952,8 +7957,9 @@ namespace Chummer
             frmSelectVehicleMod frmPickVehicleMod = new frmSelectVehicleMod(_objCharacter);
 			// Set the Vehicle properties for the window.
 			frmPickVehicleMod.SelectedVehicle = objSelectedVehicle;
+            frmPickVehicleMod.InstalledMods = objSelectedVehicle.Mods;
 
-			frmPickVehicleMod.ShowDialog(this);
+            frmPickVehicleMod.ShowDialog(this);
 
             // Make sure the dialogue window was not canceled.
             if (frmPickVehicleMod.DialogResult == DialogResult.Cancel)
@@ -8118,9 +8124,11 @@ namespace Chummer
                 frmPickWeaponAccessory.AllowedMounts = strMounts;
             }
 
+            frmPickWeaponAccessory.CurrentWeaponName = objWeapon.Name;
             frmPickWeaponAccessory.WeaponCost = objWeapon.Cost;
             frmPickWeaponAccessory.AccessoryMultiplier = objWeapon.AccessoryMultiplier;
-            frmPickWeaponAccessory.ShowDialog();
+			frmPickWeaponAccessory.InstalledAccessories = objWeapon.WeaponAccessories;
+			frmPickWeaponAccessory.ShowDialog();
 
             if (frmPickWeaponAccessory.DialogResult == DialogResult.Cancel)
                 return;
@@ -15809,7 +15817,7 @@ namespace Chummer
 
                     lblWeaponAvail.Text = objWeapon.TotalAvail;
                     lblWeaponCost.Text = String.Format("{0:###,###,##0¥}", objWeapon.TotalCost);
-                    lblWeaponConceal.Text = "+4";
+                    lblWeaponConceal.Text = objWeapon.CalculatedConcealability();
                     lblWeaponDamage.Text = objWeapon.CalculatedDamage();
                     lblWeaponAccuracy.Text = objWeapon.TotalAccuracy.ToString();
                     lblWeaponRC.Text = objWeapon.TotalRC;
@@ -16811,7 +16819,7 @@ namespace Chummer
                 frmPickCyberware.WindowMode = frmSelectCyberware.Mode.Bioware;
 
             frmPickCyberware.AllowModularPlugins = objSelectedCyberware.AllowModularPlugins;
-
+	        frmPickCyberware.Subsystems = objSelectedCyberware.Subsytems;
             frmPickCyberware.ShowDialog(this);
 
             // Make sure the dialogue window was not canceled.
@@ -16881,10 +16889,7 @@ namespace Chummer
 
             // Select the node that was just added.
             _blnSkipRefresh = true;
-            if (objSource == Improvement.ImprovementSource.Cyberware)
-                objNode.ContextMenuStrip = cmsCyberware;
-            else if (objSource == Improvement.ImprovementSource.Bioware)
-                objNode.ContextMenuStrip = cmsBioware;
+            objNode.ContextMenuStrip = cmsCyberware;
             _blnSkipRefresh = true;
 
             foreach (Weapon objWeapon in objWeapons)
@@ -17688,7 +17693,7 @@ namespace Chummer
                 lblVehiclePilot.Text = objVehicle.Pilot.ToString();
                 lblVehicleBody.Text = objVehicle.TotalBody.ToString();
                 lblVehicleArmor.Text = objVehicle.TotalArmor.ToString();
-	            lblVehicleSeats.Text = objVehicle.Seats.ToString();
+	            lblVehicleSeats.Text = objVehicle.TotalSeats.ToString();
 
 				// Update the vehicle mod slots
 				if (objVehicle.IsDrone && GlobalOptions.Instance.Dronemods)
@@ -20569,7 +20574,7 @@ namespace Chummer
                     objCyberware.Create(objXmlBiowareNode, _objCharacter, objGrade, Improvement.ImprovementSource.Bioware, intRating, objNode, objWeapons, objWeaponNodes, objVehicles, objVehicleNodes, true, blnCreateChildren);
                     _objCharacter.Cyberware.Add(objCyberware);
 
-                    objNode.ContextMenuStrip = cmsBioware;
+                    objNode.ContextMenuStrip = cmsCyberware;
                     treCyberware.Nodes[1].Nodes.Add(objNode);
                     treCyberware.Nodes[1].Expand();
 
@@ -21041,17 +21046,17 @@ namespace Chummer
                 intEssenceLoss = _objCharacter.EssencePenalty;
 
             // Determine the number of points that have been put into Attributes.
-            int intBOD = _objCharacter.BOD.Value - _objCharacter.BOD.MetatypeMinimum;
-            int intAGI = _objCharacter.AGI.Value - _objCharacter.AGI.MetatypeMinimum;
-            int intREA = _objCharacter.REA.Value - _objCharacter.REA.MetatypeMinimum;
-            int intSTR = _objCharacter.STR.Value - _objCharacter.STR.MetatypeMinimum;
-            int intCHA = _objCharacter.CHA.Value - _objCharacter.CHA.MetatypeMinimum;
-            int intINT = _objCharacter.INT.Value - _objCharacter.INT.MetatypeMinimum;
-            int intLOG = _objCharacter.LOG.Value - _objCharacter.LOG.MetatypeMinimum;
-            int intWIL = _objCharacter.WIL.Value - _objCharacter.WIL.MetatypeMinimum;
-            int intEDG = _objCharacter.EDG.Value - _objCharacter.EDG.MetatypeMinimum;
-	        int intMAG = Math.Max(_objCharacter.MAG.Value - _objCharacter.MAG.MetatypeMinimum, 0);
-	        int intRES = Math.Max(_objCharacter.RES.Value - _objCharacter.RES.MetatypeMinimum, 0);
+            int intBOD = _objCharacter.BOD.Base - _objCharacter.BOD.MetatypeMinimum;
+            int intAGI = _objCharacter.AGI.Base - _objCharacter.AGI.MetatypeMinimum;
+            int intREA = _objCharacter.REA.Base - _objCharacter.REA.MetatypeMinimum;
+            int intSTR = _objCharacter.STR.Base - _objCharacter.STR.MetatypeMinimum;
+            int intCHA = _objCharacter.CHA.Base - _objCharacter.CHA.MetatypeMinimum;
+            int intINT = _objCharacter.INT.Base - _objCharacter.INT.MetatypeMinimum;
+            int intLOG = _objCharacter.LOG.Base - _objCharacter.LOG.MetatypeMinimum;
+            int intWIL = _objCharacter.WIL.Base - _objCharacter.WIL.MetatypeMinimum;
+            int intEDG = _objCharacter.EDG.Base - _objCharacter.EDG.MetatypeMinimum;
+	        int intMAG = Math.Max(_objCharacter.MAG.Base - _objCharacter.MAG.MetatypeMinimum, 0);
+	        int intRES = Math.Max(_objCharacter.RES.Base - _objCharacter.RES.MetatypeMinimum, 0);
 
             // Build a list of the current Metatype's Improvements to remove if the Metatype changes.
             List<Improvement> lstImprovement = _objCharacter.Improvements.Where(objImprovement => objImprovement.ImproveSource == Improvement.ImprovementSource.Metatype || objImprovement.ImproveSource == Improvement.ImprovementSource.Metavariant || objImprovement.ImproveSource == Improvement.ImprovementSource.Heritage).ToList();
@@ -21117,11 +21122,11 @@ namespace Chummer
             nudEDG.Maximum = _objCharacter.EDG.TotalMaximum;
             if (_objCharacter.BuildMethod == CharacterBuildMethod.Karma)
             {
-                nudKMAG.Maximum = _objCharacter.MAG.TotalMaximum;
-                nudKRES.Maximum = _objCharacter.RES.TotalMaximum;
+                nudKMAG.Maximum = _objCharacter.MAG.TotalMaximum + intEssenceLoss;
+                nudKRES.Maximum = _objCharacter.RES.TotalMaximum + intEssenceLoss;
             }
-            nudMAG.Maximum = _objCharacter.MAG.TotalMaximum;
-            nudRES.Maximum = _objCharacter.RES.TotalMaximum;
+            nudMAG.Maximum = _objCharacter.MAG.TotalMaximum + intEssenceLoss;
+            nudRES.Maximum = _objCharacter.RES.TotalMaximum + intEssenceLoss;
 
             nudBOD.Minimum = _objCharacter.BOD.MetatypeMinimum;
             nudAGI.Minimum = _objCharacter.AGI.MetatypeMinimum;
@@ -22673,7 +22678,7 @@ namespace Chummer
             {
                 if (objCyberware.SourceType == Improvement.ImprovementSource.Bioware)
                 {
-                    _objFunctions.BuildCyberwareTree(objCyberware, treCyberware.Nodes[1], cmsBioware, cmsCyberwareGear);
+                    _objFunctions.BuildCyberwareTree(objCyberware, treCyberware.Nodes[1], cmsCyberware, cmsCyberwareGear);
                 }
             }
         }

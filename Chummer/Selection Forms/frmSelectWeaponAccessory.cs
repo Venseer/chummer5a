@@ -22,6 +22,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.XPath;
+﻿using Chummer.Backend.Equipment;
 
 namespace Chummer
 {
@@ -33,12 +34,14 @@ namespace Chummer
 		private string _strAllowedMounts = "";
 		private int _intWeaponCost = 0;
 		private int _intRating = 0;
+        private string _strCurrentWeaponName = "";
 		private bool _blnAddAgain = false;
 
 		private XmlDocument _objXmlDocument = new XmlDocument();
 		private readonly Character _objCharacter;
 		private int _intAccessoryMultiplier = 1;
 		private bool _blnBlackMarketDiscount;
+		private List<WeaponAccessory> _lstAccessories;
 
 		#region Control Events
 		public frmSelectWeaponAccessory(Character objCharacter, bool blnCareer = false)
@@ -65,8 +68,10 @@ namespace Chummer
 			// Load the Weapon information.
 			_objXmlDocument = XmlManager.Instance.Load("weapons.xml");
 
-			// Populate the Accessory list.
-			string[] strAllowed = _strAllowedMounts.Split('/');
+            XmlNode objXmlWeaponNode = _objXmlDocument.SelectSingleNode("/chummer/weapons/weapon[name = \"" + _strCurrentWeaponName + "\"]");
+
+            // Populate the Accessory list.
+            string[] strAllowed = _strAllowedMounts.Split('/');
 			string strMount = "";
             foreach (string strAllowedMount in strAllowed)
 			{
@@ -76,41 +81,87 @@ namespace Chummer
 			strMount += "contains(mount, \"Internal\") or contains(mount, \"None\") or ";
 			strMount += "mount = \"\"";
 			XmlNodeList objXmlAccessoryList = _objXmlDocument.SelectNodes("/chummer/accessories/accessory[(" + strMount + ") and (" + _objCharacter.Options.BookXPath() + ")]");
-			foreach (XmlNode objXmlAccessory in objXmlAccessoryList)
-			{
-                if (objXmlAccessory.InnerXml.Contains("<extramount>"))
-                {
-                    bool boolCanAdd = false;
-                    if (strAllowed.Length > 1)
+			if (objXmlAccessoryList != null)
+				foreach (XmlNode objXmlAccessory in objXmlAccessoryList)
+				{
+					bool boolCanAdd = true;
+					if (objXmlAccessory.InnerXml.Contains("<extramount>"))
+					{
+						if (strAllowed.Length > 1)
+						{
+							foreach (string strItem in (objXmlAccessory["extramount"].InnerText.Split('/')).Where(strItem => strItem != ""))
+							{
+								if (strAllowed.All(strAllowedMount => strAllowedMount != strItem))
+								{
+									boolCanAdd = false;
+								}
+								if (boolCanAdd)
+									break;
+							}
+						}
+					}
+
+                    if (objXmlAccessory["forbidden"]?["weapondetails"] != null)
                     {
-                        foreach (string strItem in (objXmlAccessory["extramount"].InnerText.Split('/')))
+                        // Assumes topmost parent is an AND node
+                        if (Chummer.Backend.XmlNodeExtensions.processFilterOperationNode(objXmlWeaponNode, objXmlAccessory["forbidden"]["weapondetails"], false))
                         {
-                            if (strItem != "")
-                            {
-                                foreach (string strAllowedMount in strAllowed)
-                                {
-                                    if (strAllowedMount == strItem)
-                                    {
-                                        boolCanAdd = true;
-                                        break;
-                                    }
-                                }
-                                if (boolCanAdd)
-                                    break;
-                            }
+                            goto NextItem;
                         }
                     }
-                    if (!boolCanAdd)
-                        continue;
-                }
-                ListItem objItem = new ListItem();
-                objItem.Value = objXmlAccessory["name"].InnerText;
-				if (objXmlAccessory["translate"] != null)
-					objItem.Name = objXmlAccessory["translate"].InnerText;
-				else
-					objItem.Name = objXmlAccessory["name"].InnerText;
-				lstAccessories.Add(objItem);
-			}
+                    if (objXmlAccessory["required"]?["weapondetails"] != null)
+                    {
+                        // Assumes topmost parent is an AND node
+                        if (!Chummer.Backend.XmlNodeExtensions.processFilterOperationNode(objXmlWeaponNode, objXmlAccessory["required"]["weapondetails"], false))
+                        {
+                            goto NextItem;
+                        }
+                    }
+
+                    if (objXmlAccessory["forbidden"]?["oneof"] != null)
+                    {
+                        XmlNodeList objXmlForbiddenList = objXmlAccessory.SelectNodes("forbidden/oneof/accessory");
+                        //Add to set for O(N log M) runtime instead of O(N * M)
+
+                        HashSet<String> objForbiddenAccessory = new HashSet<String>();
+                        foreach (XmlNode node in objXmlForbiddenList)
+                        {
+                            objForbiddenAccessory.Add(node.InnerText);
+                        }
+
+                        foreach (WeaponAccessory objAccessory in _lstAccessories.Where(objAccessory => objForbiddenAccessory.Contains(objAccessory.Name)))
+                        {
+                            goto NextItem;
+                        }
+                    }
+
+                    if (objXmlAccessory["required"]?["oneof"] != null)
+					{
+						boolCanAdd = false;
+						XmlNodeList objXmlRequiredList = objXmlAccessory.SelectNodes("required/oneof/accessory");
+						//Add to set for O(N log M) runtime instead of O(N * M)
+
+						HashSet<String> objRequiredAccessory = new HashSet<String>();
+						foreach (XmlNode node in objXmlRequiredList)
+						{
+							objRequiredAccessory.Add(node.InnerText);
+						}
+
+						foreach (WeaponAccessory objAccessory in _lstAccessories.Where(objAccessory => objRequiredAccessory.Contains(objAccessory.Name)))
+						{
+							boolCanAdd = true;
+                            break;
+						}
+					}
+
+					if (!boolCanAdd)
+						continue;
+					ListItem objItem = new ListItem();
+					objItem.Value = objXmlAccessory["name"].InnerText;
+					objItem.Name = objXmlAccessory["translate"]?.InnerText ?? objXmlAccessory["name"].InnerText;
+					lstAccessories.Add(objItem);
+                NextItem:;
+				}
 
 			chkBlackMarketDiscount.Visible = _objCharacter.BlackMarketDiscount;
 
@@ -171,7 +222,7 @@ namespace Chummer
 
         private void UpdateMountFields(bool boolChangeExtraMountFirst)
         {
-            if ((cboMount.SelectedItem.ToString() != "None") && (cboExtraMount.SelectedItem.ToString() != "None") 
+            if ((cboMount.SelectedItem.ToString() != "None") && cboExtraMount.SelectedItem != null && (cboExtraMount.SelectedItem.ToString() != "None") 
                 && (cboMount.SelectedItem.ToString() == cboExtraMount.SelectedItem.ToString()))
             {
                 if (boolChangeExtraMountFirst)
@@ -409,10 +460,21 @@ namespace Chummer
 			}
 		}
 
-		/// <summary>
-		/// Whether or not the item should be added for free.
+        /// <summary>
+		/// GUID of the current weapon for which the accessory is being selected
 		/// </summary>
-		public bool FreeCost
+		public string CurrentWeaponName
+        {
+            set
+            {
+                _strCurrentWeaponName = value;
+            }
+        }
+
+        /// <summary>
+        /// Whether or not the item should be added for free.
+        /// </summary>
+        public bool FreeCost
 		{
 			get
 			{
@@ -463,13 +525,24 @@ namespace Chummer
 				return _intMarkup;
 			}
 		}
-		#endregion
 
-		#region Methods
 		/// <summary>
-		/// Accept the selected item and close the form.
+		/// Currently Installed Accessories
 		/// </summary>
-		private void AcceptForm()
+		public List<WeaponAccessory> InstalledAccessories
+		{
+			set
+			{
+				_lstAccessories = value;
+			}
+		}
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Accept the selected item and close the form.
+        /// </summary>
+        private void AcceptForm()
 		{
 			_strSelectedAccessory = lstAccessory.SelectedValue.ToString();
 			_intRating = Convert.ToInt32(nudRating.Value.ToString());

@@ -23,6 +23,24 @@ Application Changes:
 - Fixed a crash issue when restarting Chummer through updates or the Restart menu option. Fixes #1223.
 - Fixed an issue with deleting Armour items that add Weapons. Fixes #1222.
 - Removed the automatic creation of Gear Locations for Cyberware and Weapon commlinks, as it's now redundant. 
+- Removed Running Wild requirement for creating Critters, so it should now be possible to create a Critter through the menu or by clicking the Link Character Sheet button on the appropriate control. At present, only Spirits should be available for use. Sprites and other critters will be enabled in a later patch. Fixes #1225
+- Fixed the implementation of the Stock Remova/Shortbarrel mods. Current technical limitations prevent the penalty to accuracy if both mods are installed from working, so another modification that rolls both mods in together has been added. 
+- Added the ability to forbid/require weapon accessories based on the presence of other accessories. 
+- Altered the behaviour of the Weapon Focus to avoid some silly behaviour like letting your fists be a weapon focus. 
+- Added the ability for weapons with built-in accessories to attach extra gear to said built-in accessories.
+- Corrected the issue where weapons would receive +4 concealability for each underbarrel weapon.
+- Fixed the issue where changing metatypes under priority or sum-to-ten generation would save the incorrect amount of points spent on an attribute if it also had karma spent on it.
+- Fixed the issue where the magic dropdown menu and the metatype selection list would not update properly when the priority selection screen was initialised.
+- Fixed the issue where Edge was not properly re-adjusted when changing metatypes during character creation.
+- Fixed a crash issue where changing metatypes or the magic priority mid-creation would not take essence loss into account when setting new values for magic or resonance. Fixes #1229.
+- Fixed the filtering behaviour of cyberware subsystems to properly filter down to those subsystems. This shouldn't impact existing cyberware in any noticeable way, but this will allow adding subsystems to bioware. 
+- Weapon accessories now only need to contain "Expanded Clip" in their name for the application to recognize the accessory as an expanded clip.
+- Added a prototypical, custom, XML node filtering system that checks raw XML. Currently, this is only used for weapon accessories and vehicle/drone mods to hide ineligible ones from the selection menu, but it should be flexible enough to support anything.
+- Added the ability to distinguish between primary and offroad speed and acceleration, in addition to primary and offroad handling.
+- Added the ability for vehicle mods to alter seat count.
+- Added the ability for vehicle mods that alter speed, handling, and/or acceleration to properly subtract values and also to support percentage modifications instead of just flat ones.
+- Added a label for seats to the vehicle selection screen.
+- Vehicle mods can now be configured to be mutually exclusive with other vehicle mods.
 
 Data Changes: 
 
@@ -89,6 +107,37 @@ Data Changes:
 - Added missing explosives from Run and Gun. 
 - Added missing skill unlocks for the Mutaqua, Wendigo and Nosferatu. NOTE: This introduces a bug where characters that are already magically active will receive a duplicate skill control. A Nosferatu Magician will have a second Banishing skill, for example. This is a known limitation of the current skill system and will be resolved in a later patch.
 - Added missing Carrier qualities from Run Faster. 
+- Reorganised the critters.xml file to support creating Spirits in Chummer.
+- Fixed an issue with the Defiance EX-Shocker that caused a crash. 
+- Fixed an issue that allowed the troll's natural arumour to stack with things that replace their skin.
+- Added commlink gear to the built-in weapon commlinks of the Ogre Hammer SWS Assault Cannon and the Terracotta Arms AM-47
+- Added missing Imaging Scope addons for the Imaging Scopes that are built into the Ogre Hammer SWS Assault Cannon, the Krupp Arms Kriegfaust, the Ultimax Rain Forest Carbine, the Terracotta Arms AM-47, the Marlin X71, and the Springfield M1A.
+- Added a category for Chemical Gland bioware modifications. 
+- Added the Chemical Gland Modifications subsystem to the Chemical Gland bioware. 
+- Tweaked the behaviour of the Sensitive Skin bioware to be more descriptive. 
+- Fixed the Thickened Digestive Tract Lining bioware to properly reduce lifestyle costs. 
+- Fixed the magical unlock behaviour of the mutaqua, wendigo and nosferatu. 
+- Fixed the ability for metsapients and shapeshifters to take the Technomancer quality incorrectly.
+- Fixed the Otaku to Technomancer quality not having a Technomancer prerequisite. 
+- Fixed the mount location for the Easy Breakdown weapon mods. 
+- Corrected Explosive Magazine not lowering ammo count by 2.
+- Added an entry for the Rating 2-only Expanded Clip for Machine Pistols that are considered to have an R1 Expanded Clip by default.
+- Added custom filters to the following accessories to make sure they only show up for weapons that are eligible: Ares Light Fire 70 Silencer, Ares Light Fire 75 Silencer, Airburst Link, Concealable Holster, Hidden Gun Arm Slide, Quick-Draw Holster, Silencer, Sound Suppressor, Spare Clip, Speed Loader, PSK-3 Collapsible Heavy Pistol Silencer, Collapsed Frame, Ares Executioner Extra Case, Vindicator 200-Round Belt, Bayonet, Foregrip, Gecko Grip, most Underbarrel Weapon accessories, Ammo Skip, Explosive Magazine, Extended Clip, Chameleon Coating, Overclocked, Sawed Off/Shortbarrel, and Stock Removal. 
+- Made the Ceramic/Plasteel Components modification mutually exclusive with the Chameleon Coating modifications and both Smartgun accessories.
+- Made the Advanced Safety System accessories mutually exclusive with one another.
+- Made the Safe Target System addons require the Safe Target System, Base accessory.
+- Made the Sawed Off/Shortbarrel and Stock Removal accessory entry mutually exclusive with both the Sawed Off/Shortbarrel accessory and the Stock Removal accessory.
+- Added the Coriolis complex form from Chrome Flesh.
+- Added vehicle entries for the Cocotaxi and the Camellos from Hard Targets and the Ares Garuda and the Evo Aquavida 2 from Rigger 5.0.
+- Added stats for secondary acceleration and speed (i.e. offroad acceleration and speed for ground vehicles, alternate locomotion for all others) where they were missing, e.g. from the Evo Falcon-EX, the Corsair Trident, and the Evo Krokodil.
+- Corrected the seats for all vehicles that have separate front/back sections so that Chummer always displays the total seat count, not just the seat count for the larger section.
+- Corrected the availability of most vehicles from Stolen Souls (to 4) and the Ares Roadmaster (to 8).
+- Added custom filters to relevant vehicle/drone mods to stop them from showing up in the list of vehicle/drone mods unless specific conditions are fulfilled (e.g. drone mods only appear when modifying drones, Horseman modpods only appear when modifying a Horseman, etc.).
+- Added a variety of knowledge skills, courtesy of Lochabar. 
+
+Sheet Changes: 
+
+- Fixed an issue with the Fancy Blocks character sheet not preserving linebreaks properly.
 
 Build 187
 
@@ -5230,3 +5279,4 @@ Build 32
 - added support for Armor Modifications
 - added support for Cyberweapons
 - added support for Weapon Accessories
+

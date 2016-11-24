@@ -3637,10 +3637,11 @@ namespace Chummer.Classes
 			{
 				string strExclude = "";
 				List <ListItem> lstWeapons = new List<ListItem>();
+				bool blnIncludeUnarmed = bonusNode.Attributes["excludecategory"]?.InnerText == "true";
 				strExclude = bonusNode.Attributes["excludecategory"]?.InnerText;
 				foreach (Weapon objWeapon in _objCharacter.Weapons)
 				{
-					bool blnAdd = !(strExclude != "" && objWeapon.WeaponType == strExclude);
+					bool blnAdd = !(strExclude != "" && objWeapon.WeaponType == strExclude || !blnIncludeUnarmed && objWeapon.Name == "Unarmed Attack");
 					if (blnAdd)
 					{
 						ListItem objItem = new ListItem();
@@ -3839,11 +3840,22 @@ namespace Chummer.Classes
 			}
 
 			SkillsSection.FilterOptions skills;
+			string strName = "";
 			if (Enum.TryParse(final, out skills))
 			{
-				_objCharacter.SkillsSection.AddSkills(skills);
-				CreateImprovement(skills.ToString(), Improvement.ImprovementSource.Quality, SourceName,
-					Improvement.ImprovementType.SpecialSkills, _strUnique);
+				bool blnAdd = true;
+				if (bonusNode.Attributes["name"] != null)
+				{
+					strName = bonusNode.Attributes["name"].InnerText;
+					blnAdd = _objCharacter.SkillsSection.Skills.All(objSkill => objSkill.Name != strName);
+				}
+
+				if (blnAdd)
+				{
+					_objCharacter.SkillsSection.AddSkills(skills, strName);
+					CreateImprovement(skills.ToString(), Improvement.ImprovementSource.Quality, SourceName,
+						Improvement.ImprovementType.SpecialSkills, _strUnique);
+				}
 			}
 			else
 			{
