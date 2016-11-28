@@ -98,7 +98,7 @@ namespace Chummer.Skills
 			objWriter.WriteElementString("buywithkarma", BuyWithKarma.ToString());
 			objWriter.WriteElementString("base", Base.ToString());
 			objWriter.WriteElementString("karma", Karma.ToString());
-			objWriter.WriteElementString("spec", Specialization);
+			objWriter.WriteElementString("spec", DisplaySpecialization);
 			objWriter.WriteElementString("attribute", Attribute);
 			objWriter.WriteElementString("displayattribute", DisplayAttribute);
 			objWriter.WriteElementString("notes", _strNotes);
@@ -427,6 +427,12 @@ namespace Chummer.Skills
 		{
 			get
 			{
+                if (Name.Contains("Flight"))
+                {
+                    string strFlyString = CharacterObject.Fly;
+                    if (strFlyString == "" || strFlyString == "0" || strFlyString.Contains("Special"))
+                        return false;
+                }
 				//TODO: This is a temporary workaround until proper support for selectively enabling or disabling skills works, as above.
 				if (CharacterObject.Metatype == "A.I.")
 				{
@@ -527,7 +533,7 @@ namespace Chummer.Skills
 
 				if (Specializations.Count > 0)
 				{
-					return Specializations[0].Name;
+					return Specializations[0].DisplayName;
 				}
 
 				return "";

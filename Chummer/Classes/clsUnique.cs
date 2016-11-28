@@ -141,8 +141,8 @@ namespace Chummer
 			{
 				_intMetatypeMin = value;
 				// If changing the Minimum would cause the current value to be outside of its bounds, bring it back within acceptable limits.
-				if (Value < value)
-					Value = value;
+				if (Value < value + MinimumModifiers)
+					Value = value + MinimumModifiers;
 			}
 		}
 
@@ -164,8 +164,8 @@ namespace Chummer
 			{
 				_intMetatypeMax = value;
 				// If changing the Maximum would cause the current value to be outside of its bounds, bring it back within acceptable limits.
-				if (Value > value)
-					Value = value;
+				if (Value > value + MaximumModifiers)
+					Value = value + MaximumModifiers;
 			}
 		}
 
@@ -641,7 +641,7 @@ namespace Chummer
 					intReturn = TotalAugmentedMaximum;
 
 				// An Attribute cannot go below 1 unless it is EDG, MAG, or RES, the character is a Critter, or the Metatype Maximum is 0.
-				if (_objCharacter.CritterEnabled || _strAbbrev == "EDG" || _intMetatypeMax == 0 || (_objCharacter.EssencePenalty != 0 && (_strAbbrev == "MAG" || _strAbbrev == "RES")) || (_objCharacter.MetatypeCategory != "A.I." && _strAbbrev == "DEP"))
+				if (_objCharacter.CritterEnabled || _strAbbrev == "EDG" || _intMetatypeMax == 0 || (_objCharacter.EssencePenalty != 0 && (_strAbbrev == "MAG" || _strAbbrev == "RES" || _strAbbrev == "DEP")))
 				{
 					if (intReturn < 0)
 						return 0;
@@ -694,7 +694,7 @@ namespace Chummer
 					intReturn = 0;
 				}*/
 
-				if (_objCharacter.EssencePenalty != 0 && (_strAbbrev == "MAG" || _strAbbrev == "RES"))
+				if (_objCharacter.EssencePenalty != 0 && (_strAbbrev == "MAG" || _strAbbrev == "RES" || _strAbbrev == "DEP"))
 				{
 					if (_objCharacter.Options.ESSLossReducesMaximumOnly || _objCharacter.OverrideSpecialAttributeEssenceLoss)
 					{
@@ -743,8 +743,8 @@ namespace Chummer
 			get
 			{
 				int intReturn = 0;
-				if (_strAbbrev == "EDG" || _strAbbrev == "MAG" || _strAbbrev == "RES")
-					intReturn = TotalMaximum + AugmentedMaximumModifiers;
+				if (_strAbbrev == "EDG" || _strAbbrev == "MAG" || _strAbbrev == "RES" || _strAbbrev == "DEP")
+                    intReturn = TotalMaximum + AugmentedMaximumModifiers;
 				else
 					intReturn = TotalMaximum + 4 + AugmentedMaximumModifiers;
                     // intReturn = TotalMaximum + Convert.ToInt32(Math.Floor((Convert.ToDecimal(TotalMaximum, GlobalOptions.Instance.CultureInfo) / 2))) + AugmentedMaximumModifiers;
@@ -972,7 +972,7 @@ namespace Chummer
 		{
 			int intBP = 0;
 
-			if (_strAbbrev != "EDG" && _strAbbrev != "MAG" && _strAbbrev != "RES")
+			if (_strAbbrev != "EDG" && _strAbbrev != "MAG" && _strAbbrev != "RES" && _strAbbrev != "DEP")
 			{
 				if (_objCharacter.Options.AlternateMetatypeAttributeKarma)
 				{
@@ -5830,6 +5830,7 @@ namespace Chummer
 		private string _strSource = "";
 		private string _strPage = "";
 		private int _intRating = 1;
+		private Guid _guiID = new Guid();
 		private List<MartialArtAdvantage> _lstAdvantages = new List<MartialArtAdvantage>();
 		private string _strNotes = "";
 		private Character _objCharacter;
@@ -5839,6 +5840,7 @@ namespace Chummer
 		public MartialArt(Character objCharacter)
 		{
 			_objCharacter = objCharacter;
+			_guiID = Guid.NewGuid();
 		}
 
 		/// Create a Martial Art from an XmlNode and return the TreeNodes for it.
@@ -5851,10 +5853,14 @@ namespace Chummer
 			_strName = objXmlArtNode["name"].InnerText;
 			_strSource = objXmlArtNode["source"].InnerText;
 			_strPage = objXmlArtNode["page"].InnerText;
-            if (objXmlArtNode["isquality"] != null)
-                _blnIsQuality = Convert.ToBoolean(objXmlArtNode["isquality"].InnerText);
-            else
-                _blnIsQuality = false;
+            _blnIsQuality = objXmlArtNode["isquality"] != null && Convert.ToBoolean(objXmlArtNode["isquality"].InnerText);
+
+			if (objXmlArtNode["bonus"] != null)
+			{
+				ImprovementManager objImprovementManager = new ImprovementManager(objCharacter);
+				objImprovementManager.CreateImprovements(Improvement.ImprovementSource.MartialArt, InternalID,
+					objXmlArtNode["bonus"], false, 1, DisplayNameShort);
+			}
 
 			objNode.Text = DisplayName;
 			objNode.Tag = _strName;
@@ -5868,6 +5874,7 @@ namespace Chummer
 		{
 			objWriter.WriteStartElement("martialart");
 			objWriter.WriteElementString("name", _strName);
+			objWriter.WriteElementString("guid", InternalID);
 			objWriter.WriteElementString("source", _strSource);
 			objWriter.WriteElementString("page", _strPage);
 			objWriter.WriteElementString("rating", _intRating.ToString());
@@ -5889,6 +5896,14 @@ namespace Chummer
 		/// <param name="objNode">XmlNode to load.</param>
 		public void Load(XmlNode objNode)
 		{
+			try
+			{
+				_guiID = Guid.Parse(objNode["guid"].InnerText);
+			}
+			catch
+			{
+				_guiID = Guid.NewGuid();
+			}
 			_strName = objNode["name"].InnerText;
 			_strSource = objNode["source"].InnerText;
 			_strPage = objNode["page"].InnerText;
@@ -5952,6 +5967,11 @@ namespace Chummer
 			{
 				_strName = value;
 			}
+		}
+
+		public string InternalID
+		{
+			get { return _guiID.ToString(); }
 		}
 
 		/// <summary>

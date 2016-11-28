@@ -112,7 +112,14 @@ namespace Chummer.Classes
 				CreateImprovement("RES", _objImprovementSource, SourceName, Improvement.ImprovementType.Attribute,
 					"enableattribute", 0, 0);
 			}
-		}
+            else if (bonusNode["name"].InnerText == "DEP")
+            {
+                _objCharacter.DEPEnabled = true;
+                Log.Info("Calling CreateImprovement for DEP");
+                CreateImprovement("DEP", _objImprovementSource, SourceName, Improvement.ImprovementType.Attribute,
+                    "enableattribute", 0, 0);
+            }
+        }
 
 		// Add an Attribute Replacement.
 		public void replaceattributes(XmlNode bonusNode)
@@ -464,8 +471,10 @@ namespace Chummer.Classes
 					frmPickAttribute.AddMAG();
 				if (_objCharacter.RESEnabled)
 					frmPickAttribute.AddRES();
+                if (_objCharacter.DEPEnabled)
+                    frmPickAttribute.AddDEP();
 
-				Log.Info("selectattribute = " + bonusNode.OuterXml.ToString());
+                Log.Info("selectattribute = " + bonusNode.OuterXml.ToString());
 
 				if (objXmlAttribute.InnerXml.Contains("<attribute>"))
 				{
@@ -556,8 +565,10 @@ namespace Chummer.Classes
 				frmPickAttribute.AddMAG();
 			if (_objCharacter.RESEnabled)
 				frmPickAttribute.AddRES();
+            if (_objCharacter.DEPEnabled)
+                frmPickAttribute.AddDEP();
 
-			Log.Info("selectattribute = " + bonusNode.OuterXml.ToString());
+            Log.Info("selectattribute = " + bonusNode.OuterXml.ToString());
 
 			if (bonusNode.InnerXml.Contains("<attribute>"))
 			{
@@ -1561,6 +1572,16 @@ namespace Chummer.Classes
 				ValueToInt(bonusNode.InnerText, _intRating));
 		}
 
+		// Check for Unarmed Armor Penetration.
+		public void unarmedreach(XmlNode bonusNode)
+		{
+			Log.Info("unarmedreach");
+			Log.Info("unarmedreach = " + bonusNode.OuterXml.ToString());
+			Log.Info("Calling CreateImprovement");
+			CreateImprovement("", _objImprovementSource, SourceName, Improvement.ImprovementType.UnarmedReach, _strUnique,
+				ValueToInt(bonusNode.InnerText, _intRating));
+		}
+
 		// Check for Initiative modifiers.
 		public void initiative(XmlNode bonusNode)
 		{
@@ -2509,8 +2530,10 @@ namespace Chummer.Classes
 						frmPickAttribute.AddMAG();
 					if (_objCharacter.RESEnabled)
 						frmPickAttribute.AddRES();
+                    if (_objCharacter.DEPEnabled)
+                        frmPickAttribute.AddDEP();
 
-					if (nodSkill["selectattribute"].InnerXml.Contains("<attribute>"))
+                    if (nodSkill["selectattribute"].InnerXml.Contains("<attribute>"))
 					{
 						List<string> strValue = new List<string>();
 						foreach (XmlNode objXmlAttribute in nodSkill["selectattribute"].SelectNodes("attribute"))
@@ -2950,8 +2973,10 @@ namespace Chummer.Classes
 								frmPickAttribute.AddMAG();
 							if (_objCharacter.RESEnabled)
 								frmPickAttribute.AddRES();
+                            if (_objCharacter.DEPEnabled)
+                                frmPickAttribute.AddDEP();
 
-							if (nodSkill["selectattribute"].InnerXml.Contains("<attribute>"))
+                            if (nodSkill["selectattribute"].InnerXml.Contains("<attribute>"))
 							{
 								List<string> strValue = new List<string>();
 								foreach (XmlNode objXmlAttribute in nodSkill["selectattribute"].SelectNodes("attribute"))
@@ -3897,6 +3922,19 @@ namespace Chummer.Classes
 			}
 		}
 
+		public void addskillspecialization(XmlNode bonusNode)
+		{
+			
+			Skill objSkill = _objCharacter.SkillsSection.Skills.First(x => x.Name == bonusNode["skill"].InnerText);
+			if (objSkill != null)
+			{
+				// Create the Improvement.
+				Log.Info("Calling CreateImprovement");
+				CreateImprovement(bonusNode["skill"].InnerText, _objImprovementSource, SourceName, Improvement.ImprovementType.SkillSpecialization, bonusNode["spec"].InnerText);
+				SkillSpecialization nspec = new SkillSpecialization(bonusNode["spec"].InnerText, true);
+				objSkill.Specializations.Add(nspec);
+			}
+		}
 		#endregion
 	}
 

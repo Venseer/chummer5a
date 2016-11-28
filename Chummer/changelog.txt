@@ -1,3 +1,16 @@
+Build 189
+
+Application Changes:
+
+- Fixed an issue caused by missing Depth values for certain metatypes. 
+- Fixed an issue with default specialisations not translating properly. 
+- Fixed an issue that caused drones using the modification rules from Rigger 5 to lose their Armour Rating. 
+- Fixed an issue with priority selection that prevented magically active characters from selecting Arcana as a bonus. 
+
+Data Changes: 
+
+- Added several cosmetic standard upgrades to vehicles from Rigger 5.0.
+
 Build 188
 
 Application Changes: 
@@ -41,6 +54,15 @@ Application Changes:
 - Added the ability for vehicle mods that alter speed, handling, and/or acceleration to properly subtract values and also to support percentage modifications instead of just flat ones.
 - Added a label for seats to the vehicle selection screen.
 - Vehicle mods can now be configured to be mutually exclusive with other vehicle mods.
+- Vehicles now properly show their total Seats, rather than their base Seats.
+- New Improvement Type: UnarmedReach. Used for granting bonuses to the Unarmed Attack weapon. 
+- Fixed the bug where Matrix entities would have SR4 stats in career mode.
+- Depth is now properly handled in ways similar to Resonance and Magic. While this currently only affects critters, it should be a precursor to AI chargen.
+- Fixed a bug where setting the metatype maximum of an attribute to a value lower than the current value would lower the current value, even if the current value was not higher than the total maximum.
+- Removed SR4 labels from Matrix entities in Create mode.
+- Added the ability for priorities to add to Depth.
+- Added the AddSkillSpecialisation bonus type, which allows for adding a free specialisation to a skill. 
+- Changes to the condition monitor now immediately refresh skill dicepools.
 
 Data Changes: 
 
@@ -134,6 +156,13 @@ Data Changes:
 - Corrected the availability of most vehicles from Stolen Souls (to 4) and the Ares Roadmaster (to 8).
 - Added custom filters to relevant vehicle/drone mods to stop them from showing up in the list of vehicle/drone mods unless specific conditions are fulfilled (e.g. drone mods only appear when modifying drones, Horseman modpods only appear when modifying a Horseman, etc.).
 - Added a variety of knowledge skills, courtesy of Lochabar. 
+- Added a bonus node to the Kick Attack martial art technique that grants additional Reach to the Unarmed Attack weapon. 
+- Added and/or updated all critter powers to SR5, complete with proper references.
+- Added the Flight skill as described by the core rulebook. It will only show up for characters with a non-zero Fly speed.
+- Added and/or updated the following critter types from SR5: mundane critters from both CRB and HS, paracritters from both CRB and HS, technocritters from HS, insect spirits from SG, sprites from CRB, protosapients from HS, infected critters from HS, toxic spirits from SG, shadow spirits from SG, shedim from SG, and blood spirits from SG. Currently, the following entries are missing: toxic critters from HS, otherworldly beings from HS, and the Manananggal and Engkanto from SG.
+- Added all missing Critter Gear from HS.
+- Added Specialized Biodrone Cyberware from HS.
+- Certain Martial Arts will now automatically add a free skill specialisation, per Run and Gun page 135. Characters that already have these martial arts will need to remove and re-add the martial art for it to take effect.
 
 Sheet Changes: 
 
