@@ -263,7 +263,9 @@ namespace Chummer
 	        }
 
 			// Retrieve the list of Cyberware for the selected Category.
-			if (_blnShowOnlySubsystems)
+            if (_objCharacter.DEPEnabled)
+                objXmlCyberwareList = _objXmlDocument.SelectNodes("/chummer/" + _strNode + "s/" + _strNode + "[category = \"" + cboCategory.SelectedValue + "\" and (name = \"Essence Hole\" or name = \"Essence Antihole\" ) and (" + _objCharacter.Options.BookXPath() + ")]");
+            else if (_blnShowOnlySubsystems)
 				objXmlCyberwareList = _objXmlDocument.SelectNodes("/chummer/" + _strNode + "s/" + _strNode + "[category = \"" + cboCategory.SelectedValue + "\" and (" + _objCharacter.Options.BookXPath() + ") and contains(capacity, \"[\")]");
 			else
 				objXmlCyberwareList = _objXmlDocument.SelectNodes("/chummer/" + _strNode + "s/" + _strNode + "[category = \"" + cboCategory.SelectedValue + "\" and (" + _objCharacter.Options.BookXPath() + ")]");
@@ -1330,6 +1332,17 @@ namespace Chummer
 									strForbidden += "\n\t" + objCharacterCyberware.DisplayNameShort;
 								}
 								break;
+                            case "metatype":
+                                // Check if the character's Metatype is banned. 
+						        if (_objCharacter != null)
+						        {
+						            if (_objCharacter.Metatype == objXmlForbidden.InnerText)
+						            {
+						                blnRequirementForbidden = true;
+                                        strForbidden += "\n\t" + LanguageManager.Instance.GetString("Label_Metatype") + " " + _objCharacter.Metatype;
+                                    }
+						        }
+						        break;
 						}
 					}
 				}
