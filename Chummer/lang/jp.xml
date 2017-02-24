@@ -2811,6 +2811,10 @@
       <key>Label_FreeKnowledgeSkills</key>
       <text>初期知識技能点の残り:</text>
     </string>
+	<string>
+		<key>Label_CustomKnowledgeSkillsReminder</key>
+		<text>Remember, you can always write in custom skills and specializations!</text>
+	</string>
     <string>
       <key>Button_AddSkill</key>
       <text>技能を追加 (&amp;A)</text>
@@ -3470,7 +3474,11 @@
     </string>
     <string>
       <key>Label_Mugshot</key>
-      <text>顔写真: (210 × 310 ピクセル)</text>
+      <text>顔写真:</text>
+    </string>
+	<string>
+      <key>Label_MugshotDimensions</key>
+      <text>210 × 310 ピクセル</text>
     </string>
     <string>
       <key>Checkbox_Created</key>
@@ -3478,7 +3486,7 @@
     </string>
     <string>
       <key>Button_AddMugshot</key>
-      <text>追加/変更</text>
+      <text>追加</text>
     </string>
     <string>
       <key>Tip_CharacterCreated</key>
@@ -7008,7 +7016,7 @@
       <text>Val (Aug)</text>
     </string>
     <string>
-      <key>Tip_OptionsKnucks</key>
+      <key>Tip_OptionsUnarmedSkillImprovements</key>
       <text>Enabling this house rule allows Knucks to benefit from bonuses that apply to unarmed attacks including DV bonuses.</text>
     </string>
     <string>
@@ -7471,6 +7479,10 @@
 		<string>
 			<key>String_ExpenseLearnProgram</key>
 			<text>Learned AI Program</text>
+		</string>
+		<string>
+			<key>Message_DroneIllegalDowngrade</key>
+			<text>The following {0} drones have downgrades which decrease their attributes too far:</text>
 		</string>
 	<!-- End Region -->
   </strings>

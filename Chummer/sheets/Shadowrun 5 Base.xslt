@@ -634,9 +634,9 @@
 				</div>
 
 				<div class="block" id="LimitsBlock">
-					<table width="100%" cellspacing="0" cellpadding="0" class="tableborder">
+					<table width="100%" cellspacing="0" cellpadding="0">
 						<tr>
-							<td width="100%">
+							<td width="100%" class="tableborder">
 								<table width="100%" cellspacing="0" cellpadding="0" border="0">
 									<tr>
 										<td width="25%" style="text-align:center;" valign="top">
@@ -1565,10 +1565,10 @@
                       <td class="rowsummary" colspan="3">
                         AI PROGRAMS AND ADVANCED PROGRAMS<span
 												class="rowsummarybutton"
-												onClick="showhide(this,'ProgramBlock');"
+												onClick="showhide(this,'AIProgramBlock');"
 												colspan="1">Show: YES</span>
                         <span class="rowsummarybutton"
-												onClick="zalomit(this,'ProgramBlock');"
+												onClick="zalomit(this,'AIProgramBlock');"
 												colspan="1">Page Break: NO</span>
                       </td>
                     </tr>
@@ -1878,6 +1878,87 @@
 					</div>
 				</xsl:if>
 
+        <xsl:if test="hasothermugshots = 'yes'">
+          <div class="block" id="OtherMugshotsBlock">
+            <table width="100%" cellspacing="0" cellpadding="0" border="0">
+              <tr>
+                <td width="100%" class="tableborder">
+                  <table width="100%" cellspacing="0" cellpadding="0" border="0" style="empty-cells:show;">
+                    <tr>
+                      <td width="33%" style="text-align:center;">
+                        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="empty-cells:show;">
+                          <xsl:for-each select="othermugshots/mugshot[position() mod 3 = 1]">
+                            <tr>
+                              <td width="100%" style="text-align:center;">
+                                <img>
+                                  <xsl:attribute name="src">
+                                    data:image/png;base64,<xsl:value-of select='stringbase64' />
+                                  </xsl:attribute>
+                                </img>
+                              </td>
+                            </tr>
+                          </xsl:for-each>
+                        </table>
+                      </td>
+                      <td width="33%" style="text-align:center;">
+                        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="empty-cells:show;">
+                          <xsl:if test="count(othermugshots/mugshot[position() mod 3 = 2]) = 0">
+                            <tr><td></td></tr>
+                          </xsl:if>
+                          <xsl:for-each select="othermugshots/mugshot[position() mod 3 = 2]">
+                            <tr>
+                              <td width="100%" style="text-align:center;">
+                                <img>
+                                  <xsl:attribute name="src">
+                                    data:image/png;base64,<xsl:value-of select='stringbase64' />
+                                  </xsl:attribute>
+                                </img>
+                              </td>
+                            </tr>
+                          </xsl:for-each>
+                        </table>
+                      </td>
+                      <td width="33%" style="text-align:center;">
+                        <table width="100%" cellspacing="0" cellpadding="0" border="0" style="empty-cells:show;">
+                          <xsl:if test="count(othermugshots/mugshot[position() mod 3 = 0]) = 0">
+                            <tr><td></td></tr>
+                          </xsl:if>
+                          <xsl:for-each select="othermugshots/mugshot[position() mod 3 = 0]">
+                            <tr>
+                              <td width="100%" style="text-align:center;">
+                                <img>
+                                  <xsl:attribute name="src">
+                                    data:image/png;base64,<xsl:value-of select='stringbase64' />
+                                  </xsl:attribute>
+                                </img>
+                              </td>
+                            </tr>
+                          </xsl:for-each>
+                        </table>
+                      </td>
+                    </tr>
+                    
+                    <tr>
+                      <td class="rowsummary" colspan="3">
+                        OTHER MUGSHOTS <span
+												class="rowsummarybutton"
+												onClick="showhide(this,'ConceptBlock');"
+												colspan="1">Show: YES</span>
+                        <span class="rowsummarybutton"
+												onClick="zalomit(this,'ConceptBlock');"
+												colspan="1">Page Break: NO</span>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td class="hseparator"/>
+              </tr>
+            </table>
+          </div>
+        </xsl:if>
+
 				<xsl:if test="notes != ''">
 					<div class="block" id="NotesBlock">
 						<table width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -1934,7 +2015,6 @@
 												</tr>
 												<xsl:for-each
 												select="expenses/expense[type = 'Karma']">
-												<xsl:sort select="date"/>
 												<tr>
 												<td>
 												<xsl:value-of select="date"/>
@@ -1975,7 +2055,6 @@
 												</tr>
 												<xsl:for-each
 												select="expenses/expense[type = 'Nuyen']">
-												<xsl:sort select="date"/>
 												<tr>
 												<td>
 												<xsl:value-of select="date"/>
@@ -3600,9 +3679,10 @@
 												<xsl:value-of select="name"/>
 												<xsl:if test="extra != ''"> (<xsl:value-of
 												select="extra"/>)</xsl:if>
-												<xsl:if test="rating > 0"> Rating <xsl:value-of
-												select="rating"/>
-												</xsl:if>
+												<xsl:if test="rating > 0"> Rating <xsl:value-of select="rating"/></xsl:if>
+                        <xsl:if test="qty > 1">
+                          x<xsl:value-of select="qty"/>
+                        </xsl:if>
 												<xsl:if test="children/gear"> [<xsl:for-each
 												select="children/gear">
 												<xsl:sort select="name"/>
@@ -3612,7 +3692,9 @@
 												select="rating"/></xsl:if>
 												<xsl:if test="extra != ''"> (<xsl:value-of
 												select="extra"/>)</xsl:if>
-												<xsl:if test="position() != last()">; </xsl:if>
+                        <xsl:if test="qty > 1">x<xsl:value-of 
+                        select="qty"/></xsl:if>
+                      <xsl:if test="position() != last()">; </xsl:if>
 												</xsl:for-each>] </xsl:if>
 												<xsl:if test="position() != last()">; </xsl:if>
 												</xsl:for-each>) </xsl:if>
@@ -3729,7 +3811,12 @@
 				<xsl:text> </xsl:text>
 				<xsl:value-of select="rating"/>
 			</xsl:if>
-			<xsl:if test="extra != ''"> (<xsl:value-of select="extra"/>)</xsl:if>
+      <xsl:if test="extra != ''">
+        (<xsl:value-of select="extra"/>)
+      </xsl:if>
+      <xsl:if test="qty > 1">
+        x<xsl:value-of select="qty"/>
+      </xsl:if>
 			<xsl:if test="children/gear"> [<xsl:call-template name="gearplugin">
 					<xsl:with-param name="gear" select="."/>
 				</xsl:call-template>] </xsl:if>

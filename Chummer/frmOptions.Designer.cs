@@ -28,7 +28,6 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-            this.components = new System.ComponentModel.Container();
             this.cmdOK = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.chkConfirmDelete = new System.Windows.Forms.CheckBox();
@@ -96,12 +95,13 @@
             this.chkEnforceSkillMaximumModifiedRating = new System.Windows.Forms.CheckBox();
             this.chkConfirmKarmaExpense = new System.Windows.Forms.CheckBox();
             this.chkPrintExpenses = new System.Windows.Forms.CheckBox();
-            this.chkKnucks = new System.Windows.Forms.CheckBox();
+            this.chkUnarmedSkillImprovements = new System.Windows.Forms.CheckBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabGeneral = new System.Windows.Forms.TabPage();
             this.cmdEnableSourcebooks = new System.Windows.Forms.Button();
             this.tabControl2 = new System.Windows.Forms.TabControl();
             this.tabGlobal = new System.Windows.Forms.TabPage();
+            this.chkLiveCustomData = new System.Windows.Forms.CheckBox();
             this.grpSelectedSourcebook = new System.Windows.Forms.GroupBox();
             this.lblPDFLocation = new System.Windows.Forms.Label();
             this.txtPDFLocation = new System.Windows.Forms.TextBox();
@@ -158,6 +158,10 @@
             this.cmdUploadPastebin = new System.Windows.Forms.Button();
             this.treSourcebook = new System.Windows.Forms.TreeView();
             this.tabKarmaCosts = new System.Windows.Forms.TabPage();
+            this.nudKarmaNewAIAdvancedProgram = new System.Windows.Forms.NumericUpDown();
+            this.nudKarmaNewAIProgram = new System.Windows.Forms.NumericUpDown();
+            this.lblKarmaNewAIAdvancedProgram = new System.Windows.Forms.Label();
+            this.lblKarmaNewAIProgram = new System.Windows.Forms.Label();
             this.cmdRestoreDefaultsKarma = new System.Windows.Forms.Button();
             this.lblKarmaWeaponFocusExtra = new System.Windows.Forms.Label();
             this.nudKarmaWeaponFocus = new System.Windows.Forms.NumericUpDown();
@@ -215,6 +219,7 @@
             this.nudKarmaJoinGroup = new System.Windows.Forms.NumericUpDown();
             this.lblKarmaJoinGroup = new System.Windows.Forms.Label();
             this.tabOptionalRules = new System.Windows.Forms.TabPage();
+            this.chkDronemodsMaximumPilot = new System.Windows.Forms.CheckBox();
             this.chkDronemods = new System.Windows.Forms.CheckBox();
             this.chkMissions = new System.Windows.Forms.CheckBox();
             this.chkContactPoints = new System.Windows.Forms.CheckBox();
@@ -234,6 +239,8 @@
             this.chkCapSkillRating = new System.Windows.Forms.CheckBox();
             this.chkNoSingleArmorEncumbrance = new System.Windows.Forms.CheckBox();
             this.tabHouseRules = new System.Windows.Forms.TabPage();
+            this.chkPrioritySpellsAsAdeptPowers = new System.Windows.Forms.CheckBox();
+            this.chkFreeMartialArtSpecialization = new System.Windows.Forms.CheckBox();
             this.chkMysAdPp = new System.Windows.Forms.CheckBox();
             this.chkAlternateMetatypeAttributeKarma = new System.Windows.Forms.CheckBox();
             this.label4 = new System.Windows.Forms.Label();
@@ -254,8 +261,6 @@
             this.label2 = new System.Windows.Forms.Label();
             this.nudContactMultiplier = new System.Windows.Forms.NumericUpDown();
             this.chkContactMultiplier = new System.Windows.Forms.CheckBox();
-            this.chkFreeKarmaContacts = new System.Windows.Forms.CheckBox();
-            this.chkFreeKarmaKnowledge = new System.Windows.Forms.CheckBox();
             this.chkAllowInitiation = new System.Windows.Forms.CheckBox();
             this.chkStrictSkillGroups = new System.Windows.Forms.CheckBox();
             this.chkDontDoubleQualityPurchases = new System.Windows.Forms.CheckBox();
@@ -265,11 +270,8 @@
             this.lblSetting = new System.Windows.Forms.Label();
             this.lblSettingName = new System.Windows.Forms.Label();
             this.txtSettingName = new System.Windows.Forms.TextBox();
-            this.tipTooltip = new System.Windows.Forms.ToolTip(this.components);
-            this.lblKarmaNewAIProgram = new System.Windows.Forms.Label();
-            this.lblKarmaNewAIAdvancedProgram = new System.Windows.Forms.Label();
-            this.nudKarmaNewAIProgram = new System.Windows.Forms.NumericUpDown();
-            this.nudKarmaNewAIAdvancedProgram = new System.Windows.Forms.NumericUpDown();
+            this.tipTooltip = new TheArtOfDev.HtmlRenderer.WinForms.HtmlToolTip();
+            this.chkEducationQualitiesApplyOnChargenKarma = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.nudKarmaComplexFormOption)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKarmaMetamagic)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKarmaInitiation)).BeginInit();
@@ -304,6 +306,8 @@
             this.tabPage1.SuspendLayout();
             this.tabPage3.SuspendLayout();
             this.tabKarmaCosts.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudKarmaNewAIAdvancedProgram)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudKarmaNewAIProgram)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKarmaWeaponFocus)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKarmaSymbolicLinkFocus)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKarmaSustainingFocus)).BeginInit();
@@ -329,8 +333,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.nudDroneArmorMultiplier)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKnowledgeMultiplier)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudContactMultiplier)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudKarmaNewAIProgram)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudKarmaNewAIAdvancedProgram)).BeginInit();
             this.SuspendLayout();
             // 
             // cmdOK
@@ -993,19 +995,19 @@
             this.chkPrintExpenses.UseVisualStyleBackColor = true;
             this.chkPrintExpenses.CheckedChanged += new System.EventHandler(this.OptionsChanged);
             // 
-            // chkKnucks
+            // chkUnarmedSkillImprovements
             // 
-            this.chkKnucks.AutoSize = true;
-            this.chkKnucks.Location = new System.Drawing.Point(8, 26);
-            this.chkKnucks.Name = "chkKnucks";
-            this.chkKnucks.Size = new System.Drawing.Size(245, 17);
-            this.chkKnucks.TabIndex = 0;
-            this.chkKnucks.Tag = "Checkbox_Options_Knucks";
-            this.chkKnucks.Text = "Knucks Benefit from Unarmed Attack Bonuses";
-            this.tipTooltip.SetToolTip(this.chkKnucks, "Enabling this house rule allows Knucks to benefit from bonuses that apply to unar" +
+            this.chkUnarmedSkillImprovements.AutoSize = true;
+            this.chkUnarmedSkillImprovements.Location = new System.Drawing.Point(8, 26);
+            this.chkUnarmedSkillImprovements.Name = "chkUnarmedSkillImprovements";
+            this.chkUnarmedSkillImprovements.Size = new System.Drawing.Size(372, 17);
+            this.chkUnarmedSkillImprovements.TabIndex = 0;
+            this.chkUnarmedSkillImprovements.Tag = "Checkbox_Options_UnarmedSkillImprovements";
+            this.chkUnarmedSkillImprovements.Text = "Unarmed Combat-based Weapons Benefit from Unarmed Attack Bonuses";
+            this.tipTooltip.SetToolTip(this.chkUnarmedSkillImprovements, "Enabling this house rule allows Knucks to benefit from bonuses that apply to unar" +
         "med attacks including DV bonuses.");
-            this.chkKnucks.UseVisualStyleBackColor = true;
-            this.chkKnucks.CheckedChanged += new System.EventHandler(this.OptionsChanged);
+            this.chkUnarmedSkillImprovements.UseVisualStyleBackColor = true;
+            this.chkUnarmedSkillImprovements.CheckedChanged += new System.EventHandler(this.OptionsChanged);
             // 
             // tabControl1
             // 
@@ -1063,6 +1065,7 @@
             // tabGlobal
             // 
             this.tabGlobal.BackColor = System.Drawing.SystemColors.Control;
+            this.tabGlobal.Controls.Add(this.chkLiveCustomData);
             this.tabGlobal.Controls.Add(this.grpSelectedSourcebook);
             this.tabGlobal.Controls.Add(this.cboPDFParameters);
             this.tabGlobal.Controls.Add(this.chkPreferNightlyBuilds);
@@ -1090,6 +1093,18 @@
             this.tabGlobal.TabIndex = 0;
             this.tabGlobal.Tag = "Tab_Options_Global";
             this.tabGlobal.Text = "Global";
+            // 
+            // chkLiveCustomData
+            // 
+            this.chkLiveCustomData.AutoSize = true;
+            this.chkLiveCustomData.Location = new System.Drawing.Point(9, 130);
+            this.chkLiveCustomData.Name = "chkLiveCustomData";
+            this.chkLiveCustomData.Size = new System.Drawing.Size(307, 17);
+            this.chkLiveCustomData.TabIndex = 28;
+            this.chkLiveCustomData.Tag = "Checkbox_Options_Live_CustomData";
+            this.chkLiveCustomData.Text = "Allow Live Custom Data Updates from customdata Directory";
+            this.chkLiveCustomData.UseVisualStyleBackColor = true;
+            this.chkLiveCustomData.CheckedChanged += new System.EventHandler(this.OptionsChanged);
             // 
             // grpSelectedSourcebook
             // 
@@ -1870,6 +1885,40 @@
             this.tabKarmaCosts.Tag = "Tab_Options_KarmaCosts";
             this.tabKarmaCosts.Text = "Karma Costs";
             // 
+            // nudKarmaNewAIAdvancedProgram
+            // 
+            this.nudKarmaNewAIAdvancedProgram.Location = new System.Drawing.Point(560, 524);
+            this.nudKarmaNewAIAdvancedProgram.Name = "nudKarmaNewAIAdvancedProgram";
+            this.nudKarmaNewAIAdvancedProgram.Size = new System.Drawing.Size(47, 20);
+            this.nudKarmaNewAIAdvancedProgram.TabIndex = 112;
+            // 
+            // nudKarmaNewAIProgram
+            // 
+            this.nudKarmaNewAIProgram.Location = new System.Drawing.Point(560, 498);
+            this.nudKarmaNewAIProgram.Name = "nudKarmaNewAIProgram";
+            this.nudKarmaNewAIProgram.Size = new System.Drawing.Size(47, 20);
+            this.nudKarmaNewAIProgram.TabIndex = 111;
+            // 
+            // lblKarmaNewAIAdvancedProgram
+            // 
+            this.lblKarmaNewAIAdvancedProgram.AutoSize = true;
+            this.lblKarmaNewAIAdvancedProgram.Location = new System.Drawing.Point(402, 526);
+            this.lblKarmaNewAIAdvancedProgram.Name = "lblKarmaNewAIAdvancedProgram";
+            this.lblKarmaNewAIAdvancedProgram.Size = new System.Drawing.Size(142, 13);
+            this.lblKarmaNewAIAdvancedProgram.TabIndex = 110;
+            this.lblKarmaNewAIAdvancedProgram.Tag = "Label_Options_NewAIAdvancedProgram";
+            this.lblKarmaNewAIAdvancedProgram.Text = "New Advanced Program (AI)";
+            // 
+            // lblKarmaNewAIProgram
+            // 
+            this.lblKarmaNewAIProgram.AutoSize = true;
+            this.lblKarmaNewAIProgram.Location = new System.Drawing.Point(402, 500);
+            this.lblKarmaNewAIProgram.Name = "lblKarmaNewAIProgram";
+            this.lblKarmaNewAIProgram.Size = new System.Drawing.Size(90, 13);
+            this.lblKarmaNewAIProgram.TabIndex = 109;
+            this.lblKarmaNewAIProgram.Tag = "Label_Options_NewAIProgram";
+            this.lblKarmaNewAIProgram.Text = "New Program (AI)";
+            // 
             // cmdRestoreDefaultsKarma
             // 
             this.cmdRestoreDefaultsKarma.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -2446,6 +2495,7 @@
             // tabOptionalRules
             // 
             this.tabOptionalRules.BackColor = System.Drawing.SystemColors.Control;
+            this.tabOptionalRules.Controls.Add(this.chkDronemodsMaximumPilot);
             this.tabOptionalRules.Controls.Add(this.chkDronemods);
             this.tabOptionalRules.Controls.Add(this.chkMissions);
             this.tabOptionalRules.Controls.Add(this.chkContactPoints);
@@ -2471,6 +2521,18 @@
             this.tabOptionalRules.TabIndex = 2;
             this.tabOptionalRules.Tag = "Tab_Options_OptionalRules";
             this.tabOptionalRules.Text = "Optional Rules";
+            // 
+            // chkDronemodsMaximumPilot
+            // 
+            this.chkDronemodsMaximumPilot.AutoSize = true;
+            this.chkDronemodsMaximumPilot.Location = new System.Drawing.Point(28, 98);
+            this.chkDronemodsMaximumPilot.Name = "chkDronemodsMaximumPilot";
+            this.chkDronemodsMaximumPilot.Size = new System.Drawing.Size(214, 17);
+            this.chkDronemodsMaximumPilot.TabIndex = 35;
+            this.chkDronemodsMaximumPilot.Tag = "Checkbox_Options_Dronemods_Pilot";
+            this.chkDronemodsMaximumPilot.Text = "Use Maximum Attribute for Pilot Attribute";
+            this.chkDronemodsMaximumPilot.UseVisualStyleBackColor = true;
+            this.chkDronemodsMaximumPilot.CheckedChanged += new System.EventHandler(this.OptionsChanged);
             // 
             // chkDronemods
             // 
@@ -2713,6 +2775,9 @@
             // 
             this.tabHouseRules.AutoScroll = true;
             this.tabHouseRules.BackColor = System.Drawing.SystemColors.Control;
+            this.tabHouseRules.Controls.Add(this.chkEducationQualitiesApplyOnChargenKarma);
+            this.tabHouseRules.Controls.Add(this.chkPrioritySpellsAsAdeptPowers);
+            this.tabHouseRules.Controls.Add(this.chkFreeMartialArtSpecialization);
             this.tabHouseRules.Controls.Add(this.chkMysAdPp);
             this.tabHouseRules.Controls.Add(this.chkAlternateMetatypeAttributeKarma);
             this.tabHouseRules.Controls.Add(this.label4);
@@ -2733,20 +2798,42 @@
             this.tabHouseRules.Controls.Add(this.label2);
             this.tabHouseRules.Controls.Add(this.nudContactMultiplier);
             this.tabHouseRules.Controls.Add(this.chkContactMultiplier);
-            this.tabHouseRules.Controls.Add(this.chkFreeKarmaContacts);
-            this.tabHouseRules.Controls.Add(this.chkFreeKarmaKnowledge);
             this.tabHouseRules.Controls.Add(this.chkAllowInitiation);
             this.tabHouseRules.Controls.Add(this.chkStrictSkillGroups);
             this.tabHouseRules.Controls.Add(this.chkDontDoubleQualityPurchases);
             this.tabHouseRules.Controls.Add(this.chkCyberlegMovement);
             this.tabHouseRules.Controls.Add(this.chkIgnoreArt);
-            this.tabHouseRules.Controls.Add(this.chkKnucks);
+            this.tabHouseRules.Controls.Add(this.chkUnarmedSkillImprovements);
             this.tabHouseRules.Location = new System.Drawing.Point(4, 22);
             this.tabHouseRules.Name = "tabHouseRules";
             this.tabHouseRules.Size = new System.Drawing.Size(807, 562);
             this.tabHouseRules.TabIndex = 3;
             this.tabHouseRules.Tag = "Tab_Options_HouseRules";
             this.tabHouseRules.Text = "House Rules";
+            // 
+            // chkPrioritySpellsAsAdeptPowers
+            // 
+            this.chkPrioritySpellsAsAdeptPowers.AutoSize = true;
+            this.chkPrioritySpellsAsAdeptPowers.Location = new System.Drawing.Point(8, 325);
+            this.chkPrioritySpellsAsAdeptPowers.Name = "chkPrioritySpellsAsAdeptPowers";
+            this.chkPrioritySpellsAsAdeptPowers.Size = new System.Drawing.Size(325, 17);
+            this.chkPrioritySpellsAsAdeptPowers.TabIndex = 31;
+            this.chkPrioritySpellsAsAdeptPowers.Tag = "Checkbox_Option_PrioritySpellsAsAdeptPowers";
+            this.chkPrioritySpellsAsAdeptPowers.Text = "Allow spending of free spells from Magic Priority as power points";
+            this.chkPrioritySpellsAsAdeptPowers.UseVisualStyleBackColor = true;
+            this.chkPrioritySpellsAsAdeptPowers.CheckedChanged += new System.EventHandler(this.OptionsChanged);
+            // 
+            // chkFreeMartialArtSpecialization
+            // 
+            this.chkFreeMartialArtSpecialization.AutoSize = true;
+            this.chkFreeMartialArtSpecialization.Location = new System.Drawing.Point(8, 302);
+            this.chkFreeMartialArtSpecialization.Name = "chkFreeMartialArtSpecialization";
+            this.chkFreeMartialArtSpecialization.Size = new System.Drawing.Size(281, 17);
+            this.chkFreeMartialArtSpecialization.TabIndex = 30;
+            this.chkFreeMartialArtSpecialization.Tag = "Checkbox_Option_FreeMartialArtSpecialization";
+            this.chkFreeMartialArtSpecialization.Text = "Allow Martial Arts to grant a free specialisation in a skill";
+            this.chkFreeMartialArtSpecialization.UseVisualStyleBackColor = true;
+            this.chkFreeMartialArtSpecialization.CheckedChanged += new System.EventHandler(this.OptionsChanged);
             // 
             // chkMysAdPp
             // 
@@ -2813,12 +2900,12 @@
             this.chkDroneArmorMultiplier.Tag = "Checkbox_Options_DroneArmorMultiplier";
             this.chkDroneArmorMultiplier.Text = "Limit Drone Armor Enhance ment to Drone Body";
             this.chkDroneArmorMultiplier.UseVisualStyleBackColor = true;
-            this.chkDroneArmorMultiplier.CheckedChanged += new System.EventHandler(this.OptionsChanged);
+            this.chkDroneArmorMultiplier.CheckedChanged += new System.EventHandler(this.chkDroneArmorMultiplier_CheckedChanged);
             // 
             // chkUseTotalValueForFreeKnowledge
             // 
             this.chkUseTotalValueForFreeKnowledge.AutoSize = true;
-            this.chkUseTotalValueForFreeKnowledge.Location = new System.Drawing.Point(364, 95);
+            this.chkUseTotalValueForFreeKnowledge.Location = new System.Drawing.Point(476, 76);
             this.chkUseTotalValueForFreeKnowledge.Name = "chkUseTotalValueForFreeKnowledge";
             this.chkUseTotalValueForFreeKnowledge.Size = new System.Drawing.Size(269, 17);
             this.chkUseTotalValueForFreeKnowledge.TabIndex = 23;
@@ -2830,7 +2917,7 @@
             // chkUseTotalValueForFreeContacts
             // 
             this.chkUseTotalValueForFreeContacts.AutoSize = true;
-            this.chkUseTotalValueForFreeContacts.Location = new System.Drawing.Point(366, 26);
+            this.chkUseTotalValueForFreeContacts.Location = new System.Drawing.Point(476, 26);
             this.chkUseTotalValueForFreeContacts.Name = "chkUseTotalValueForFreeContacts";
             this.chkUseTotalValueForFreeContacts.Size = new System.Drawing.Size(261, 17);
             this.chkUseTotalValueForFreeContacts.TabIndex = 22;
@@ -2894,7 +2981,7 @@
             // 
             this.chkExceedNegativeQualitiesLimit.AutoSize = true;
             this.chkExceedNegativeQualitiesLimit.Enabled = false;
-            this.chkExceedNegativeQualitiesLimit.Location = new System.Drawing.Point(384, 187);
+            this.chkExceedNegativeQualitiesLimit.Location = new System.Drawing.Point(476, 145);
             this.chkExceedNegativeQualitiesLimit.Name = "chkExceedNegativeQualitiesLimit";
             this.chkExceedNegativeQualitiesLimit.Size = new System.Drawing.Size(308, 17);
             this.chkExceedNegativeQualitiesLimit.TabIndex = 17;
@@ -2906,19 +2993,19 @@
             // chkExceedNegativeQualities
             // 
             this.chkExceedNegativeQualities.AutoSize = true;
-            this.chkExceedNegativeQualities.Location = new System.Drawing.Point(366, 164);
+            this.chkExceedNegativeQualities.Location = new System.Drawing.Point(458, 122);
             this.chkExceedNegativeQualities.Name = "chkExceedNegativeQualities";
             this.chkExceedNegativeQualities.Size = new System.Drawing.Size(278, 17);
             this.chkExceedNegativeQualities.TabIndex = 16;
             this.chkExceedNegativeQualities.Tag = "Checkbox_Options_ExceedNegativeQualities";
             this.chkExceedNegativeQualities.Text = "Allow characters to exceed their Negative Quality limit";
             this.chkExceedNegativeQualities.UseVisualStyleBackColor = true;
-            this.chkExceedNegativeQualities.CheckedChanged += new System.EventHandler(this.OptionsChanged);
+            this.chkExceedNegativeQualities.CheckedChanged += new System.EventHandler(this.chkExceedNegativeQualities_CheckedChanged);
             // 
             // chkExceedPositiveQualities
             // 
             this.chkExceedPositiveQualities.AutoSize = true;
-            this.chkExceedPositiveQualities.Location = new System.Drawing.Point(366, 141);
+            this.chkExceedPositiveQualities.Location = new System.Drawing.Point(458, 99);
             this.chkExceedPositiveQualities.Name = "chkExceedPositiveQualities";
             this.chkExceedPositiveQualities.Size = new System.Drawing.Size(272, 17);
             this.chkExceedPositiveQualities.TabIndex = 15;
@@ -2930,7 +3017,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(594, 73);
+            this.label3.Location = new System.Drawing.Point(686, 54);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(12, 13);
             this.label3.TabIndex = 13;
@@ -2939,7 +3026,7 @@
             // nudKnowledgeMultiplier
             // 
             this.nudKnowledgeMultiplier.Enabled = false;
-            this.nudKnowledgeMultiplier.Location = new System.Drawing.Point(612, 69);
+            this.nudKnowledgeMultiplier.Location = new System.Drawing.Point(704, 50);
             this.nudKnowledgeMultiplier.Maximum = new decimal(new int[] {
             10,
             0,
@@ -2963,7 +3050,7 @@
             // chkKnowledgeMultiplier
             // 
             this.chkKnowledgeMultiplier.AutoSize = true;
-            this.chkKnowledgeMultiplier.Location = new System.Drawing.Point(366, 72);
+            this.chkKnowledgeMultiplier.Location = new System.Drawing.Point(458, 53);
             this.chkKnowledgeMultiplier.Name = "chkKnowledgeMultiplier";
             this.chkKnowledgeMultiplier.Size = new System.Drawing.Size(231, 17);
             this.chkKnowledgeMultiplier.TabIndex = 12;
@@ -2975,7 +3062,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(594, 4);
+            this.label2.Location = new System.Drawing.Point(686, 4);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(12, 13);
             this.label2.TabIndex = 10;
@@ -2984,7 +3071,7 @@
             // nudContactMultiplier
             // 
             this.nudContactMultiplier.Enabled = false;
-            this.nudContactMultiplier.Location = new System.Drawing.Point(612, 0);
+            this.nudContactMultiplier.Location = new System.Drawing.Point(704, 0);
             this.nudContactMultiplier.Maximum = new decimal(new int[] {
             10,
             0,
@@ -3008,7 +3095,7 @@
             // chkContactMultiplier
             // 
             this.chkContactMultiplier.AutoSize = true;
-            this.chkContactMultiplier.Location = new System.Drawing.Point(366, 3);
+            this.chkContactMultiplier.Location = new System.Drawing.Point(458, 3);
             this.chkContactMultiplier.Name = "chkContactMultiplier";
             this.chkContactMultiplier.Size = new System.Drawing.Size(179, 17);
             this.chkContactMultiplier.TabIndex = 9;
@@ -3016,30 +3103,6 @@
             this.chkContactMultiplier.Text = "Free Contacts equal to Charisma";
             this.chkContactMultiplier.UseVisualStyleBackColor = true;
             this.chkContactMultiplier.CheckedChanged += new System.EventHandler(this.chkContactMultiplier_CheckedChanged);
-            // 
-            // chkFreeKarmaContacts
-            // 
-            this.chkFreeKarmaContacts.AutoSize = true;
-            this.chkFreeKarmaContacts.Location = new System.Drawing.Point(366, 49);
-            this.chkFreeKarmaContacts.Name = "chkFreeKarmaContacts";
-            this.chkFreeKarmaContacts.Size = new System.Drawing.Size(234, 17);
-            this.chkFreeKarmaContacts.TabIndex = 0;
-            this.chkFreeKarmaContacts.Tag = "Checkbox_Options_FreeKarmaContacts";
-            this.chkFreeKarmaContacts.Text = "Karma Build: Free Contact Points like Priority";
-            this.chkFreeKarmaContacts.UseVisualStyleBackColor = true;
-            this.chkFreeKarmaContacts.CheckedChanged += new System.EventHandler(this.OptionsChanged);
-            // 
-            // chkFreeKarmaKnowledge
-            // 
-            this.chkFreeKarmaKnowledge.AutoSize = true;
-            this.chkFreeKarmaKnowledge.Location = new System.Drawing.Point(366, 118);
-            this.chkFreeKarmaKnowledge.Name = "chkFreeKarmaKnowledge";
-            this.chkFreeKarmaKnowledge.Size = new System.Drawing.Size(245, 17);
-            this.chkFreeKarmaKnowledge.TabIndex = 4;
-            this.chkFreeKarmaKnowledge.Tag = "Checkbox_Options_FreeKnowledgeSkills";
-            this.chkFreeKarmaKnowledge.Text = "Karma Build: Free Knowledge Skills like Priority";
-            this.chkFreeKarmaKnowledge.UseVisualStyleBackColor = true;
-            this.chkFreeKarmaKnowledge.CheckedChanged += new System.EventHandler(this.OptionsChanged);
             // 
             // chkAllowInitiation
             // 
@@ -3146,43 +3209,26 @@
             // 
             // tipTooltip
             // 
+            this.tipTooltip.AllowLinksHandling = true;
             this.tipTooltip.AutoPopDelay = 15000;
+            this.tipTooltip.BaseStylesheet = null;
             this.tipTooltip.InitialDelay = 500;
+            this.tipTooltip.MaximumSize = new System.Drawing.Size(0, 0);
+            this.tipTooltip.OwnerDraw = true;
             this.tipTooltip.ReshowDelay = 100;
+            this.tipTooltip.TooltipCssClass = "htmltooltip";
             // 
-            // lblKarmaNewAIProgram
+            // chkEducationQualitiesApplyOnChargenKarma
             // 
-            this.lblKarmaNewAIProgram.AutoSize = true;
-            this.lblKarmaNewAIProgram.Location = new System.Drawing.Point(402, 500);
-            this.lblKarmaNewAIProgram.Name = "lblKarmaNewAIProgram";
-            this.lblKarmaNewAIProgram.Size = new System.Drawing.Size(90, 13);
-            this.lblKarmaNewAIProgram.TabIndex = 109;
-            this.lblKarmaNewAIProgram.Tag = "Label_Options_NewAIProgram";
-            this.lblKarmaNewAIProgram.Text = "New Program (AI)";
-            // 
-            // lblKarmaNewAIAdvancedProgram
-            // 
-            this.lblKarmaNewAIAdvancedProgram.AutoSize = true;
-            this.lblKarmaNewAIAdvancedProgram.Location = new System.Drawing.Point(402, 526);
-            this.lblKarmaNewAIAdvancedProgram.Name = "lblKarmaNewAIAdvancedProgram";
-            this.lblKarmaNewAIAdvancedProgram.Size = new System.Drawing.Size(142, 13);
-            this.lblKarmaNewAIAdvancedProgram.TabIndex = 110;
-            this.lblKarmaNewAIAdvancedProgram.Tag = "Label_Options_NewAIAdvancedProgram";
-            this.lblKarmaNewAIAdvancedProgram.Text = "New Advanced Program (AI)";
-            // 
-            // nudKarmaNewAIProgram
-            // 
-            this.nudKarmaNewAIProgram.Location = new System.Drawing.Point(560, 498);
-            this.nudKarmaNewAIProgram.Name = "nudKarmaNewAIProgram";
-            this.nudKarmaNewAIProgram.Size = new System.Drawing.Size(47, 20);
-            this.nudKarmaNewAIProgram.TabIndex = 111;
-            // 
-            // nudKarmaNewAIAdvancedProgram
-            // 
-            this.nudKarmaNewAIAdvancedProgram.Location = new System.Drawing.Point(560, 524);
-            this.nudKarmaNewAIAdvancedProgram.Name = "nudKarmaNewAIAdvancedProgram";
-            this.nudKarmaNewAIAdvancedProgram.Size = new System.Drawing.Size(47, 20);
-            this.nudKarmaNewAIAdvancedProgram.TabIndex = 112;
+            this.chkEducationQualitiesApplyOnChargenKarma.AutoSize = true;
+            this.chkEducationQualitiesApplyOnChargenKarma.Location = new System.Drawing.Point(8, 348);
+            this.chkEducationQualitiesApplyOnChargenKarma.Name = "chkEducationQualitiesApplyOnChargenKarma";
+            this.chkEducationQualitiesApplyOnChargenKarma.Size = new System.Drawing.Size(381, 17);
+            this.chkEducationQualitiesApplyOnChargenKarma.TabIndex = 32;
+            this.chkEducationQualitiesApplyOnChargenKarma.Tag = "Checkbox_Option_EducationQualitiesApplyOnChargenKarma";
+            this.chkEducationQualitiesApplyOnChargenKarma.Text = "Education qualities give karma discount for knowledge skills in create mode";
+            this.chkEducationQualitiesApplyOnChargenKarma.UseVisualStyleBackColor = true;
+            this.chkEducationQualitiesApplyOnChargenKarma.CheckedChanged += new System.EventHandler(this.OptionsChanged);
             // 
             // frmOptions
             // 
@@ -3247,6 +3293,8 @@
             this.tabPage3.ResumeLayout(false);
             this.tabKarmaCosts.ResumeLayout(false);
             this.tabKarmaCosts.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudKarmaNewAIAdvancedProgram)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudKarmaNewAIProgram)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKarmaWeaponFocus)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKarmaSymbolicLinkFocus)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKarmaSustainingFocus)).EndInit();
@@ -3274,8 +3322,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.nudDroneArmorMultiplier)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudKnowledgeMultiplier)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudContactMultiplier)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudKarmaNewAIProgram)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudKarmaNewAIAdvancedProgram)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -3347,7 +3393,7 @@
 		private System.Windows.Forms.NumericUpDown nudKarmaMetamagic;
 		private System.Windows.Forms.Label lblKarmaMetamagic;
 		private System.Windows.Forms.CheckBox chkPrintExpenses;
-        private System.Windows.Forms.CheckBox chkKnucks;
+        private System.Windows.Forms.CheckBox chkUnarmedSkillImprovements;
 		private System.Windows.Forms.Label lblKarmaComplexFormOptionExtra;
 		private System.Windows.Forms.NumericUpDown nudKarmaComplexFormOption;
         private System.Windows.Forms.Label lblKarmaComplexFormOption;
@@ -3481,10 +3527,8 @@
         private System.Windows.Forms.CheckBox chkCyberlegMovement;
         private System.Windows.Forms.CheckBox chkDontDoubleQualityPurchases;
         private System.Windows.Forms.CheckBox chkStrictSkillGroups;
-        private System.Windows.Forms.ToolTip tipTooltip;
+        private TheArtOfDev.HtmlRenderer.WinForms.HtmlToolTip tipTooltip;
         private System.Windows.Forms.CheckBox chkAllowInitiation;
-        private System.Windows.Forms.CheckBox chkFreeKarmaContacts;
-        private System.Windows.Forms.CheckBox chkFreeKarmaKnowledge;
         private System.Windows.Forms.Label lblPDFParametersLabel;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.NumericUpDown nudKnowledgeMultiplier;
@@ -3524,5 +3568,10 @@
         private System.Windows.Forms.NumericUpDown nudKarmaNewAIProgram;
         private System.Windows.Forms.Label lblKarmaNewAIAdvancedProgram;
         private System.Windows.Forms.Label lblKarmaNewAIProgram;
+		private System.Windows.Forms.CheckBox chkFreeMartialArtSpecialization;
+        private System.Windows.Forms.CheckBox chkDronemodsMaximumPilot;
+        private System.Windows.Forms.CheckBox chkPrioritySpellsAsAdeptPowers;
+        private System.Windows.Forms.CheckBox chkLiveCustomData;
+        private System.Windows.Forms.CheckBox chkEducationQualitiesApplyOnChargenKarma;
     }
 }

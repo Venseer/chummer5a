@@ -67,11 +67,11 @@ namespace Chummer
 			List<ListItem> lstDVBase = new List<ListItem>();
 			ListItem objHalfStrength = new ListItem();
 			objHalfStrength.Value = "(STR/2)";
-			objHalfStrength.Name = "(" + LanguageManager.Instance.GetString("String_AttributeSTRShort") + "/2)";
+			objHalfStrength.Name = "(" + _objCharacter.STR.DisplayAbbrev + "/2)";
 			lstDVBase.Add(objHalfStrength);
 			ListItem objStrength = new ListItem();
 			objStrength.Value = "(STR)";
-			objStrength.Name = "(" + LanguageManager.Instance.GetString("String_AttributeSTRShort");
+			objStrength.Name = $"({_objCharacter.STR.DisplayAbbrev})";
 			lstDVBase.Add(objStrength);
 			for (int i = 1; i <= 20; i++)
 			{
@@ -92,26 +92,32 @@ namespace Chummer
 			objDVStun.Name = LanguageManager.Instance.GetString("String_DamageStun");
 			lstDVType.Add(objDVStun);
 
-			// Bind the Lists to the ComboBoxes.
-			cboSkill.ValueMember = "Value";
+            // Bind the Lists to the ComboBoxes.
+            cboSkill.BeginUpdate();
+            cboSkill.ValueMember = "Value";
 			cboSkill.DisplayMember = "Name";
 			cboSkill.DataSource = lstSkills;
 			cboSkill.SelectedIndex = 0;
+            cboSkill.EndUpdate();
 
-			cboDVBase.ValueMember = "Value";
+            cboDVBase.BeginUpdate();
+            cboDVBase.ValueMember = "Value";
 			cboDVBase.DisplayMember = "Name";
 			cboDVBase.DataSource = lstDVBase;
 			cboDVBase.SelectedIndex = 0;
+            cboDVBase.EndUpdate();
 
-			cboDVType.ValueMember = "Value";
+            cboDVType.BeginUpdate();
+            cboDVType.ValueMember = "Value";
 			cboDVType.DisplayMember = "Name";
 			cboDVType.DataSource = lstDVType;
 			cboDVType.SelectedIndex = 0;
-		}
+            cboDVType.EndUpdate();
+        }
 
 		private void cmdCancel_Click(object sender, EventArgs e)
 		{
-			this.DialogResult = DialogResult.Cancel;
+			DialogResult = DialogResult.Cancel;
 		}
 
 		private void cmdOK_Click(object sender, EventArgs e)
@@ -144,20 +150,20 @@ namespace Chummer
 			if (Convert.ToInt32(nudDVMod.Value) != 0)
 			{
 				if (nudDVMod.Value < 0)
-					strDamage += nudDVMod.Value.ToString();
+					strDamage += nudDVMod.Value.ToString(GlobalOptions.InvariantCultureInfo);
 				else
-					strDamage += "+" + nudDVMod.Value.ToString();
+					strDamage += "+" + nudDVMod.Value.ToString(GlobalOptions.InvariantCultureInfo);
 			}
 			strDamage += cboDVType.SelectedValue.ToString();
 
 			// Create the AP value.
-			string strAP = "";
+			string strAP = string.Empty;
 			if (nudAP.Value == 0)
 				strAP = "0";
 			else if (nudAP.Value > 0)
-				strAP = "+" + nudAP.Value.ToString();
+				strAP = "+" + nudAP.Value.ToString(GlobalOptions.InvariantCultureInfo);
 			else
-				strAP = nudAP.Value.ToString();
+				strAP = nudAP.Value.ToString(GlobalOptions.InvariantCultureInfo);
 
 			// Get the information for the Natural Weapon Critter Power.
 			XmlNode objPower = _objXmlPowersDocument.SelectSingleNode("/chummer/powers/power[name = \"Natural Weapon\"]");
@@ -179,7 +185,7 @@ namespace Chummer
 			_objWeapon.Source = objPower["source"].InnerText;
 			_objWeapon.Page = objPower["page"].InnerText;
 
-			this.DialogResult = DialogResult.OK;
+			DialogResult = DialogResult.OK;
 		}
 		#endregion
 

@@ -21,6 +21,7 @@ namespace Chummer.UI.Skills
 			{
 				components.Dispose();
 			}
+			_italic.Dispose();
 			base.Dispose(disposing);
 		}
 
@@ -47,7 +48,7 @@ namespace Chummer.UI.Skills
             this.btnCareerIncrease = new System.Windows.Forms.Button();
             this.lblCareerSpec = new System.Windows.Forms.Label();
             this.btnAddSpec = new System.Windows.Forms.Button();
-            this.tipTooltip = new System.Windows.Forms.ToolTip(this.components);
+            this.tipTooltip = new TheArtOfDev.HtmlRenderer.WinForms.HtmlToolTip();
             this.btnAttribute = new System.Windows.Forms.Button();
             this.cboSelectAttribute = new System.Windows.Forms.ComboBox();
             this.cmsSkillLabel.SuspendLayout();
@@ -136,6 +137,7 @@ namespace Chummer.UI.Skills
             this.cboSpec.Size = new System.Drawing.Size(402, 21);
             this.cboSpec.Sorted = true;
             this.cboSpec.TabIndex = 17;
+            this.cboSpec.TextChanged += new System.EventHandler(this.cboSpec_TextChanged);
             // 
             // chkKarma
             // 
@@ -204,10 +206,15 @@ namespace Chummer.UI.Skills
             // 
             // tipTooltip
             // 
+            this.tipTooltip.AllowLinksHandling = true;
             this.tipTooltip.AutoPopDelay = 10000;
+            this.tipTooltip.BaseStylesheet = null;
             this.tipTooltip.InitialDelay = 250;
             this.tipTooltip.IsBalloon = true;
+            this.tipTooltip.MaximumSize = new System.Drawing.Size(0, 0);
+            this.tipTooltip.OwnerDraw = true;
             this.tipTooltip.ReshowDelay = 100;
+            this.tipTooltip.TooltipCssClass = "htmltooltip";
             this.tipTooltip.ToolTipIcon = System.Windows.Forms.ToolTipIcon.Info;
             this.tipTooltip.ToolTipTitle = "Chummer Help";
             // 
@@ -279,7 +286,7 @@ namespace Chummer.UI.Skills
 		private System.Windows.Forms.Button btnCareerIncrease;
 		private System.Windows.Forms.Label lblCareerSpec;
 		private System.Windows.Forms.Button btnAddSpec;
-		private System.Windows.Forms.ToolTip tipTooltip;
+		private TheArtOfDev.HtmlRenderer.WinForms.HtmlToolTip tipTooltip;
 		private System.Windows.Forms.Button btnAttribute;
 		private System.Windows.Forms.ComboBox cboSelectAttribute;
 		private ContextMenuStrip cmsSkillLabel;

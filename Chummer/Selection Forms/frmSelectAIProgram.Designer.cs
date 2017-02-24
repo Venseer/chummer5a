@@ -1,4 +1,6 @@
-﻿namespace Chummer
+﻿using System;
+
+namespace Chummer
 {
     partial class frmSelectAIProgram
     {
@@ -38,7 +40,7 @@
             this.lblSourceLabel = new System.Windows.Forms.Label();
             this.txtSearch = new System.Windows.Forms.TextBox();
             this.lblSearchLabel = new System.Windows.Forms.Label();
-            this.tipTooltip = new System.Windows.Forms.ToolTip(this.components);
+            this.tipTooltip = new TheArtOfDev.HtmlRenderer.WinForms.HtmlToolTip();
             this.chkLimitList = new System.Windows.Forms.CheckBox();
             this.lblCategory = new System.Windows.Forms.Label();
             this.cboCategory = new System.Windows.Forms.ComboBox();
@@ -188,6 +190,7 @@
             this.lstAIPrograms.Size = new System.Drawing.Size(255, 381);
             this.lstAIPrograms.TabIndex = 37;
             this.lstAIPrograms.SelectedIndexChanged += new System.EventHandler(this.lstAIPrograms_SelectedIndexChanged);
+            this.lstAIPrograms.DoubleClick += new EventHandler(this.trePrograms_DoubleClick);
             // 
             // frmSelectAIProgram
             // 
@@ -233,7 +236,7 @@
         private System.Windows.Forms.Label lblSourceLabel;
         private System.Windows.Forms.TextBox txtSearch;
         private System.Windows.Forms.Label lblSearchLabel;
-        private System.Windows.Forms.ToolTip tipTooltip;
+        private TheArtOfDev.HtmlRenderer.WinForms.HtmlToolTip tipTooltip;
         private System.Windows.Forms.CheckBox chkLimitList;
         private System.Windows.Forms.Label lblCategory;
         private System.Windows.Forms.ComboBox cboCategory;

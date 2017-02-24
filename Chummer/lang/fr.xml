@@ -2798,6 +2798,10 @@ Un saul attribut peut atteindre sa valeur maximum durant la création de personn
       <key>Label_FreeKnowledgeSkills</key>
       <text>Points gratuits restants :</text>
     </string>
+	<string>
+		<key>Label_CustomKnowledgeSkillsReminder</key>
+		<text>Rappelez-vous que vous pouvez toujours ajouter compétences et spécialisations personalisés!</text>
+	</string>
     <string>
       <key>Button_AddSkill</key>
       <text>&amp;Ajout Comp.</text>
@@ -3453,7 +3457,11 @@ Un saul attribut peut atteindre sa valeur maximum durant la création de personn
     </string>
     <string>
       <key>Label_Mugshot</key>
-      <text>Photo du suspect (210 X 310 pixels)</text>
+      <text>Photo du suspect</text>
+    </string>
+	<string>
+      <key>Label_MugshotDimensions</key>
+      <text>210 X 310 pixels</text>
     </string>
     <string>
       <key>Checkbox_Created</key>
@@ -3461,7 +3469,7 @@ Un saul attribut peut atteindre sa valeur maximum durant la création de personn
     </string>
     <string>
       <key>Button_AddMugshot</key>
-      <text>Ajout / Modif</text>
+      <text>Ajout</text>
     </string>
     <string>
       <key>Tip_CharacterCreated</key>
@@ -7299,7 +7307,7 @@ Un saul attribut peut atteindre sa valeur maximum durant la création de personn
       <text>Val (Aug)</text>
     </string>
     <string>
-      <key>Tip_OptionsKnucks</key>
+      <key>Tip_OptionsUnarmedSkillImprovements</key>
       <text>Enabling this house rule allows Knucks to benefit from bonuses that apply to unarmed attacks including DV bonuses.</text>
     </string>
     <string>
@@ -7446,7 +7454,7 @@ Un saul attribut peut atteindre sa valeur maximum durant la création de personn
 		</string>
 		<string>
 			<key>String_Requires</key>
-			<text>Prérequis du Programme:</text>
+			<text>Prérequis:</text>
 		</string>
 		<string>
 			<key>Node_SelectedAIPrograms</key>
@@ -7478,6 +7486,10 @@ Un saul attribut peut atteindre sa valeur maximum durant la création de personn
 		<string>
 			<key>String_ExpenseLearnProgram</key>
 			<text>Apprentissage du programme d'IA</text>
+		</string>
+		<string>
+			<key>Message_DroneIllegalDowngrade</key>
+			<text>Les {0} drones suivants ont des rétrogradés qui trop réduisent leurs attributs:</text>
 		</string>
 	<!-- End Region -->
   </strings>
