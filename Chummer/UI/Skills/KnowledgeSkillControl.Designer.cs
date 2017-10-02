@@ -1,35 +1,33 @@
 ﻿namespace Chummer.UI.Skills
 {
-	partial class KnowledgeSkillControl
-	{
-		/// <summary> 
-		/// Required designer variable.
-		/// </summary>
-		private System.ComponentModel.IContainer components = null;
+    partial class KnowledgeSkillControl
+    {
+        /// <summary> 
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
 
-		/// <summary> 
-		/// Clean up any resources being used.
-		/// </summary>
-		/// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-		protected override void Dispose(bool disposing)
-		{
-			if (disposing && (components != null))
-			{
-				components.Dispose();
-			}
-			base.Dispose(disposing);
-		}
+        /// <summary> 
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
 
-		#region Component Designer generated code
+        #region Component Designer generated code
 
-		/// <summary> 
-		/// Required method for Designer support - do not modify 
-		/// the contents of this method with the code editor.
-		/// </summary>
-		private void InitializeComponent()
-		{
-            this.nudKarma = new System.Windows.Forms.NumericUpDown();
-            this.nudSkill = new System.Windows.Forms.NumericUpDown();
+        /// <summary> 
+        /// Required method for Designer support - do not modify 
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
             this.lblModifiedRating = new System.Windows.Forms.Label();
             this.cboSpec = new System.Windows.Forms.ComboBox();
             this.chkKarma = new System.Windows.Forms.CheckBox();
@@ -41,33 +39,11 @@
             this.lblSpec = new System.Windows.Forms.Label();
             this.btnCareerIncrease = new System.Windows.Forms.Button();
             this.btnAddSpec = new System.Windows.Forms.Button();
-            ((System.ComponentModel.ISupportInitialize)(this.nudKarma)).BeginInit();
+            this.nudSkill = new Chummer.helpers.NumericUpDownEx();
+            this.nudKarma = new Chummer.helpers.NumericUpDownEx();
             ((System.ComponentModel.ISupportInitialize)(this.nudSkill)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudKarma)).BeginInit();
             this.SuspendLayout();
-            // 
-            // nudKarma
-            // 
-            this.nudKarma.Location = new System.Drawing.Point(248, 1);
-            this.nudKarma.Maximum = new decimal(new int[] {
-            99,
-            0,
-            0,
-            0});
-            this.nudKarma.Name = "nudKarma";
-            this.nudKarma.Size = new System.Drawing.Size(40, 20);
-            this.nudKarma.TabIndex = 14;
-            // 
-            // nudSkill
-            // 
-            this.nudSkill.Location = new System.Drawing.Point(206, 1);
-            this.nudSkill.Maximum = new decimal(new int[] {
-            99,
-            0,
-            0,
-            0});
-            this.nudSkill.Name = "nudSkill";
-            this.nudSkill.Size = new System.Drawing.Size(40, 20);
-            this.nudSkill.TabIndex = 15;
             // 
             // lblModifiedRating
             // 
@@ -109,12 +85,15 @@
             // 
             // cboSkill
             // 
+            this.cboSkill.AutoCompleteMode = System.Windows.Forms.AutoCompleteMode.SuggestAppend;
+            this.cboSkill.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.ListItems;
             this.cboSkill.FormattingEnabled = true;
             this.cboSkill.Location = new System.Drawing.Point(3, 1);
             this.cboSkill.Name = "cboSkill";
             this.cboSkill.Size = new System.Drawing.Size(190, 21);
             this.cboSkill.Sorted = true;
             this.cboSkill.TabIndex = 20;
+            this.cboSkill.SelectedIndexChanged += new System.EventHandler(this.cboSkill_SelectedIndexChanged);
             // 
             // cboType
             // 
@@ -178,6 +157,36 @@
             this.btnAddSpec.Visible = false;
             this.btnAddSpec.Click += new System.EventHandler(this.btnAddSpec_Click);
             // 
+            // nudSkill
+            // 
+            this.nudSkill.InterceptMouseWheel = Chummer.helpers.NumericUpDownEx.InterceptMouseWheelMode.WhenMouseOver;
+            this.nudSkill.Location = new System.Drawing.Point(206, 1);
+            this.nudSkill.Maximum = new decimal(new int[] {
+            99,
+            0,
+            0,
+            0});
+            this.nudSkill.Name = "nudSkill";
+            this.nudSkill.ShowUpDownButtons = Chummer.helpers.NumericUpDownEx.ShowUpDownButtonsMode.Always;
+            this.nudSkill.Size = new System.Drawing.Size(40, 20);
+            this.nudSkill.TabIndex = 15;
+            this.nudSkill.ValueChanged += new System.EventHandler(this.RatingChanged);
+            // 
+            // nudKarma
+            // 
+            this.nudKarma.InterceptMouseWheel = Chummer.helpers.NumericUpDownEx.InterceptMouseWheelMode.WhenMouseOver;
+            this.nudKarma.Location = new System.Drawing.Point(248, 1);
+            this.nudKarma.Maximum = new decimal(new int[] {
+            99,
+            0,
+            0,
+            0});
+            this.nudKarma.Name = "nudKarma";
+            this.nudKarma.ShowUpDownButtons = Chummer.helpers.NumericUpDownEx.ShowUpDownButtonsMode.Always;
+            this.nudKarma.Size = new System.Drawing.Size(40, 20);
+            this.nudKarma.TabIndex = 14;
+            this.nudKarma.ValueChanged += new System.EventHandler(this.RatingChanged);
+            // 
             // KnowledgeSkillControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -198,26 +207,26 @@
             this.Margin = new System.Windows.Forms.Padding(0);
             this.Name = "KnowledgeSkillControl";
             this.Size = new System.Drawing.Size(800, 23);
-            ((System.ComponentModel.ISupportInitialize)(this.nudKarma)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudSkill)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudKarma)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
-		}
+        }
 
-		#endregion
-		private System.Windows.Forms.NumericUpDown nudKarma;
-		private System.Windows.Forms.NumericUpDown nudSkill;
-		private System.Windows.Forms.Label lblModifiedRating;
-		private System.Windows.Forms.ComboBox cboSpec;
-		private System.Windows.Forms.CheckBox chkKarma;
-		private System.Windows.Forms.Button cmdDelete;
-		private System.Windows.Forms.ComboBox cboSkill;
-		private System.Windows.Forms.ComboBox cboType;
-		private System.Windows.Forms.Label lblRating;
-		private System.Windows.Forms.Label lblName;
-		private System.Windows.Forms.Label lblSpec;
-		private System.Windows.Forms.Button btnCareerIncrease;
-		private System.Windows.Forms.Button btnAddSpec;
-	}
+        #endregion
+        private Chummer.helpers.NumericUpDownEx nudKarma;
+        private Chummer.helpers.NumericUpDownEx nudSkill;
+        private System.Windows.Forms.Label lblModifiedRating;
+        private System.Windows.Forms.ComboBox cboSpec;
+        private System.Windows.Forms.CheckBox chkKarma;
+        private System.Windows.Forms.Button cmdDelete;
+        private System.Windows.Forms.ComboBox cboSkill;
+        private System.Windows.Forms.ComboBox cboType;
+        private System.Windows.Forms.Label lblRating;
+        private System.Windows.Forms.Label lblName;
+        private System.Windows.Forms.Label lblSpec;
+        private System.Windows.Forms.Button btnCareerIncrease;
+        private System.Windows.Forms.Button btnAddSpec;
+    }
 }
