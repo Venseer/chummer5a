@@ -9,7 +9,7 @@ using System.Xml;
 
 namespace Chummer.Backend.Equipment
 {
-    public class LifestyleQuality : INamedItemWithGuid
+    public class LifestyleQuality : INamedItemWithGuidAndNode
     {
         private Guid _guiID;
         private Guid _SourceGuid;
@@ -59,6 +59,7 @@ namespace Chummer.Backend.Equipment
         /// Convert a string to a LifestyleQualitySource.
         /// </summary>
         /// <param name="strValue">String value to convert.</param>
+#if DEBUG
         public QualitySource ConvertToLifestyleQualitySource(string strValue)
         {
             switch (strValue)
@@ -66,11 +67,16 @@ namespace Chummer.Backend.Equipment
                 default:
                     return QualitySource.Selected;
             }
+#else
+        public QualitySource ConvertToLifestyleQualitySource()
+        {
+            return QualitySource.Selected;
+#endif
         }
-        #endregion
+    #endregion
 
-        #region Constructor, Create, Save, Load, and Print Methods
-        public LifestyleQuality(Character objCharacter)
+    #region Constructor, Create, Save, Load, and Print Methods
+    public LifestyleQuality(Character objCharacter)
         {
             // Create the GUID for the new LifestyleQuality.
             _guiID = Guid.NewGuid();
@@ -111,8 +117,7 @@ namespace Chummer.Backend.Equipment
             }
             if (GlobalOptions.Instance.Language != "en-us")
             {
-                XmlDocument objXmlDocument = XmlManager.Instance.Load("lifestyles.xml");
-                XmlNode objLifestyleQualityNode = objXmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + _strName + "\"]");
+                XmlNode objLifestyleQualityNode = MyXmlNode;
                 if (objLifestyleQualityNode != null)
                 {
                     objXmlLifestyleQuality.TryGetStringFieldQuickly("translate", ref _strAltName);
@@ -188,9 +193,7 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetStringFieldQuickly("name", ref _strName);
             if (!objNode.TryGetField("id", Guid.TryParse, out _SourceGuid))
             {
-                var doc = XmlManager.Instance.Load("lifestyles.xml");
-                var q = doc.SelectSingleNode("/chummer/qualities/quality[name = \"" + Name + "\"]");
-                q.TryGetField("id", Guid.TryParse, out _SourceGuid);
+                MyXmlNode?.TryGetField("id", Guid.TryParse, out _SourceGuid);
             }
             objNode.TryGetStringFieldQuickly("extra", ref _strExtra);
             objNode.TryGetInt32FieldQuickly("lp", ref _intLP);
@@ -201,16 +204,18 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetBoolFieldQuickly("print", ref _blnPrint);
             if (objNode["lifestylequalitytype"] != null)
                 _objLifestyleQualityType = ConvertToLifestyleQualityType(objNode["lifestylequalitytype"].InnerText);
+#if DEBUG
             if (objNode["lifestylequalitysource"] != null)
                 _objLifestyleQualitySource = ConvertToLifestyleQualitySource(objNode["lifestylequalitysource"].InnerText);
+#else
+            _objLifestyleQualitySource = QualitySource.Selected;
+#endif
             objNode.TryGetStringFieldQuickly("source", ref _strSource);
             objNode.TryGetStringFieldQuickly("page", ref _strPage);
             string strAllowedFreeLifestyles = string.Empty;
             if (!objNode.TryGetStringFieldQuickly("allowed", ref strAllowedFreeLifestyles))
             {
-                XmlDocument objXmlDocument = XmlManager.Instance.Load("lifestyles.xml");
-                XmlNode objXmlQuality = objXmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + Name + "\"]");
-                strAllowedFreeLifestyles = objXmlQuality?["allowed"]?.InnerText ?? string.Empty;
+                strAllowedFreeLifestyles = MyXmlNode?["allowed"]?.InnerText ?? string.Empty;
             }
             _lstAllowedFreeLifestyles = strAllowedFreeLifestyles.Split(',').ToList();
             _nodBonus = objNode["bonus"];
@@ -218,8 +223,7 @@ namespace Chummer.Backend.Equipment
 
             if (GlobalOptions.Instance.Language != "en-us")
             {
-                XmlDocument objXmlDocument = XmlManager.Instance.Load("lifestyles.xml");
-                XmlNode objLifestyleQualityNode = objXmlDocument.SelectSingleNode("/chummer/lifestylequalities/lifestylequality[name = \"" + _strName + "\"]");
+                XmlNode objLifestyleQualityNode = MyXmlNode;
                 if (objLifestyleQualityNode != null)
                 {
                     objLifestyleQualityNode.TryGetStringFieldQuickly("translate", ref _strAltName);
@@ -317,9 +321,9 @@ namespace Chummer.Backend.Equipment
                 objWriter.WriteElementString("notes", _strNotes);
             objWriter.WriteEndElement();
         }
-        #endregion
+#endregion
 
-        #region Properties
+#region Properties
         /// <summary>
         /// Internal identifier which will be used to identify this LifestyleQuality in the Improvement system.
         /// </summary>
@@ -663,6 +667,13 @@ namespace Chummer.Backend.Equipment
         /// </summary>
         public int AreaMinimum { get; set; }
 
-        #endregion
+        public XmlNode MyXmlNode
+        {
+            get
+            {
+                return XmlManager.Instance.Load("lifestyles.xml").SelectSingleNode("/chummer/qualities/quality[name = \"" + Name + "\"]");
+            }
+        }
+#endregion
     }
 }

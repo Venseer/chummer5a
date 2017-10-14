@@ -178,7 +178,7 @@ namespace Chummer
         // PDF information.
         private static string _strPDFAppPath = string.Empty;
         private static string _strPDFParameters = string.Empty;
-        private static List<SourcebookInfo> _lstSourcebookInfo = new List<SourcebookInfo>();
+        private static HashSet<SourcebookInfo> _lstSourcebookInfo = new HashSet<SourcebookInfo>();
         private static bool _blnUseLogging = false;
         private static string _strCharacterRosterPath;
 
@@ -293,13 +293,10 @@ namespace Chummer
             // Prefer Nightly Updates.
             LoadBoolFromRegistry(ref _blnPreferNightlyUpdates, "prefernightlybuilds");
 
-            // Retrieve CustomDataDirectoryInfo objects
-            bool blnPopulatefromCustomDataFolder = true;
+            // Retrieve CustomDataDirectoryInfo objects from registry
             RegistryKey objCustomDataDirectoryKey = _objBaseChummerKey.OpenSubKey("CustomDataDirectory");
             if (objCustomDataDirectoryKey != null)
             {
-                // If the subkey is empty and not just filled with invalid paths, do not re-check customdata folder
-                blnPopulatefromCustomDataFolder = objCustomDataDirectoryKey.SubKeyCount > 0;
                 List<KeyValuePair<CustomDataDirectoryInfo, int>> lstUnorderedCustomDataDirectories = new List<KeyValuePair<CustomDataDirectoryInfo, int> > (objCustomDataDirectoryKey.SubKeyCount);
 
                 string[] astrCustomDataDirectoryNames = objCustomDataDirectoryKey.GetSubKeyNames();
@@ -335,7 +332,6 @@ namespace Chummer
                         }
                         else
                             lstUnorderedCustomDataDirectories.Add(new KeyValuePair<CustomDataDirectoryInfo, int>(objCustomDataDirectory, int.MinValue));
-                        blnPopulatefromCustomDataFolder = false;
                     }
                 }
 
@@ -351,13 +347,14 @@ namespace Chummer
                     _lstCustomDataDirectoryInfo.Add(objLoopPair.Key);
                 }
             }
-            // First run of Chummer5 with custom data directory info, populate based on folders in customdata
-            if (blnPopulatefromCustomDataFolder)
+            // Auto-populate the rest of the list from customdata
+            string strCustomDataRootPath = Path.Combine(Application.StartupPath, "customdata");
+            if (Directory.Exists(strCustomDataRootPath))
             {
-                string strCustomDataRootPath = Path.Combine(Application.StartupPath, "customdata");
-                if (Directory.Exists(strCustomDataRootPath))
+                foreach (string strLoopDirectoryPath in Directory.GetDirectories(strCustomDataRootPath))
                 {
-                    foreach(string strLoopDirectoryPath in Directory.GetDirectories(strCustomDataRootPath))
+                    // Only add directories for which we don't already have entries loaded from registry
+                    if (!_lstCustomDataDirectoryInfo.Any(x => x.Path == strLoopDirectoryPath))
                     {
                         CustomDataDirectoryInfo objCustomDataDirectory = new CustomDataDirectoryInfo();
                         objCustomDataDirectory.Name = Path.GetFileName(strLoopDirectoryPath);
@@ -392,12 +389,16 @@ namespace Chummer
                                     objSource.Offset = intTmp;
                             }
                         }
-                        _lstSourcebookInfo.Add(objSource);
                     }
-                    catch (Exception)
+                    catch (System.Security.SecurityException)
                     {
 
                     }
+                    catch (UnauthorizedAccessException)
+                    {
+
+                    }
+                    _lstSourcebookInfo.Add(objSource);
                 }
             }
 
@@ -746,7 +747,7 @@ namespace Chummer
         /// <summary>
         /// List of SourcebookInfo.
         /// </summary>
-        public List<SourcebookInfo> SourcebookInfo
+        public HashSet<SourcebookInfo> SourcebookInfo
         {
             get
             {
@@ -854,12 +855,12 @@ namespace Chummer
             }
             for (int i = 0; i < 10; i++)
             {
-                if (_objBaseChummerKey.GetValue(strMRUType + i) != null)
-                    _objBaseChummerKey.DeleteValue(strMRUType + i);
+                if (_objBaseChummerKey.GetValue(strMRUType + i.ToString()) != null)
+                    _objBaseChummerKey.DeleteValue(strMRUType + i.ToString());
             }
             for (int i = 0; i < strFiles.Count; i++)
             {
-                _objBaseChummerKey.SetValue(strMRUType + (i + 1), strFiles[i]);
+                _objBaseChummerKey.SetValue(strMRUType + (i + 1).ToString(), strFiles[i]);
             }
             MRUChanged?.Invoke();
         }

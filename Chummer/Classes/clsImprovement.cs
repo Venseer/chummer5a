@@ -64,6 +64,8 @@ namespace Chummer
             WeaponCategoryDice,
             CyberwareEssCost,
             CyberwareTotalEssMultiplier,
+            CyberwareEssCostNonRetroactive,
+            CyberwareTotalEssMultiplierNonRetroactive,
             SpecialTab,
             Initiative,
             Uneducated,
@@ -75,12 +77,16 @@ namespace Chummer
             Smartlink,
             BiowareEssCost,
             BiowareTotalEssMultiplier,
+            BiowareEssCostNonRetroactive,
+            BiowareTotalEssMultiplierNonRetroactive,
             GenetechCostMultiplier,
             BasicBiowareEssCost,
             TransgenicsBiowareCost,
             SoftWeave,
             DisableBioware,
             DisableCyberware,
+            DisableBiowareGrade,
+            DisableCyberwareGrade,
             ConditionMonitor,
             UnarmedDVPhysical,
             MovementPercent,
@@ -189,6 +195,7 @@ namespace Chummer
             AdeptPowerFreePoints,
             AIProgram,
             CritterPowerLevel,
+            CritterPower,
             SwapSkillSpecAttribute,
             SpellResistance,
             SpellKarmaDiscount,
@@ -351,7 +358,6 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("unique", ref _strUniqueName);
             objNode.TryGetStringFieldQuickly("target", ref _strTarget);
             objNode.TryGetStringFieldQuickly("improvedname", ref _strImprovedName);
-            objNode.TryGetStringFieldQuickly("sourcename", ref _strSourceName);
             objNode.TryGetStringFieldQuickly("sourcename", ref _strSourceName);
             objNode.TryGetInt32FieldQuickly("min", ref _intMin);
             objNode.TryGetInt32FieldQuickly("max", ref _intMax);
@@ -887,8 +893,7 @@ namespace Chummer
         /// <param name="strFriendlyName">Friendly name to show in any dialogue windows that ask for a value.</param>
         /// <returns>True if successfull</returns>
         public static bool CreateImprovements(Character objCharacter, Improvement.ImprovementSource objImprovementSource, string strSourceName,
-            XmlNode nodBonus, bool blnConcatSelectedValue = false, int intRating = 1, string strFriendlyName = "",
-            object fCreate = null)
+            XmlNode nodBonus, bool blnConcatSelectedValue = false, int intRating = 1, string strFriendlyName = "")
         {
             Log.Enter("CreateImprovements");
             Log.Info("objImprovementSource = " + objImprovementSource.ToString());
@@ -1371,15 +1376,21 @@ namespace Chummer
                             {
                                 // Determine which GradeList to use for the Cyberware.
                                 GradeList objGradeList;
-                                if (objCyberware.SourceType == Improvement.ImprovementSource.Bioware)
-                                    objGradeList = GlobalOptions.BiowareGrades;
-                                else
-                                    objGradeList = GlobalOptions.CyberwareGrades;
+                                    if (objCyberware.SourceType == Improvement.ImprovementSource.Bioware)
+                                    {
+                                        GlobalOptions.BiowareGrades.LoadList(Improvement.ImprovementSource.Bioware, objCharacter.Options);
+                                        objGradeList = GlobalOptions.BiowareGrades;
+                                    }
+                                    else
+                                    {
+                                        GlobalOptions.CyberwareGrades.LoadList(Improvement.ImprovementSource.Cyberware, objCharacter.Options);
+                                        objGradeList = GlobalOptions.CyberwareGrades;
+                                    }
 
                                 objCyberware.Grade = objGradeList.GetGrade(objCyberware.Grade.Name.Replace("(Adapsin)", string.Empty).Trim());
                             }
                         }
-                }
+                    }
                         break;
                     case Improvement.ImprovementType.ContactMadeMan:
                         Contact MadeManContact = objCharacter.Contacts.FirstOrDefault(c => c.GUID == objImprovement.ImprovedName);
@@ -1396,6 +1407,11 @@ namespace Chummer
                         break;
                     case Improvement.ImprovementType.Submersion:
                     objCharacter.SubmersionGrade -= objImprovement.Value;
+                        break;
+                    case Improvement.ImprovementType.CritterPower:
+                        CritterPower objCritterPower = objCharacter.CritterPowers.FirstOrDefault(x => x.Name == objImprovement.ImprovedName && x.Extra == objImprovement.UniqueName);
+                        if (objCritterPower != null)
+                            objCharacter.CritterPowers.Remove(objCritterPower);
                         break;
                     case Improvement.ImprovementType.SpecialSkills:
                     objCharacter.SkillsSection.RemoveSkills((SkillsSection.FilterOptions)Enum.Parse(typeof(SkillsSection.FilterOptions), objImprovement.ImprovedName));

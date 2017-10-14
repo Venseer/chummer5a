@@ -18,14 +18,18 @@
     https://github.com/chummer5a/chummer5a
 -->
 <chummer>
-  <gears>
-      <gear>
-        <name>Ammo: Depleted Uranium</name>
-        <hide />
-      </gear>
-    <gear>
-      <name>Subliminal Subacoustics Software</name>
+  <grades>
+    <!-- Region Standard -->
+    <grade>
+      <name>Omegaware</name>
       <hide />
-    </gear>
-  </gears>
+    </grade>
+    <!-- End Region -->
+    <!-- Region Adapsin -->
+    <grade>
+      <name>Omegaware (Adapsin)</name>
+      <hide />
+    </grade>
+    <!-- End Region -->
+  </grades>
 </chummer>

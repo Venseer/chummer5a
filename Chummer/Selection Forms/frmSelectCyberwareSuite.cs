@@ -89,9 +89,25 @@ namespace Chummer
                 return;
 
             XmlNodeList objXmlSuiteList = _objXmlDocument.SelectNodes("/chummer/suites/suite");
+            GradeList lstGrades = null;
+            if (_objSource == Improvement.ImprovementSource.Bioware)
+            {
+                GlobalOptions.BiowareGrades.LoadList(Improvement.ImprovementSource.Bioware, _objCharacter.Options);
+                lstGrades = GlobalOptions.BiowareGrades;
+            }
+            else
+            {
+                GlobalOptions.CyberwareGrades.LoadList(Improvement.ImprovementSource.Cyberware, _objCharacter.Options);
+                lstGrades = GlobalOptions.CyberwareGrades;
+            }
 
             foreach (XmlNode objXmlSuite in objXmlSuiteList)
             {
+                string strGrade = objXmlSuite["grade"]?.InnerText ?? string.Empty;
+                if (string.IsNullOrEmpty(strGrade) && (!lstGrades.Any(x => x.Name == strGrade) ||
+                    _objCharacter.Improvements.Any(x => ((_objSource == Improvement.ImprovementSource.Cyberware && x.ImproveType == Improvement.ImprovementType.DisableBiowareGrade) || (_objSource == Improvement.ImprovementSource.Bioware && x.ImproveType == Improvement.ImprovementType.DisableCyberwareGrade))
+                    && strGrade.Contains(x.ImprovedName) && x.Enabled)))
+                    continue;
                 lstCyberware.Items.Add(objXmlSuite["name"].InnerText);
             }
         }

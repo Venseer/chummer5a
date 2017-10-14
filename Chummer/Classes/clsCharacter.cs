@@ -33,6 +33,7 @@ using Chummer.Backend.Equipment;
 using Chummer.Skills;
 using System.Reflection;
 using Chummer.Backend.Attributes;
+using Chummer.Backend.Extensions;
 
 namespace Chummer
 {
@@ -996,7 +997,8 @@ namespace Chummer
             ResetCharacter();
 
             // Get the game edition of the file if possible and make sure it's intended to be used with this version of the application.
-            if (!string.IsNullOrEmpty(objXmlCharacter["gameedition"]?.InnerText) && objXmlCharacter["gameedition"].InnerText != "SR5")
+            string strGameEdition = objXmlCharacter["gameedition"]?.InnerText ?? string.Empty;
+            if (!string.IsNullOrEmpty(strGameEdition) && strGameEdition != "SR5")
             {
                 MessageBox.Show(LanguageManager.Instance.GetString("Message_IncorrectGameVersion_SR4"),
                     LanguageManager.Instance.GetString("MessageTitle_IncorrectGameVersion"), MessageBoxButtons.YesNo,
@@ -1039,12 +1041,14 @@ namespace Chummer
             if (objXmlCharacter["sources"] != null)
             {
                 string strMissingBooks = string.Empty;
+                string strLoopString = string.Empty;
                 //Does the list of enabled books contain the current item?
                 foreach (XmlNode objXmlNode in objXmlCharacter["sources"].ChildNodes)
                 {
-                    if (objXmlNode.InnerText.Length > 0 && !_objOptions.Books.Contains(objXmlNode.InnerText))
+                    strLoopString = objXmlNode.InnerText;
+                    if (strLoopString.Length > 0 && !_objOptions.Books.Contains(strLoopString))
                     {
-                        strMissingBooks += (objXmlNode.InnerText + ";");
+                        strMissingBooks += strLoopString + ";";
                     }
                 }
                 if (!string.IsNullOrEmpty(strMissingBooks))
@@ -1061,12 +1065,14 @@ namespace Chummer
             if (objXmlCharacter["customdatadirectorynames"] != null)
             {
                 string strMissingSourceNames = string.Empty;
+                string strLoopString = string.Empty;
                 //Does the list of enabled books contain the current item?
                 foreach (XmlNode objXmlNode in objXmlCharacter["customdatadirectorynames"].ChildNodes)
                 {
-                    if (objXmlNode.InnerText.Length > 0 && !_objOptions.CustomDataDirectoryNames.Contains(objXmlNode.InnerText))
+                    strLoopString = objXmlNode.InnerText;
+                    if (strLoopString.Length > 0 && !_objOptions.CustomDataDirectoryNames.Contains(strLoopString))
                     {
-                        strMissingSourceNames += (objXmlNode.InnerText + ";\n");
+                        strMissingSourceNames += strLoopString + ";\n";
                     }
                 }
                 if (!string.IsNullOrEmpty(strMissingSourceNames))
@@ -1239,17 +1245,26 @@ namespace Chummer
             objXmlCharacter.TryGetStringFieldQuickly("groupname", ref _strGroupName);
             objXmlCharacter.TryGetStringFieldQuickly("groupnotes", ref _strGroupNotes);
             Timekeeper.Finish("load_char_misc");
+            bool blnImprovementError = false;
             Timekeeper.Start("load_char_imp");
             // Improvements.
             XmlNodeList objXmlNodeList = objXmlDocument.SelectNodes("/character/improvements/improvement");
             foreach (XmlNode objXmlImprovement in objXmlNodeList)
             {
                 Improvement objImprovement = new Improvement();
-                objImprovement.Load(objXmlImprovement);
-                _lstImprovements.Add(objImprovement);
+                try
+                {
+                    objImprovement.Load(objXmlImprovement);
+                    _lstImprovements.Add(objImprovement);
+                }
+                catch (ArgumentException e)
+                {
+                    blnImprovementError = true;
+                }
             }
             Timekeeper.Finish("load_char_imp");
-
+            if (blnImprovementError)
+                MessageBox.Show(LanguageManager.Instance.GetString("Message_ImprovementLoadError"), LanguageManager.Instance.GetString("MessageTitle_ImprovementLoadError"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             Timekeeper.Start("load_char_quality");
             // Qualities
             objXmlNodeList = objXmlDocument.SelectNodes("/character/qualities/quality");
@@ -1786,7 +1801,7 @@ namespace Chummer
                 {
                     blnFoundUnarmed = true;
                     break;
-            }
+                }
             }
 
             if (!blnFoundUnarmed)
@@ -1798,11 +1813,11 @@ namespace Chummer
                 {
                     TreeNode objGearWeaponNode = new TreeNode();
                     Weapon objWeapon = new Weapon(this);
-                    objWeapon.Create(objXmlWeapon, this, objGearWeaponNode, null, null);
-                    objGearWeaponNode.ForeColor = SystemColors.GrayText;
+                    objWeapon.Create(objXmlWeapon, objGearWeaponNode, null, null);
+                    objWeapon.IncludedInWeapon = true; // Unarmed attack can never be removed
                     _lstWeapons.Add(objWeapon);
                 }
-                }
+            }
 
             Timekeeper.Finish("load_char_unarmed");
             Timekeeper.Start("load_char_dwarffix");
@@ -1881,7 +1896,7 @@ namespace Chummer
                 {
                     XmlDocument doc = XmlManager.Instance.Load("mentors.xml");
                     XmlNode mentorDoc = doc.SelectSingleNode("/chummer/mentors/mentor[name = \"" + mentorQuality.Extra + "\"]");
-                    ImprovementManager.CreateImprovement(this, "", Improvement.ImprovementSource.Quality, mentorQuality.InternalId,
+                    ImprovementManager.CreateImprovement(this, string.Empty, Improvement.ImprovementSource.Quality, mentorQuality.InternalId,
                         Improvement.ImprovementType.MentorSpirit, mentorDoc["id"].InnerText);
                 }
             }
@@ -1907,7 +1922,11 @@ namespace Chummer
         /// </summary>
         /// <param name="objStream">MemoryStream to use.</param>
         /// <param name="objWriter">XmlTextWriter to write to.</param>
+#if DEBUG
         public void PrintToStream(MemoryStream objStream, XmlTextWriter objWriter)
+#else
+        public void PrintToStream(XmlTextWriter objWriter)
+#endif
         {
             XmlDocument objXmlDocument;
 
@@ -2188,7 +2207,7 @@ namespace Chummer
                 // Add any Improvements for Drain Resistance.
                 int intDrain = Convert.ToInt32(nav.Evaluate(xprDrain)) + ImprovementManager.ValueOf(this, Improvement.ImprovementType.DrainResistance);
 
-                objWriter.WriteElementString("drain", strDrainAtt + " (" + intDrain + ")");
+                objWriter.WriteElementString("drain", strDrainAtt + " (" + intDrain.ToString() + ")");
                 objWriter.WriteStartElement("drainattribute");
                 foreach (string drainAttribute in strDrainAtt.Replace('+', ' ').Split(new [] {' '} , StringSplitOptions.RemoveEmptyEntries))
                 {
@@ -2615,11 +2634,11 @@ namespace Chummer
                 Commlink objLivingPersona = new Commlink(this);
                 objLivingPersona.Name = LanguageManager.Instance.GetString("String_LivingPersona");
                 objLivingPersona.Category = LanguageManager.Instance.GetString("String_Commlink");
-                objLivingPersona.DeviceRating = RES.TotalValue;
-                objLivingPersona.Attack = CHA.TotalValue;
-                objLivingPersona.Sleaze = INT.TotalValue;
-                objLivingPersona.DataProcessing = LOG.TotalValue;
-                objLivingPersona.Firewall = WIL.TotalValue;
+                objLivingPersona.DeviceRating = RES.TotalValue.ToString(GlobalOptions.InvariantCultureInfo);
+                objLivingPersona.Attack = CHA.TotalValue.ToString(GlobalOptions.InvariantCultureInfo);
+                objLivingPersona.Sleaze = INT.TotalValue.ToString(GlobalOptions.InvariantCultureInfo);
+                objLivingPersona.DataProcessing = LOG.TotalValue.ToString(GlobalOptions.InvariantCultureInfo);
+                objLivingPersona.Firewall = WIL.TotalValue.ToString(GlobalOptions.InvariantCultureInfo);
                 objLivingPersona.Source = _objOptions.LanguageBookShort("SR5");
                 objLivingPersona.Page = "251";
                 objLivingPersona.IsLivingPersona = true;
@@ -2714,7 +2733,11 @@ namespace Chummer
             // </characters>
             objWriter.WriteStartElement("characters");
 
+#if DEBUG
             PrintToStream(objStream, objWriter);
+#else
+            PrintToStream(objWriter);
+#endif
 
             // </characters>
             objWriter.WriteEndElement();
@@ -2875,43 +2898,77 @@ namespace Chummer
             {
                 case Improvement.ImprovementSource.Bioware:
                 case Improvement.ImprovementSource.Cyberware:
-                    foreach (Cyberware objCyberware in _lstCyberware)
+                    Cyberware objReturnCyberware = _lstCyberware.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                    if (objReturnCyberware != null)
+                        return objReturnCyberware.DisplayNameShort;
+                    foreach (Vehicle objVehicle in _lstVehicles)
                     {
-                        if (objCyberware.InternalId == objImprovement.SourceName)
+                        foreach (VehicleMod objVehicleMod in objVehicle.Mods)
                         {
-                            strReturn = objCyberware.DisplayNameShort;
-                            break;
+                            objReturnCyberware = objVehicleMod.Cyberware.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                            if (objReturnCyberware != null)
+                                return objReturnCyberware.DisplayNameShort;
                         }
                     }
                     break;
                 case Improvement.ImprovementSource.Gear:
-                    foreach (Gear objGear in _lstGear)
+                    Gear objReturnGear = _lstGear.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                    if (objReturnGear != null)
+                        return objReturnGear.DisplayNameShort;
+                    foreach (Weapon objWeapon in _lstWeapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
                     {
-                        if (objGear.InternalId == objImprovement.SourceName)
+                        foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
                         {
-                            strReturn = objGear.DisplayNameShort;
-                            break;
+                            objReturnGear = objAccessory.Gear.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                            if (objReturnGear != null)
+                                return objReturnGear.DisplayNameShort;
                         }
-                        else
+                    }
+                    foreach (Armor objArmor in _lstArmor)
+                    {
+                        objReturnGear = objArmor.Gear.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                        if (objReturnGear != null)
+                            return objReturnGear.DisplayNameShort;
+                    }
+                    foreach (Cyberware objCyberware in _lstCyberware)
+                    {
+                        foreach (Cyberware objChildCyberware in _lstCyberware.DeepWhere(x => x.Children, x => x.Gear.Count > 0))
                         {
-                            foreach (Gear objChild in objGear.Children)
+                            objReturnGear = objChildCyberware.Gear.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                            if (objReturnGear != null)
+                                return objReturnGear.DisplayNameShort;
+                        }
+                    }
+                    foreach (Vehicle objVehicle in _lstVehicles)
+                    {
+                        objReturnGear = objVehicle.Gear.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                        if (objReturnGear != null)
+                            return objReturnGear.DisplayNameShort;
+                        foreach (Weapon objWeapon in objVehicle.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
+                        {
+                            foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
                             {
-                                if (objChild.InternalId == objImprovement.SourceName)
+                                objReturnGear = objAccessory.Gear.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                                if (objReturnGear != null)
+                                    return objReturnGear.DisplayNameShort;
+                            }
+                        }
+                        foreach (VehicleMod objVehicleMod in objVehicle.Mods)
+                        {
+                            foreach (Weapon objWeapon in objVehicleMod.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
+                            {
+                                foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
                                 {
-                                    strReturn = objChild.DisplayNameShort;
-                                    break;
+                                    objReturnGear = objAccessory.Gear.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                                    if (objReturnGear != null)
+                                        return objReturnGear.DisplayNameShort;
                                 }
-                                else
-                                {
-                                    foreach (Gear objSubChild in objChild.Children)
-                                    {
-                                        if (objSubChild.InternalId == objImprovement.SourceName)
-                                        {
-                                            strReturn = objSubChild.DisplayNameShort;
-                                            break;
-                                        }
-                                    }
-                                }
+                            }
+                            foreach (Cyberware objCyberware in objVehicleMod.Cyberware.DeepWhere(x => x.Children, x => x.Gear.Count > 0))
+                            {
+                                objReturnGear = objCyberware.Gear.DeepFirstOrDefault(x => x.Children, x => x.InternalId == objImprovement.SourceName);
+                                if (objReturnGear != null)
+                                    return objReturnGear.DisplayNameShort;
                             }
                         }
                     }
@@ -2921,8 +2978,7 @@ namespace Chummer
                     {
                         if (objSpell.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objSpell.DisplayNameShort;
-                            break;
+                            return objSpell.DisplayNameShort;
                         }
                     }
                     break;
@@ -2931,8 +2987,7 @@ namespace Chummer
                     {
                         if (objPower.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objPower.DisplayNameShort;
-                            break;
+                            return objPower.DisplayNameShort;
                         }
                     }
                     break;
@@ -2941,8 +2996,7 @@ namespace Chummer
                     {
                         if (objPower.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objPower.DisplayNameShort;
-                            break;
+                            return objPower.DisplayNameShort;
                         }
                     }
                     break;
@@ -2952,8 +3006,7 @@ namespace Chummer
                     {
                         if (objMetamagic.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objMetamagic.DisplayNameShort;
-                            break;
+                            return objMetamagic.DisplayNameShort;
                         }
                     }
                     break;
@@ -2962,8 +3015,7 @@ namespace Chummer
                     {
                         if (objArt.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objArt.DisplayNameShort;
-                            break;
+                            return objArt.DisplayNameShort;
                         }
                     }
                     break;
@@ -2972,8 +3024,7 @@ namespace Chummer
                     {
                         if (objEnhancement.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objEnhancement.DisplayNameShort;
-                            break;
+                            return objEnhancement.DisplayNameShort;
                         }
                     }
                     break;
@@ -2982,8 +3033,7 @@ namespace Chummer
                     {
                         if (objArmor.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objArmor.DisplayNameShort;
-                            break;
+                            return objArmor.DisplayNameShort;
                         }
                     }
                     break;
@@ -2994,8 +3044,7 @@ namespace Chummer
                         {
                             if (objMod.InternalId == objImprovement.SourceName)
                             {
-                                strReturn = objMod.DisplayNameShort;
-                                break;
+                                return objMod.DisplayNameShort;
                             }
                         }
                     }
@@ -3005,8 +3054,7 @@ namespace Chummer
                     {
                         if (objProgram.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objProgram.DisplayNameShort;
-                            break;
+                            return objProgram.DisplayNameShort;
                         }
                     }
                     break;
@@ -3015,25 +3063,20 @@ namespace Chummer
                     {
                         if (objProgram.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objProgram.DisplayNameShort;
-                            break;
+                            return objProgram.DisplayNameShort;
                         }
                     }
                     break;
                 case Improvement.ImprovementSource.Quality:
                     if (objImprovement.SourceName == "SEEKER_WIL")
-                    {
-                        strReturn = "Cyber-Singularty Seeker";
-                    } else if (objImprovement.SourceName.StartsWith("SEEKER"))
-                    {
-                        strReturn = "Redliner";
-                    }
+                        return "Cyber-Singularty Seeker";
+                    else if (objImprovement.SourceName.StartsWith("SEEKER"))
+                        return "Redliner";
                     foreach (Quality objQuality in _lstQualities)
                     {
                         if (objQuality.InternalId == objImprovement.SourceName)
                         {
-                            strReturn = objQuality.DisplayNameShort;
-                            break;
+                            return objQuality.DisplayNameShort;
                         }
                     }
                     break;
@@ -3044,26 +3087,20 @@ namespace Chummer
                         {
                             if (objAdvantage.InternalId == objImprovement.SourceName)
                             {
-                                strReturn = objAdvantage.DisplayName;
-                                break;
+                                return objAdvantage.DisplayName;
                             }
                         }
                     }
                     break;
                 default:
                     if (objImprovement.SourceName == "Armor Encumbrance")
-                        strReturn = LanguageManager.Instance.GetString("String_ArmorEncumbrance");
-                    else
-                    {
-                        // If this comes from a custom Improvement, use the name the player gave it instead of showing a GUID.
-                        if (!string.IsNullOrEmpty(objImprovement.CustomName))
-                            strReturn = objImprovement.CustomName;
-                        else
-                            strReturn = objImprovement.SourceName;
-                    }
-                    break;
+                        return LanguageManager.Instance.GetString("String_ArmorEncumbrance");
+                    // If this comes from a custom Improvement, use the name the player gave it instead of showing a GUID.
+                    if (!string.IsNullOrEmpty(objImprovement.CustomName))
+                        return objImprovement.CustomName;
+                    return objImprovement.SourceName;
             }
-            return strReturn;
+            return string.Empty;
         }
 
         /// <summary>
@@ -4709,8 +4746,8 @@ namespace Chummer
             }
         }
 
-        #region Initiative
-        #region Physical
+#region Initiative
+#region Physical
         /// <summary>
         /// Physical Initiative.
         /// </summary>
@@ -7568,9 +7605,9 @@ namespace Chummer
             }
             return false;
         }
-        #endregion
+#endregion
 
-        #region Temporary Properties : Dashboard
+#region Temporary Properties : Dashboard
         // This region is for properties that are applicable to the Dashboard
         /// <summary>
         /// The Current Initiative roll result including base Initiative

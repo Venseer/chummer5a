@@ -1,4 +1,4 @@
-﻿Build 195
+Build 195
 
 Application Changes:
 
@@ -88,8 +88,48 @@ Application Changes:
 - Select Armor, Select Cyberware, Select Bioware, Select Gear, Select Vehicle, and Select Weapon screens now all have a category that shows all items, and searching for items on those screens will now only search within the selected category. In the case of Select Cyberware and Select Bioware screens, the current selection will be saved when switching between grades and selecting a particular grade will automatically hide all items that cannot be taken in that grade. Selecting the Cultured Bioware category when the Used grade is selected will switch the selected grade back to Standard.
 - The Select Cyberware screen will now only display Cyberlimb Customizations and Cyberlimb Enhancements when adding a subsystem to a cyberlimb.
 - Fixed a bug where cost modifiers were not properly applied to gear with FixedValue costs.
-- Replaced support for <cost3>, <cost6>, <cost10>, <avail3>, <avail6>, and <avail10> nodes with a system that can support any number of <cost[n]> and <avail[n]> nodes (where n = rating above which the indicated cost or availability no longer necessarily apply). When a regular <cost> or <avail> node is absent, the system will look for the <cost[n]> or <avail[n]> node with the lowest n that is still greater than the item's rating; if none are found, then the node with the highest n is used instead.
+- Removed references to <cost3>, <cost6>, <cost10>, <avail3>, <avail6>, and <avail10> nodes, as they are obsolete. Added a legacy shim to handle these entry types from savefiles and convert them to just using <cost> and <avail> respectively.
 - Added support for bonuses that remove the ability to add cyberware, remove the ability to add bioware, or modify the essence cost of bioware or cyberware in a way that stacks multiplicatively with other modifiers instead of additively.
+- Added a houserule option to allow skill points to be used to buy specializations for karma-bought skills.
+- Added support for mixing of special cost and availability expressions. For example, one can now mix "FixedValues()" with "Parent Cost" and Chummer5 should know how to handle it. 
+- Added support for using expressions to define Attack, Sleaze, Data Processing, Firewall, and Device Rating.
+- Altered commlink system and related UI so that gear with the attributesarray tag is treated as being able to swap its Matrix attributes, while those without it cannot.
+- Altered commlink system so that any gear with a devicerating tag is marked and treated as a commlink, rather than it being hardcoded to a few, specific categories.
+- Added support for gear that modifies Matrix attributes, both in terms of modifying a cyberdeck array and in terms of modifying a specific Matrix attribute. Commlinks and cyberdecks modify their Matrix attributes by their children's stats.
+- Added support for essence cost modifiers (additively stacking multipliers) and total essence cost modifiers (multiplicatively stacking multipliers) that do not retroactively alter existing cyberware's essence costs.
+- Added support for cyberware to come with built-in gear.
+- Vehicles, weapons, armor mods, weapon accessories, and cyberware that are added by gear and/or cyberware or are included in their parents are now all colored gray when without notes and can no longer be removed without removing their parents. The Unarmed Attack entry in the weapons list can never be removed and is always colored gray if there are no notes attached.
+- Added support for gear that modifies its parent's Matrix condition monitor.
+- If an item has a higher rating than the number of entries in an attribute it has that uses a FixedValue() system, then Chummer5 will select the last item instead of crashing.
+- Standardized the code to retrieve an item's XML entry. As a side effect, some translation issues have been fixed.
+- Added support for the usegears sections of gear entries to start with their node collapsed, added support to define new source and page entries to usegear entries, and added support to make each usegear entry to not create the item's default children and/or not apply the item's improvements. Gear that is marked as "do not apply improvements" when created will also not have its children create improvements.
+- When a Custom Item entry is added as a default child of another item, it will no longer prompt the user to enter a price (it will always be 0), and if the select attribute in the entry's name tag is set, then that value will be the Custom Item's name as well.
+- Added support for gear that lets users choose between a selection of default children, via the <choosegear></choosegear> attributes. Each set of those tags inside of <gears></gears> is one choice that the user can make, and the user must choose between one of the <usegear></usegear> entries within each <choosegear></choosegear>.
+- Added support to tag gear as requiring a parent to be added, i.e. to mark the gear as an enhancement or plugin item.
+- Increased the size of the Rating box in SelectGear to accommodate larger ratings e.g. that credsticks might have.
+- Fixed a bug where selecting the "All" category in the form to select vehicle mods did not adhere to the category limit selection if one was set.
+- Fixed the "Hide Items Over Avail Limit" option on the vehicle mods selection screen so that it actually hides mods that are over the availability limit when checked.
+- Fixed a bug where having a positive essence score of less than 0.01 (in case the number of essence decimal places is set to 3 or greater) would mark the character as invalid for career mode. Fixes #1951.
+- Removed the piece of code that selected all text in Translator's search box whenever focus was gained to it. Fixes #1945.
+- Added Bubble Die option to dice roller that fixes glitch chances on even-numbered dicepools. When rolling an even-numbered dicepool with it enabled, an extra, "bubble" die is rolled for the purposes of determining whether the test glitches or not. This causes glitch chances for even-numbered pools are no longer be ridiculously low: pools of 0 have the same glitch chances as pools of 1, pools of 2 have the same glitch chances as pools of 3, so on.
+- Corrected the code that calculates weapon dicepool for drones in Career mode. Also added identical functionality to Create mode.
+- Corrected a bug where re-rolling failures in the dice roller would ignore the "rush job" checkbox.
+- Corrected a bug where the dice roller determined glitches to occur when at least half of the dicepool are 1s (RAW requires more than half of the dicepool to be 1s).
+- Upgraded the random number generator used for dice rolling from a Linear Congruential RNG to a Mersenne Twister RNG. This should drastically reduce the "patterns" one might see in random results, as those "patterns" come about as a result of the very low quality of randomness of Linear Congruential RNGs.
+- Fixed a bug where adding an item (e.g. a quality or adept power) that grants critter powers will not cause those critter powers to be removed should the item be removed. Fixes #1953.
+- Fixed a bug that caused bonuses that increased a skill's rating to act the same way as bonuses to the skill's dicepool, e.g. karma costs would not increase and specializations could not be taken if the skill had no points or karma allocated to increasing its rating. Fixes #1743.
+- Fixed a bug that prevented knowledge skills from having their names translated when printed out to a character sheet. Fixes #1668.
+- Added set of improvements that can disable access to specific grades of bioware and cyberware. These limits are bypassed for all 'ware that forces a particular grade, so any restrictions in those cases need to be applied to the specific piece of 'ware in question.
+- Fixed the "Hide Items Over Avail Limit" checkbox so that it displays the availability limit of the character in parentheses instead of the default availability value.
+- Added the ability for pre-installed subsystems in cyberare to include bioware and pre-installed subsystems in bioware to include cyberware. Added the ability for pre-installed cyberware and bioware subsystems to come with their own pre-installed gear and pre-installed subsystems.
+- Restrictions via the <forbidden> and <required> tags for bioware and cyberware will now also check subsystems, not just top-level cyberware and bioware.
+- Fixed names for improvement sources originating from nested cyberware, bioware, and gear not showing up properly.
+- Fixed bonuses for nested 'ware not getting removed when the parent is removed if the given piece of 'ware is a grandchild or later descendant of the 'ware getting removed.
+- Fixed a bug that caused 'ware grades to not obey the enabled sourcebook rules, e.g. Omegaware would show up even if Chrome Flesh was not enabled.
+- Fixed a bug where the Power selection dialog allowed the user to select a power that was marked as hidden or was from a sourcebook that the user did not have enabled.
+- Unhardcoded Cultured bioware's restriction from Used grade. Now any piece of bioware or cyberware can be marked as being ineligible for Used grade.
+- If Chummer5 encounters an error while loading improvements from a savefile, it will now warn the user to re-apply improvements and continue loading the character instead of crashing.
+- Added a new item in the Special options menu that calculates the total karma value of a character during character creation.
 
 Data Changes:
 
@@ -152,6 +192,22 @@ Data Changes:
 - Removed an obsolete weapon override file for the Ares Thunderstruck Gauss Rifle.
 - Added a set of custom rules that follows Shadowrun Missions 1.4 FAQ.
 - Fixed a bug where Sensitive System did not disallow the character from adding bioware.
+- Fixed an issue with the Taboo Transformer quality looking for an active skill version of Zoology for Mastery.
+- Added a few missing specializations to Active Skills that are present in the example characters and contacts in Run Faster.
+- Attack Dongles, Stealth Dongles, and Matrix attribute-modifying Electronic Modifications now all work the way they should and modify their parents' Matrix attributes when equipped.
+- Added entries for all the items that come with a Survival Kit and a Survival Knife.
+- Fixed Control Rig not coming with a built-in datajack or sim module. Fixed Datajack not coming with a meter of Universal Connector Cord.
+- Fixed all entries for commlinks, cyberdecks, and RCCs to properly represent the items they come with. Also fixed specialty cyberdecks so that they cannot rearrange their attributes.
+- Added an entry for the Hackpack Cyberdeck Form Factor. As per the core rulebook, it is free.
+- Fixed Sensors, Sensor Functions, Fake Licenses, all Audio Devices, all Video Devices, all Audio Enhancements, all Video Enhancements, all Armor Enhancements, Commlink/Cyberdeck Form Factors, and Altskin plugins from being able to accommodate incorrect plugins and/or from being added as an incorrect plugin.
+- Added a set of custom rules that makes Adapsin's essence multiplier apply as a generic multiplier after all others (the way it does in Hero Lab) instead of a multiplier to grade essence costs.
+- Removed the "All" category from vehicle mods because "Show All" is now always inserted at the beginning of the list of vehicle mod categories.
+- Smartskin properly provides armor based on its rating. Fixes #1949.
+- Fixed Ruthenium Polymer Cloak coming with capacity to add armor mods.
+- Fixed GTS Tower not coming with the Retrans Unit mentioned in its fluff description ("the Tower pulls double-duty as a retransmission drone").
+- Cyber-Snob now properly disallows buying any 'ware below Alphaware grade. Regeneration critter power now properly disables access to all bioware, as well as all cyberware below Deltaware grade.
+- Added cybersuites from Chrome Flesh and Boston Lockdown, as well as the commlinks included in those cybersuites.
+- Added the missing Cybersuites from State of the Art - ADL.
 
 New Strings:
 - Label_Options_SpellShapingFocus
@@ -189,6 +245,17 @@ New Strings:
 - Button_DecreaseCustomDirectoryLoadOrder
 - String_ShowAll
 - Checkbox_ShowOnlyAffordItems
+- Checkbox_Options_AllowPointBuySpecializationsOnKarmaSkills
+- Checkbox_DiceRoller_BubbleDie
+- String_BubbleDie
+- MessageTitle_ImprovementLoadError
+- Message_ImprovementLoadError
+- MessageTitle_KarmaValue
+- Message_KarmaValue
+- Menu_KarmaValue
+- String_Total
+- String_FreeSpells
+- String_FreeCFs
 
 Changes Strings:
 - Message_PositiveQualityLimit

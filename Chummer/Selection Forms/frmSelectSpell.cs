@@ -84,7 +84,7 @@ namespace Chummer
             }
             foreach (Improvement imp in _objCharacter.Improvements.Where(i => i.ImproveType == Improvement.ImprovementType.FreeSpellsSkill))
             {
-                int intSkillValue = _objCharacter.SkillsSection.Skills.First(x => x.Name == imp.ImprovedName).LearnedRating;
+                int intSkillValue = _objCharacter.SkillsSection.Skills.First(x => x.Name == imp.ImprovedName).TotalBaseRating;
                 if (imp.UniqueName.Contains("half"))
                     intSkillValue = (intSkillValue + 1) / 2;
                 if (imp.UniqueName.Contains("touchonly"))
@@ -261,7 +261,7 @@ namespace Chummer
                             return;
 
                         }
-                        if (!SelectionShared.RequirementsMet(objXmlSpell, true, _objCharacter, null, null, _objXmlDocument, "", LanguageManager.Instance.GetString("String_DescSpell")))
+                        if (!SelectionShared.RequirementsMet(objXmlSpell, true, _objCharacter, null, null, _objXmlDocument, string.Empty, LanguageManager.Instance.GetString("String_DescSpell")))
                         {
                             return;
                         }

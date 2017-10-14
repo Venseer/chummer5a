@@ -18,14 +18,10 @@
     https://github.com/chummer5a/chummer5a
 -->
 <chummer>
-  <gears>
-      <gear>
-        <name>Ammo: Depleted Uranium</name>
-        <hide />
-      </gear>
-    <gear>
-      <name>Subliminal Subacoustics Software</name>
+  <grades>
+    <grade>
+      <name>Omegaware</name>
       <hide />
-    </gear>
-  </gears>
+    </grade>
+  </grades>
 </chummer>

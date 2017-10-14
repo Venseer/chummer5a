@@ -215,7 +215,7 @@ namespace Chummer
                 {
                     TreeNode objTempNode = new TreeNode();
                     Weapon objTemp = new Weapon(objCharacter);
-                    objTemp.Create(objXmlGear, objCharacter, objTempNode, null, null);
+                    objTemp.Create(objXmlGear, objTempNode, null, null);
                     try
                     {
                         int objValue = objTemp.TotalCost;
@@ -887,7 +887,7 @@ namespace Chummer
                         XmlNode objXmlProgram = objXmlProgramDocument.SelectSingleNode("/chummer/complexforms/complexform[name = \"" + objXmlComplexForm.InnerText + "\"]");
                         TreeNode objNode = new TreeNode();
                         ComplexForm objProgram = new ComplexForm(_objCharacter);
-                        objProgram.Create(objXmlProgram, _objCharacter, objNode, strForceValue);
+                        objProgram.Create(objXmlProgram, objNode, strForceValue);
                         _objCharacter.ComplexForms.Add(objProgram);
                     }
 
@@ -908,9 +908,6 @@ namespace Chummer
                         List<TreeNode> lstWeaponNodes = new List<TreeNode>();
                         objGear.Create(objXmlGearItem, _objCharacter, objNode, intRating, lstWeapons, lstWeaponNodes, strForceValue);
                         objGear.Cost = "0";
-                        objGear.Cost3 = "0";
-                        objGear.Cost6 = "0";
-                        objGear.Cost10 = "0";
                         _objCharacter.Gear.Add(objGear);
                     }
                 }

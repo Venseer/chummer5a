@@ -41,6 +41,7 @@ namespace Chummer
         private bool _blnAutomaticCopyProtection = true;
         private bool _blnAutomaticRegistration = true;
         private bool _blnStrictSkillGroupsInCreateMode;
+        private bool _blnAllowPointBuySpecializationsOnKarmaSkills = false;
         private bool _blnCalculateCommlinkResponse = true;
         private bool _blnCapSkillRating;
         private bool _blnConfirmDelete = true;
@@ -181,7 +182,7 @@ namespace Chummer
         private readonly List<string> _lstCustomDataDirectoryNames = new List<string>();
 
         // Sourcebook list.
-        private readonly List<string> _lstBooks = new List<string>();
+        private readonly HashSet<string> _lstBooks = new HashSet<string>();
         private bool _mysaddPpCareer;
         private bool _blnReverseAttributePriorityOrder;
         private bool _blnHhideItemsOverAvailLimit = true;
@@ -387,6 +388,8 @@ namespace Chummer
             objWriter.WriteElementString("usecontactpoints", _blnUseContactPoints.ToString());
             // <breakskillgroupsincreatemode />
             objWriter.WriteElementString("breakskillgroupsincreatemode", _blnStrictSkillGroupsInCreateMode.ToString());
+            // <allowpointbuyspecializationsonkarmaskills />
+            objWriter.WriteElementString("allowpointbuyspecializationsonkarmaskills", _blnAllowPointBuySpecializationsOnKarmaSkills.ToString());
             // <extendanydetectionspell />
             objWriter.WriteElementString("extendanydetectionspell", _blnExtendAnyDetectionSpell.ToString());
             // <allowskilldicerolling />
@@ -775,6 +778,8 @@ namespace Chummer
             objXmlNode.TryGetBoolFieldQuickly("usecontactpoints", ref _blnUseContactPoints);
             // Whether or not the user can break Skill Groups while in Create Mode.
             objXmlNode.TryGetBoolFieldQuickly("breakskillgroupsincreatemode", ref _blnStrictSkillGroupsInCreateMode);
+            // Whether or not the user is allowed to buy specializations with skill points for skills only bought with karma.
+            objXmlNode.TryGetBoolFieldQuickly("allowpointbuyspecializationsonkarmaskills", ref _blnAllowPointBuySpecializationsOnKarmaSkills);
             // Whether or not any Detection Spell can be taken as Extended range version.
             objXmlNode.TryGetBoolFieldQuickly("extendanydetectionspell", ref _blnExtendAnyDetectionSpell);
             // Whether or not dice rolling id allowed for Skills.
@@ -1136,14 +1141,10 @@ namespace Chummer
         /// </summary>
         public string BookXPath()
         {
-            string strPath = _strBookXPath;
+            string strPath = "not(hide)";
             if (!string.IsNullOrEmpty(_strBookXPath))
             {
-                strPath += " and not(hide)";
-            }
-            else
-            {
-                strPath += "not(hide)";
+                strPath += " and " + _strBookXPath;
             }
             if (GlobalOptions.Instance.MissionsOnly)
             {
@@ -1664,7 +1665,7 @@ namespace Chummer
         /// <summary>
         /// Sourcebooks.
         /// </summary>
-        public List<string> Books
+        public HashSet<string> Books
         {
             get
             {
@@ -2205,6 +2206,21 @@ namespace Chummer
             set
             {
                 _blnStrictSkillGroupsInCreateMode = value;
+            }
+        }
+
+        /// <summary>
+        /// Whether or not the user is allowed to buy specializations with skill points for skills only bought with karma.
+        /// </summary>
+        public bool AllowPointBuySpecializationsOnKarmaSkills
+        {
+            get
+            {
+                return _blnAllowPointBuySpecializationsOnKarmaSkills;
+            }
+            set
+            {
+                _blnAllowPointBuySpecializationsOnKarmaSkills = value;
             }
         }
 

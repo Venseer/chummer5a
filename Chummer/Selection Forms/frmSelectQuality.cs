@@ -373,7 +373,7 @@ namespace Chummer
                             blnQualityAllowed = true;
                     }
 
-                    if (objXmlQuality["hide"] == null && blnQualityAllowed)
+                    if (blnQualityAllowed)
                     {
                         if (!chkLimitList.Checked || chkLimitList.Checked && SelectionShared.RequirementsMet(objXmlQuality, false, _objCharacter, objXmlMetatypeDocument, objXmlCrittersDocument, _objXmlDocument, IgnoreQuality, LanguageManager.Instance.GetString("String_Quality")))
                         {
@@ -457,14 +457,11 @@ namespace Chummer
                     {
                         if (!chkLimitList.Checked || chkLimitList.Checked && SelectionShared.RequirementsMet(objXmlQuality, false, _objCharacter, objXmlMetatypeDocument, objXmlCrittersDocument, _objXmlDocument, IgnoreQuality, LanguageManager.Instance.GetString("String_Quality")))
                         {
-                            if (objXmlQuality["hide"] == null)
-                            {
-                                ListItem objItem = new ListItem();
-                                objItem.Value = objXmlQuality["name"].InnerText;
-                                objItem.Name = objXmlQuality["translate"]?.InnerText ?? objXmlQuality["name"].InnerText;
+                            ListItem objItem = new ListItem();
+                            objItem.Value = objXmlQuality["name"].InnerText;
+                            objItem.Name = objXmlQuality["translate"]?.InnerText ?? objXmlQuality["name"].InnerText;
 
-                                lstQuality.Add(objItem);
-                            }
+                            lstQuality.Add(objItem);
                         }
                     }
                 }

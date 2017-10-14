@@ -1,5 +1,6 @@
 using Chummer.Backend.Attributes;
 using Chummer.Backend.Equipment;
+using Chummer.Backend.Extensions;
 using Chummer.Skills;
 using System;
 using System.Collections.Generic;
@@ -99,6 +100,7 @@ namespace Chummer.Backend.Shared_Methods
 
                 // We could set this to a list immediately, but I'd rather the pointer start at null so that no list ends up getting selected for the "default" case below
                 IEnumerable<INamedItem> objListToCheck = null;
+                bool blnCheckCyberwareChildren = false;
                 switch (objXmlNode.Name)
                 {
                     case "quality":
@@ -134,7 +136,7 @@ namespace Chummer.Backend.Shared_Methods
                     case "cyberware":
                     case "bioware":
                         {
-                            objListToCheck = objCharacter.Cyberware;
+                            blnCheckCyberwareChildren = true;
                             break;
                         }
                     default:
@@ -148,7 +150,10 @@ namespace Chummer.Backend.Shared_Methods
                 int intExtendedCount = 0;
                 if (objListToCheck != null)
                 {
-                    intCount = objListToCheck.Count(objItem => objItem.Name != strIgnoreQuality && lstNamesIncludedInLimit.Any(objLimitName => objLimitName == objItem.Name));
+                    if (blnCheckCyberwareChildren)
+                        intCount = objCharacter.Cyberware.DeepCount(x => x.Children, x => x.Name != strIgnoreQuality && lstNamesIncludedInLimit.Any(strName => strName == x.Name));
+                    else
+                        intCount = objListToCheck.Count(objItem => objItem.Name != strIgnoreQuality && lstNamesIncludedInLimit.Any(objLimitName => objLimitName == objItem.Name));
                     intExtendedCount = intCount;
                     // In case one item is split up into multiple entries with different names, e.g. Indomitable quality, we need to be able to check all those entries against the limit
                     if (objXmlNode["includeinlimit"] != null)
@@ -157,7 +162,11 @@ namespace Chummer.Backend.Shared_Methods
                         {
                             lstNamesIncludedInLimit.Add(objChildXml.InnerText);
                         }
-                        intExtendedCount = objListToCheck.Count(objItem => objItem.Name != strIgnoreQuality && lstNamesIncludedInLimit.Any(objLimitName => objLimitName == objItem.Name));
+                        
+                        if (blnCheckCyberwareChildren)
+                            intExtendedCount = objCharacter.Cyberware.DeepCount(x => x.Children, objItem => objItem.Name != strIgnoreQuality && lstNamesIncludedInLimit.Any(objLimitName => objLimitName == objItem.Name));
+                        else
+                            intExtendedCount = objListToCheck.Count(objItem => objItem.Name != strIgnoreQuality && lstNamesIncludedInLimit.Any(objLimitName => objLimitName == objItem.Name));
                     }
                 }
                 int intLimit = Convert.ToInt32(strLimitString);
@@ -351,9 +360,9 @@ namespace Chummer.Backend.Shared_Methods
                         name += node.Name == "cyberware"
                             ? "\n\t" + LanguageManager.Instance.GetString("Label_Cyberware") + node.InnerText
                             : "\n\t" + LanguageManager.Instance.GetString("Label_Bioware") + node.InnerText;
-                        return character.Cyberware.Count( objCyberware =>
-                                objCyberware.Name == node.InnerText && node.Attributes?["select"] == null ||
-                                node.Attributes?["select"] != null && node.Attributes?["select"].InnerText == objCyberware.Location) >= count;
+                        return character.Cyberware.DeepCount(x => x.Children, objCyberware =>
+                               objCyberware.Name == node.InnerText && node.Attributes?["select"] == null ||
+                               node.Attributes?["select"] != null && node.Attributes?["select"].InnerText == objCyberware.Location) >= count;
                     }
                 case "biowarecontains":
                 case "cyberwarecontains":
@@ -363,12 +372,12 @@ namespace Chummer.Backend.Shared_Methods
                         name += node.Name == "cyberware"
                             ? "\n\t" + LanguageManager.Instance.GetString("Label_Cyberware") + node.InnerText
                             : "\n\t" + LanguageManager.Instance.GetString("Label_Bioware") + node.InnerText;
-                    Improvement.ImprovementSource source = Improvement.ImprovementSource.Cyberware;
-                    if (node.Name == "biowarecontains")
-                    {
-                        source = Improvement.ImprovementSource.Bioware;
-                    }
-                    return character.Cyberware.Count(objCyberware =>
+                        Improvement.ImprovementSource source = Improvement.ImprovementSource.Cyberware;
+                        if (node.Name == "biowarecontains")
+                        {
+                            source = Improvement.ImprovementSource.Bioware;
+                        }
+                        return character.Cyberware.DeepCount(x => x.Children, objCyberware =>
                             objCyberware.SourceType == source && objCyberware.Name.Contains(node.InnerText) && node.Attributes?["select"] == null ||
                             node.Attributes?["select"] != null && node.Attributes?["select"].InnerText == objCyberware.Location) >= count;
                 }
@@ -573,7 +582,7 @@ namespace Chummer.Backend.Shared_Methods
                             .Where(objSkill => objSkill.Name == node["name"]?.InnerText &&
                                                (node["spec"] == null ||
                                                 objSkill.Specializations.Any(objSpec => objSpec.Name == node["spec"]?.InnerText)))
-                            .FirstOrDefault(objSkill => objSkill.LearnedRating >= Convert.ToInt32(node["val"]?.InnerText));
+                            .FirstOrDefault(objSkill => objSkill.TotalBaseRating >= Convert.ToInt32(node["val"]?.InnerText));
 
                         if (s != null)
                         {
@@ -595,7 +604,7 @@ namespace Chummer.Backend.Shared_Methods
                             .Where(objSkill => objSkill.Name == node["name"]?.InnerText &&
                                                (node["spec"] == null ||
                                                 objSkill.Specializations.Any(objSpec => objSpec.Name == node["spec"]?.InnerText)))
-                            .FirstOrDefault(objSkill => objSkill.LearnedRating >= Convert.ToInt32(node["val"]?.InnerText));
+                            .FirstOrDefault(objSkill => objSkill.TotalBaseRating >= Convert.ToInt32(node["val"]?.InnerText));
 
                         if (s != null)
                         {
@@ -706,22 +715,16 @@ namespace Chummer.Backend.Shared_Methods
         public static bool CheckAvailRestriction(XmlNode objXmlGear, Character objCharacter, bool blnHide, int intRating = 0,
             int intAvailModifier = 0, bool blnAddToList = true)
         {
+            if (objXmlGear == null)
+                return false;
             XmlDocument objXmlDocument = new XmlDocument();
             //TODO: Better handler for restricted gear
             if (!blnHide || objCharacter.Created || objCharacter.RestrictedGear ||
                 objCharacter.IgnoreRules || !blnAddToList) return blnAddToList;
             // Avail.
             // If avail contains "F" or "R", remove it from the string so we can use the expression.
-            string strAvailExpr = string.Empty;
+            string strAvailExpr = objXmlGear["avail"]?.InnerText ?? string.Empty;
             string strPrefix = string.Empty;
-            if (objXmlGear["avail"] != null)
-                strAvailExpr = objXmlGear["avail"].InnerText;
-            if (intRating <= 3 && objXmlGear["avail3"] != null)
-                strAvailExpr = objXmlGear["avail3"].InnerText;
-            else if (intRating <= 6 && objXmlGear["avail6"] != null)
-                strAvailExpr = objXmlGear["avail6"].InnerText;
-            else if (intRating >= 7 && objXmlGear["avail10"] != null)
-                strAvailExpr = objXmlGear["avail10"].InnerText;
             if (strAvailExpr.StartsWith("FixedValues"))
             {
                 var strValues = strAvailExpr.Replace("FixedValues(", string.Empty).Replace(")", string.Empty).Split(',');

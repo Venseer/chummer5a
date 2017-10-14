@@ -6,13 +6,14 @@ using System.Windows.Forms;
 using System.Xml;
 using System.Xml.XPath;
 using Chummer.Skills;
+using Chummer.Backend.Extensions;
 
 namespace Chummer.Backend.Equipment
 {
     /// <summary>
     /// A Weapon.
     /// </summary>
-    public class Weapon : INamedParentWithGuid<Weapon>
+    public class Weapon : INamedParentWithGuidAndNode<Weapon>
     {
         private Guid _sourceID = new Guid();
         private Guid _guiID = new Guid();
@@ -67,6 +68,7 @@ namespace Chummer.Backend.Equipment
         private string _strRCTip = string.Empty;
         private string _strWeaponSlots = string.Empty;
         private bool _blnCyberware = false;
+        private string _strParentID = string.Empty;
 
         private readonly Character _objCharacter;
         private string _mount;
@@ -82,12 +84,11 @@ namespace Chummer.Backend.Equipment
 
         /// Create a Weapon from an XmlNode and return the TreeNodes for it.
         /// <param name="objXmlWeapon">XmlNode to create the object from.</param>
-        /// <param name="objCharacter">Character that the Weapon is being added to.</param>
         /// <param name="objNode">TreeNode to populate a TreeView.</param>
         /// <param name="cmsWeapon">ContextMenuStrip to use for Weapons.</param>
         /// <param name="cmsWeaponAccessory">ContextMenuStrip to use for Accessories.</param>
         /// <param name="blnCreateChildren">Whether or not child items should be created.</param>
-        public void Create(XmlNode objXmlWeapon, Character objCharacter, TreeNode objNode, ContextMenuStrip cmsWeapon, ContextMenuStrip cmsWeaponAccessory, ContextMenuStrip cmsWeaponAccessoryGear = null, bool blnCreateChildren = true)
+        public void Create(XmlNode objXmlWeapon, TreeNode objNode, ContextMenuStrip cmsWeapon, ContextMenuStrip cmsWeaponAccessory, ContextMenuStrip cmsWeaponAccessoryGear = null, bool blnCreateChildren = true)
         {
             objXmlWeapon.TryGetField("id", Guid.TryParse, out _sourceID);
             objXmlWeapon.TryGetStringFieldQuickly("name", ref _strName);
@@ -208,7 +209,8 @@ namespace Chummer.Backend.Equipment
                     TreeNode objUnderbarrelNode = new TreeNode();
                     XmlNode objXmlWeaponNode =
                         objXmlDocument.SelectSingleNode("/chummer/weapons/weapon[name = \"" + objXmlUnderbarrel.InnerText + "\"]");
-                    objUnderbarrelWeapon.Create(objXmlWeaponNode, _objCharacter, objUnderbarrelNode, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                    objUnderbarrelWeapon.Create(objXmlWeaponNode, objUnderbarrelNode, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                    objUnderbarrelWeapon.ParentID = InternalId;
                     objUnderbarrelWeapon.IncludedInWeapon = true;
                     objUnderbarrelWeapon.IsUnderbarrelWeapon = true;
                     _lstUnderbarrel.Add(objUnderbarrelWeapon);
@@ -260,11 +262,21 @@ namespace Chummer.Backend.Equipment
                         foreach (XmlNode objXmlAccessoryGear in objXmlWeaponAccessory.SelectNodes("gears/usegear"))
                         {
                             int intGearRating = 0;
-                            string strForceValue = string.Empty;
-                            if (objXmlAccessoryGear.Attributes["rating"] != null)
-                                intGearRating = Convert.ToInt32(objXmlAccessoryGear.Attributes["rating"].InnerText);
-                            if (objXmlAccessoryGear.Attributes["select"] != null)
-                                strForceValue = objXmlAccessoryGear.Attributes["select"].InnerText;
+                            int intGearQty = 1;
+                            string strChildForceSource = string.Empty;
+                            string strChildForcePage = string.Empty;
+                            string strChildForceValue = string.Empty;
+                            bool blnStartCollapsed = objXmlAccessoryGear["name"].Attributes?["startcollapsed"]?.InnerText == "yes";
+                            if (objXmlAccessoryGear["rating"] != null)
+                                intGearRating = Convert.ToInt32(objXmlAccessoryGear["rating"].InnerText);
+                            if (objXmlAccessoryGear["name"].Attributes["qty"] != null)
+                                intGearQty = Convert.ToInt32(objXmlAccessoryGear["name"].Attributes["qty"].InnerText);
+                            if (objXmlAccessoryGear["name"].Attributes["select"] != null)
+                                strChildForceValue = objXmlAccessoryGear["name"].Attributes["select"].InnerText;
+                            if (objXmlAccessoryGear["source"] != null)
+                                strChildForceSource = objXmlAccessoryGear["source"].InnerText;
+                            if (objXmlAccessoryGear["page"] != null)
+                                strChildForcePage = objXmlAccessoryGear["page"].InnerText;
 
                             XmlNode objXmlGear = objXmlGearDocument.SelectSingleNode("/chummer/gears/gear[name = \"" + objXmlAccessoryGear.InnerText + "\"]");
                             Gear objGear = new Gear(_objCharacter);
@@ -273,16 +285,26 @@ namespace Chummer.Backend.Equipment
                             List<Weapon> lstWeapons = new List<Weapon>();
                             List<TreeNode> lstWeaponNodes = new List<TreeNode>();
 
-                            objGear.Create(objXmlGear, _objCharacter, objGearNode, intGearRating, lstWeapons, lstWeaponNodes, strForceValue, false, false, true);
+                            objGear.Create(objXmlGear, _objCharacter, objGearNode, intGearRating, lstWeapons, lstWeaponNodes, strChildForceValue);
+                            objGear.Quantity = intGearQty;
                             objGear.Cost = "0";
-                            objGear.MaxRating = objGear.Rating;
-                            objGear.MinRating = objGear.Rating;
+                            objGear.MinRating = intGearRating;
+                            objGear.MaxRating = intGearRating;
                             objGear.IncludedInParent = true;
+                            if (!string.IsNullOrEmpty(strChildForceSource))
+                                objGear.Source = strChildForceSource;
+                            if (!string.IsNullOrEmpty(strChildForcePage))
+                                objGear.Page = strChildForcePage;
                             objAccessory.Gear.Add(objGear);
+
+                            // Change the Capacity of the child if necessary.
+                            if (objXmlAccessoryGear["capacity"] != null)
+                                objGear.Capacity = "[" + objXmlAccessoryGear["capacity"].InnerText + "]";
 
                             objGearNode.ContextMenuStrip = cmsWeaponAccessoryGear;
                             objAccessoryNode.Nodes.Add(objGearNode);
-                            objAccessoryNode.Expand();
+                            if (!blnStartCollapsed)
+                                objAccessoryNode.Expand();
                         }
                     }
 
@@ -338,6 +360,7 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteElementString("suppressive", _intSuppressive.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("source", _strSource);
             objWriter.WriteElementString("page", _strPage);
+            objWriter.WriteElementString("parentid", _strParentID);
             objWriter.WriteElementString("weaponname", _strWeaponName);
             objWriter.WriteElementString("included", _blnIncludedInWeapon.ToString());
             objWriter.WriteElementString("installed", _blnInstalled.ToString());
@@ -449,6 +472,7 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetInt32FieldQuickly("fullburst", ref _intFullBurst);
             objNode.TryGetInt32FieldQuickly("suppressive", ref _intSuppressive);
             objNode.TryGetStringFieldQuickly("page", ref _strPage);
+            objNode.TryGetStringFieldQuickly("parentid", ref _strParentID);
             objNode.TryGetInt32FieldQuickly("fullburst", ref _intFullBurst);
             objNode.TryGetStringFieldQuickly("source", ref _strSource);
             objNode.TryGetStringFieldQuickly("weaponname", ref _strWeaponName);
@@ -471,6 +495,8 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetStringFieldQuickly("useskill", ref _strUseSkill);
             objNode.TryGetDoubleFieldQuickly("rangemultiply", ref _dblRangeMultiplier);
             objNode.TryGetBoolFieldQuickly("included", ref _blnIncludedInWeapon);
+            if (Name == "Unarmed Attack")
+                _blnIncludedInWeapon = true; // Unarmed Attack can never be removed
             objNode.TryGetBoolFieldQuickly("installed", ref _blnInstalled);
             objNode.TryGetBoolFieldQuickly("requireammo", ref _blnRequireAmmo);
 
@@ -529,8 +555,49 @@ namespace Chummer.Backend.Equipment
         /// <param name="objWriter">XmlTextWriter to write with.</param>
         public void Print(XmlTextWriter objWriter)
         {
-            // Find the piece of Gear that created this item if applicable.
-            Gear objGear = CommonFunctions.FindGearByWeaponID(_guiID.ToString(), _objCharacter.Gear);
+            // Find the piece of Gear that created this item if applicable
+            List<Gear> lstGearToSearch = new List<Gear>(_objCharacter.Gear);
+            foreach (Cyberware objCyberware in _objCharacter.Cyberware.DeepWhere(x => x.Children, x => x.Gear.Count > 0))
+            {
+                lstGearToSearch.AddRange(objCyberware.Gear);
+            }
+            foreach (Weapon objWeapon in _objCharacter.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
+            {
+                foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
+                {
+                    lstGearToSearch.AddRange(objAccessory.Gear);
+                }
+            }
+            foreach (Armor objArmor in _objCharacter.Armor)
+            {
+                lstGearToSearch.AddRange(objArmor.Gear);
+            }
+            foreach (Vehicle objVehicle in _objCharacter.Vehicles)
+            {
+                lstGearToSearch.AddRange(objVehicle.Gear);
+                foreach (Weapon objWeapon in objVehicle.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
+                {
+                    foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
+                    {
+                        lstGearToSearch.AddRange(objAccessory.Gear);
+                    }
+                }
+                foreach (VehicleMod objVehicleMod in objVehicle.Mods.Where(x => x.Cyberware.Count > 0 || x.Weapons.Count > 0))
+                {
+                    foreach (Cyberware objCyberware in objVehicleMod.Cyberware.DeepWhere(x => x.Children, x => x.Gear.Count > 0))
+                    {
+                        lstGearToSearch.AddRange(objCyberware.Gear);
+                    }
+                    foreach (Weapon objWeapon in objVehicleMod.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
+                    {
+                        foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
+                        {
+                            lstGearToSearch.AddRange(objAccessory.Gear);
+                        }
+                    }
+                }
+            }
+            Gear objGear = CommonFunctions.FindGearByWeaponID(_guiID.ToString(), lstGearToSearch);
 
             objWriter.WriteStartElement("weapon");
             objWriter.WriteElementString("name", DisplayNameShort);
@@ -1078,6 +1145,21 @@ namespace Chummer.Backend.Equipment
         }
 
         /// <summary>
+        /// ID of the object that added this weapon (if any).
+        /// </summary>
+        public string ParentID
+        {
+            get
+            {
+                return _strParentID;
+            }
+            set
+            {
+                _strParentID = value;
+            }
+        }
+
+        /// <summary>
         /// Location.
         /// </summary>
         public string Location
@@ -1212,6 +1294,14 @@ namespace Chummer.Backend.Equipment
             get
             {
                 return _sourceID;
+            }
+        }
+
+        public XmlNode MyXmlNode
+        {
+            get
+            {
+                return XmlManager.Instance.Load("weapons.xml")?.SelectSingleNode("/chummer/weapons/weapon[id = \"" + _sourceID.ToString() + "\"]");
             }
         }
         #endregion
@@ -2468,7 +2558,7 @@ namespace Chummer.Backend.Equipment
                         }
 
                         if (strPowerSkill == strSkill)
-                            if (strSpec != string.Empty)
+                            if (!string.IsNullOrEmpty(strSpec))
                             {
                                 if (_objCharacter.SkillsSection.Skills.Any(objSkill => objSkill.Name.StartsWith("Exotic") && objSkill.DisplaySpecialization == strSpec))
                                 {

@@ -24,6 +24,7 @@ using System.Diagnostics;
  using System.Drawing;
  using System.Linq;
  using Chummer.Backend.Equipment;
+using Chummer.Backend.Extensions;
 
 namespace Chummer
 {
@@ -54,18 +55,14 @@ namespace Chummer
         /// </summary>
         /// <param name="strGuid">InternalId of the Needle to Find.</param>
         /// <param name="lstHaystack">Haystack to search.</param>
-        public static T FindById<T>(string strGuid, List<T> lstHaystack) where T : IItemWithGuid
+        public static T FindById<T>(string strGuid, IEnumerable<T> lstHaystack) where T : IItemWithGuid
         {
-            if (strGuid != Guid.Empty.ToString())
+            if (strGuid == Guid.Empty.ToString())
             {
-                foreach (T objNeedle in lstHaystack)
-                {
-                    if (objNeedle.InternalId == strGuid)
-                        return objNeedle;
-                }
+                return default(T);
             }
-
-            return default(T);
+            
+            return lstHaystack.FirstOrDefault(x => x.InternalId == strGuid);
         }
 
         /// <summary>
@@ -73,18 +70,14 @@ namespace Chummer
         /// </summary>
         /// <param name="strGuid">InternalId of the Needle to Find.</param>
         /// <param name="lstHaystack">Haystack to search.</param>
-        public static T FindByIdWithNameCheck<T>(string strGuid, List<T> lstHaystack) where T : INamedItemWithGuid
+        public static T FindByIdWithNameCheck<T>(string strGuid, IEnumerable<T> lstHaystack) where T : INamedItemWithGuid
         {
-            if (strGuid != Guid.Empty.ToString())
+            if (strGuid == Guid.Empty.ToString())
             {
-                foreach (T objNeedle in lstHaystack)
-                {
-                    if (objNeedle.InternalId == strGuid && !string.IsNullOrEmpty(objNeedle.Name))
-                        return objNeedle;
-                }
+                return default(T);
             }
 
-            return default(T);
+            return lstHaystack.FirstOrDefault(x => x.InternalId == strGuid && !string.IsNullOrEmpty(x.Name));
         }
 
         /// <summary>
@@ -92,29 +85,29 @@ namespace Chummer
         /// </summary>
         /// <param name="strGuid">InternalId of the Needle to Find.</param>
         /// <param name="lstHaystack">Haystack to search.</param>
-        public static T DeepFindById<T>(string strGuid, List<T> lstHaystack) where T : INamedParentWithGuid<T>
+        public static T DeepFindById<T>(string strGuid, IEnumerable<T> lstHaystack) where T : INamedParentWithGuid<T>
         {
-            if (strGuid != Guid.Empty.ToString())
+            if (strGuid == Guid.Empty.ToString())
             {
-                T objNeedle;
-                foreach (T objLoop in lstHaystack)
-                {
-                    if (objLoop.InternalId == strGuid)
-                    {
-                        objNeedle = objLoop;
-                        if (!string.IsNullOrEmpty(objNeedle.Name))
-                            return objNeedle;
-                    }
-                    if (objLoop.Children.Count > 0)
-                    {
-                        objNeedle = DeepFindById(strGuid, objLoop.Children);
-                        if (!string.IsNullOrEmpty(objNeedle?.Name))
-                            return objNeedle;
-                    }
-                }
+                return default(T);
             }
 
-            return default(T);
+            return lstHaystack.DeepFirstOrDefault(x => x.Children, x => x.InternalId == strGuid && !string.IsNullOrEmpty(x.Name));
+        }
+
+        /// <summary>
+        /// Locate an object (Needle) within a list and its children (Haystack) based on name match and non-zero guid.
+        /// </summary>
+        /// <param name="strName">Name of the Needle to Find.</param>
+        /// <param name="lstHaystack">Haystack to search.</param>
+        public static T DeepFindByName<T>(string strName, IEnumerable<T> lstHaystack) where T : INamedParentWithGuid<T>
+        {
+            if (string.IsNullOrEmpty(strName))
+            {
+                return default(T);
+            }
+
+            return lstHaystack.DeepFirstOrDefault(x => x.Children, x => x.Name == strName && x.InternalId != Guid.Empty.ToString());
         }
 
         /// <summary>
@@ -122,7 +115,7 @@ namespace Chummer
         /// </summary>
         /// <param name="strGuid">InternalId of the Gear to find.</param>
         /// <param name="lstCommlink">List of Commlinks to search.</param>
-        public static Commlink FindCommlink(string strGuid, List<Gear> lstCommlink)
+        public static Commlink FindCommlink(string strGuid, IEnumerable<Gear> lstCommlink)
         {
             return DeepFindById(strGuid, lstCommlink) as Commlink;
         }
@@ -132,27 +125,11 @@ namespace Chummer
         /// </summary>
         /// <param name="strGuid">InternalId of the Weapon to find.</param>
         /// <param name="lstGear">List of Gear to search.</param>
-        public static Gear FindGearByWeaponID(string strGuid, List<Gear> lstGear)
+        public static Gear FindGearByWeaponID(string strGuid, IEnumerable<Gear> lstGear)
         {
             if (strGuid == Guid.Empty.ToString())
                 return null;
-            Gear objReturn = null;
-            foreach (Gear objGear in lstGear)
-            {
-                if (!string.IsNullOrEmpty(objGear.Name))
-                {
-                    if (objGear.WeaponID == strGuid)
-                        objReturn = objGear;
-                    else if (objGear.Children.Count > 0)
-                        objReturn = FindGearByWeaponID(strGuid, objGear.Children);
-
-                    if (!string.IsNullOrEmpty(objReturn?.Name))
-                    {
-                        return objReturn;
-                    }
-                }
-            }
-            return null;
+            return lstGear.DeepFirstOrDefault(x => x.Children, x => x.WeaponID == strGuid && !string.IsNullOrEmpty(x.Name));
         }
 
         /// <summary>
@@ -161,7 +138,7 @@ namespace Chummer
         /// <param name="strGuid">InternalId of the Gear to find.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
         /// <param name="objFoundVehicle">Vehicle that the Gear was found in.</param>
-        public static Gear FindVehicleGear(string strGuid, List<Vehicle> lstVehicles, out Vehicle objFoundVehicle)
+        public static Gear FindVehicleGear(string strGuid, IEnumerable<Vehicle> lstVehicles, out Vehicle objFoundVehicle)
         {
             if (strGuid != Guid.Empty.ToString())
             {
@@ -169,12 +146,6 @@ namespace Chummer
                 foreach (Vehicle objVehicle in lstVehicles)
                 {
                     objReturn = DeepFindById(strGuid, objVehicle.Gear);
-
-                    if (!string.IsNullOrEmpty(objReturn?.Name))
-                    {
-                        objFoundVehicle = objVehicle;
-                        return objReturn;
-                    }
 
                     // Look for any Gear that might be attached to this Vehicle through Weapon Accessories or Cyberware.
                     foreach (VehicleMod objMod in objVehicle.Mods)
@@ -212,7 +183,7 @@ namespace Chummer
         /// <param name="strGuid">InternalId of the VehicleMod to find.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
         /// <param name="objFoundVehicle">Vehicle that the VehicleMod was found in.</param>
-        public static VehicleMod FindVehicleMod(string strGuid, List<Vehicle> lstVehicles, out Vehicle objFoundVehicle)
+        public static VehicleMod FindVehicleMod(string strGuid, IEnumerable<Vehicle> lstVehicles, out Vehicle objFoundVehicle)
         {
             if (strGuid != Guid.Empty.ToString())
             {
@@ -242,7 +213,7 @@ namespace Chummer
         /// <param name="strGuid">InteralId of the Weapon to find.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
         /// <param name="objFoundVehicle">Vehicle that the Weapon was found in.</param>
-        public static Weapon FindVehicleWeapon(string strGuid, List<Vehicle> lstVehicles, out Vehicle objFoundVehicle)
+        public static Weapon FindVehicleWeapon(string strGuid, IEnumerable<Vehicle> lstVehicles, out Vehicle objFoundVehicle)
         {
             if (strGuid != Guid.Empty.ToString())
             {
@@ -280,7 +251,7 @@ namespace Chummer
         /// </summary>
         /// <param name="strGuid">InternalId of the Weapon Accessory to find.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
-        public static WeaponAccessory FindVehicleWeaponAccessory(string strGuid, List<Vehicle> lstVehicles)
+        public static WeaponAccessory FindVehicleWeaponAccessory(string strGuid, IEnumerable<Vehicle> lstVehicles)
         {
             if (strGuid != Guid.Empty.ToString())
             {
@@ -311,7 +282,7 @@ namespace Chummer
         /// </summary>
         /// <param name="strGuid">InternalId of the Cyberware to find.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
-        public static Cyberware FindVehicleCyberware(string strGuid, List<Vehicle> lstVehicles)
+        public static Cyberware FindVehicleCyberware(string strGuid, IEnumerable<Vehicle> lstVehicles)
         {
             if (strGuid != Guid.Empty.ToString())
             {
@@ -339,7 +310,7 @@ namespace Chummer
         /// <param name="strGuid">InternalId of the Gear to find.</param>
         /// <param name="lstArmors">List of Armors to search.</param>
         /// <param name="objFoundArmor">Armor that the Gear was found in.</param>
-        public static Gear FindArmorGear(string strGuid, List<Armor> lstArmors, out Armor objFoundArmor)
+        public static Gear FindArmorGear(string strGuid, IEnumerable<Armor> lstArmors, out Armor objFoundArmor)
         {
             if (strGuid != Guid.Empty.ToString())
             {
@@ -368,7 +339,7 @@ namespace Chummer
         /// </summary>
         /// <param name="strGuid">InternalId of the ArmorMod to Find.</param>
         /// <param name="lstArmors">List of Armors to search.</param>
-        public static ArmorMod FindArmorMod(string strGuid, List<Armor> lstArmors)
+        public static ArmorMod FindArmorMod(string strGuid, IEnumerable<Armor> lstArmors)
         {
             if (strGuid == Guid.Empty.ToString())
                 return null;
@@ -390,12 +361,12 @@ namespace Chummer
         /// <param name="strGuid">InternalId of the Gear to find.</param>
         /// <param name="lstCyberware">List of Cyberware to search.</param>
         /// <param name="objFoundCyberware">Cyberware that the Gear was found in.</param>
-        public static Gear FindCyberwareGear(string strGuid, List<Cyberware> lstCyberware, out Cyberware objFoundCyberware)
+        public static Gear FindCyberwareGear(string strGuid, IEnumerable<Cyberware> lstCyberware, out Cyberware objFoundCyberware)
         {
             if (strGuid != Guid.Empty.ToString())
             {
                 Gear objReturn;
-                foreach (Cyberware objCyberware in lstCyberware)
+                foreach (Cyberware objCyberware in lstCyberware.DeepWhere(x => x.Children, x => x.Gear.Count > 0))
                 {
                     objReturn = DeepFindById(strGuid, objCyberware.Gear);
 
@@ -403,16 +374,6 @@ namespace Chummer
                     {
                         objFoundCyberware = objCyberware;
                         return objReturn;
-                    }
-
-                    if (objCyberware.Children.Count > 0)
-                    {
-                        objReturn = FindCyberwareGear(strGuid, objCyberware.Children, out objFoundCyberware);
-                        if (!string.IsNullOrEmpty(objReturn?.Name))
-                        {
-                            objFoundCyberware = objCyberware;
-                            return objReturn;
-                        }
                     }
                 }
             }
@@ -426,23 +387,17 @@ namespace Chummer
         /// </summary>
         /// <param name="strGuid">InternalId of the WeaponAccessory to find.</param>
         /// <param name="lstWeapons">List of Weapons to search.</param>
-        public static WeaponAccessory FindWeaponAccessory(string strGuid, List<Weapon> lstWeapons)
+        public static WeaponAccessory FindWeaponAccessory(string strGuid, IEnumerable<Weapon> lstWeapons)
         {
             if (strGuid != Guid.Empty.ToString())
             {
-                WeaponAccessory objReturn;
-                foreach (Weapon objWeapon in lstWeapons)
+                foreach (Weapon objWeapon in lstWeapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Count > 0))
                 {
                     foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
                     {
                         if (objAccessory.InternalId == strGuid)
                             return objAccessory;
                     }
-
-                    // Look within Underbarrel Weapons.
-                    objReturn = FindWeaponAccessory(strGuid, objWeapon.UnderbarrelWeapons);
-                    if (objReturn != null)
-                        return objReturn;
                 }
             }
 
@@ -455,30 +410,22 @@ namespace Chummer
         /// <param name="strGuid">InternalId of the Gear to find.</param>
         /// <param name="lstWeapons">List of Weapons to search.</param>
         /// <param name="objFoundAccessory">WeaponAccessory that the Gear was found in.</param>
-        public static Gear FindWeaponGear(string strGuid, List<Weapon> lstWeapons, out WeaponAccessory objFoundAccessory)
+        public static Gear FindWeaponGear(string strGuid, IEnumerable<Weapon> lstWeapons, out WeaponAccessory objFoundAccessory)
         {
             if (strGuid != Guid.Empty.ToString())
             {
                 Gear objReturn;
-                foreach (Weapon objWeapon in lstWeapons)
+                foreach (Weapon objWeapon in lstWeapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
                 {
                     foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
                     {
                         objReturn = DeepFindById(strGuid, objAccessory.Gear);
 
-                        if (!string.IsNullOrEmpty(objReturn?.Name))
+                        if (objReturn != null)
                         {
                             objFoundAccessory = objAccessory;
                             return objReturn;
                         }
-                    }
-
-                    if (objWeapon.UnderbarrelWeapons.Count > 0)
-                    {
-                        objReturn = FindWeaponGear(strGuid, objWeapon.UnderbarrelWeapons, out objFoundAccessory);
-
-                        if (!string.IsNullOrEmpty(objReturn?.Name))
-                            return objReturn;
                     }
                 }
             }
@@ -519,7 +466,7 @@ namespace Chummer
         /// <param name="strGuid">InternalId of the Martial Art Advantage to find.</param>
         /// <param name="lstMartialArts">List of Martial Arts to search.</param>
         /// <param name="objFoundMartialArt">MartialArt the Advantage was found in.</param>
-        public static MartialArtAdvantage FindMartialArtAdvantage(string strGuid, List<MartialArt> lstMartialArts, out MartialArt objFoundMartialArt)
+        public static MartialArtAdvantage FindMartialArtAdvantage(string strGuid, IEnumerable<MartialArt> lstMartialArts, out MartialArt objFoundMartialArt)
         {
             if (strGuid != Guid.Empty.ToString())
             {
@@ -590,28 +537,75 @@ namespace Chummer
         /// Find all of the Commlinks carried by the character.
         /// </summary>
         /// <param name="lstGear">List of Gear to search within for Commlinks.</param>
-        public static List<Commlink> FindCharacterCommlinks(List<Gear> lstGear)
+        public static HashSet<Commlink> FindCharacterCommlinks(IEnumerable<Gear> lstGear)
         {
-            List<Commlink> lstReturn = new List<Commlink>();
-            foreach (Gear objGear in lstGear)
+            HashSet<Commlink> lstReturn = new HashSet<Commlink>();
+            foreach (Gear objGear in lstGear.DeepWhere(x => x.Children, x => x.GetType() == typeof(Commlink)))
             {
-                if (objGear.GetType() == typeof(Commlink))
-                    lstReturn.Add(objGear as Commlink);
-
-                if (objGear.Children.Count > 0)
-                {
-                    // Retrieve the list of Commlinks in child items.
-                    List<Commlink> lstAppend = FindCharacterCommlinks(objGear.Children);
-
-                    if (lstAppend != null)
-                    {
-                        // Append the entries to the current list.
-                        lstReturn.AddRange(lstAppend);
-                    }
-                }
+                lstReturn.Add(objGear as Commlink);
             }
 
             return lstReturn;
+        }
+
+        /// <summary>
+        /// Change the active Commlink for the Character.
+        /// </summary>
+        /// <param name="objCommlink">Current commlink to process.</param>
+        /// <param name="blnActivateCommlink">Mark current commlink as active.</param>
+        public void ChangeActiveCommlink(Commlink objCommlink, bool blnActivateCommlink = true)
+        {
+            List<Gear> lstGearToSearch = new List<Gear>(_objCharacter.Gear);
+            foreach (Cyberware objCyberware in _objCharacter.Cyberware.DeepWhere(x => x.Children, x => x.Gear.Count > 0))
+            {
+                lstGearToSearch.AddRange(objCyberware.Gear);
+            }
+            foreach (Weapon objWeapon in _objCharacter.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
+            {
+                foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
+                {
+                    lstGearToSearch.AddRange(objAccessory.Gear);
+                }
+            }
+            foreach (Armor objArmor in _objCharacter.Armor)
+            {
+                lstGearToSearch.AddRange(objArmor.Gear);
+            }
+            foreach (Vehicle objVehicle in _objCharacter.Vehicles)
+            {
+                lstGearToSearch.AddRange(objVehicle.Gear);
+                foreach (Weapon objWeapon in objVehicle.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
+                {
+                    foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
+                    {
+                        lstGearToSearch.AddRange(objAccessory.Gear);
+                    }
+                }
+                foreach (VehicleMod objVehicleMod in objVehicle.Mods.Where(x => x.Cyberware.Count > 0 || x.Weapons.Count > 0))
+                {
+                    foreach (Cyberware objCyberware in objVehicleMod.Cyberware.DeepWhere(x => x.Children, x => x.Gear.Count > 0))
+                    {
+                        lstGearToSearch.AddRange(objCyberware.Gear);
+                    }
+                    foreach (Weapon objWeapon in objVehicleMod.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
+                    {
+                        foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
+                        {
+                            lstGearToSearch.AddRange(objAccessory.Gear);
+                        }
+                    }
+                }
+            }
+            HashSet<Commlink> lstCommlinks = FindCharacterCommlinks(lstGearToSearch);
+
+            bool blnHasNoActive = true;
+            foreach (Commlink objLoopCommlink in lstCommlinks)
+            {
+                objLoopCommlink.IsActive = (blnActivateCommlink && objLoopCommlink.InternalId == objCommlink.InternalId) ||
+                        (!blnActivateCommlink && objLoopCommlink.InternalId != objCommlink.InternalId && blnHasNoActive);
+                if (blnHasNoActive && objLoopCommlink.IsActive)
+                    blnHasNoActive = false;
+            }
         }
 
         /// <summary>
@@ -620,7 +614,7 @@ namespace Chummer
         /// <param name="strGuid">GUID to whitelist when disabling other home nodes.</param>
         /// <param name="lstGear">List of Gear to search within for Home Node status.</param>
         /// <param name="lstVehicles">List of Gear to search within for Home Node status.</param>
-        public static void ReplaceHomeNodes(string strGuid, List<Gear>lstGear, List<Vehicle> lstVehicles)
+        public static void ReplaceHomeNodes(string strGuid, IEnumerable<Gear> lstGear, IEnumerable<Vehicle> lstVehicles)
         {
             foreach (Gear objGear in lstGear)
             {
@@ -687,7 +681,7 @@ namespace Chummer
             // If a Focus is being removed, make sure the actual Focus is being removed from the character as well.
             if (objGear.Category == "Foci" || objGear.Category == "Metamagic Foci")
             {
-                List<Focus> lstRemoveFoci = new List<Focus>();
+                HashSet<Focus> lstRemoveFoci = new HashSet<Focus>();
                 foreach (Focus objFocus in _objCharacter.Foci)
                 {
                     if (objFocus.GearId == objGear.InternalId)
@@ -695,6 +689,7 @@ namespace Chummer
                 }
                 foreach (Focus objFocus in lstRemoveFoci)
                 {
+                    /*
                     foreach (Power objPower in _objCharacter.Powers)
                     {
                         if (objPower.BonusSource == objFocus.GearId)
@@ -702,21 +697,24 @@ namespace Chummer
                             //objPower.FreeLevels -= (objFocus.Rating / 4);
                         }
                     }
+                    */
                     _objCharacter.Foci.Remove(objFocus);
                 }
             }
             // If a Stacked Focus is being removed, make sure the Stacked Foci and its bonuses are being removed.
             else if (objGear.Category == "Stacked Focus")
             {
-                foreach (StackedFocus objStack in _objCharacter.StackedFoci)
+                StackedFocus objStack = _objCharacter.StackedFoci.FirstOrDefault(x => x.GearId == objGear.InternalId);
+                if (objStack != null)
                 {
-                    if (objStack.GearId == objGear.InternalId)
-                    {
-                        ImprovementManager.RemoveImprovements(_objCharacter, Improvement.ImprovementSource.StackedFocus, objStack.InternalId);
-                        _objCharacter.StackedFoci.Remove(objStack);
-                        break;
-                    }
+                    ImprovementManager.RemoveImprovements(_objCharacter, Improvement.ImprovementSource.StackedFocus, objStack.InternalId);
+                    _objCharacter.StackedFoci.Remove(objStack);
                 }
+            }
+
+            if ((objGear as Commlink)?.IsActive == true)
+            {
+                ChangeActiveCommlink(objGear as Commlink, false);
             }
         }
 
@@ -761,6 +759,12 @@ namespace Chummer
                 }
                 if (objRemoveWeapon != null)
                     objVehicle.Weapons.Remove(objRemoveWeapon);
+            }
+
+            Commlink objCommlink = objGear as Commlink;
+            if (objCommlink?.IsActive == true)
+            {
+                ChangeActiveCommlink(objCommlink, false);
             }
         }
 
@@ -810,7 +814,7 @@ namespace Chummer
                 foreach (Gear objGear in objArmor.Gear)
                     DeleteGear(objGear, treWeapons);
 
-                List<Weapon> lstRemoveWeapons = new List<Weapon>();
+                HashSet<Weapon> lstRemoveWeapons = new HashSet<Weapon>();
                 // Remove the Weapon from the Character.
                 foreach (Weapon objWeapon in _objCharacter.Weapons.Where(objWeapon => objWeapon.InternalId == objArmor.WeaponID))
                 {
@@ -886,6 +890,10 @@ namespace Chummer
                 if (objGear != null)
                 {
                     objGear.Parent.Children.Remove(objGear);
+                    if ((objGear.Parent as Commlink)?.CanSwapAttributes == true)
+                    {
+                        (objGear.Parent as Commlink).RefreshCyberdeckArray();
+                    }
                     DeleteGear(objGear, treWeapons);
                     objSelectedArmor.Gear.Remove(objGear);
                 }
@@ -923,6 +931,8 @@ namespace Chummer
                 objChildNode.ContextMenuStrip = objMenu;
                 if (!string.IsNullOrEmpty(objChild.Notes))
                     objChildNode.ForeColor = Color.SaddleBrown;
+                else if (objChild.IncludedInParent)
+                    objChildNode.ForeColor = SystemColors.GrayText;
                 objChildNode.ToolTipText = objChild.Notes;
 
                 objNode.Nodes.Add(objChildNode);
@@ -944,35 +954,39 @@ namespace Chummer
         /// <param name="objGearMenu">ContextMenuStrip that the new Gear TreeNodes should use.</param>
         public static void BuildCyberwareTree(Cyberware objCyberware, TreeNode objParentNode, ContextMenuStrip objMenu, ContextMenuStrip objGearMenu)
         {
-                TreeNode objNode = new TreeNode();
-                objNode.Text = objCyberware.DisplayName;
-                objNode.Tag = objCyberware.InternalId;
-                if (!string.IsNullOrEmpty(objCyberware.Notes))
-                    objNode.ForeColor = Color.SaddleBrown;
-                objNode.ToolTipText = objCyberware.Notes;
-                objNode.ContextMenuStrip = objMenu;
+            TreeNode objNode = new TreeNode();
+            objNode.Text = objCyberware.DisplayName;
+            objNode.Tag = objCyberware.InternalId;
+            if (!string.IsNullOrEmpty(objCyberware.Notes))
+                objNode.ForeColor = Color.SaddleBrown;
+            else if (!string.IsNullOrEmpty(objCyberware.ParentID))
+                objNode.ForeColor = SystemColors.GrayText;
+            objNode.ToolTipText = objCyberware.Notes;
+            objNode.ContextMenuStrip = objMenu;
 
-                objParentNode.Nodes.Add(objNode);
-                objParentNode.Expand();
+            objParentNode.Nodes.Add(objNode);
+            objParentNode.Expand();
 
-                foreach (Cyberware objChild in objCyberware.Children)
-                    BuildCyberwareTree(objChild, objNode, objMenu, objGearMenu);
+            foreach (Cyberware objChild in objCyberware.Children)
+                BuildCyberwareTree(objChild, objNode, objMenu, objGearMenu);
 
-                foreach (Gear objGear in objCyberware.Gear)
-                {
-                    TreeNode objGearNode = new TreeNode();
-                    objGearNode.Text = objGear.DisplayName;
-                    objGearNode.Tag = objGear.InternalId;
-                    if (!string.IsNullOrEmpty(objGear.Notes))
-                        objGearNode.ForeColor = Color.SaddleBrown;
-                    objGearNode.ToolTipText = objGear.Notes;
-                    objGearNode.ContextMenuStrip = objGearMenu;
+            foreach (Gear objGear in objCyberware.Gear)
+            {
+                TreeNode objGearNode = new TreeNode();
+                objGearNode.Text = objGear.DisplayName;
+                objGearNode.Tag = objGear.InternalId;
+                if (!string.IsNullOrEmpty(objGear.Notes))
+                    objGearNode.ForeColor = Color.SaddleBrown;
+                else if (objGear.IncludedInParent)
+                    objGearNode.ForeColor = SystemColors.GrayText;
+                objGearNode.ToolTipText = objGear.Notes;
+                objGearNode.ContextMenuStrip = objGearMenu;
 
-                    BuildGearTree(objGear, objGearNode, objGearMenu);
+                BuildGearTree(objGear, objGearNode, objGearMenu);
 
-                    objNode.Nodes.Add(objGearNode);
-                    objNode.Expand();
-                }
+                objNode.Nodes.Add(objGearNode);
+                objNode.Expand();
+            }
 
         }
 
@@ -1004,6 +1018,8 @@ namespace Chummer
                 objChild.ContextMenuStrip = cmsArmorMod;
                 if (!string.IsNullOrEmpty(objMod.Notes))
                     objChild.ForeColor = Color.SaddleBrown;
+                else if (objMod.IncludedInArmor)
+                    objChild.ForeColor = SystemColors.GrayText;
                 objChild.ToolTipText = objMod.Notes;
                 objNode.Nodes.Add(objChild);
                 objNode.Expand();
@@ -1016,6 +1032,8 @@ namespace Chummer
                 objChild.Tag = objGear.InternalId;
                 if (!string.IsNullOrEmpty(objGear.Notes))
                     objChild.ForeColor = Color.SaddleBrown;
+                else if (objGear.IncludedInParent)
+                    objChild.ForeColor = SystemColors.GrayText;
                 objChild.ToolTipText = objGear.Notes;
 
                 BuildGearTree(objGear, objChild, cmsArmorGear);
@@ -1063,6 +1081,8 @@ namespace Chummer
             objNode.Tag = objVehicle.InternalId;
             if (!string.IsNullOrEmpty(objVehicle.Notes))
                 objNode.ForeColor = Color.SaddleBrown;
+            else if (!string.IsNullOrEmpty(objVehicle.ParentID))
+                objNode.ForeColor = SystemColors.GrayText;
             objNode.ToolTipText = objVehicle.Notes;
 
             // Populate the list of Vehicle Locations.
@@ -1081,10 +1101,10 @@ namespace Chummer
                 TreeNode objChildNode = new TreeNode();
                 objChildNode.Text = objMod.DisplayName;
                 objChildNode.Tag = objMod.InternalId;
-                if (objMod.IncludedInVehicle)
-                    objChildNode.ForeColor = SystemColors.GrayText;
                 if (!string.IsNullOrEmpty(objMod.Notes))
                     objChildNode.ForeColor = Color.SaddleBrown;
+                else if (objMod.IncludedInVehicle)
+                    objChildNode.ForeColor = SystemColors.GrayText;
                 objChildNode.ToolTipText = objMod.Notes;
 
                 // Cyberware.
@@ -1095,6 +1115,8 @@ namespace Chummer
                     objCyberwareNode.Tag = objCyberware.InternalId;
                     if (!string.IsNullOrEmpty(objCyberware.Notes))
                         objCyberwareNode.ForeColor = Color.SaddleBrown;
+                    else if (!string.IsNullOrEmpty(objCyberware.ParentID))
+                        objCyberwareNode.ForeColor = SystemColors.GrayText;
                     objCyberwareNode.ToolTipText = objCyberware.Notes;
                     objChildNode.Nodes.Add(objCyberwareNode);
                     objChildNode.Expand();
@@ -1123,6 +1145,8 @@ namespace Chummer
                 objGearNode.Tag = objGear.InternalId;
                 if (!string.IsNullOrEmpty(objGear.Notes))
                     objGearNode.ForeColor = Color.SaddleBrown;
+                else if (objGear.IncludedInParent)
+                    objGearNode.ForeColor = SystemColors.GrayText;
                 objGearNode.ToolTipText = objGear.Notes;
 
                 BuildGearTree(objGear, objGearNode, cmsVehicleGear);
@@ -1167,10 +1191,11 @@ namespace Chummer
             TreeNode objNode = new TreeNode();
             objNode.Text = objWeapon.DisplayName;
             objNode.Tag = WeaponID ?? objWeapon.InternalId;
-            if (objWeapon.Cyberware || objWeapon.Category == "Gear" || objWeapon.Category.StartsWith("Quality") || WeaponID != null)
-                objNode.ForeColor = SystemColors.GrayText;
             if (!string.IsNullOrEmpty(objWeapon.Notes))
                 objNode.ForeColor = Color.SaddleBrown;
+            else if (objWeapon.Cyberware || objWeapon.Category == "Gear" || objWeapon.Category.StartsWith("Quality") || WeaponID != null || !string.IsNullOrEmpty(objWeapon.ParentID))
+                objNode.ForeColor = SystemColors.GrayText;
+
             objNode.ToolTipText = objWeapon.Notes;
 
             // Add attached Weapon Accessories.
@@ -1182,6 +1207,8 @@ namespace Chummer
                 objChild.ContextMenuStrip = cmsWeaponAccessory;
                 if (!string.IsNullOrEmpty(objAccessory.Notes))
                     objChild.ForeColor = Color.SaddleBrown;
+                else if (objAccessory.IncludedInWeapon)
+                    objChild.ForeColor = SystemColors.GrayText;
                 objChild.ToolTipText = objAccessory.Notes;
 
                 // Add any Gear attached to the Weapon Accessory.
@@ -1192,6 +1219,8 @@ namespace Chummer
                     objGearChild.Tag = objGear.InternalId;
                     if (!string.IsNullOrEmpty(objGear.Notes))
                         objGearChild.ForeColor = Color.SaddleBrown;
+                    else if (objGear.IncludedInParent)
+                        objGearChild.ForeColor = SystemColors.GrayText;
                     objGearChild.ToolTipText = objGear.Notes;
 
                     BuildGearTree(objGear, objGearChild, cmsWeaponAccessoryGear);
@@ -1383,7 +1412,5 @@ namespace Chummer
             return i + 1;
         }
         #endregion
-
-
     }
 }

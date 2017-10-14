@@ -11,7 +11,7 @@ namespace Chummer.Backend.Equipment
     /// <summary>
     /// Vehicle Modification.
     /// </summary>
-    public class VehicleMod : INamedItemWithGuid
+    public class VehicleMod : INamedItemWithGuidAndNode
     {
         private Guid _guiID;
         private string _strName = string.Empty;
@@ -144,14 +144,15 @@ namespace Chummer.Backend.Equipment
 
             if (GlobalOptions.Instance.Language != "en-us")
             {
-                XmlDocument objXmlDocument = XmlManager.Instance.Load("vehicles.xml");
-                XmlNode objModNode = objXmlDocument.SelectSingleNode("/chummer/mods/mod[name = \"" + _strName + "\"]");
+                
+                XmlNode objModNode = MyXmlNode;
                 if (objModNode != null)
                 {
                     objModNode.TryGetStringFieldQuickly("translate", ref _strAltName);
                     objModNode.TryGetStringFieldQuickly("altpage", ref _strAltPage);
                 }
 
+                XmlDocument objXmlDocument = XmlManager.Instance.Load("vehicles.xml");
                 objModNode = objXmlDocument.SelectSingleNode("/chummer/categories/category[. = \"" + _strCategory + "\"]");
                     _strAltCategory = objModNode?.Attributes?["translate"]?.InnerText;
             }
@@ -217,9 +218,8 @@ namespace Chummer.Backend.Equipment
         /// Load the VehicleMod from the XmlNode.
         /// </summary>
         /// <param name="objNode">XmlNode to load.</param>
-        /// <param name="objVehicle">Vehicle that the mod is attached to.</param>
         /// <param name="blnCopy">Indicates whether a new item will be created as a copy of this one.</param>
-        public void Load(XmlNode objNode, Vehicle objVehicle, bool blnCopy = false)
+        public void Load(XmlNode objNode, bool blnCopy = false)
         {
             if (blnCopy)
             {
@@ -285,14 +285,14 @@ namespace Chummer.Backend.Equipment
 
             if (GlobalOptions.Instance.Language != "en-us")
             {
-                XmlDocument objXmlDocument = XmlManager.Instance.Load("vehicles.xml");
-                XmlNode objModNode = objXmlDocument.SelectSingleNode("/chummer/mods/mod[name = \"" + _strName + "\"]");
+                XmlNode objModNode = MyXmlNode;
                 if (objModNode != null)
                 {
                     objModNode.TryGetStringFieldQuickly("translate", ref _strAltName);
                     objModNode.TryGetStringFieldQuickly("altpage", ref _strAltPage);
                 }
 
+                XmlDocument objXmlDocument = XmlManager.Instance.Load("vehicles.xml");
                 objModNode = objXmlDocument.SelectSingleNode("/chummer/categories/category[. = \"" + _strCategory + "\"]");
                     _strAltCategory = objModNode?.Attributes?["translate"]?.InnerText;
             }
@@ -860,14 +860,14 @@ namespace Chummer.Backend.Equipment
                         strAvailExpr = strAvailExpr.Substring(0, strAvailExpr.Length - 1);
                     }
                     XPathExpression xprAvail = nav.Compile(strAvailExpr.Replace("Rating", _intRating.ToString()));
-                    strCalculated = Convert.ToInt32(nav.Evaluate(xprAvail)) + strAvail;
+                    strCalculated = Convert.ToInt32(nav.Evaluate(xprAvail)).ToString() + strAvail;
                 }
                 else
                 {
                     // Just a straight cost, so return the value.
                     if (strCalculated.Contains("F") || strCalculated.Contains("R"))
                     {
-                        strCalculated = Convert.ToInt32(strCalculated.Substring(0, strCalculated.Length - 1)) + strCalculated.Substring(strCalculated.Length - 1, 1);
+                        strCalculated = Convert.ToInt32(strCalculated.Substring(0, strCalculated.Length - 1)).ToString() + strCalculated.Substring(strCalculated.Length - 1, 1);
                     }
                     else
                         strCalculated = Convert.ToInt32(strCalculated).ToString();
@@ -883,7 +883,7 @@ namespace Chummer.Backend.Equipment
                 else
                     intAvail = Convert.ToInt32(strCalculated);
 
-                string strReturn = intAvail + strAvailText;
+                string strReturn = intAvail.ToString() + strAvailText;
 
                 // Translate the Avail string.
                 strReturn = strReturn.Replace("R", LanguageManager.Instance.GetString("String_AvailRestricted"));
@@ -998,7 +998,7 @@ namespace Chummer.Backend.Equipment
             get
             {
                 int intCapacity = 0;
-                if (_strCapacity == String.Empty)return intCapacity;
+                if (string.IsNullOrEmpty(_strCapacity))return intCapacity;
                 if (_strCapacity.Contains("/["))
                 {
                     // Get the Cyberware base Capacity.
@@ -1147,7 +1147,7 @@ namespace Chummer.Backend.Equipment
                 if (!string.IsNullOrEmpty(_strExtra))
                     strReturn += " (" + LanguageManager.Instance.TranslateExtra(_strExtra) + ")";
                 if (_intRating > 0)
-                    strReturn += " (" + LanguageManager.Instance.GetString("String_Rating") + " " + _intRating + ")";
+                    strReturn += " (" + LanguageManager.Instance.GetString("String_Rating") + " " + _intRating.ToString() + ")";
                 return strReturn;
             }
         }
@@ -1160,6 +1160,14 @@ namespace Chummer.Backend.Equipment
             get
             {
                 return _lstCyberware.Any(objChild => objChild.AllowedSubsystems.Contains("Modular Plug-In"));
+            }
+        }
+
+        public XmlNode MyXmlNode
+        {
+            get
+            {
+                return XmlManager.Instance.Load("vehicles.xml")?.SelectSingleNode("/chummer/mods/mod[name = \"" + Name + "\"]");
             }
         }
         #endregion

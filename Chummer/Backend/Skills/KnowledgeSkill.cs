@@ -139,7 +139,7 @@ namespace Chummer.Skills
             if (name == null) return;
             //TODO: Should this be targeted against guid for uniqueness? Creating a knowledge skill in career always generates a new SkillId instead of using the one from skills.
             XmlNode skillNode = XmlManager.Instance.Load("skills.xml").SelectSingleNode($"chummer/knowledgeskills/skill[name = \"{name}\"]");
-            _type = skillNode?["category"].InnerText ?? "";
+            _type = skillNode?["category"].InnerText ?? string.Empty;
             AttributeObject = CharacterObject.GetAttribute(skillNode?["attribute"].InnerText ?? "LOG");
         }
 
@@ -230,18 +230,19 @@ namespace Chummer.Skills
         public override int CurrentKarmaCost()
         {
             int cost = 0;
+            int intTotalBaseRating = TotalBaseRating;
             if (CharacterObject.Options.EducationQualitiesApplyOnChargenKarma && HasRelatedBoost())
             {
                 int lower = Base + FreeKarma();
 
-                for (int i = lower; i < LearnedRating; i += 2) //TODO: this is probably fucked
+                for (int i = lower; i < intTotalBaseRating; i += 2) //TODO: this is probably fucked
                 {
                     cost += (i+1)*CharacterObject.Options.KarmaImproveKnowledgeSkill;
                 }
             }
             else
             {
-                cost = LearnedRating * (LearnedRating + 1);
+                cost = intTotalBaseRating * (intTotalBaseRating + 1);
                 int lower = Base + FreeKarma();
                 cost -= lower * (lower + 1);
 
@@ -273,23 +274,24 @@ namespace Chummer.Skills
         /// <returns>Price in karma</returns>
         public override int UpgradeKarmaCost()
         {
-            if (LearnedRating >= RatingMaximum)
+            int intTotalBaseRating = TotalBaseRating;
+            if (intTotalBaseRating >= RatingMaximum)
             {
                 return -1;
             }
             int adjustment = 0;
             if (CharacterObject.SkillsSection.JackOfAllTrades && CharacterObject.Created)
             {
-                adjustment = LearnedRating >= 5 ? 2 : -1;
+                adjustment = intTotalBaseRating >= 5 ? 2 : -1;
             }
-            if (HasRelatedBoost() && CharacterObject.Created && LearnedRating >= 2)
+            if (HasRelatedBoost() && CharacterObject.Created && intTotalBaseRating >= 2)
             {
                 adjustment -= 1;
             }
 
-            int value = LearnedRating == 0 ?
+            int value = intTotalBaseRating == 0 ?
                 CharacterObject.Options.KarmaNewKnowledgeSkill + adjustment :
-                (LearnedRating + 1) * CharacterObject.Options.KarmaImproveKnowledgeSkill + adjustment;
+                (intTotalBaseRating + 1) * CharacterObject.Options.KarmaImproveKnowledgeSkill + adjustment;
 
             value = Math.Max(value, 1);
             if (UneducatedEffect())

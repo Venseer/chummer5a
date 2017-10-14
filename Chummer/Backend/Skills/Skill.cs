@@ -72,6 +72,7 @@ namespace Chummer.Skills
 
         public void Print(XmlTextWriter objWriter)
         {
+            KnowledgeSkill objSkillAsKnowledgeSkill = this as KnowledgeSkill;
             objWriter.WriteStartElement("skill");
 
             int rating = PoolOtherAttribute(AttributeObject.TotalValue);
@@ -84,7 +85,10 @@ namespace Chummer.Skills
 
             int ratingModifiers = RatingModifiers, dicePoolModifiers = PoolModifiers;
 
-            objWriter.WriteElementString("name", DisplayName);
+            if (objSkillAsKnowledgeSkill == null)
+                objWriter.WriteElementString("name", DisplayName);
+            else
+                objWriter.WriteElementString("name", objSkillAsKnowledgeSkill.WriteableName);
             objWriter.WriteElementString("skillgroup", SkillGroupObject?.DisplayName ?? LanguageManager.Instance.GetString("String_None"));
             objWriter.WriteElementString("skillgroup_english", SkillGroupObject?.Name ?? LanguageManager.Instance.GetString("String_None"));
             objWriter.WriteElementString("skillcategory", DisplayCategory);
@@ -456,7 +460,7 @@ namespace Chummer.Skills
 
         public bool CanUpgradeCareer
         {
-            get { return CharacterObject.Karma >= UpgradeKarmaCost() && RatingMaximum > LearnedRating; }
+            get { return CharacterObject.Karma >= UpgradeKarmaCost() && RatingMaximum > TotalBaseRating; }
         }
 
         public virtual bool AllowDelete
@@ -533,7 +537,7 @@ namespace Chummer.Skills
         {
             get
             {
-                if (LearnedRating == 0)
+                if (TotalBaseRating == 0)
                 {
                     return string.Empty; //Unleveled skills cannot have a specialization;
                 }
@@ -590,7 +594,7 @@ namespace Chummer.Skills
                 IEnumerable<Improvement> lstRelevantImprovements = RelevantImprovements();
 
                 StringBuilder s;
-                if (CyberwareRating() > LearnedRating)
+                if (CyberwareRating() > TotalBaseRating)
                 {
                     s = new StringBuilder($"{LanguageManager.Instance.GetString("Tip_Skill_SkillsoftRating")} ({CyberwareRating()})");
                 }
@@ -650,7 +654,7 @@ namespace Chummer.Skills
                 int wound = WoundModifier;
                 if (wound != 0)
                 {
-                    s.Append(" - " + LanguageManager.Instance.GetString("Tip_Skill_Wounds") + " (" + wound + ")");
+                    s.Append(" - " + LanguageManager.Instance.GetString("Tip_Skill_Wounds") + " (" + wound.ToString() + ")");
                 }
 
                 if (AttributeObject.Abbrev == "STR" || AttributeObject.Abbrev == "AGI")
@@ -907,7 +911,7 @@ namespace Chummer.Skills
                     improvement.ImproveType == Improvement.ImprovementType.Hardwire && improvement.ImprovedName == Name &&
                     improvement.Enabled).ToList();
 
-            if (hardwire.Any())
+            if (hardwire.Count > 0)
             {
                 return _cachedWareRating = hardwire.Max(x => x.Value);
             }
