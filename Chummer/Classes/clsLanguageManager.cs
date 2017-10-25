@@ -71,13 +71,12 @@ namespace Chummer
         private static readonly bool _blnDebug = false;
 #endif
         private static string _strLanguage = string.Empty;
-        static readonly LanguageManager _objInstance = new LanguageManager();
         private static readonly Dictionary<string, string> _objDictionary = new Dictionary<string, string>();
         static bool _blnLoaded = false;
         static readonly XmlDocument _objXmlDocument = new XmlDocument();
         static XmlDocument _objXmlDataDocument;
 
-        #region Constructor and Instance
+        #region Constructor
         static LanguageManager()
         {
 #if DEBUG
@@ -94,24 +93,13 @@ namespace Chummer
         LanguageManager()
         {
         }
-
-        /// <summary>
-        /// Global instance of the LanguageManager.
-        /// </summary>
-        public static LanguageManager Instance
-        {
-            get
-            {
-                return _objInstance;
-            }
-        }
         #endregion
 
         #region Properties
         /// <summary>
         /// Whether or not the LanguageManager loaded the default language successfully.
         /// </summary>
-        public bool Loaded
+        public static bool Loaded
         {
             get
             {
@@ -122,7 +110,7 @@ namespace Chummer
         /// <summary>
         /// XmlDocument that holds UI translations.
         /// </summary>
-        public XmlDocument XmlDoc
+        public static XmlDocument XmlDoc
         {
             get
             {
@@ -133,7 +121,7 @@ namespace Chummer
         /// <summary>
         /// XmlDocument that holds item name translations.
         /// </summary>
-        public XmlDocument DataDoc
+        public static XmlDocument DataDoc
         {
             get
             {
@@ -172,7 +160,7 @@ namespace Chummer
         /// </summary>
         /// <param name="strLanguage">Language to Load.</param>
         /// <param name="objObject">Object to translate after loading the data.</param>
-        public void Load(string strLanguage, object objObject)
+        public static void Load(string strLanguage, object objObject)
         {
             // _strLanguage is populated when the language is read for the first time, meaning this is only triggered once (and language is only read in once since it shouldn't change).
             if (strLanguage != "en-us" && string.IsNullOrEmpty(_strLanguage))
@@ -235,7 +223,7 @@ namespace Chummer
         /// Recursive method to translate all of the controls in a Form or UserControl.
         /// </summary>
         /// <param name="objParent">Control container to translate.</param>
-        private void UpdateControls(Control objParent)
+        private static void UpdateControls(Control objParent)
         {
             if (objParent == null)
                 return;
@@ -336,7 +324,7 @@ namespace Chummer
         /// Translate the contents of a UserControl.
         /// </summary>
         /// <param name="objControl">UserControl to translate.</param>
-        private void UpdateUserControl(UserControl objControl)
+        private static void UpdateUserControl(UserControl objControl)
         {
             UpdateControls(objControl);
         }
@@ -345,7 +333,7 @@ namespace Chummer
         /// Translate the contents of a Form.
         /// </summary>
         /// <param name="objForm">Form to translate.</param>
-        private void UpdateForm(Form objForm)
+        private static void UpdateForm(Form objForm)
         {
             // Translatable items are identified by having a value in their Tag attribute. The contents of Tag is the string to lookup in the language list.
             // Update the Form itself.
@@ -379,7 +367,7 @@ namespace Chummer
         /// Loads the proper language from the language file for every menu item recursively
         /// </summary>
         /// <param name="objItem"></param>
-        private void SetMenuItemsRecursively(ToolStripMenuItem objItem)
+        private static void SetMenuItemsRecursively(ToolStripMenuItem objItem)
         {
             if (objItem.DropDownItems.Count == 0)
                 return; // we have no more drop down items to pull
@@ -399,7 +387,7 @@ namespace Chummer
         /// </summary>
         /// <param name="strKey">Key to retrieve.</param>
         /// <param name="blnReturnError">Should an error string be returned if the key isn't found?</param>
-        public string GetString(string strKey, bool blnReturnError = true)
+        public static string GetString(string strKey, bool blnReturnError = true)
         {
             string strReturn;
             if (_objDictionary.TryGetValue(strKey, out strReturn))
@@ -417,7 +405,7 @@ namespace Chummer
         /// Check the Keys in the selected language file against the English version. 
         /// </summary>
         /// <param name="strLanguage">Language to check.</param>
-        public void VerifyStrings(string strLanguage)
+        public static void VerifyStrings(string strLanguage)
         {
             // Load the English version.
             List<LanguageString> lstEnglish = new List<LanguageString>();
@@ -472,7 +460,7 @@ namespace Chummer
         /// Attempt to translate any Extra text for an item.
         /// </summary>
         /// <param name="strExtra">Extra string to translate.</param>
-        public string TranslateExtra(string strExtra)
+        public static string TranslateExtra(string strExtra)
         {
             string strReturn = string.Empty;
 
@@ -520,7 +508,7 @@ namespace Chummer
                         break;
                     default:
                         string strExtraNoQuotes = strExtra.Replace("\"", string.Empty);
-                        XmlDocument objXmlDocument = XmlManager.Instance.Load("weapons.xml");
+                        XmlDocument objXmlDocument = XmlManager.Load("weapons.xml");
                         XmlNode objNode =
                             objXmlDocument.SelectSingleNode("/chummer/categories/category[. = \"" +
                                                             strExtraNoQuotes + "\"]");
@@ -539,7 +527,7 @@ namespace Chummer
                         }
 
                         // Look in Skills.
-                        objXmlDocument = XmlManager.Instance.Load("skills.xml");
+                        objXmlDocument = XmlManager.Load("skills.xml");
                         objNode =
                             objXmlDocument.SelectSingleNode("/chummer/skills/skill[name = \"" +
                                                             strExtraNoQuotes + "\"]");
@@ -569,7 +557,7 @@ namespace Chummer
                         }
 
                         // Look in Licences.
-                        objXmlDocument = XmlManager.Instance.Load("licenses.xml");
+                        objXmlDocument = XmlManager.Load("licenses.xml");
                         objNode =
                             objXmlDocument.SelectSingleNode("/chummer/licenses/license[. = \"" +
                                                             strExtraNoQuotes + "\"]");
@@ -579,7 +567,7 @@ namespace Chummer
                         }
 
                         // Look in Mentors.
-                        objXmlDocument = XmlManager.Instance.Load("mentors.xml");
+                        objXmlDocument = XmlManager.Load("mentors.xml");
                         objNode =
                             objXmlDocument.SelectSingleNode("/chummer/mentors/mentor[name = \"" +
                                                             strExtraNoQuotes + "\"]");
@@ -596,7 +584,7 @@ namespace Chummer
                         }
 
                         // Look in Paragons.
-                        objXmlDocument = XmlManager.Instance.Load("paragons.xml");
+                        objXmlDocument = XmlManager.Load("paragons.xml");
                         objNode =
                             objXmlDocument.SelectSingleNode("/chummer/mentors/mentor[name = \"" +
                                                             strExtraNoQuotes + "\"]");

@@ -30,7 +30,7 @@ namespace Chummer
     public partial class frmSelectWeapon : Form
     {
         private string _strSelectedWeapon = string.Empty;
-        private int _intMarkup;
+        private decimal _decMarkup;
 
         private bool _blnAddAgain;
         private bool _blnBlackMarketDiscount;
@@ -38,7 +38,7 @@ namespace Chummer
         private static string _strSelectCategory = string.Empty;
         private readonly Character _objCharacter;
         private XmlNodeList _objXmlCategoryList;
-        private XmlDocument _objXmlDocument = new XmlDocument();
+        private readonly XmlDocument _objXmlDocument = null;
 
         private List<ListItem> _lstCategory = new List<ListItem>();
 
@@ -46,12 +46,14 @@ namespace Chummer
         public frmSelectWeapon(Character objCharacter, bool blnCareer = false)
         {
             InitializeComponent();
-            LanguageManager.Instance.Load(GlobalOptions.Instance.Language, this);
+            LanguageManager.Load(GlobalOptions.Language, this);
             lblMarkupLabel.Visible = blnCareer;
             nudMarkup.Visible = blnCareer;
             lblMarkupPercentLabel.Visible = blnCareer;
             _objCharacter = objCharacter;
             MoveControls();
+            // Load the Weapon information.
+            _objXmlDocument = XmlManager.Load("weapons.xml");
         }
 
         private void frmSelectWeapon_Load(object sender, EventArgs e)
@@ -63,9 +65,6 @@ namespace Chummer
             chkHideOverAvailLimit.Text = chkHideOverAvailLimit.Text.Replace("{0}",
                     _objCharacter.MaximumAvailability.ToString());
             chkHideOverAvailLimit.Checked = _objCharacter.Options.HideItemsOverAvailLimit;
-
-            // Load the Weapon information.
-            _objXmlDocument = XmlManager.Instance.Load("weapons.xml");
 
             // Populate the Weapon Category list.
             if (_strLimitToCategories.Length > 0)
@@ -103,7 +102,7 @@ namespace Chummer
             {
                 ListItem objItem = new ListItem();
                 objItem.Value = "Show All";
-                objItem.Name = LanguageManager.Instance.GetString("String_ShowAll");
+                objItem.Name = LanguageManager.GetString("String_ShowAll");
                 _lstCategory.Insert(0, objItem);
             }
 
@@ -183,53 +182,53 @@ namespace Chummer
             lblWeaponAccuracy.Text = objWeapon.TotalAccuracy;
             lblWeaponAvail.Text = objWeapon.TotalAvail;
 
-            int intItemCost = 0;
-            double dblCost = 0;
+            decimal decItemCost = 0;
+            decimal decCost = 0;
             if (objXmlWeapon["cost"] != null)
             {
                 if (objXmlWeapon["cost"].InnerText.StartsWith("Variable"))
                 {
-                    int intMin;
-                    int intMax = int.MaxValue;
+                    decimal decMin;
+                    decimal decMax = decimal.MaxValue;
                     string strCost = objXmlWeapon["cost"].InnerText.Replace("Variable", string.Empty).Trim("()".ToCharArray());
                     if (strCost.Contains("-"))
                     {
                         string[] strValues = strCost.Split('-');
-                        int.TryParse(strValues[0], out intMin);
-                        int.TryParse(strValues[1], out intMax);
+                        decimal.TryParse(strValues[0], out decMin);
+                        decimal.TryParse(strValues[1], out decMax);
                     }
                     else
-                        int.TryParse(strCost.Replace("+", string.Empty), out intMin);
+                        decimal.TryParse(strCost.Replace("+", string.Empty), out decMin);
 
-                    if (intMax == int.MaxValue)
+                    if (decMax == decimal.MaxValue)
                     {
-                        lblWeaponCost.Text = $"{intMin:###,###,##0¥+}";
+                        lblWeaponCost.Text = $"{decMin:###,###,##0.##¥+}";
                     }
                     else
-                        lblWeaponCost.Text = $"{intMin:###,###,##0} - {intMax:###,###,##0¥}";
+                        lblWeaponCost.Text = $"{decMin:###,###,##0.##} - {decMax:###,###,##0.##¥}";
 
-                    intItemCost = intMin;
+                    decItemCost = decMin;
                 }
                 else
                 {
-                    objXmlWeapon.TryGetDoubleFieldQuickly("cost", ref dblCost);
-                    dblCost *= 1 + (Convert.ToDouble(nudMarkup.Value, GlobalOptions.CultureInfo) / 100.0);
+                    objXmlWeapon.TryGetDecFieldQuickly("cost", ref decCost);
+                    decCost *= 1 + (nudMarkup.Value / 100.0m);
                     if (chkBlackMarketDiscount.Checked)
                     {
-                        dblCost = dblCost * 0.90;
+                        decCost *= 0.9m;
                     }
-                    lblWeaponCost.Text = $"{dblCost:###,###,##0¥}";
-                    intItemCost = Convert.ToInt32(Math.Ceiling(dblCost));
+                    lblWeaponCost.Text = $"{decCost:###,###,##0.##¥}";
+                    decItemCost = decCost;
 
                     if (chkFreeItem.Checked)
                     {
-                        lblWeaponCost.Text = $"{0:###,###,##0¥}";
-                        intItemCost = 0;
+                        lblWeaponCost.Text = $"{0:###,###,##0.##¥}";
+                        decItemCost = 0;
                     }
                 }
             }
 
-            lblTest.Text = _objCharacter.AvailTest(intItemCost, lblWeaponAvail.Text);
+            lblTest.Text = _objCharacter.AvailTest(decItemCost, lblWeaponAvail.Text);
 
             string strBook = _objCharacter.Options.LanguageBookShort(objXmlWeapon["source"]?.InnerText);
             string strPage = objXmlWeapon["page"]?.InnerText;
@@ -254,9 +253,9 @@ namespace Chummer
                                 : objXmlItem["name"].InnerText + "\n";
                     }
                 }
-            lblIncludedAccessories.Text = string.IsNullOrEmpty(strAccessories) ? LanguageManager.Instance.GetString("String_None") : strAccessories;
+            lblIncludedAccessories.Text = string.IsNullOrEmpty(strAccessories) ? LanguageManager.GetString("String_None") : strAccessories;
 
-            tipTooltip.SetToolTip(lblSource, _objCharacter.Options.LanguageBookLong(objXmlWeapon["source"]?.InnerText) + " " + LanguageManager.Instance.GetString("String_Page") + " " + strPage);
+            tipTooltip.SetToolTip(lblSource, _objCharacter.Options.LanguageBookLong(objXmlWeapon["source"]?.InnerText) + " " + LanguageManager.GetString("String_Page") + " " + strPage);
         }
 
         private void BuildWeaponList(XmlNodeList objNodeList)
@@ -319,9 +318,9 @@ namespace Chummer
                     }
                     string strAvail = objWeapon.TotalAvail;
                     string strSource = objWeapon.Source + " " + objWeapon.Page;
-                    int intCost = objWeapon.Cost;
+                    decimal decCost = objWeapon.Cost;
 
-                    tabWeapons.Rows.Add(strID, strWeaponName, strDice, intAccuracy, strDamage, strAP, intRC, strAmmo, strMode, strReach, strAccessories, strAvail, strSource, intCost);
+                    tabWeapons.Rows.Add(strID, strWeaponName, strDice, intAccuracy, strDamage, strAP, intRC, strAmmo, strMode, strReach, strAccessories, strAvail, strSource, decCost);
                 }
 
                 DataSet set = new DataSet("weapons");
@@ -568,11 +567,11 @@ namespace Chummer
         /// <summary>
         /// Markup percentage.
         /// </summary>
-        public int Markup
+        public decimal Markup
         {
             get
             {
-                return _intMarkup;
+                return _decMarkup;
             }
         }
 
@@ -606,7 +605,7 @@ namespace Chummer
                     {
                         _strSelectCategory = objNode["category"]?.InnerText;
                         _strSelectedWeapon = objNode["id"]?.InnerText;
-                        _intMarkup = Convert.ToInt32(nudMarkup.Value);
+                        _decMarkup = nudMarkup.Value;
                         _blnBlackMarketDiscount = chkBlackMarketDiscount.Checked;
 
                         DialogResult = DialogResult.OK;
@@ -631,7 +630,7 @@ namespace Chummer
                             _strSelectCategory = objNode["category"]?.InnerText;
                             _strSelectedWeapon = objNode["id"]?.InnerText;
                         }
-                        _intMarkup = Convert.ToInt32(nudMarkup.Value);
+                        _decMarkup = nudMarkup.Value;
 
                         DialogResult = DialogResult.OK;
                     }
