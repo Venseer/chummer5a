@@ -14,46 +14,46 @@ namespace Chummer.Backend.Equipment
     /// </summary>
     public class Gear : INamedParentWithGuidAndNode<Gear>
     {
-        protected Guid _guiID;
-        protected string _SourceGuid;
-        protected string _strName = string.Empty;
-        protected string _strCategory = string.Empty;
-        protected int _intMaxRating = 0;
-        protected int _intMinRating = 0;
-        protected int _intRating = 0;
-        protected decimal _decQty = 1.0m;
-        protected string _strCapacity = string.Empty;
-        protected string _strArmorCapacity = string.Empty;
-        protected string _strAvail = string.Empty;
-        protected decimal _decCostFor = 1.0m;
-        protected string _strDeviceRating = string.Empty;
-        protected string _strCost = string.Empty;
-        protected string _strSource = string.Empty;
-        protected string _strPage = string.Empty;
-        protected string _strExtra = string.Empty;
-        protected bool _blnBonded = false;
-        protected bool _blnEquipped = true;
-        protected bool _blnWirelessOn = true;
-        protected bool _blnHomeNode = false;
-        protected XmlNode _nodBonus;
-        protected XmlNode _nodWirelessBonus;
-        protected XmlNode _nodWeaponBonus;
-        protected Guid _guiWeaponID = new Guid();
-        protected List<Gear> _objChildren = new List<Gear>();
-        protected string _strNotes = string.Empty;
-        protected string _strLocation = string.Empty;
-        protected Character _objCharacter;
-        protected string _strAltName = string.Empty;
-        protected string _strAltCategory = string.Empty;
-        protected string _strAltPage = string.Empty;
+        private Guid _guiID;
+        private string _SourceGuid;
+        private string _strName = string.Empty;
+        private string _strCategory = string.Empty;
+        private int _intMaxRating = 0;
+        private int _intMinRating = 0;
+        private int _intRating = 0;
+        private decimal _decQty = 1.0m;
+        private string _strCapacity = string.Empty;
+        private string _strArmorCapacity = string.Empty;
+        private string _strAvail = string.Empty;
+        private decimal _decCostFor = 1.0m;
+        private string _strDeviceRating = string.Empty;
+        private string _strCost = string.Empty;
+        private string _strSource = string.Empty;
+        private string _strPage = string.Empty;
+        private string _strExtra = string.Empty;
+        private bool _blnBonded = false;
+        private bool _blnEquipped = true;
+        private bool _blnWirelessOn = true;
+        private XmlNode _nodBonus;
+        private XmlNode _nodWirelessBonus;
+        private XmlNode _nodWeaponBonus;
+        private Guid _guiWeaponID = new Guid();
+        private List<Gear> _objChildren = new List<Gear>();
+        private string _strNotes = string.Empty;
+        private string _strLocation = string.Empty;
+        private Character _objCharacter;
+        private string _strAltName = string.Empty;
+        private string _strAltCategory = string.Empty;
+        private string _strAltPage = string.Empty;
         private int _intChildCostMultiplier = 1;
         private int _intChildAvailModifier = 0;
-        protected Gear _objParent = null;
-        protected bool _blnDiscountCost = false;
-        protected string _strGearName = string.Empty;
-        protected bool _blnIncludedInParent = false;
-        protected int _intMatrixCMBonus = 0;
-        protected int _intMatrixCMFilled = 0;
+        private Gear _objParent = null;
+        private bool _blnDiscountCost = false;
+        private string _strGearName = string.Empty;
+        private bool _blnIncludedInParent = false;
+        private int _intMatrixCMBonus = 0;
+        private int _intMatrixCMFilled = 0;
+        private string _strForcedValue = string.Empty;
 
         #region Constructor, Create, Save, Load, and Print Methods
         public Gear(Character objCharacter)
@@ -79,6 +79,7 @@ namespace Chummer.Backend.Equipment
         {
             if (objXmlGear == null)
                 return;
+            _strForcedValue = strForceValue;
             XmlDocument objXmlDocument = XmlManager.Load("gear.xml");
             objXmlGear.TryGetStringFieldQuickly("id", ref _SourceGuid);
             objXmlGear.TryGetStringFieldQuickly("name", ref _strName);
@@ -121,7 +122,7 @@ namespace Chummer.Backend.Equipment
             // Check for a Custom name
             if (_strName == "Custom Item")
             {
-                if (string.IsNullOrEmpty(strForceValue))
+                if (string.IsNullOrEmpty(_strForcedValue))
                 {
                     frmSelectText frmPickText = new frmSelectText();
                     frmPickText.PreventXPathErrors = true;
@@ -136,16 +137,16 @@ namespace Chummer.Backend.Equipment
                 }
                 else
                 {
-                    string strCustomName = LanguageManager.GetString(strForceValue, false);
+                    string strCustomName = LanguageManager.GetString(_strForcedValue, false);
                     if (string.IsNullOrEmpty(strCustomName))
-                        strCustomName = LanguageManager.TranslateExtra(strForceValue);
+                        strCustomName = LanguageManager.TranslateExtra(_strForcedValue);
                     _strName = strCustomName;
                 }
             }
             // Check for a Variable Cost.
             if (!string.IsNullOrEmpty(_strCost))
             {
-                if (_strCost.StartsWith("Variable") && string.IsNullOrEmpty(strForceValue))
+                if (_strCost.StartsWith("Variable") && string.IsNullOrEmpty(_strForcedValue))
                 {
                     decimal decMin = 0;
                     decimal decMax = decimal.MaxValue;
@@ -184,8 +185,8 @@ namespace Chummer.Backend.Equipment
             {
                 frmSelectWeaponCategory frmPickWeaponCategory = new frmSelectWeaponCategory();
                 frmPickWeaponCategory.Description = LanguageManager.GetString("String_SelectWeaponCategoryAmmo");
-                if (!string.IsNullOrEmpty(strForceValue) && !strForceValue.Equals(_strName))
-                    frmPickWeaponCategory.OnlyCategory = strForceValue;
+                if (!string.IsNullOrEmpty(_strForcedValue) && !_strForcedValue.Equals(_strName))
+                    frmPickWeaponCategory.OnlyCategory = _strForcedValue;
 
                 //should really go in a data file
                 if (_strName.StartsWith("Ammo:"))
@@ -263,16 +264,16 @@ namespace Chummer.Backend.Equipment
             }
 
             // If the item grants a bonus, pass the information to the Improvement Manager.
-            if (objXmlGear.InnerXml.Contains("<bonus>"))
+            if (_nodBonus != null)
             {
                 // Do not apply the Improvements if this is a Focus, unless we're speicifically creating a Weapon Focus. This is to avoid creating the Foci's Improvements twice (once when it's first added
                 // to the character which is incorrect, and once when the Focus is actually Bonded).
-                bool blnApply = !((_strCategory == "Foci" || _strCategory == "Metamagic Foci") && !objXmlGear["bonus"].InnerXml.Contains("selectweapon"));
+                bool blnApply = !((_strCategory == "Foci" || _strCategory == "Metamagic Foci") && !_nodBonus.InnerXml.Contains("selectweapon"));
 
                 if (blnApply)
                 {
-                    ImprovementManager.ForcedValue = strForceValue;
-                    if (!ImprovementManager.CreateImprovements(blnAddImprovements ? _objCharacter : null, Improvement.ImprovementSource.Gear, strSource, objXmlGear["bonus"], false, intRating, DisplayNameShort))
+                    ImprovementManager.ForcedValue = _strForcedValue;
+                    if (!ImprovementManager.CreateImprovements(blnAddImprovements ? _objCharacter : null, Improvement.ImprovementSource.Gear, strSource, _nodBonus, false, intRating, DisplayNameShort))
                     {
                         _guiID = Guid.Empty;
                         return;
@@ -501,7 +502,7 @@ namespace Chummer.Backend.Equipment
             TreeNode objChildNode = new TreeNode();
             List<Weapon> lstChildWeapons = new List<Weapon>();
             List<TreeNode> lstChildWeaponNodes = new List<TreeNode>();
-            objChild.Create(objXmlGearNode, objChildNode, intChildRating, lstChildWeapons, lstChildWeaponNodes, strChildForceValue, blnHacked, false, true, blnCreateChildren);
+            objChild.Create(objXmlGearNode, objChildNode, intChildRating, lstChildWeapons, lstChildWeaponNodes, strChildForceValue, blnHacked, false, blnAddChildImprovements, blnCreateChildren);
             objChild.Quantity = decChildQty;
             objChild.Cost = "0";
             objChild.MinRating = intChildRating;
@@ -558,7 +559,6 @@ namespace Chummer.Backend.Equipment
             _blnBonded = objGear.Bonded;
             _blnEquipped = objGear.Equipped;
             _blnWirelessOn = objGear.WirelessOn;
-            _blnHomeNode = objGear.HomeNode;
             _nodBonus = objGear.Bonus;
             _nodWirelessBonus = objGear.WirelessBonus;
             _nodWeaponBonus = objGear.WeaponBonus;
@@ -568,6 +568,7 @@ namespace Chummer.Backend.Equipment
             _intChildAvailModifier = objGear.ChildAvailModifier;
             _intChildCostMultiplier = objGear.ChildCostMultiplier;
             _strGearName = objGear.GearName;
+            _strForcedValue = objGear._strForcedValue;
 
             objNode.Text = DisplayName;
             objNode.Tag = _guiID.ToString();
@@ -624,7 +625,6 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteElementString("bonded", _blnBonded.ToString());
             objWriter.WriteElementString("equipped", _blnEquipped.ToString());
             objWriter.WriteElementString("wirelesson", _blnWirelessOn.ToString());
-            objWriter.WriteElementString("homenode", _blnHomeNode.ToString());
             if (_guiWeaponID != Guid.Empty)
                 objWriter.WriteElementString("weaponguid", _guiWeaponID.ToString());
             if (_nodBonus != null)
@@ -641,6 +641,7 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteElementString("page", _strPage);
             objWriter.WriteElementString("devicerating", _strDeviceRating);
             objWriter.WriteElementString("gearname", _strGearName);
+            objWriter.WriteElementString("forcedvalue", _strForcedValue);
             objWriter.WriteElementString("matrixcmfilled", _intMatrixCMFilled.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("matrixcmbonus", _intMatrixCMBonus.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("includedinparent", _blnIncludedInParent.ToString());
@@ -725,7 +726,6 @@ namespace Chummer.Backend.Equipment
                 _strExtra = "Holdouts";
             objNode.TryGetBoolFieldQuickly("bonded", ref _blnBonded);
             objNode.TryGetBoolFieldQuickly("equipped", ref _blnEquipped);
-            objNode.TryGetBoolFieldQuickly("homenode", ref _blnHomeNode);
             _nodBonus = objNode["bonus"];
             _nodWirelessBonus = objNode["wirelessbonus"];
             if (!objNode.TryGetBoolFieldQuickly("wirelesson", ref _blnWirelessOn))
@@ -743,6 +743,7 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetInt32FieldQuickly("childavailmodifier", ref _intChildAvailModifier);
 
             objNode.TryGetStringFieldQuickly("gearname", ref _strGearName);
+            objNode.TryGetStringFieldQuickly("forcedvalue", ref _strForcedValue);
 
             objNode.TryGetBoolFieldQuickly("includedinparent", ref _blnIncludedInParent);
 
@@ -837,7 +838,6 @@ namespace Chummer.Backend.Equipment
             {
                 _guiID = Guid.NewGuid();
                 _strLocation = string.Empty;
-                _blnHomeNode = false;
             }
         }
 
@@ -890,7 +890,6 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteElementString("bonded", _blnBonded.ToString());
             objWriter.WriteElementString("equipped", _blnEquipped.ToString());
             objWriter.WriteElementString("wirelesson", _blnWirelessOn.ToString());
-            objWriter.WriteElementString("homenode", _blnHomeNode.ToString());
             objWriter.WriteElementString("location", _strLocation);
             objWriter.WriteElementString("gearname", _strGearName);
             objWriter.WriteElementString("source", _objCharacter.Options.LanguageBookShort(_strSource));
@@ -959,20 +958,6 @@ namespace Chummer.Backend.Equipment
                 return _SourceGuid;
             }
         }
-        /// <summary>
-        /// Whether or not an item is an A.I.'s Home Node.
-        /// </summary>
-        public bool HomeNode
-        {
-            get
-            {
-                return _blnHomeNode;
-            }
-            set
-            {
-                _blnHomeNode = value;
-            }
-        }
 
         /// <summary>
         /// Guid of a Cyberware Weapon.
@@ -1031,6 +1016,17 @@ namespace Chummer.Backend.Equipment
             set
             {
                 _nodWeaponBonus = value;
+            }
+        }
+
+        /// <summary>
+        /// Character to which the gear is assigned.
+        /// </summary>
+        public Character CharacterObject
+        {
+            get
+            {
+                return _objCharacter;
             }
         }
 

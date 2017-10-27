@@ -155,6 +155,7 @@ namespace Chummer
 
         // Attributes.
         public static string[] AttributeStrings = { "BOD", "AGI", "REA", "STR", "CHA", "INT", "LOG", "WIL", "EDG", "MAG", "RES", "ESS", "DEP" };
+        public static string[] LimbStrings = { "skull", "torso", "arm", "leg" };
         private List<CharacterAttrib> _attributes = new List<CharacterAttrib>();
         private List<CharacterAttrib> _specialAttributes = new List<CharacterAttrib>();
 
@@ -307,21 +308,6 @@ namespace Chummer
             _attDEP = new CharacterAttrib("DEP", this,CharacterAttrib.AttributeCategory.Special);
             _attINI = new CharacterAttrib("INI", this);
             _attESS = new CharacterAttrib("ESS", this, CharacterAttrib.AttributeCategory.Special);
-
-            BOD._objCharacter = this;
-            AGI._objCharacter = this;
-            REA._objCharacter = this;
-            STR._objCharacter = this;
-            CHA._objCharacter = this;
-            INT._objCharacter = this;
-            LOG._objCharacter = this;
-            WIL._objCharacter = this;
-            INI._objCharacter = this;
-            EDG._objCharacter = this;
-            MAG._objCharacter = this;
-            RES._objCharacter = this;
-            ESS._objCharacter = this;
-            DEP._objCharacter = this;
 
             _objOptions = new CharacterOptions(this);
             SkillsSection = new SkillsSection(this);
@@ -6416,6 +6402,18 @@ namespace Chummer
             }
         }
 
+        public int LimbCount(string strLimbSlot = "")
+        {
+            if (string.IsNullOrEmpty(strLimbSlot))
+            {
+                return Options.LimbCount + ImprovementManager.ValueOf(this, Improvement.ImprovementType.AddLimb);
+            }
+            int intReturn = 1 + ImprovementManager.ValueOf(this, Improvement.ImprovementType.AddLimb, false, strLimbSlot);
+            if (strLimbSlot == "arm" || strLimbSlot == "leg")
+                intReturn += 1;
+            return intReturn;
+        }
+
         /// <summary>
         /// Character's Movement rate.
         /// </summary>
@@ -8111,7 +8109,8 @@ namespace Chummer
         public static readonly Improvement.ImprovementType[] AttribRelatedImprovements = {
             Improvement.ImprovementType.Attributelevel,
             Improvement.ImprovementType.Attribute,
-            Improvement.ImprovementType.Seeker
+            Improvement.ImprovementType.Seeker,
+            Improvement.ImprovementType.AddLimb
         };
         //To get when things change in improvementmanager
         //Ugly, ugly done, but we cannot get events out of it today
