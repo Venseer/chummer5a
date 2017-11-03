@@ -5067,7 +5067,12 @@
       <cost>Rating * 200</cost>
       <required>
         <geardetails>
-          <name>Fake SIN</name>
+		  <OR>
+			<category>Custom</category>
+			<name>Fake SIN</name>
+			<name>Credstick, Fake (2050)</name>
+			<name>Credstick, Standard (2050)</name>
+		  </OR>
         </geardetails>
       </required>
     </gear>
@@ -9881,7 +9886,10 @@
       <cost>Gear Cost * 0.2</cost>
       <required>
         <geardetails>
-          <category>Commlinks</category>
+		  <OR>
+			<category>Commlinks</category>
+			<category>Custom</category>
+		  </OR>
         </geardetails>
       </required>
     </gear>
@@ -9896,7 +9904,10 @@
       <cost>Gear Cost * 0.5</cost>
       <required>
         <geardetails>
-          <category>Commlinks</category>
+          <OR>
+			<category>Commlinks</category>
+			<category>Custom</category>
+		  </OR>
         </geardetails>
       </required>
     </gear>
@@ -9911,7 +9922,10 @@
       <cost>0</cost>
       <required>
         <geardetails>
-          <category>Cyberdecks</category>
+		  <OR>
+			<category>Cyberdecks</category>
+			<category>Custom</category>
+		  </OR>
         </geardetails>
       </required>
     </gear>
@@ -9929,7 +9943,10 @@
       <cost>Gear Cost * 0.2</cost>
       <required>
         <geardetails>
-          <category>Cyberdecks</category>
+          <OR>
+			<category>Cyberdecks</category>
+			<category>Custom</category>
+		  </OR>
         </geardetails>
       </required>
     </gear>
@@ -9944,7 +9961,10 @@
       <cost>Gear Cost * 0.5</cost>
       <required>
         <geardetails>
-          <category>Cyberdecks</category>
+          <OR>
+			<category>Cyberdecks</category>
+			<category>Custom</category>
+		  </OR>
         </geardetails>
       </required>
     </gear>
@@ -14689,6 +14709,9 @@
       <page>193</page>
       <avail>0</avail>
       <cost>5</cost>
+	  <bonus>
+        <selecttext />
+      </bonus>
 	  <capacity>1000000</capacity>
 	  <addoncategory>ID/Credsticks</addoncategory>
 	  <addoncategory>Currency</addoncategory>
@@ -14703,6 +14726,9 @@
       <page>193</page>
       <avail>(Rating * 2)F</avail>
       <cost>Rating * 1000</cost>
+	  <bonus>
+        <selecttext />
+      </bonus>
       <capacity>1000000</capacity>
 	  <addoncategory>ID/Credsticks</addoncategory>
 	  <addoncategory>Currency</addoncategory>

@@ -236,15 +236,15 @@ namespace Chummer.Backend.Equipment
                     decimal decMin = 0.0m;
                     decimal decMax = decimal.MaxValue;
                     char[] charParentheses = { '(', ')' };
-                    string strCost = objXmlCyberware["cost"].InnerText.Replace("Variable", string.Empty).Trim(charParentheses);
-                    if (strCost.Contains("-"))
+                    string strCost = objXmlCyberware["cost"].InnerText.TrimStart("Variable", true).Trim(charParentheses);
+                    if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
                         decMin = Convert.ToDecimal(strValues[0], GlobalOptions.InvariantCultureInfo);
                         decMax = Convert.ToDecimal(strValues[1], GlobalOptions.InvariantCultureInfo);
                     }
                     else
-                        decMin = Convert.ToDecimal(strCost.Replace("+", string.Empty), GlobalOptions.InvariantCultureInfo);
+                        decMin = Convert.ToDecimal(strCost.FastEscape('+'), GlobalOptions.InvariantCultureInfo);
 
                     if (decMin != 0 || decMax != decimal.MaxValue)
                     {
@@ -410,7 +410,7 @@ namespace Chummer.Backend.Equipment
             objNode.Tag = _guiID.ToString();
 
             // Retrieve the Bioware or Cyberware ESS Cost Multiplier. Bioware Modifiers do not apply to Genetech.
-            if (MyXmlNode["forcegrade"]?.InnerText != "None")
+            if (MyXmlNode?["forcegrade"]?.InnerText != "None")
             {
                 // Apply the character's Cyberware Essence cost multiplier if applicable.
                 if (_objImprovementSource == Improvement.ImprovementSource.Cyberware)
@@ -701,6 +701,8 @@ namespace Chummer.Backend.Equipment
 
             objNode.TryGetStringFieldQuickly("name", ref _strName);
             objNode.TryGetStringFieldQuickly("category", ref _strCategory);
+            if (objNode["improvementsource"] != null)
+                _objImprovementSource = objImprovement.ConvertToImprovementSource(objNode["improvementsource"].InnerText);
             objNode.TryGetInt32FieldQuickly("matrixcmfilled", ref _intMatrixCMFilled);
             objNode.TryGetStringFieldQuickly("limbslot", ref _strLimbSlot);
             objNode.TryGetStringFieldQuickly("limbslotcount", ref _strLimbSlotCount);
@@ -746,8 +748,6 @@ namespace Chummer.Backend.Equipment
                 _blnWirelessOn = _nodWirelessBonus != null;
             }
             _nodAllowGear = objNode["allowgear"];
-            if (objNode["improvementsource"] != null)
-                _objImprovementSource = objImprovement.ConvertToImprovementSource(objNode["improvementsource"].InnerText);
             // Legacy Sweep
             if (_strForceGrade != "None" && (_strCategory.StartsWith("Genetech") || _strCategory.StartsWith("Genetic Infusions") || _strCategory.StartsWith("Genemods")))
             {
@@ -1519,6 +1519,10 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
+                if (!string.IsNullOrWhiteSpace(_strForceGrade) && _strForceGrade != _objGrade.Name)
+                {
+                    _objGrade = ConvertToCyberwareGrade(_strForceGrade, Improvement.ImprovementSource.Bioware, _objCharacter.Options);
+                }
                 return _objGrade;
             }
             set
@@ -1795,14 +1799,41 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
+                XmlNode objReturn = null;
+                XmlDocument objDoc = null;
                 if (_objImprovementSource == Improvement.ImprovementSource.Bioware)
                 {
-                    return XmlManager.Load("bioware.xml")?.SelectSingleNode("/chummer/biowares/bioware[id = \"" + _sourceID.ToString() + "\" or id = \"" + _sourceID.ToString().ToUpperInvariant() + "\"]");
+                    objDoc = XmlManager.Load("bioware.xml");
+                    if (objDoc != null)
+                    {
+                        objReturn = objDoc.SelectSingleNode("/chummer/biowares/bioware[id = \"" + _sourceID.ToString() + "\" or id = \"" + _sourceID.ToString().ToUpperInvariant() + "\"]");
+                        if (objReturn == null)
+                        {
+                            objReturn = objDoc.SelectSingleNode("/chummer/biowares/bioware[name = \"" + Name + "\"]");
+                            if (objReturn != null)
+                            {
+                                objReturn.TryGetField("id", Guid.TryParse, out _sourceID);
+                            }
+                        }
+                    }
                 }
                 else
                 {
-                    return XmlManager.Load("cyberware.xml")?.SelectSingleNode("/chummer/cyberwares/cyberware[id = \"" + _sourceID.ToString() + "\" or id = \"" + _sourceID.ToString().ToUpperInvariant() + "\"]");
+                    objDoc = XmlManager.Load("cyberware.xml");
+                    if (objDoc != null)
+                    {
+                        objReturn = objDoc.SelectSingleNode("/chummer/cyberwares/cyberware[id = \"" + _sourceID.ToString() + "\" or id = \"" + _sourceID.ToString().ToUpperInvariant() + "\"]");
+                        if (objReturn == null)
+                        {
+                            objReturn = objDoc.SelectSingleNode("/chummer/cyberwares/cyberware[name = \"" + Name + "\"]");
+                            if (objReturn != null)
+                            {
+                                objReturn.TryGetField("id", Guid.TryParse, out _sourceID);
+                            }
+                        }
+                    }
                 }
+                return objReturn;
             }
         }
         #endregion
@@ -1818,7 +1849,7 @@ namespace Chummer.Backend.Equipment
                 XmlDocument objXmlDocument = new XmlDocument();
                 XPathNavigator nav = objXmlDocument.CreateNavigator();
                 // If the Avail starts with "+", return the base string and don't try to calculate anything since we're looking at a child component.
-                if (_strAvail.StartsWith("+"))
+                if (_strAvail.StartsWith('+'))
                 {
                     if (_strAvail.Contains("Rating") || _strAvail.Contains("MinRating"))
                     {
@@ -1844,7 +1875,7 @@ namespace Chummer.Backend.Equipment
                 string strBaseAvail = _strAvail;
                 if (strBaseAvail.StartsWith("FixedValues"))
                 {
-                    string[] strValues = strBaseAvail.Replace("FixedValues(", string.Empty).Replace(")", string.Empty).Split(',');
+                    string[] strValues = strBaseAvail.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                     strBaseAvail = strValues[Math.Min(_intRating, strValues.Length) - 1];
                 }
                 bool blnCheckGearAvail = strBaseAvail.Contains(" or Gear");
@@ -1874,7 +1905,7 @@ namespace Chummer.Backend.Equipment
                 else
                 {
                     // Just a straight cost, so return the value.
-                    if (strBaseAvail.Contains("F") || strBaseAvail.Contains("R"))
+                    if (strBaseAvail.EndsWith('F') || strBaseAvail.EndsWith('R'))
                     {
                         strCalculated = (Convert.ToInt32(strBaseAvail.Substring(0, strBaseAvail.Length - 1)) + intAvailModifier).ToString() + strBaseAvail.Substring(strBaseAvail.Length - 1, 1);
                     }
@@ -1884,10 +1915,10 @@ namespace Chummer.Backend.Equipment
 
                 int intAvail = 0;
                 string strAvailText = string.Empty;
-                if (strCalculated.Contains("F") || strCalculated.Contains("R"))
+                if (strCalculated.EndsWith('F') || strCalculated.EndsWith('R'))
                 {
                     strAvailText = strCalculated.Substring(strCalculated.Length - 1);
-                    intAvail = Convert.ToInt32(strCalculated.Replace(strAvailText, string.Empty));
+                    intAvail = Convert.ToInt32(strCalculated.Substring(0, strCalculated.Length - 1));
                 }
                 else
                     intAvail = Convert.ToInt32(strCalculated);
@@ -1895,7 +1926,7 @@ namespace Chummer.Backend.Equipment
                 // Run through the child items and increase the Avail by any Mod whose Avail contains "+".
                 foreach (Cyberware objChild in _objChildren)
                 {
-                    if (objChild.Avail.Contains("+"))
+                    if (objChild.Avail.Contains('+'))
                     {
                         string strChildAvail = objChild.Avail;
                         if (objChild.Avail.Contains("Rating") || objChild.Avail.Contains("MinRating"))
@@ -1903,27 +1934,27 @@ namespace Chummer.Backend.Equipment
                             strChildAvail = strChildAvail.Replace("MinRating", objChild.MinRating.ToString());
                             strChildAvail = strChildAvail.Replace("Rating", objChild.Rating.ToString());
                             string strChildAvailText = string.Empty;
-                            if (strChildAvail.Contains("R") || strChildAvail.Contains("F"))
+                            if (strChildAvail.EndsWith('R') || strChildAvail.EndsWith('F'))
                             {
                                 strChildAvailText = strChildAvail.Substring(objChild.Avail.Length - 1);
-                                strChildAvail = strChildAvail.Replace(strChildAvailText, string.Empty);
+                                strChildAvail = strChildAvail.Substring(0, strChildAvail.Length - 1);
                             }
 
                             // If the availability is determined by the Rating, evaluate the expression.
                             string strChildAvailExpr = strChildAvail;
 
                             // Remove the "+" since the expression can't be evaluated if it starts with this.
-                            XPathExpression xprAvail = nav.Compile(strChildAvailExpr.Replace("+", string.Empty));
+                            XPathExpression xprAvail = nav.Compile(strChildAvailExpr.FastEscape('+'));
                             strChildAvail = "+" + nav.Evaluate(xprAvail);
                             if (!string.IsNullOrEmpty(strChildAvailText))
                                 strChildAvail += strChildAvailText;
                         }
 
-                        if (strChildAvail.Contains("R") || strChildAvail.Contains("F"))
+                        if (strChildAvail.EndsWith('R') || strChildAvail.EndsWith('F'))
                         {
                             if (strAvailText != "F")
                                 strAvailText = strChildAvail.Substring(objChild.Avail.Length - 1);
-                            intAvail += Convert.ToInt32(strChildAvail.Replace("F", string.Empty).Replace("R", string.Empty));
+                            intAvail += Convert.ToInt32(strChildAvail.Substring(0, strChildAvail.Length - 1));
                         }
                         else
                             intAvail += Convert.ToInt32(strChildAvail);
@@ -1941,13 +1972,13 @@ namespace Chummer.Backend.Equipment
                     foreach (Gear objLoopGear in Gear)
                     {
                         string strLoopAvail = objLoopGear.TotalAvail(false, true);
-                        if (strLoopAvail.Contains("R") || strLoopAvail.Contains("F"))
+                        if (strLoopAvail.EndsWith('R') || strLoopAvail.EndsWith('F'))
                         {
-                            if (strAvailText != "F" && strLoopAvail.Contains("F"))
+                            if (strAvailText != "F" && strLoopAvail.EndsWith('F'))
                                 strAvailText = "F";
-                            else if (strAvailText == string.Empty)
+                            else
                                 strAvailText = "R";
-                            intLoopAvail = Convert.ToInt32(strLoopAvail.Replace("F", string.Empty).Replace("R", string.Empty));
+                            intLoopAvail = Convert.ToInt32(strLoopAvail.Substring(0, strLoopAvail.Length - 1));
                         }
                         else
                             intLoopAvail = Convert.ToInt32(strLoopAvail);
@@ -1956,11 +1987,13 @@ namespace Chummer.Backend.Equipment
                     }
                 }
 
-                strReturn = intAvail.ToString() + strAvailText;
-
                 // Translate the Avail string.
-                strReturn = strReturn.Replace("R", LanguageManager.GetString("String_AvailRestricted"));
-                strReturn = strReturn.Replace("F", LanguageManager.GetString("String_AvailForbidden"));
+                if (strAvailText == "R")
+                    strAvailText = LanguageManager.GetString("String_AvailRestricted");
+                else if (strAvailText == "F")
+                    strAvailText = LanguageManager.GetString("String_AvailForbidden");
+
+                strReturn = intAvail.ToString() + strAvailText;
 
                 return strReturn;
             }
@@ -1976,8 +2009,7 @@ namespace Chummer.Backend.Equipment
                 string strCapacity = _strCapacity;
                 if (strCapacity.StartsWith("FixedValues"))
                 {
-                    char[] chrParentheses = { '(', ')' };
-                    string[] strValues = strCapacity.Replace("FixedValues", string.Empty).Trim(chrParentheses).Split(',');
+                    string[] strValues = strCapacity.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                     strCapacity = strValues[Math.Min(Rating, strValues.Length) - 1];
                 }
                 if (string.IsNullOrEmpty(strCapacity))
@@ -2010,7 +2042,7 @@ namespace Chummer.Backend.Equipment
                     if (blnSquareBrackets)
                         strReturn = "[" + strCapacity + "]";
 
-                    strSecondHalf = strSecondHalf.Replace("[", string.Empty).Replace("]", string.Empty);
+                    strSecondHalf = strSecondHalf.Trim("[]".ToArray());
                     xprCapacity = nav.Compile(strSecondHalf.Replace("Rating", _intRating.ToString()));
                     strSecondHalf = "[" + Convert.ToDecimal(nav.Evaluate(xprCapacity)).ToString("N2", GlobalOptions.CultureInfo) + "]";
 
@@ -2061,7 +2093,7 @@ namespace Chummer.Backend.Equipment
             string strESS = _strESS;
             if (strESS.StartsWith("FixedValues"))
             {
-                string[] strValues = strESS.Replace("FixedValues", string.Empty).Trim("()".ToCharArray()).Split(',');
+                string[] strValues = strESS.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                 strESS = strValues[Math.Min(_intRating, strValues.Length) - 1];
             }
             if (strESS.Contains("Rating"))
@@ -2170,9 +2202,9 @@ namespace Chummer.Backend.Equipment
 
                 if (strCostExpression.StartsWith("FixedValues"))
                 {
-                    string[] strValues = strCostExpression.Replace("FixedValues(", string.Empty).Replace(")", string.Empty).Split(',');
+                    string[] strValues = strCostExpression.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                     if (_intRating > 0)
-                        strCostExpression = strValues[Math.Min(_intRating, strValues.Length) - 1].Replace("[", string.Empty).Replace("]", string.Empty);
+                        strCostExpression = strValues[Math.Min(_intRating, strValues.Length) - 1].Trim("[]".ToArray());
                 }
 
                 string strParentCost = string.Empty;
@@ -2303,11 +2335,11 @@ namespace Chummer.Backend.Equipment
                     if (objChild.Capacity != "[*]")
                     {
                         // If the child cost starts with "*", multiply the item's base cost.
-                        if (objChild.Cost.StartsWith("*"))
+                        if (objChild.Cost.StartsWith('*'))
                         {
                             decimal decPluginCost = 0;
                             string strMultiplier = objChild.Cost;
-                            strMultiplier = strMultiplier.Replace("*", string.Empty);
+                            strMultiplier = strMultiplier.FastEscape('*');
                             decPluginCost = decCost * (Convert.ToDecimal(strMultiplier, GlobalOptions.InvariantCultureInfo) - 1);
 
                             if (objChild.DiscountCost)
@@ -2396,10 +2428,14 @@ namespace Chummer.Backend.Equipment
                     // Run through its Children and deduct the Capacity costs.
                     foreach (Cyberware objChildCyberware in Children)
                     {
+                        if (objChildCyberware.ParentID == InternalId)
+                        {
+                            continue;
+                        }
                         string strCapacity = objChildCyberware.CalculatedCapacity;
                         if (strCapacity.Contains("/["))
                             strCapacity = strCapacity.Substring(strCapacity.IndexOf('[') + 1, strCapacity.IndexOf(']') - strCapacity.IndexOf('[') - 1);
-                        else if (strCapacity.Contains("["))
+                        else if (strCapacity.Contains('['))
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacity == "*")
                             strCapacity = "0";
@@ -2409,10 +2445,14 @@ namespace Chummer.Backend.Equipment
                     // Run through its Children and deduct the Capacity costs.
                     foreach (Gear objChildGear in Gear)
                     {
+                        if (objChildGear.IncludedInParent)
+                        {
+                            continue;
+                        }
                         string strCapacity = objChildGear.CalculatedCapacity;
                         if (strCapacity.Contains("/["))
                             strCapacity = strCapacity.Substring(strCapacity.IndexOf('[') + 1, strCapacity.IndexOf(']') - strCapacity.IndexOf('[') - 1);
-                        else if (strCapacity.Contains("["))
+                        else if (strCapacity.Contains('['))
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacity == "*")
                             strCapacity = "0";
@@ -2420,7 +2460,7 @@ namespace Chummer.Backend.Equipment
                     }
 
                 }
-                else if (!_strCapacity.Contains("["))
+                else if (!_strCapacity.Contains('['))
                 {
                     // Get the Cyberware base Capacity.
                     decCapacity = Convert.ToDecimal(CalculatedCapacity, GlobalOptions.CultureInfo);
@@ -2428,10 +2468,14 @@ namespace Chummer.Backend.Equipment
                     // Run through its Children and deduct the Capacity costs.
                     foreach (Cyberware objChildCyberware in Children)
                     {
+                        if (objChildCyberware.ParentID == InternalId)
+                        {
+                            continue;
+                        }
                         string strCapacity = objChildCyberware.CalculatedCapacity;
                         if (strCapacity.Contains("/["))
                             strCapacity = strCapacity.Substring(strCapacity.IndexOf('[') + 1, strCapacity.IndexOf(']') - strCapacity.IndexOf('[') - 1);
-                        else if (strCapacity.Contains("["))
+                        else if (strCapacity.Contains('['))
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacity == "*")
                             strCapacity = "0";
@@ -2441,10 +2485,14 @@ namespace Chummer.Backend.Equipment
                     // Run through its Children and deduct the Capacity costs.
                     foreach (Gear objChildGear in Gear)
                     {
+                        if (objChildGear.IncludedInParent)
+                        {
+                            continue;
+                        }
                         string strCapacity = objChildGear.CalculatedCapacity;
                         if (strCapacity.Contains("/["))
                             strCapacity = strCapacity.Substring(strCapacity.IndexOf('[') + 1, strCapacity.IndexOf(']') - strCapacity.IndexOf('[') - 1);
-                        else if (strCapacity.Contains("["))
+                        else if (strCapacity.Contains('['))
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacity == "*")
                             strCapacity = "0";

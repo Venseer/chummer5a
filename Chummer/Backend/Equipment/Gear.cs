@@ -150,15 +150,15 @@ namespace Chummer.Backend.Equipment
                 {
                     decimal decMin = 0;
                     decimal decMax = decimal.MaxValue;
-                    string strCost = _strCost.Replace("Variable(", string.Empty).Replace(")", string.Empty);
-                    if (strCost.Contains("-"))
+                    string strCost = _strCost.TrimStart("Variable", true).Trim("()".ToCharArray());
+                    if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
                         decMin = Convert.ToDecimal(strValues[0], GlobalOptions.InvariantCultureInfo);
                         decMax = Convert.ToDecimal(strValues[1], GlobalOptions.InvariantCultureInfo);
                     }
                     else
-                        decMin = Convert.ToDecimal(strCost.Replace("+", string.Empty), GlobalOptions.InvariantCultureInfo);
+                        decMin = Convert.ToDecimal(strCost.FastEscape('+'), GlobalOptions.InvariantCultureInfo);
 
                     if (decMin != 0 || decMax != decimal.MaxValue)
                     {
@@ -1221,12 +1221,12 @@ namespace Chummer.Backend.Equipment
             {
                 if (_strCost.StartsWith("FixedValues"))
                 {
-                    string[] strValues = _strCost.Replace("FixedValues", string.Empty).Trim("()".ToCharArray()).Split(',');
+                    string[] strValues = _strCost.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                     string strCost = "0";
                     if (_intRating > 0)
-                        strCost = strValues[Math.Min(_intRating, strValues.Length) - 1].Replace("[", string.Empty).Replace("]", string.Empty);
+                        strCost = strValues[Math.Min(_intRating, strValues.Length) - 1].Trim("[]".ToCharArray());
                     else
-                        strCost = strValues[0].Replace("[", string.Empty).Replace("]", string.Empty);
+                        strCost = strValues[0].Trim("[]".ToCharArray());
                     return strCost;
                 }
                 else if (_strCost.StartsWith("Parent Cost"))
@@ -1406,9 +1406,9 @@ namespace Chummer.Backend.Equipment
 
                 if (strExpression.StartsWith("FixedValues"))
                 {
-                    string[] strValues = strExpression.Replace("FixedValues(", string.Empty).Replace(")", string.Empty).Split(',');
+                    string[] strValues = strExpression.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                     if (_intRating > 0)
-                        strExpression = strValues[Math.Min(_intRating, strValues.Length) - 1].Replace("[", string.Empty).Replace("]", string.Empty);
+                        strExpression = strValues[Math.Min(_intRating, strValues.Length) - 1].Trim("[]".ToCharArray());
                 }
 
                 int intGearValue = 0;
@@ -1602,7 +1602,7 @@ namespace Chummer.Backend.Equipment
             bool blnIncludePlus = false;
 
             // If the Avail contains "+", return the base string and don't try to calculate anything since we're looking at a child component.
-            if (_strAvail.StartsWith("+"))
+            if (_strAvail.StartsWith('+'))
             {
                 if (!blnCalculateAdditions)
                     return _strAvail;
@@ -1634,17 +1634,17 @@ namespace Chummer.Backend.Equipment
             else
             {
                 // Just a straight cost, so return the value.
-                strCalculated = strAvailExpression.Contains("F") || strAvailExpression.Contains("R")
+                strCalculated = strAvailExpression.EndsWith('F') || strAvailExpression.EndsWith('R')
                     ? Convert.ToInt32(strAvailExpression.Substring(0, strAvailExpression.Length - 1)).ToString() + strAvailExpression.Substring(strAvailExpression.Length - 1, 1)
                     : Convert.ToInt32(strAvailExpression).ToString();
             }
 
             int intAvail;
             string strAvailText = string.Empty;
-            if (strCalculated.Contains("F") || strCalculated.Contains("R"))
+            if (strCalculated.EndsWith('F') || strCalculated.EndsWith('R'))
             {
                 strAvailText = strCalculated.Substring(strCalculated.Length - 1);
-                intAvail = Convert.ToInt32(strCalculated.Replace(strAvailText, string.Empty));
+                intAvail = Convert.ToInt32(strCalculated.Substring(0, strCalculated.Length - 1));
             }
             else
                 intAvail = Convert.ToInt32(strCalculated);
@@ -1652,23 +1652,32 @@ namespace Chummer.Backend.Equipment
             // Run through the child items and increase the Avail by any Mod whose Avail contains "+".
             foreach (Gear objChild in _objChildren)
             {
-                if (objChild.Avail.StartsWith("+"))
+                if (objChild.Avail.StartsWith('+'))
                 {
                     string strAvail = objChild.Avail.Replace("Rating", objChild.Rating.ToString());
                     strAvail = strAvail.Substring(1).Trim();
-                    if (strAvail.Contains("R") || strAvail.Contains("F"))
+                    if (strAvail.EndsWith('R') || strAvail.EndsWith('F'))
                     {
                         if (strAvailText != "F")
                             strAvailText = strAvail.Substring(strAvail.Length - 1);
-                        XPathExpression xprAvail = nav.Compile(strAvail.Replace("F", string.Empty).Replace("R", string.Empty));
+                        XPathExpression xprAvail = nav.Compile(strAvail.Substring(0, strAvail.Length - 1));
                         intAvail += Convert.ToInt32(nav.Evaluate(xprAvail));
                     }
                     else
                     {
-                        XPathExpression xprAvail = nav.Compile(strAvail.Replace("F", string.Empty).Replace("R", string.Empty));
+                        XPathExpression xprAvail = nav.Compile(strAvail);
                         intAvail += Convert.ToInt32(nav.Evaluate(xprAvail));
                     }
                 }
+            }
+
+            // Translate the Avail string.
+            if (!blnForceEnglish)
+            {
+                if (strAvailText == "F")
+                    strAvailText = LanguageManager.GetString("String_AvailForbidden");
+                else if (strAvailText == "R")
+                    strAvailText = LanguageManager.GetString("String_AvailRestricted");
             }
 
             // Add any Avail modifier that comes from its Parent.
@@ -1676,13 +1685,6 @@ namespace Chummer.Backend.Equipment
                 intAvail += _objParent.ChildAvailModifier;
 
             string strReturn = intAvail.ToString() + strAvailText;
-
-            // Translate the Avail string.
-            if (!blnForceEnglish)
-            {
-                strReturn = strReturn.Replace("R", LanguageManager.GetString("String_AvailRestricted"));
-                strReturn = strReturn.Replace("F", LanguageManager.GetString("String_AvailForbidden"));
-            }
 
             if (blnIncludePlus)
                 strReturn = "+" + strReturn;
@@ -1716,8 +1718,7 @@ namespace Chummer.Backend.Equipment
                         strReturn = "*";
                     else if (_strArmorCapacity.StartsWith("FixedValues"))
                     {
-                        char[] chrParentheses = { '(', ')' };
-                        string[] strValues = _strArmorCapacity.Replace("FixedValues", string.Empty).Trim(chrParentheses).Split(',');
+                        string[] strValues = _strArmorCapacity.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                         strReturn = strValues[Math.Min(_intRating, strValues.Length) - 1];
                     }
                     else
@@ -1781,8 +1782,7 @@ namespace Chummer.Backend.Equipment
                         strReturn = "*";
                     else if (_strArmorCapacity.StartsWith("FixedValues"))
                     {
-                        char[] chrParentheses = { '(', ')' };
-                        string[] strValues = _strArmorCapacity.Replace("FixedValues", string.Empty).Trim(chrParentheses).Split(',');
+                        string[] strValues = _strArmorCapacity.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                         strReturn = strValues[Math.Min(_intRating, strValues.Length) - 1];
                     }
                     else
@@ -1837,9 +1837,9 @@ namespace Chummer.Backend.Equipment
 
                 if (strCostExpression.StartsWith("FixedValues"))
                 {
-                    string[] strValues = strCostExpression.Replace("FixedValues(", string.Empty).Replace(")", string.Empty).Split(',');
+                    string[] strValues = strCostExpression.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                     if (_intRating > 0)
-                        strCostExpression = strValues[Math.Min(_intRating, strValues.Length) - 1].Replace("[", string.Empty).Replace("]", string.Empty);
+                        strCostExpression = strValues[Math.Min(_intRating, strValues.Length) - 1].Trim("[]".ToCharArray());
                 }
 
                 decimal decGearCost = 0;
@@ -1957,7 +1957,7 @@ namespace Chummer.Backend.Equipment
                 }
 
                 // Only items that contain square brackets should consume Capacity. Everything else is treated as [0].
-                if (strCapacity.Contains("["))
+                if (strCapacity.Contains('['))
                     strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                 else
                     strCapacity = "0";
@@ -1981,7 +1981,7 @@ namespace Chummer.Backend.Equipment
                 }
 
                 // Only items that contain square brackets should consume Capacity. Everything else is treated as [0].
-                if (strCapacity.Contains("["))
+                if (strCapacity.Contains('['))
                     strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                 else
                     strCapacity = "0";
@@ -1998,7 +1998,7 @@ namespace Chummer.Backend.Equipment
             {
                 decimal decCapacity = 0;
                 string strMyCapacity = CalculatedCapacity;
-                if (!strMyCapacity.Contains("[") || strMyCapacity.Contains("/["))
+                if (!strMyCapacity.Contains('[') || strMyCapacity.Contains("/["))
                 {
                     // Get the Gear base Capacity.
                     if (strMyCapacity.Contains("/["))
@@ -2023,7 +2023,7 @@ namespace Chummer.Backend.Equipment
                         }
 
                         // Only items that contain square brackets should consume Capacity. Everything else is treated as [0].
-                        if (strCapacity.Contains("["))
+                        if (strCapacity.Contains('['))
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         else
                             strCapacity = "0";
@@ -2095,7 +2095,7 @@ namespace Chummer.Backend.Equipment
                         strReturn += _nodWeaponBonus["damagetype"].InnerText;
 
                     // If this does not start with "-", add a "+" to the string.
-                    if (!strReturn.StartsWith("-"))
+                    if (!strReturn.StartsWith('-'))
                         strReturn = "+" + strReturn;
                 }
 
@@ -2131,7 +2131,7 @@ namespace Chummer.Backend.Equipment
                         strReturn = _nodWeaponBonus["ap"].InnerText;
 
                         // If this does not start with "-", add a "+" to the string.
-                        if (!strReturn.StartsWith("-"))
+                        if (!strReturn.StartsWith('-'))
                             strReturn = "+" + strReturn;
                     }
 

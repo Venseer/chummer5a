@@ -68,7 +68,7 @@ namespace Chummer
         {
             foreach (Label objLabel in Controls.OfType<Label>())
             {
-                if (objLabel.Text.StartsWith("["))
+                if (objLabel.Text.StartsWith('['))
                     objLabel.Text = string.Empty;
             }
 
@@ -640,10 +640,10 @@ namespace Chummer
                                 break;
                             case "ess":
                                 // Check Essence requirement.
-                                if (objXmlRequired.InnerText.StartsWith("-"))
+                                if (objXmlRequired.InnerText.StartsWith('-'))
                                 {
                                     // Essence must be less than the value.
-                                    if (_objCharacter.Essence < Convert.ToDecimal(objXmlRequired.InnerText.Replace("-", string.Empty), GlobalOptions.InvariantCultureInfo))
+                                    if (_objCharacter.Essence < Convert.ToDecimal(objXmlRequired.InnerText.TrimStart('-'), GlobalOptions.InvariantCultureInfo))
                                         blnOneOfMet = true;
                                 }
                                 else
@@ -675,7 +675,7 @@ namespace Chummer
                             case "attributetotal":
                                 // Check if the character's Attributes add up to a particular total.
                                 string strAttributes = objXmlRequired["attributes"].InnerText;
-                                foreach (string strAttribute in Character.AttributeStrings)
+                                foreach (string strAttribute in AttributeSection.AttributeStrings)
                                 {
                                     strAttributes = strAttributes.Replace(strAttribute, _objCharacter.GetAttribute(strAttribute).Value.ToString());
                                 }
@@ -903,10 +903,10 @@ namespace Chummer
                                 break;
                             case "ess":
                                 // Check Essence requirement.
-                                if (objXmlRequired.InnerText.StartsWith("-"))
+                                if (objXmlRequired.InnerText.StartsWith('-'))
                                 {
                                     // Essence must be less than the value.
-                                    if (_objCharacter.Essence < Convert.ToDecimal(objXmlRequired.InnerText.Replace("-", string.Empty), GlobalOptions.InvariantCultureInfo))
+                                    if (_objCharacter.Essence < Convert.ToDecimal(objXmlRequired.InnerText.TrimStart('-'), GlobalOptions.InvariantCultureInfo))
                                         blnFound = true;
                                 }
                                 else
@@ -938,7 +938,7 @@ namespace Chummer
                             case "attributetotal":
                                 // Check if the character's Attributes add up to a particular total.
                                 string strAttributes = objXmlRequired["attributes"].InnerText;
-                                foreach (string strAttribute in Character.AttributeStrings)
+                                foreach (string strAttribute in AttributeSection.AttributeStrings)
                                 {
                                     strAttributes = strAttributes.Replace(strAttribute, _objCharacter.GetAttribute(strAttribute).Value.ToString());
                                 }

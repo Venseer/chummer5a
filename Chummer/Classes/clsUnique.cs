@@ -184,15 +184,15 @@ namespace Chummer
                     decimal decMin = 0.0m;
                     decimal decMax = decimal.MaxValue;
                     char[] charParentheses = { '(', ')' };
-                    string strCost = strKarmaNodeTest.Replace("Variable", string.Empty).Trim(charParentheses);
-                    if (strCost.Contains("-"))
+                    string strCost = strKarmaNodeTest.TrimStart("Variable", true).Trim(charParentheses);
+                    if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
                         decMin = Convert.ToDecimal(strValues[0], GlobalOptions.InvariantCultureInfo);
                         decMax = Convert.ToDecimal(strValues[1], GlobalOptions.InvariantCultureInfo);
                     }
                     else
-                        decMin = Convert.ToDecimal(strCost.Replace("+", string.Empty), GlobalOptions.InvariantCultureInfo);
+                        decMin = Convert.ToDecimal(strCost.FastEscape('+'), GlobalOptions.InvariantCultureInfo);
 
                     if (decMin != 0 || decMax != decimal.MaxValue)
                     {
@@ -325,8 +325,11 @@ namespace Chummer
                 if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
                 {
                     _strExtra = ImprovementManager.SelectedValue;
-                    objNode.Text += " (" + ImprovementManager.SelectedValue + ")";
                 }
+            }
+            else if (!string.IsNullOrEmpty(strForceValue))
+            {
+                _strExtra = strForceValue;
             }
             if (Levels == 0 && objXmlQuality["firstlevelbonus"]?.ChildNodes.Count > 0)
             {
@@ -429,7 +432,12 @@ namespace Chummer
             {
                 objNode.TryGetStringFieldQuickly("stage", ref _stage);
             }
-            objNode.TryGetField("id", Guid.TryParse, out _qualiyGuid);
+            if (!objNode.TryGetField("id", Guid.TryParse, out _qualiyGuid))
+            {
+                XmlNode objNewNode = XmlManager.Load("qualities.xml")?.SelectSingleNode("/chummer/qualities/quality[name = \"" + Name + "\"]");
+                if (objNewNode != null)
+                    objNewNode.TryGetField("id", Guid.TryParse, out _qualiyGuid);
+            }
 
             if (GlobalOptions.Language != "en-us")
             {
@@ -490,7 +498,7 @@ namespace Chummer
         /// <summary>
         /// Internal identifier for the quality type
         /// </summary>
-        public string QualityId => _qualiyGuid.ToString();
+        public string QualityId => _qualiyGuid.Equals(Guid.Empty) ? string.Empty : _qualiyGuid.ToString();
 
         /// <summary>
         /// Guid of a Weapon.
@@ -1413,11 +1421,11 @@ namespace Chummer
             objXmlSpellNode.TryGetStringFieldQuickly("page", ref _strPage);
             _objImprovementSource = objSource;
 
-            if (_blnLimited && _strDV.StartsWith("F"))
+            if (_blnLimited && _strDV.StartsWith('F'))
             {
                 string strDV = _strDV;
                 int intPos = 0;
-                if (strDV.Contains("-"))
+                if (strDV.Contains('-'))
                 {
                     intPos = strDV.IndexOf('-') + 1;
                     string strAfter = strDV.Substring(intPos, strDV.Length - intPos);
@@ -1427,7 +1435,7 @@ namespace Chummer
                     intAfter += 2;
                     strDV += intAfter.ToString();
                 }
-                else if (strDV.Contains("+"))
+                else if (strDV.Contains('+'))
                 {
                     intPos = strDV.IndexOf('+');
                     string strAfter = strDV.Substring(intPos, strDV.Length - intPos);
@@ -1976,7 +1984,7 @@ namespace Chummer
             get
             {
                 string strReturn = _strDV;
-                bool force = _strDV.StartsWith("F");
+                bool force = _strDV.StartsWith('F');
                 if (_objCharacter.Improvements.Any(i => i.ImproveType == Improvement.ImprovementType.DrainValue))
                 {
                     XmlDocument objXmlDocument = new XmlDocument();

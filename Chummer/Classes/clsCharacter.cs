@@ -84,7 +84,7 @@ namespace Chummer
 
         // General character info.
         private string _strName = string.Empty;
-        private List<string> _lstMugshots = new List<string>();
+        private List<Image> _lstMugshots = new List<Image>();
         private int _intMainMugshotIndex = 0;
         private string _strSex = string.Empty;
         private string _strAge = string.Empty;
@@ -101,6 +101,7 @@ namespace Chummer
         private string _strPlayerName = string.Empty;
         private string _strGameNotes = string.Empty;
         private string _strPrimaryArm = "Right";
+        public static string[] LimbStrings = { "skull", "torso", "arm", "leg" };
 
         // AI Home Node
         private Commlink _objHomeNodeCommlink = null;
@@ -127,6 +128,9 @@ namespace Chummer
         private string _strWalk = string.Empty;
         private string _strRun = string.Empty;
         private string _strSprint = string.Empty;
+        private string _strWalkAlt = string.Empty;
+        private string _strRunAlt = string.Empty;
+        private string _strSprintAlt = string.Empty;
         private int _intMetatypeBP = 0;
 
         // Special Flags.
@@ -150,32 +154,8 @@ namespace Chummer
         private bool _blnFame = false;
         private bool _blnBornRich = false;
         private bool _blnErased = false;
-        private int _intTrustFund = 0;
-        private decimal _decPrototypeTranshuman = 0m;
-
-        // Attributes.
-        public static string[] AttributeStrings = { "BOD", "AGI", "REA", "STR", "CHA", "INT", "LOG", "WIL", "EDG", "MAG", "RES", "ESS", "DEP" };
-        public static string[] LimbStrings = { "skull", "torso", "arm", "leg" };
-        private List<CharacterAttrib> _attributes = new List<CharacterAttrib>();
-        private List<CharacterAttrib> _specialAttributes = new List<CharacterAttrib>();
-
-        private CharacterAttrib _attBOD;
-        private CharacterAttrib _attAGI;
-        private CharacterAttrib _attREA;
-        private CharacterAttrib _attSTR;
-        private CharacterAttrib _attCHA;
-        private CharacterAttrib _attINT;
-        private CharacterAttrib _attLOG;
-        private CharacterAttrib _attWIL;
-        private CharacterAttrib _attINI;
-        private CharacterAttrib _attEDG;
-        private CharacterAttrib _attMAG;
-        private CharacterAttrib _attRES;
-        private CharacterAttrib _attESS;
-        private CharacterAttrib _attDEP;
-
-        // Shapeshifter Attributes.
-
+		private int _intTrustFund = 0;
+		private decimal _decPrototypeTranshuman = 0m;
         private bool _blnMAGEnabled = false;
         private bool _blnRESEnabled = false;
         private bool _blnDEPEnabled = false;
@@ -194,7 +174,7 @@ namespace Chummer
         private string _strTraditionDrain = string.Empty;
         private string _strTraditionName = string.Empty;
         private string _strSpiritCombat = string.Empty;
-        private string _strSpiritDetection = string.Empty;
+		private string _strSpiritDetection = string.Empty;
         private string _strSpiritHealth = string.Empty;
         private string _strSpiritIllusion = string.Empty;
         private string _strSpiritManipulation = string.Empty;
@@ -294,27 +274,16 @@ namespace Chummer
         /// </summary>
         public Character()
         {
-            _attBOD = new CharacterAttrib("BOD", this);
-            _attAGI = new CharacterAttrib("AGI", this);
-            _attREA = new CharacterAttrib("REA", this);
-            _attSTR = new CharacterAttrib("STR", this);
-            _attCHA = new CharacterAttrib("CHA", this);
-            _attINT = new CharacterAttrib("INT", this);
-            _attLOG = new CharacterAttrib("LOG", this);
-            _attWIL = new CharacterAttrib("WIL", this);
-            _attEDG = new CharacterAttrib("EDG", this, CharacterAttrib.AttributeCategory.Special);
-            _attMAG = new CharacterAttrib("MAG", this, CharacterAttrib.AttributeCategory.Special);
-            _attRES = new CharacterAttrib("RES", this, CharacterAttrib.AttributeCategory.Special);
-            _attDEP = new CharacterAttrib("DEP", this,CharacterAttrib.AttributeCategory.Special);
-            _attINI = new CharacterAttrib("INI", this);
-            _attESS = new CharacterAttrib("ESS", this, CharacterAttrib.AttributeCategory.Special);
-
-            _objOptions = new CharacterOptions(this);
-            SkillsSection = new SkillsSection(this);
-            SkillsSection.Reset();
+			_objOptions = new CharacterOptions(this);
+			AttributeSection = new AttributeSection(this);
+			AttributeSection.Reset();
+			SkillsSection = new SkillsSection(this);
+			SkillsSection.Reset();
         }
 
-        /// <summary>
+	    public AttributeSection AttributeSection { get; set; }
+
+	    /// <summary>
         /// Save the Character to an XML file.
         /// </summary>
         public void Save(string strFileName = "")
@@ -364,6 +333,12 @@ namespace Chummer
             objWriter.WriteElementString("run", _strRun);
             // <sprint />
             objWriter.WriteElementString("sprint", _strSprint);
+            // <walk />
+            objWriter.WriteElementString("walkalt", _strWalk);
+            // <run />
+            objWriter.WriteElementString("runalt", _strRun);
+            // <sprint />
+            objWriter.WriteElementString("sprintalt", _strSprint);
 
             // <prioritymetatype />
             objWriter.WriteElementString("prioritymetatype", _strPriorityMetatype);
@@ -394,9 +369,9 @@ namespace Chummer
             // <mugshot>
             objWriter.WriteElementString("mainmugshotindex", MainMugshotIndex.ToString());
             objWriter.WriteStartElement("mugshots");
-            foreach (string strMugshot in _lstMugshots)
+            foreach (Image imgMugshot in _lstMugshots)
             {
-                objWriter.WriteElementString("mugshot", strMugshot);
+                objWriter.WriteElementString("mugshot", imgMugshot.ToBase64String());
             }
             // </mugshot>
             objWriter.WriteEndElement();
@@ -551,16 +526,9 @@ namespace Chummer
 
             objWriter.WriteElementString("erased", _blnErased.ToString());
 
-            // <attributes>
-            objWriter.WriteStartElement("attributes");
-            foreach (CharacterAttrib objAttribute in _attributes)
-            {
-                objAttribute.Save(objWriter);
-            }
-            foreach (CharacterAttrib objAttribute in _specialAttributes)
-            {
-                objAttribute.Save(objWriter);
-            }
+			// <attributes>
+			objWriter.WriteStartElement("attributes");
+	        AttributeSection.Save(objWriter);
             // </attributes>
             objWriter.WriteEndElement();
 
@@ -1087,6 +1055,10 @@ namespace Chummer
             objXmlCharacter.TryGetStringFieldQuickly("run", ref _strRun);
             objXmlCharacter.TryGetStringFieldQuickly("sprint", ref _strSprint);
 
+            _strRunAlt = objXmlCharacter["run"]?.Attributes["alt"]?.InnerText ?? string.Empty;
+            _strWalkAlt = objXmlCharacter["walk"]?.Attributes["alt"]?.InnerText ?? string.Empty;
+            _strSprintAlt = objXmlCharacter["sprint"]?.Attributes["alt"]?.InnerText ?? string.Empty;
+
             objXmlCharacter.TryGetInt32FieldQuickly("metatypebp", ref _intMetatypeBP);
             objXmlCharacter.TryGetStringFieldQuickly("metavariant", ref _strMetavariant);
 
@@ -1106,7 +1078,7 @@ namespace Chummer
             {
                 foreach (XmlNode objXmlMugshot in objXmlMugshotsList)
                 {
-                    Mugshots.Add(objXmlMugshot.InnerText);
+                    Mugshots.Add(objXmlMugshot.InnerText.ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb));
                 }
             }
             if (Mugshots.Count == 0)
@@ -1114,7 +1086,7 @@ namespace Chummer
                 XmlNode objOldMugshotNode = objXmlDocument.SelectSingleNode("/character/mugshot");
                 if (objOldMugshotNode != null)
                 {
-                    Mugshots.Add(objOldMugshotNode.InnerText);
+                    Mugshots.Add(objOldMugshotNode.InnerText.ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb));
                 }
             }
             objXmlCharacter.TryGetStringFieldQuickly("sex", ref _strSex);
@@ -1284,103 +1256,9 @@ namespace Chummer
             // If old Qualities are in use, they need to be converted before we can continue.
             if (blnHasOldQualities)
                 ConvertOldQualities(objXmlNodeList);
-            Timekeeper.Finish("load_char_quality");
-            Timekeeper.Start("load_char_attrib");
-            // Attributes.
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"BOD\"]");
-            if (objXmlCharacter != null)
-            {
-                _attBOD.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"AGI\"]");
-            if (objXmlCharacter != null)
-            {
-                _attAGI.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"REA\"]");
-            if (objXmlCharacter != null)
-            {
-                _attREA.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"STR\"]");
-            if (objXmlCharacter != null)
-            {
-                _attSTR.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"CHA\"]");
-            if (objXmlCharacter != null)
-            {
-                _attCHA.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"INT\"]");
-            if (objXmlCharacter != null)
-            {
-                _attINT.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"LOG\"]");
-            if (objXmlCharacter != null)
-            {
-                _attLOG.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"WIL\"]");
-            if (objXmlCharacter != null)
-            {
-                _attWIL.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"INI\"]");
-            if (objXmlCharacter != null)
-            {
-                _attINI.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"EDG\"]");
-            if (objXmlCharacter != null)
-            {
-                _attEDG.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"MAG\"]");
-            if (objXmlCharacter != null)
-            {
-                _attMAG.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"RES\"]");
-            if (objXmlCharacter != null)
-            {
-                _attRES.Load(objXmlCharacter);
-            }
-            objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"ESS\"]");
-            if (objXmlCharacter != null)
-            {
-                _attESS.Load(objXmlCharacter);
-            }
-
-            // A.I. Attributes.
-            try
-            {
-                objXmlCharacter = objXmlDocument.SelectSingleNode("/character/attributes/attribute[name = \"DEP\"]");
-                if (objXmlCharacter != null)
-                {
-                    _attDEP.Load(objXmlCharacter);
-                }
-            }
-            catch
-            {
-            }
-
-            AttributeList.Add(_attBOD);
-            AttributeList.Add(_attAGI);
-            AttributeList.Add(_attREA);
-            AttributeList.Add(_attSTR);
-            AttributeList.Add(_attCHA);
-            AttributeList.Add(_attINT);
-            AttributeList.Add(_attLOG);
-            AttributeList.Add(_attWIL);
-            SpecialAttributeList.Add(_attEDG);
-            SpecialAttributeList.Add(_attMAG);
-            SpecialAttributeList.Add(_attRES);
-            SpecialAttributeList.Add(_attDEP);
-
-            Timekeeper.Finish("load_char_attrib");
-            Timekeeper.Start("load_char_misc2");
+	        Timekeeper.Finish("load_char_quality");
+			AttributeSection.Load(objXmlDocument);
+			Timekeeper.Start("load_char_misc2");
 
             objXmlCharacter = objXmlDocument.SelectSingleNode("/character");
 
@@ -1537,9 +1415,9 @@ namespace Chummer
                 XmlNode objNode = objXmlDocument.SelectSingleNode("/character/powers/power[name = " + CleanXPath(objItem.Name) + " and extra = " + CleanXPath(objItem.Value) + "]");
                 if (objNode != null)
                 {
-                objPower.Load(objNode);
-                _lstPowers.Add(objPower);
-            }
+                    objPower.Load(objNode);
+                    _lstPowers.Add(objPower);
+                }
             }
 
             Timekeeper.Finish("load_char_powers");
@@ -2030,33 +1908,25 @@ namespace Chummer
                 }
             }
             // <mainmugshotpath />
-            if (MainMugshot.Length > 0)
+            if (MainMugshot != null)
             {
-                byte[] bytImage = Convert.FromBase64String(MainMugshot);
-                MemoryStream objImageStream = new MemoryStream(bytImage, 0, bytImage.Length);
-                objImageStream.Write(bytImage, 0, bytImage.Length);
-                Image imgMugshot = Image.FromStream(objImageStream, true);
+                Image imgMainMugshot = MainMugshot;
                 string imgMugshotPath = Path.Combine(mugshotsDirectoryPath, guiImage.ToString() + ".img");
-                imgMugshot.Save(imgMugshotPath);
+                imgMainMugshot.Save(imgMugshotPath);
                 objWriter.WriteElementString("mainmugshotpath",
                     "file://" + imgMugshotPath.Replace(Path.DirectorySeparatorChar, '/'));
                 // <mainmugshotbase64 />
-                objWriter.WriteElementString("mainmugshotbase64", MainMugshot);
+                objWriter.WriteElementString("mainmugshotbase64", imgMainMugshot.ToBase64String());
                 // <othermugshots>
                 objWriter.WriteElementString("hasothermugshots", Mugshots.Count > 1 ? "yes" : "no");
                 objWriter.WriteStartElement("othermugshots");
                 int i = 0;
-                foreach (string strMugshot in Mugshots)
+                foreach (Image imgMugshot in Mugshots)
                 {
-                    if (strMugshot == MainMugshot)
+                    if (imgMugshot == MainMugshot)
                         continue;
                     objWriter.WriteStartElement("mugshot");
-                    objWriter.WriteElementString("stringbase64", strMugshot);
-
-                    bytImage = Convert.FromBase64String(strMugshot);
-                    objImageStream = new MemoryStream(bytImage, 0, bytImage.Length);
-                    objImageStream.Write(bytImage, 0, bytImage.Length);
-                    imgMugshot = Image.FromStream(objImageStream, true);
+                    objWriter.WriteElementString("stringbase64", imgMugshot.ToBase64String());
                     imgMugshotPath = Path.Combine(mugshotsDirectoryPath, guiImage.ToString() + i.ToString() + ".img");
                     imgMugshot.Save(imgMugshotPath);
                     objWriter.WriteElementString("temppath", "file://" + imgMugshotPath.Replace(Path.DirectorySeparatorChar, '/'));
@@ -2189,8 +2059,8 @@ namespace Chummer
                 }
 
                 XPathNavigator nav = objXmlDocument.CreateNavigator();
-                string strDrain = AttributeStrings.Select(GetAttribute).Aggregate(strDrainAtt, (current, objAttrib) => current.Replace(objAttrib.Abbrev, objAttrib.TotalValue.ToString()));
-                if (string.IsNullOrEmpty(strDrain))
+                string strDrain = AttributeSection.AttributeStrings.Select(GetAttribute).Aggregate(strDrainAtt, (current, objAttrib) => current.Replace(objAttrib.Abbrev, objAttrib.TotalValue.ToString()));
+				if (string.IsNullOrEmpty(strDrain))
                 {
                     strDrain = "0";
                 }
@@ -2260,7 +2130,7 @@ namespace Chummer
                 string strDrainAtt = string.Empty;
                 objXmlDocument = new XmlDocument();
                 XPathNavigator nav = objXmlDocument.CreateNavigator();
-                string strDrain = AttributeStrings.Select(GetAttribute).Aggregate(strDrainAtt, (current, objAttrib) => current.Replace(objAttrib.Abbrev, objAttrib.TotalValue.ToString()));
+                string strDrain = AttributeSection.AttributeStrings.Select(GetAttribute).Aggregate(strDrainAtt, (current, objAttrib) => current.Replace(objAttrib.Abbrev, objAttrib.TotalValue.ToString()));
                 if (string.IsNullOrEmpty(strDrain))
                     strDrain = "0";
                 XPathExpression xprDrain = nav.Compile(strDrain);
@@ -2273,19 +2143,7 @@ namespace Chummer
 
             // <attributes>
             objWriter.WriteStartElement("attributes");
-            _attBOD.Print(objWriter);
-            _attAGI.Print(objWriter);
-            _attREA.Print(objWriter);
-            _attSTR.Print(objWriter);
-            _attCHA.Print(objWriter);
-            _attINT.Print(objWriter);
-            _attLOG.Print(objWriter);
-            _attWIL.Print(objWriter);
-            _attINI.Print(objWriter);
-            _attEDG.Print(objWriter);
-            _attMAG.Print(objWriter);
-            _attESS.Print(objWriter);
-            _attRES.Print(objWriter);
+	        AttributeSection.Print(objWriter);
 
             // </attributes>
             objWriter.WriteEndElement();
@@ -2879,12 +2737,8 @@ namespace Chummer
             _blnCritterEnabled = false;
 
             // Reset Attributes.
-            _attributes.Clear();
-            foreach (string strAttribute in AttributeStrings)
-            {
-                CharacterAttrib objLoopAttrib = new CharacterAttrib(strAttribute,this);
-            }
-            _blnMAGEnabled = false;
+	        AttributeSection.Reset();
+			_blnMAGEnabled = false;
             _blnRESEnabled = false;
             _blnDEPEnabled = false;
             _blnGroupMember = false;
@@ -3275,38 +3129,11 @@ namespace Chummer
                 CharacterNameChanged?.Invoke(this);
             }
         }
-        /// <summary>
-        /// Character's Attributes.
-        /// </summary>
-        public List<CharacterAttrib> AttributeList
-        {
-            get
-            {
-                return _attributes;
-            }
-            set
-            {
-                _attributes = value;
-            }
-        }
-        /// <summary>
-        /// Character's Attributes.
-        /// </summary>
-        public List<CharacterAttrib> SpecialAttributeList
-        {
-            get
-            {
-                return _specialAttributes;
-            }
-            set
-            {
-                _specialAttributes = value;
-            }
-        }
-        /// <summary>
-        /// Character's portraits encoded using Base64.
-        /// </summary>
-        public List<string> Mugshots
+
+		/// <summary>
+		/// Character's portraits encoded using Base64.
+		/// </summary>
+		public List<Image> Mugshots
         {
             get
                 {
@@ -3316,17 +3143,17 @@ namespace Chummer
                 {
                 _lstMugshots = value;
             }
-                }
+        }
 
         /// <summary>
         /// Character's main portrait encoded using Base64.
         /// </summary>
-        public string MainMugshot
+        public Image MainMugshot
         {
             get
             {
                 if (_intMainMugshotIndex >= _lstMugshots.Count || _intMainMugshotIndex < 0)
-                    return string.Empty;
+                    return null;
                 else
                     return _lstMugshots[_intMainMugshotIndex];
             }
@@ -4151,51 +3978,7 @@ namespace Chummer
         /// <param name="strAttribute">CharacterAttribute name to retrieve.</param>
         public CharacterAttrib GetAttribute(string strAttribute)
         {
-            switch (strAttribute)
-            {
-                case "BOD":
-                case "BODBase":
-                    return _attBOD;
-                case "AGI":
-                case "AGIBase":
-                    return _attAGI;
-                case "REA":
-                case "REABase":
-                    return _attREA;
-                case "STR":
-                case "STRBase":
-                    return _attSTR;
-                case "CHA":
-                case "CHABase":
-                    return _attCHA;
-                case "INT":
-                case "INTBase":
-                    return _attINT;
-                case "LOG":
-                case "LOGBase":
-                    return _attLOG;
-                case "WIL":
-                case "WILBase":
-                    return _attWIL;
-                case "INI":
-                    return _attINI;
-                case "EDG":
-                case "EDGBase":
-                    return _attEDG;
-                case "MAG":
-                case "MAGBase":
-                    return _attMAG;
-                case "RES":
-                case "RESBase":
-                    return _attRES;
-                case "DEP":
-                case "DEPBase":
-                    return _attDEP;
-                case "ESS":
-                    return _attESS;
-                default:
-                    return _attBOD;
-            }
+	        return AttributeSection.GetAttributeByName(strAttribute);
         }
 
         /// <summary>
@@ -4205,8 +3988,8 @@ namespace Chummer
         {
             get
             {
-                return _attBOD;
-            }
+				return AttributeSection.GetAttributeByName("BOD");
+			}
         }
 
         /// <summary>
@@ -4216,8 +3999,8 @@ namespace Chummer
         {
             get
             {
-                return _attAGI;
-            }
+				return AttributeSection.GetAttributeByName("AGI");
+			}
         }
 
         /// <summary>
@@ -4227,8 +4010,8 @@ namespace Chummer
         {
             get
             {
-                return _attREA;
-            }
+				return AttributeSection.GetAttributeByName("REA");
+			}
         }
 
         /// <summary>
@@ -4238,8 +4021,8 @@ namespace Chummer
         {
             get
             {
-                return _attSTR;
-            }
+				return AttributeSection.GetAttributeByName("STR");
+			}
         }
 
         /// <summary>
@@ -4249,8 +4032,8 @@ namespace Chummer
         {
             get
             {
-                return _attCHA;
-            }
+				return AttributeSection.GetAttributeByName("CHA");
+			}
         }
 
         /// <summary>
@@ -4260,8 +4043,8 @@ namespace Chummer
         {
             get
             {
-                return _attINT;
-            }
+				return AttributeSection.GetAttributeByName("INT");
+			}
         }
 
         /// <summary>
@@ -4271,8 +4054,8 @@ namespace Chummer
         {
             get
             {
-                return _attLOG;
-            }
+				return AttributeSection.GetAttributeByName("LOG");
+			}
         }
 
         /// <summary>
@@ -4282,8 +4065,8 @@ namespace Chummer
         {
             get
             {
-                return _attWIL;
-            }
+				return AttributeSection.GetAttributeByName("WIL");
+			}
         }
 
         /// <summary>
@@ -4292,9 +4075,9 @@ namespace Chummer
         public CharacterAttrib INI
         {
             get
-            {
-                return _attINI;
-            }
+			{
+				return AttributeSection.GetAttributeByName("INT");
+			}
         }
 
         /// <summary>
@@ -4304,8 +4087,8 @@ namespace Chummer
         {
             get
             {
-                return _attEDG;
-            }
+				return AttributeSection.GetAttributeByName("EDG");
+			}
         }
 
         /// <summary>
@@ -4315,8 +4098,8 @@ namespace Chummer
         {
             get
             {
-                return _attMAG;
-            }
+				return AttributeSection.GetAttributeByName("MAG");
+			}
         }
 
         /// <summary>
@@ -4324,24 +4107,33 @@ namespace Chummer
         /// </summary>
         public CharacterAttrib RES
         {
-            get { return _attRES; }
-        }
-
+	        get
+	        {
+				return AttributeSection.GetAttributeByName("RES");
+			}
+		}
+        
         /// <summary>
         /// Depth (DEP) Attribute.
         /// </summary>
         public CharacterAttrib DEP
-        {
-            get { return _attDEP; }
-        }
+		{
+			get
+			{
+				return AttributeSection.GetAttributeByName("DEP");
+			}
+		}
 
         /// <summary>
         /// Essence (ESS) Attribute.
         /// </summary>
         public CharacterAttrib ESS
         {
-            get { return _attESS; }
-        }
+			get
+			{
+				return AttributeSection.GetAttributeByName("ESS");
+			}
+		}
 
         /// <summary>
         /// Is the MAG CharacterAttribute enabled?
@@ -4701,7 +4493,7 @@ namespace Chummer
                 decESS -= decHole;
 
                 //1781 Essence is not printing
-                _attESS.Base = Convert.ToInt32(decESS);
+                //ESS.Base = Convert.ToInt32(decESS); -- Disabled becauses this messes up Character Validity, and it really shouldn't be what "Base" of an attribute is supposed to be (it's supposed to be extra levels gained)
 
                 return decESS;
             }
@@ -4800,7 +4592,7 @@ namespace Chummer
         {
             get
             {
-                int intExtraIP = 1 + Convert.ToInt32(ImprovementManager.ValueOf(this, Improvement.ImprovementType.InitiativeDice)) + Convert.ToInt32(ImprovementManager.ValueOf(this, Improvement.ImprovementType.InitiativeDiceAdd));
+                int intExtraIP = 1 + ImprovementManager.ValueOf(this, Improvement.ImprovementType.InitiativeDice) + ImprovementManager.ValueOf(this, Improvement.ImprovementType.InitiativeDiceAdd);
 
                 return Math.Min(intExtraIP, 5);
             }
@@ -5338,9 +5130,7 @@ namespace Chummer
         {
             get
             {
-                string strReturn = string.Empty;
-
-                strReturn += "(" + LanguageManager.GetString("String_CareerKarma") + " ÷ 10)";
+                string strReturn = "(" + LanguageManager.GetString("String_CareerKarma") + " ÷ 10)";
                 if (BurntStreetCred != 0)
                     strReturn += " - " + LanguageManager.GetString("String_BurntStreetCred");
 
@@ -5356,13 +5146,7 @@ namespace Chummer
             get
             {
                 // Notoriety is simply the total value of Notoriety Improvements + the number of Enemies they have.
-                int intReturn = ImprovementManager.ValueOf(this, Improvement.ImprovementType.Notoriety);
-
-                foreach (Contact objContact in _lstContacts)
-                {
-                    if (objContact.EntityType == ContactType.Enemy)
-                        intReturn += 1;
-                }
+                int intReturn = ImprovementManager.ValueOf(this, Improvement.ImprovementType.Notoriety) + _lstContacts.Count(x => x.EntityType == ContactType.Enemy);
 
                 return intReturn;
             }
@@ -5387,7 +5171,6 @@ namespace Chummer
             get
             {
                 string strReturn = string.Empty;
-                int intEnemies = 0;
 
                 foreach (Improvement objImprovement in _lstImprovements)
                 {
@@ -5395,12 +5178,7 @@ namespace Chummer
                         strReturn += " + " + GetObjectName(objImprovement) + " (" + objImprovement.Value.ToString() + ")";
                 }
 
-                foreach (Contact objContact in _lstContacts)
-                {
-                    if (objContact.EntityType == ContactType.Enemy)
-                        intEnemies += 1;
-                }
-
+                int intEnemies = _lstContacts.Count(x => x.EntityType == ContactType.Enemy);
                 if (intEnemies > 0)
                     strReturn += " + " + LanguageManager.GetString("Label_SummaryEnemies") + " (" + intEnemies.ToString() + ")";
 
@@ -5408,7 +5186,7 @@ namespace Chummer
                     strReturn += " - " + LanguageManager.GetString("String_BurntStreetCred") + " (" + (BurntStreetCred / 2).ToString() + ")";
 
                 strReturn = strReturn.Trim();
-                if (strReturn.StartsWith("+") || strReturn.StartsWith("-"))
+                if (strReturn.StartsWith('+') || strReturn.StartsWith('-'))
                     strReturn = strReturn.Substring(2, strReturn.Length - 2);
 
                 return strReturn;
@@ -5451,14 +5229,12 @@ namespace Chummer
         {
             get
             {
-                string strReturn = string.Empty;
-
                 if (_objOptions.UseCalculatedPublicAwareness)
                 {
-                    strReturn += "(" + LanguageManager.GetString("String_StreetCred") + " (" + TotalStreetCred.ToString() + ") + " + LanguageManager.GetString("String_Notoriety") + " (" + TotalNotoriety.ToString() + ")) ÷ 3";
+                    return "(" + LanguageManager.GetString("String_StreetCred") + " (" + TotalStreetCred.ToString() + ") + " + LanguageManager.GetString("String_Notoriety") + " (" + TotalNotoriety.ToString() + ")) ÷ 3";
                 }
 
-                return strReturn;
+                return string.Empty;
             }
         }
 #endregion
@@ -5826,7 +5602,7 @@ namespace Chummer
                 bool blnCustomFit = false;
 
                 // Run through the list of Armor currently worn and retrieve the highest total Armor rating.
-                foreach (Armor objArmor in _lstArmor.Where(objArmor => !objArmor.ArmorValue.StartsWith("+")))
+                foreach (Armor objArmor in _lstArmor.Where(objArmor => !objArmor.ArmorValue.StartsWith('+')))
                 {
                     // Don't look at items that start with "+" since we'll consider those next.
                     if (objArmor.TotalArmor > intHighest && objArmor.Equipped)
@@ -5843,16 +5619,16 @@ namespace Chummer
                 int intStacking = 0;
                 foreach (Armor objArmor in _lstArmor)
                 {
-                    if (objArmor.ArmorValue.StartsWith("+") && objArmor.Category != "Clothing" && objArmor.Equipped)
+                    if (objArmor.ArmorValue.StartsWith('+') && objArmor.Category != "Clothing" && objArmor.Equipped)
                         intStacking += objArmor.TotalArmor;
-                    if (objArmor.TotalArmor > intHighest && objArmor.Equipped && !objArmor.ArmorValue.StartsWith("+"))
+                    if (objArmor.TotalArmor > intHighest && objArmor.Equipped && !objArmor.ArmorValue.StartsWith('+'))
                     {
                         strHighest = objArmor.Name;
                         blnCustomFit = (objArmor.Category == "High-Fashion Armor Clothing");
                     }
                 }
 
-                foreach (Armor objArmor in _lstArmor.Where(objArmor => (objArmor.ArmorValue.StartsWith("+") || objArmor.ArmorOverrideValue.StartsWith("+")) && objArmor.Equipped))
+                foreach (Armor objArmor in _lstArmor.Where(objArmor => (objArmor.ArmorValue.StartsWith('+') || objArmor.ArmorOverrideValue.StartsWith('+')) && objArmor.Equipped))
                 {
                     if (objArmor.Category == "High-Fashion Armor Clothing" && blnCustomFit)
                     {
@@ -5862,7 +5638,7 @@ namespace Chummer
                 }
 
                 // Run through the list of Armor currently worn again and look at Clothing items that start with "+" since they stack with eachother.
-                int intClothing = _lstArmor.Where(objArmor => objArmor.ArmorValue.StartsWith("+") && objArmor.Category == "Clothing" && objArmor.Equipped).Sum(objArmor => objArmor.TotalArmor);
+                int intClothing = _lstArmor.Where(objArmor => objArmor.ArmorValue.StartsWith('+') && objArmor.Category == "Clothing" && objArmor.Equipped).Sum(objArmor => objArmor.TotalArmor);
 
                 if (intClothing > intArmor)
                     intArmor = intClothing;
@@ -5963,24 +5739,25 @@ namespace Chummer
                 // This is used for Custom-Fit armour's stacking.
                 foreach (Armor objArmor in _lstArmor)
                 {
-                    if (objArmor.TotalArmor > intHighest && objArmor.Equipped && !objArmor.ArmorValue.StartsWith("+"))
+                    int intLoopTotal = objArmor.TotalArmor;
+                    if (intLoopTotal > intHighest && objArmor.Equipped && !objArmor.ArmorValue.StartsWith('+'))
                     {
                         blnCustomFit = (objArmor.Category == "High-Fashion Armor Clothing");
-                        intHighest = objArmor.TotalArmor;
+                        intHighest = intLoopTotal;
                         strHighest = objArmor.Name;
                     }
                 }
-                foreach (Armor objArmor in _lstArmor.Where(objArmor => (objArmor.ArmorValue.StartsWith("+") || objArmor.ArmorOverrideValue.StartsWith("+")) && objArmor.Equipped))
+                foreach (Armor objArmor in _lstArmor.Where(objArmor => (objArmor.ArmorValue.StartsWith('+') || objArmor.ArmorOverrideValue.StartsWith('+')) && objArmor.Equipped))
                 {
                     if (objArmor.Category == "High-Fashion Armor Clothing" && blnCustomFit)
                     {
-                            foreach (ArmorMod objMod in objArmor.ArmorMods)
+                        foreach (ArmorMod objMod in objArmor.ArmorMods)
+                        {
+                            if (objMod.Name == "Custom Fit (Stack)" && objMod.Extra == strHighest)
                             {
-                                if (objMod.Name == "Custom Fit (Stack)" && objMod.Extra == strHighest)
-                                {
-                                    intTotalA += Convert.ToInt32(objArmor.TotalArmor);
-                                }
+                                intTotalA += Convert.ToInt32(objArmor.TotalArmor);
                             }
+                        }
                     }
                     else
                     {
@@ -5989,8 +5766,9 @@ namespace Chummer
                 }
 
                 // calculate armor encumberance
-                if (intTotalA > STR.TotalValue)
-                    return (intTotalA - STR.TotalValue) / 2 * -1;  // we expect a negative number
+                int intSTRTotalValue = STR.TotalValue;
+                if (intTotalA > intSTRTotalValue)
+                    return (intTotalA - intSTRTotalValue) / 2 * -1;  // we expect a negative number
                 return 0;
             }
         }
@@ -6426,19 +6204,25 @@ namespace Chummer
                 {
                     return "Special";
                 }
-
-                XmlDocument objXmlDocument = XmlManager.Load(_blnIsCritter ? "critters.xml" : "metatypes.xml");
-                XmlNode objXmlNode = objXmlDocument.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + _strMetatype + "\"]");
-                if (objXmlNode != null)
+                if (string.IsNullOrWhiteSpace(_strWalk) || string.IsNullOrWhiteSpace(_strRun) || string.IsNullOrWhiteSpace(_strSprint) || string.IsNullOrWhiteSpace(_strMovement) || (MetatypeCategory == "Shapeshifter" && (string.IsNullOrWhiteSpace(_strWalkAlt) || string.IsNullOrWhiteSpace(_strRunAlt) || string.IsNullOrWhiteSpace(_strSprintAlt))))
                 {
                     string strReturn = string.Empty;
-                    if (objXmlNode.TryGetStringFieldQuickly("movement", ref strReturn) && strReturn == "Special")
+                    XmlDocument objXmlDocument = XmlManager.Load(_blnIsCritter ? "critters.xml" : "metatypes.xml");
+                    XmlNode variant = objXmlDocument.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + _strMetatype + "\"]/metavariants/metavariant[name = \"" + _strMetavariant + "\"]");
+                    XmlNode meta = objXmlDocument.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + _strMetatype + "\"]");
+
+                    strReturn = variant?["movement"]?.InnerText ?? meta?["movement"]?.InnerText ?? string.Empty;
+                    _strRun = variant?["run"]?.InnerText ?? meta?["run"]?.InnerText ?? string.Empty;
+                    _strWalk = variant?["walk"]?.InnerText ?? meta?["walk"]?.InnerText ?? string.Empty;
+                    _strSprint = variant?["sprint"]?.InnerText ?? meta?["sprint"]?.InnerText ?? string.Empty;
+
+                    _strRunAlt = variant?["run"]?.Attributes["alt"]?.InnerText ?? meta?["run"].Attributes["alt"]?.InnerText ?? string.Empty;
+                    _strWalkAlt = variant?["walk"]?.Attributes["alt"]?.InnerText ?? meta?["walk"].Attributes["alt"]?.InnerText ?? string.Empty;
+                    _strSprintAlt = variant?["sprint"]?.Attributes["alt"]?.InnerText ?? meta?["sprint"].Attributes["alt"]?.InnerText ?? string.Empty;
+                    if (strReturn == "Special")
                     {
                         return "Special";
                     }
-                    objXmlNode.TryGetStringFieldQuickly("run", ref _strRun);
-                    objXmlNode.TryGetStringFieldQuickly("walk", ref _strWalk);
-                    objXmlNode.TryGetStringFieldQuickly("sprint", ref _strSprint);
                 }
 
                 return CalculatedMovement("Ground", true);
@@ -6456,12 +6240,12 @@ namespace Chummer
            get
             {
                 string strReturn = Movement;
-                if (strReturn.Contains(","))
+                if (strReturn.Contains(','))
                 {
                     string[] strMovementWithSprint = strReturn.Split(',');
                     strReturn = strMovementWithSprint[0].Trim();
                 }
-                if (strReturn.Contains("/"))
+                if (strReturn.Contains('/'))
                 {
                     string[] strMovement = strReturn.Split('/');
                     decimal decWalking = Convert.ToDecimal(strMovement[0], GlobalOptions.CultureInfo);
@@ -6485,6 +6269,17 @@ namespace Chummer
         /// </summary>
         private int WalkingRate(string strType = "Ground")
         {
+            string[] strReturn;
+            if (this.AttributeSection.AttributeCategory == CharacterAttrib.AttributeCategory.Standard)
+            {
+                strReturn = _strWalk.Split('/');
+            }
+            else
+            {
+                strReturn = _strWalkAlt.Split('/');
+            }
+            
+
             int intTmp = 0;
             if (Improvements.Any(i => i.ImproveType == Improvement.ImprovementType.WalkSpeed && i.ImprovedName == strType))
             {
@@ -6494,8 +6289,7 @@ namespace Chummer
                 }
                 return intTmp;
             }
-
-            string[] strReturn = _strWalk.Split('/');
+            
             switch (strType)
             {
                 case "Fly":
@@ -6523,14 +6317,19 @@ namespace Chummer
             int intTmp = 0;
             if (Improvements.Any(i => i.ImproveType == Improvement.ImprovementType.RunSpeed && i.ImprovedName == strType))
             {
-                foreach (Improvement objImprovement in Improvements.Where(i => i.ImproveType == Improvement.ImprovementType.RunSpeed && i.ImprovedName == strType))
-                {
-                    intTmp = Math.Max(intTmp, objImprovement.Value);
-                }
-                return intTmp;
+                Improvement imp = Improvements.First(i => i.ImproveType == Improvement.ImprovementType.RunSpeed && i.ImprovedName == strType);
+                return imp.Value;
+            }
+            string[] strReturn;
+            if (this.AttributeSection.AttributeCategory == CharacterAttrib.AttributeCategory.Standard)
+            {
+                strReturn = _strRun.Split('/');
+            }
+            else
+            {
+                strReturn = _strRunAlt.Split('/');
             }
 
-            string[] strReturn = _strRun.Split('/');
             switch (strType)
             {
                 case "Fly":
@@ -6558,28 +6357,32 @@ namespace Chummer
             decimal decTmp = 0;
             if (Improvements.Any(i => i.ImproveType == Improvement.ImprovementType.SprintSpeed && i.ImprovedName == strType))
             {
-                foreach (Improvement objImprovement in Improvements.Where(i => i.ImproveType == Improvement.ImprovementType.SprintSpeed && i.ImprovedName == strType))
-                {
-                    decTmp = Math.Max(decTmp, objImprovement.Value) / 100.0m;
-                }
-                return decTmp;
+                Improvement imp = Improvements.First(i => i.ImproveType == Improvement.ImprovementType.SprintSpeed && i.ImprovedName == strType);
+                return imp.Value;
             }
-
-            string[] strReturn = _strSprint.Split('/');
+            string[] strReturn;
+            if (this.AttributeSection.AttributeCategory == CharacterAttrib.AttributeCategory.Standard)
+            {
+                strReturn = _strSprint.Split('/');
+            }
+            else
+            {
+                strReturn = _strSprintAlt.Split('/');
+            }
             switch (strType)
             {
-                case "Fly":
-                    if (strReturn.Length > 2)
-                        decimal.TryParse(strReturn[2], NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decTmp);
-                    break;
-                case "Swim":
-                    if (strReturn.Length > 1)
-                        decimal.TryParse(strReturn[1], NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decTmp);
-                    break;
-                case "Ground":
-                    if (strReturn.Length > 0)
-                        decimal.TryParse(strReturn[0], NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decTmp);
-                    break;
+            case "Fly":
+                if (strReturn.Length > 2)
+                    decimal.TryParse(strReturn[2], NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decTmp);
+                break;
+            case "Swim":
+                if (strReturn.Length > 1)
+                    decimal.TryParse(strReturn[1], NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decTmp);
+                break;
+            case "Ground":
+                if (strReturn.Length > 0)
+                    decimal.TryParse(strReturn[0], NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decTmp);
+                break;
             }
             return decTmp;
         }
@@ -7117,9 +6920,9 @@ namespace Chummer
         {
             string strReturn;
             int intAvail;
-            int.TryParse(strAvail.Replace(LanguageManager.GetString("String_AvailRestricted"), string.Empty).Replace(LanguageManager.GetString("String_AvailForbidden"), string.Empty), out intAvail);
+            int.TryParse(strAvail.TrimEnd(LanguageManager.GetString("String_AvailRestricted")).TrimEnd(LanguageManager.GetString("String_AvailForbidden")), out intAvail);
 
-            if (intAvail != 0 && (strAvail.Contains(LanguageManager.GetString("String_AvailRestricted")) || strAvail.Contains(LanguageManager.GetString("String_AvailForbidden"))))
+            if (intAvail != 0 && (strAvail.EndsWith(LanguageManager.GetString("String_AvailRestricted")) || strAvail.EndsWith(LanguageManager.GetString("String_AvailForbidden"))))
             {
                 string strInterval;
                 int intTest = 0;
@@ -8084,12 +7887,17 @@ namespace Chummer
         internal event Action<List<Improvement>> AttributeImprovementEvent;
 
         //List of events that might be able to affect skills. Made quick to prevent an infinite recursion somewhere related to adding an expense so it might be shaved down.
-        public static readonly Improvement.ImprovementType[] SkillRelatedImprovements = {
+        public static readonly HashSet<Improvement.ImprovementType> SkillRelatedImprovements = new HashSet<Improvement.ImprovementType> {
+            Improvement.ImprovementType.Uneducated,
+            Improvement.ImprovementType.FreeKnowledgeSkills,
+            Improvement.ImprovementType.Uncouth,
             Improvement.ImprovementType.Skillwire,
+            Improvement.ImprovementType.SwapSkillAttribute,
             Improvement.ImprovementType.SkillsoftAccess,
+            Improvement.ImprovementType.SchoolOfHardKnocks,
+            Improvement.ImprovementType.CollegeEducation,
             Improvement.ImprovementType.Linguist,
             Improvement.ImprovementType.TechSchool,
-            Improvement.ImprovementType.Attributelevel,
             Improvement.ImprovementType.Hardwire,
             Improvement.ImprovementType.Skill,  //Improve pool of skill based on name
             Improvement.ImprovementType.SkillGroup,  //Group
@@ -8102,15 +7910,28 @@ namespace Chummer
             Improvement.ImprovementType.SkillKnowledgeForced, //A skill gained from a knowsoft
             Improvement.ImprovementType.SpecialSkills,
             Improvement.ImprovementType.ReflexRecorderOptimization,
+            Improvement.ImprovementType.BlockSkillDefault,
+            Improvement.ImprovementType.SkillSpecialization,
+            Improvement.ImprovementType.NativeLanguageLimit,
+            Improvement.ImprovementType.SwapSkillSpecAttribute,
+            Improvement.ImprovementType.FreeSpellsSkill,
             Improvement.ImprovementType.DisableSpecializationEffects,
         };
 
         //List of events that might be able to affect attributes. Changes to these types also invoke data bindings controlling skills, since their pools are controlled by attributes.
-        public static readonly Improvement.ImprovementType[] AttribRelatedImprovements = {
-            Improvement.ImprovementType.Attributelevel,
+        public static readonly HashSet<Improvement.ImprovementType> AttribRelatedImprovements = new HashSet<Improvement.ImprovementType> {
             Improvement.ImprovementType.Attribute,
+            Improvement.ImprovementType.Essence,
+            Improvement.ImprovementType.Infirm,
+            Improvement.ImprovementType.EssenceMax,
+            Improvement.ImprovementType.Attributelevel,
             Improvement.ImprovementType.Seeker,
-            Improvement.ImprovementType.AddLimb
+            Improvement.ImprovementType.ReplaceAttribute,
+            Improvement.ImprovementType.EssencePenalty,
+            Improvement.ImprovementType.EssencePenaltyT100,
+            Improvement.ImprovementType.EssencePenaltyMAGOnlyT100,
+            Improvement.ImprovementType.FreeSpellsATT,
+            Improvement.ImprovementType.AddLimb,
         };
         //To get when things change in improvementmanager
         //Ugly, ugly done, but we cannot get events out of it today
@@ -8118,30 +7939,15 @@ namespace Chummer
         [Obsolete("Refactor this method away once improvementmanager gets outbound events")]
         internal void ImprovementHook(List<Improvement> _lstTransaction)
         {
-            if (_lstTransaction.Any(x => AttribRelatedImprovements.Any(y => y == x.ImproveType)))
+            if (_lstTransaction.Any(x => AttribRelatedImprovements.Contains(x.ImproveType)))
             {
                 AttributeImprovementEvent?.Invoke(_lstTransaction);
-                SkillImprovementEvent?.Invoke(_lstTransaction);
             }
-            else if (_lstTransaction.Any(x => SkillRelatedImprovements.Any(y => y == x.ImproveType)))
+            else if (_lstTransaction.Any(x => SkillRelatedImprovements.Contains(x.ImproveType)))
             {
                 SkillImprovementEvent?.Invoke(_lstTransaction);
             }
         }
 
-        internal void ForceAttributePropertyChangedNotificationAll(string name, string abbrev = "")
-        {
-            if (!string.IsNullOrWhiteSpace(abbrev))
-            {
-                GetAttribute(abbrev).ForceEvent(name);
-            }
-            else
-            {
-                foreach (CharacterAttrib att in _attributes)
-                {
-                    att.ForceEvent(name);
-                }
-            }
-        }
-    }
+	}
 }

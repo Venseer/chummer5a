@@ -114,6 +114,8 @@ namespace Chummer.Skills
                 LoadSuggestedSpecializations(Name);
 
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(Type));
+                OnPropertyChanged(nameof(Base));
             }
         }
 
@@ -139,11 +141,15 @@ namespace Chummer.Skills
 
         public void LoadDefaultType(string name)
         {
-            if (name == null) return;
+            if (name == null)
+                return;
             //TODO: Should this be targeted against guid for uniqueness? Creating a knowledge skill in career always generates a new SkillId instead of using the one from skills.
             XmlNode skillNode = XmlManager.Load("skills.xml").SelectSingleNode($"chummer/knowledgeskills/skill[name = \"{name}\"]");
-            _type = skillNode?["category"].InnerText ?? string.Empty;
-            AttributeObject = CharacterObject.GetAttribute(skillNode?["attribute"].InnerText ?? "LOG");
+            if (skillNode != null)
+            {
+                _type = skillNode["category"]?.InnerText ?? string.Empty;
+                AttributeObject = CharacterObject.GetAttribute(skillNode["attribute"]?.InnerText ?? "LOG");
+            }
         }
 
         public override string SkillCategory
@@ -238,19 +244,21 @@ namespace Chummer.Skills
             cost -= lower * (lower + 1);
             if (CharacterObject.Options.EducationQualitiesApplyOnChargenKarma && HasRelatedBoost())
             {
-                cost -= Math.Max(intTotalBaseRating - 2, 0);
+                cost -= Math.Max(intTotalBaseRating - Math.Max(2, lower), 0);
             }
 
             cost /= 2;
             cost *= CharacterObject.Options.KarmaImproveKnowledgeSkill;
-
+            // We have bought the first level with karma, too
+            if (lower == 0 && cost > 0)
+                cost += CharacterObject.Options.KarmaNewKnowledgeSkill - CharacterObject.Options.KarmaImproveKnowledgeSkill;
             cost +=  //Spec
                     (!string.IsNullOrWhiteSpace(Specialization) && BuyWithKarma) ?
                     CharacterObject.Options.KarmaKnowledgeSpecialization : 0;
 
             if (UneducatedEffect()) cost *= 2;
 
-            return cost;
+            return Math.Max(cost, 0);
         }
 
         public static int CompareKnowledgeSkills(KnowledgeSkill rhs, KnowledgeSkill lhs)

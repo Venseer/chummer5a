@@ -163,7 +163,7 @@ namespace Chummer
                     if (!blnFoundTag && line.Contains("tag_name"))
                     {
                         _strLatestVersion = line.Split(':')[1];
-                        LatestVersion = _strLatestVersion.Split('}')[0].Replace("\"", string.Empty);
+                        LatestVersion = _strLatestVersion.Split('}')[0].FastEscape('\"');
                         blnFoundTag = true;
                         if (blnFoundArchive)
                             break;
@@ -172,7 +172,7 @@ namespace Chummer
                     {
                         _strDownloadFile = line.Split(':')[2];
                         _strDownloadFile = _strDownloadFile.Substring(2);
-                        _strDownloadFile = _strDownloadFile.Split('}')[0].Replace("\"", string.Empty);
+                        _strDownloadFile = _strDownloadFile.Split('}')[0].FastEscape('\"');
                         _strDownloadFile = "https://" + _strDownloadFile;
                         blnFoundArchive = true;
                         if (blnFoundTag)
@@ -259,12 +259,9 @@ namespace Chummer
                 return;
             }
 
-            string strCurrentVersion = CurrentVersion.Trim();
-            if (strCurrentVersion.StartsWith("Nightly-v"))
-                strCurrentVersion = strCurrentVersion.Replace("Nightly-v", string.Empty);
+            string strCurrentVersion = CurrentVersion.Trim().TrimStart("Nightly-v");
             string[] strCurrentVersionNumbers = strCurrentVersion.Split('.');
-            if (strLatestVersion.StartsWith("Nightly-v"))
-                strLatestVersion = strLatestVersion.Replace("Nightly-v", string.Empty);
+            strLatestVersion = strLatestVersion.TrimStart("Nightly-v");
             string[] strLatestVersionNumbers = strLatestVersion.Split('.');
 
             bool blnNeedsUpdate = false;

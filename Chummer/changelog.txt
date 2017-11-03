@@ -181,6 +181,16 @@ Application Changes:
 - Fixed a bug where the cyberware/bioware selection screen would not properly consider 'ware requirements.
 - Fixed a bug where the technique from One Trick Pony would not be included in the limit of 5 techniques at character generation.
 - Added preliminary handling of modular cyberlimbs. Modular cyberlimbs for vehicles need to be bought through the Cyberware tab and then equipped from there. There are some parts of the current implementation that rely on non-RAW rules because there is no way around it without being insane (e.g. modular limbs don't add essence, all essence is added via connectors); this is subject to change with official errata.
+- KnowledgeSkillPoints Spent over the limit in Karma/Life Module are no longer subtracted from (non-existent) active SkillPoints. Instead the remaining points are negative and prevent crossing over to career mode.
+- KnowledgeSkill with price reuction qualities (Linguist, College Education, etc) no longer have negative Karma cost.
+- Fixed a bug where if knowledge skills are bought with karma in create mode, and the cost for buying new knowledge skills is set to a different value (in the options menu) from the cost of improving them, Chummer5 would not recognize that it needs to use the "new knowledge skill" cost for the first level instead of the "improve knowledge skill" cost.
+- Fixed a crash caused by loading old character save files whose options do not have some of the categories looked for in newer versions of Chummer.
+- Fixed a weird cutoff of the controls of some adept powers.
+- Added a legacy shimmer that should catch and convert old cases of Improved Reflexes adept power to the new system, as these would not be fixed with Reapply Improvements.
+- The mouse cursor will now change to "Waiting" mode while a character is being loaded in or while a character is getting their improvements re-applied.
+- Re-apply improvements will now collect the names of outdated items and warn the user at the end to manually re-add them and/or to make sure they have all custom data files that they were previously using still present.
+- Fixed a bug where bonuses that let you select an attribute would not record the choice in their parent item.
+- Added code to properly fetch the data GUIDs of qualities in old save files made before quality GUIDs were saved, and added code to make sure qualities without data GUIDs would return an empty string when the data GUID is fetched instead of a GUID that corresponds to the empty GUID.
 
 Data Changes:
 
@@ -312,6 +322,9 @@ Data Changes:
 - Fixed Osmosis not being allowed to be leveled to Rating 6. Fixes #1996.
 - Fixed Explorer and Aware not properly unlocking Assensing and Astral Combat. Fixes #1991.
 - Added Dodge Hurricane from german Rigger 5.0 and its variants.
+- Gecko Tips and Gliding System vehicle mods now only have one entry that automatically scale their stats appropriately depending on the vehicle's body range.
+- Fake and Standard Credsticks from 2050 now allow you to enter the name of the SIN that the credstick holds.
+- Fixed the requirements on Flesh Sculpter. Fixes #2014.
 
 New Strings:
 - Message_Improvement_EmptySelectionList

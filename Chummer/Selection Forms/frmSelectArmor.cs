@@ -61,7 +61,7 @@ namespace Chummer
         {
             foreach (Label objLabel in Controls.OfType<Label>())
             {
-                if (objLabel.Text.StartsWith("["))
+                if (objLabel.Text.StartsWith('['))
                     objLabel.Text = string.Empty;
             }
             chkHideOverAvailLimit.Text = chkHideOverAvailLimit.Text.Replace("{0}",
@@ -585,16 +585,15 @@ namespace Chummer
                 {
                     decimal decMin;
                     decimal decMax = decimal.MaxValue;
-                    string strCost = xmlCostElement.InnerText.Replace("Variable(", string.Empty)
-                        .Replace(")", string.Empty);
-                    if (strCost.Contains("-"))
+                    string strCost = xmlCostElement.InnerText.TrimStart("Variable", true).Trim("()".ToCharArray());
+                    if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
                         decMin = Convert.ToDecimal(strValues[0], GlobalOptions.InvariantCultureInfo);
                         decMax = Convert.ToDecimal(strValues[1], GlobalOptions.InvariantCultureInfo);
                     }
                     else
-                        decMin = Convert.ToDecimal(strCost.Replace("+", string.Empty), GlobalOptions.InvariantCultureInfo);
+                        decMin = Convert.ToDecimal(strCost.FastEscape('+'), GlobalOptions.InvariantCultureInfo);
 
                     if (decMax == decimal.MaxValue)
                     {

@@ -51,6 +51,12 @@ namespace Chummer
             _gunneryCached = new Lazy<Skill>(() => _objCharacter.SkillsSection.GetActiveSkill("Gunnery"));
         }
 
+        [Obsolete("This constructor is for use by form designers only.", true)]
+        public CharacterShared()
+        {
+            _gunneryCached = new Lazy<Skill>(() => _objCharacter.SkillsSection.GetActiveSkill("Gunnery"));
+        }
+
         /// <summary>
         /// Wrapper for relocating contact forms. 
         /// </summary>
@@ -227,17 +233,19 @@ namespace Chummer
         protected void UpdateArmorRating(Label lblArmor, HtmlToolTip tipTooltip, Label lblCMArmor = null)
         {
             // Armor Ratings.
-            lblArmor.Text = _objCharacter.TotalArmorRating.ToString();
+            int intTotalArmorRating = _objCharacter.TotalArmorRating;
+            int intArmorRating = _objCharacter.ArmorRating;
+            lblArmor.Text = intTotalArmorRating.ToString();
             if (tipTooltip != null)
             {
-                string strArmorToolTip = LanguageManager.GetString("Tip_Armor") + " (" + _objCharacter.ArmorRating.ToString() + ")";
-                if (_objCharacter.ArmorRating != _objCharacter.TotalArmorRating)
+                string strArmorToolTip = LanguageManager.GetString("Tip_Armor") + " (" + intArmorRating.ToString() + ")";
+                if (intArmorRating != intTotalArmorRating)
                     strArmorToolTip += " + " + LanguageManager.GetString("Tip_Modifiers") + " (" +
-                                       (_objCharacter.TotalArmorRating - _objCharacter.ArmorRating).ToString() + ")";
+                                       (intTotalArmorRating - intArmorRating).ToString() + ")";
                 tipTooltip.SetToolTip(lblArmor, strArmorToolTip);
                 if (lblCMArmor != null)
                 {
-                    lblCMArmor.Text = _objCharacter.TotalArmorRating.ToString();
+                    lblCMArmor.Text = intTotalArmorRating.ToString();
                     tipTooltip.SetToolTip(lblCMArmor, strArmorToolTip);
                 }
             }
@@ -245,12 +253,13 @@ namespace Chummer
             // Remove any Improvements from Armor Encumbrance.
             ImprovementManager.RemoveImprovements(_objCharacter, Improvement.ImprovementSource.ArmorEncumbrance, "Armor Encumbrance");
             // Create the Armor Encumbrance Improvements.
-            if (_objCharacter.ArmorEncumbrance < 0)
+            int intEncumbrance = _objCharacter.ArmorEncumbrance;
+            if (intEncumbrance < 0)
             {
                 ImprovementManager.CreateImprovement(_objCharacter, "AGI", Improvement.ImprovementSource.ArmorEncumbrance, "Armor Encumbrance",
-                    Improvement.ImprovementType.Attribute, "precedence-1", 0, 1, 0, 0, _objCharacter.ArmorEncumbrance);
+                    Improvement.ImprovementType.Attribute, "precedence-1", 0, 1, 0, 0, intEncumbrance);
                 ImprovementManager.CreateImprovement(_objCharacter, "REA", Improvement.ImprovementSource.ArmorEncumbrance, "Armor Encumbrance",
-                    Improvement.ImprovementType.Attribute, "precedence-1", 0, 1, 0, 0, _objCharacter.ArmorEncumbrance);
+                    Improvement.ImprovementType.Attribute, "precedence-1", 0, 1, 0, 0, intEncumbrance);
             }
         }
 
@@ -602,13 +611,9 @@ namespace Chummer
                 // Convert the image to a string usinb Base64.
                 _objOptions.RecentImageFolder = Path.GetDirectoryName(openFileDialog.FileName);
 
-                Image imgMugshot = new Bitmap(openFileDialog.FileName, true);
-                MemoryStream objStream = new MemoryStream();
-                imgMugshot.Save(objStream, imgMugshot.RawFormat);
-                string strResult = Convert.ToBase64String(objStream.ToArray());
-                objStream.Close();
+                Bitmap imgMugshot = (new Bitmap(openFileDialog.FileName, true)).ConvertPixelFormat(PixelFormat.Format32bppPArgb);
 
-                _objCharacter.Mugshots.Add(strResult);
+                _objCharacter.Mugshots.Add(imgMugshot);
             }
             return blnSuccess;
         }
@@ -620,21 +625,13 @@ namespace Chummer
         /// <param name="intCurrentMugshotIndexInList"></param>
         protected bool UpdateMugshot(PictureBox picMugshot, int intCurrentMugshotIndexInList)
         {
-            if (intCurrentMugshotIndexInList < 0 || intCurrentMugshotIndexInList >= _objCharacter.Mugshots.Count || string.IsNullOrEmpty(_objCharacter.Mugshots[intCurrentMugshotIndexInList]))
+            if (intCurrentMugshotIndexInList < 0 || intCurrentMugshotIndexInList >= _objCharacter.Mugshots.Count || _objCharacter.Mugshots[intCurrentMugshotIndexInList] == null)
             {
                 picMugshot.Image = null;
                 return false;
             }
 
-            Image imgMugshot = null;
-            byte[] bytImage = Convert.FromBase64String(_objCharacter.Mugshots[intCurrentMugshotIndexInList]);
-            if (bytImage.Length > 0)
-            {
-                MemoryStream objImageStream = new MemoryStream(bytImage, 0, bytImage.Length);
-                objImageStream.Write(bytImage, 0, bytImage.Length);
-                imgMugshot = Image.FromStream(objImageStream, true);
-                objImageStream.Close();
-            }
+            Image imgMugshot = _objCharacter.Mugshots[intCurrentMugshotIndexInList];
 
             if (imgMugshot != null && picMugshot.Height >= imgMugshot.Height && picMugshot.Width >= imgMugshot.Width)
                 picMugshot.SizeMode = PictureBoxSizeMode.CenterImage;
@@ -687,7 +684,7 @@ namespace Chummer
             // Update the Fading CharacterAttribute Value.
             var objXmlDocument = new XmlDocument();
             XPathNavigator nav = objXmlDocument.CreateNavigator();
-            foreach (string strAttribute in Character.AttributeStrings)
+            foreach (string strAttribute in AttributeSection.AttributeStrings)
             {
                 CharacterAttrib objAttrib = _objCharacter.GetAttribute(strAttribute);
                 strDrain = strDrain.Replace(objAttrib.Abbrev, objAttrib.TotalValue.ToString());
@@ -699,7 +696,7 @@ namespace Chummer
             intDrain += ImprovementManager.ValueOf(_objCharacter, drain);
             attributeText.Text = strDisplayDrain;
             valueText.Text = intDrain.ToString();
-            strTip = Character.AttributeStrings.Select(strAttribute => _objCharacter.GetAttribute(strAttribute)).Aggregate(strTip, (current, objAttrib) => current.Replace(objAttrib.Abbrev, objAttrib.DisplayAbbrev + " (" + objAttrib.TotalValue.ToString() + ")"));
+            strTip = AttributeSection.AttributeStrings.Select(strAttribute => _objCharacter.GetAttribute(strAttribute)).Aggregate(strTip, (current, objAttrib) => current.Replace(objAttrib.Abbrev, objAttrib.DisplayAbbrev + " (" + objAttrib.TotalValue.ToString() + ")"));
             tooltip.SetToolTip(valueText, strTip);
         }
     }

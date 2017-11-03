@@ -55,7 +55,6 @@ namespace Chummer
             Reach,
             Nuyen,
             Essence,
-            Reaction,
             PhysicalCM,
             StunCM,
             UnarmedDV,
@@ -187,7 +186,6 @@ namespace Chummer
             ReplaceAttribute, //Alter the base metatype or metavariant of a character. Used for infected.
             SpecialSkills,
             ReflexRecorderOptimization,
-            DataStore,
             BlockSkillDefault,
             Ambidextrous,
             UnarmedReach,
@@ -867,17 +865,17 @@ namespace Chummer
             //Log.Info("intRating = " + intRating.ToString());
             if (strValue.Contains("FixedValues"))
             {
-                string[] strValues = strValue.Replace("FixedValues", string.Empty).Trim("()".ToCharArray()).Split(',');
+                string[] strValues = strValue.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                 if (strValues.Length >= intRating)
                     strValue = strValues[intRating - 1];
                 else
                     strValue = strValues[strValues.Length - 1];
             }
-            if (strValue.Contains("Rating") || Character.AttributeStrings.Any(strValue.Contains))
+            if (strValue.Contains("Rating") || AttributeSection.AttributeStrings.Any(strValue.Contains))
             {
                 string strReturn = strValue.Replace("Rating", intRating.ToString());
                 // If the value contain an CharacterAttribute name, replace it with the character's CharacterAttribute.
-                foreach (string strAttribute in Character.AttributeStrings)
+                foreach (string strAttribute in AttributeSection.AttributeStrings)
                 {
                     strReturn = strReturn.Replace(strAttribute, objCharacter.GetAttribute(strAttribute).TotalValue.ToString());
                 }
@@ -1085,14 +1083,14 @@ namespace Chummer
                 strSourceName, strUnique, _strForcedValue, _strLimitSelection, SelectedValue, blnConcatSelectedValue,
                 strFriendlyName, intRating, ValueToInt, Rollback);
 
-            MethodInfo info;
-            if (AddMethods.Value.TryGetValue(bonusNode.Name.ToUpperInvariant(), out info))
+            Action<XmlNode> objImprovementMethod = ImprovementMethods.GetMethod(bonusNode.Name.ToUpperInvariant(), container);
+            if (objImprovementMethod != null)
             {
                 try
                 {
-                    info.Invoke(container, new object[] {bonusNode});
+                    objImprovementMethod.Invoke(bonusNode);
                 }
-                catch (TargetInvocationException ex) when (ex.InnerException?.GetType() == typeof(AbortedException))
+                catch (AbortedException)
                 {
                     Rollback(objCharacter);
                     return false;
@@ -1110,19 +1108,11 @@ namespace Chummer
             else if (bonusNode.NodeType != XmlNodeType.Comment)
             {
                 Utils.BreakIfDebug();
-                Log.Warning(new object[] {"Tried to get unknown bonus", bonusNode.OuterXml, string.Join(", ", AddMethods.Value.Keys)});
+                Log.Warning(new object[] {"Tried to get unknown bonus", bonusNode.OuterXml});
                 return false;
             }
             return true;
         }
-
-        //this should probably be somewhere else...
-        private static readonly Lazy<Dictionary<string, MethodInfo>> AddMethods = new Lazy<Dictionary<string, MethodInfo>>(() =>
-        {
-            MethodInfo[] allMethods = typeof(AddImprovementCollection).GetMethods();
-
-            return allMethods.ToDictionary(x => x.Name.ToUpperInvariant());
-        });
 
         /// <summary>
         /// Remove all of the Improvements for an XML Node.
@@ -1240,7 +1230,7 @@ namespace Chummer
                                     break;
                             }
                         }
-                        objCharacter.ForceAttributePropertyChangedNotificationAll(nameof(CharacterAttrib.AttributeModifiers),objImprovement.ImprovedName);
+                        objCharacter.AttributeSection.ForceAttributePropertyChangedNotificationAll(nameof(CharacterAttrib.AttributeModifiers));
                         break;
                     case Improvement.ImprovementType.SpecialTab:
                         // Determine if access to any special tabs have been lost.

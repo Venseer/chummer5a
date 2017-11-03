@@ -8,6 +8,7 @@ using System.Xml.XPath;
 using Chummer.Skills;
 using Chummer.Backend.Extensions;
 using System.Drawing;
+using Chummer.Backend.Attributes;
 
 namespace Chummer.Backend.Equipment
 {
@@ -111,7 +112,7 @@ namespace Chummer.Backend.Equipment
                 {
                     strMounts += objXmlMount.InnerText + "/";
                 }
-                if (strMounts.EndsWith("/"))
+                if (strMounts.EndsWith('/'))
                 {
                     strMounts = strMounts.Substring(0, strMounts.Length - 1);
                 }
@@ -128,16 +129,15 @@ namespace Chummer.Backend.Equipment
                 {
                     decimal decMin = 0;
                     decimal decMax = decimal.MaxValue;
-                    char[] chrParentheses = { '(', ')' };
-                    string strCost = objXmlWeapon["cost"].InnerText.Replace("Variable", string.Empty).Trim(chrParentheses);
-                    if (strCost.Contains("-"))
+                    string strCost = objXmlWeapon["cost"].InnerText.TrimStart("Variable", true).Trim("()".ToCharArray());
+                    if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
                         decMin = Convert.ToDecimal(strValues[0], GlobalOptions.InvariantCultureInfo);
                         decMax = Convert.ToDecimal(strValues[1], GlobalOptions.InvariantCultureInfo);
                     }
                     else
-                        decMin = Convert.ToDecimal(strCost.Replace("+", string.Empty), GlobalOptions.InvariantCultureInfo);
+                        decMin = Convert.ToDecimal(strCost.FastEscape('+'), GlobalOptions.InvariantCultureInfo);
 
                     if (decMin != 0 || decMax != decimal.MaxValue)
                     {
@@ -1457,11 +1457,11 @@ namespace Chummer.Backend.Equipment
                         strDamage = strDamageExpression.Replace("STR", (_objCharacter.STR.TotalValue + intThrowDV).ToString());
                 }
 
-                foreach(Attributes.CharacterAttrib objLoopAttribute in _objCharacter.AttributeList)
+                foreach(Attributes.CharacterAttrib objLoopAttribute in _objCharacter.AttributeSection.AttributeList)
                 {
                     strDamage = strDamage.Replace(objLoopAttribute.Abbrev, objLoopAttribute.TotalValue.ToString());
                 }
-                foreach (Attributes.CharacterAttrib objLoopAttribute in _objCharacter.SpecialAttributeList)
+                foreach (Attributes.CharacterAttrib objLoopAttribute in _objCharacter.AttributeSection.SpecialAttributeList)
                 {
                     strDamage = strDamage.Replace(objLoopAttribute.Abbrev, objLoopAttribute.TotalValue.ToString());
                 }
@@ -1481,7 +1481,7 @@ namespace Chummer.Backend.Equipment
                 strMin = strDamage.Substring(intStart, intEnd - intStart + 1);
 
                 string strExpression = strMin;
-                strExpression = strExpression.Replace("min", string.Empty).Replace("(", string.Empty).Replace(")", string.Empty);
+                strExpression = strExpression.Replace("min", string.Empty).FastEscape("()".ToCharArray());
 
                 string[] strValue = strExpression.Split(',');
                 strExpression = Math.Min(Convert.ToInt32(strValue[0]), Convert.ToInt32(strValue[1])).ToString();
@@ -1497,15 +1497,15 @@ namespace Chummer.Backend.Equipment
             }
             else
             {
-                if (strDamage.Contains("P"))
+                if (strDamage.Contains('P'))
                 {
                     strDamageType = "P";
-                    strDamage = strDamage.Replace("P", string.Empty);
+                    strDamage = strDamage.FastEscape('P');
                 }
-                if (strDamage.Contains("S"))
+                if (strDamage.Contains('S'))
                 {
                     strDamageType = "S";
-                    strDamage = strDamage.Replace("S", string.Empty);
+                    strDamage = strDamage.FastEscape('S');
                 }
             }
             // Place any extra text like (e) and (f) in a string and remove it from the expression.
@@ -1677,15 +1677,15 @@ namespace Chummer.Backend.Equipment
                     strDamageType = "P or S";
                     strDamage = strDamage.Replace("P or S", string.Empty);
                 }
-                if (strDamage.Contains("P"))
+                if (strDamage.Contains('P'))
                 {
                     strDamageType = "P";
-                    strDamage = strDamage.Replace("P", string.Empty);
+                    strDamage = strDamage.FastEscape('P');
                 }
-                if (strDamage.Contains("S"))
+                if (strDamage.Contains('S'))
                 {
                     strDamageType = "S";
-                    strDamage = strDamage.Replace("S", string.Empty);
+                    strDamage = strDamage.FastEscape('S');
                 }
                 // Place any extra text like (e) and (f) in a string and remove it from the expression.
                 if (strDamage.Contains("(e)"))
@@ -1767,7 +1767,7 @@ namespace Chummer.Backend.Equipment
             foreach (string strAmmo in strAmmos)
             {
                 string strThisAmmo = strAmmo;
-                if (strThisAmmo.Contains("("))
+                if (strThisAmmo.Contains('('))
                 {
                     string strAmmoString = string.Empty;
                     string strPrepend = string.Empty;
@@ -2259,7 +2259,7 @@ namespace Chummer.Backend.Equipment
                 }
 
                 intRCBase = Convert.ToInt32(strRCBase);
-                intRCFull = Convert.ToInt32(strRCFull.Replace("(", string.Empty).Replace(")", string.Empty));
+                intRCFull = Convert.ToInt32(strRCFull.Trim("()".ToCharArray()));
 
                 if (intRCBase < 0)
                 {
@@ -2478,7 +2478,8 @@ namespace Chummer.Backend.Equipment
                 {
                     strAccuracy = strAccuracy.Replace("Missile", _objCharacter.LimitPhysical.ToString());
                 }
-                foreach(string strAttribute in Character.AttributeStrings)
+                string[] atts = AttributeSection.AttributeStrings;
+                foreach (string strAttribute in AttributeSection.AttributeStrings)
                 {
                     Attributes.CharacterAttrib objLoopAttribute = _objCharacter.GetAttribute(strAttribute);
                     strAccuracy = strAccuracy.Replace("{" + strAttribute + "Augmented}", objLoopAttribute.Augmented.ToString());
@@ -3130,12 +3131,14 @@ namespace Chummer.Backend.Equipment
             get
             {
                 Tuple<int, string> objAvailPair = TotalAvailPair;
-                string strReturn = objAvailPair.Item1 + objAvailPair.Item2;
+                string strAvail = objAvailPair.Item2;
                 // Translate the Avail string.
-                strReturn = strReturn.Replace("R", LanguageManager.GetString("String_AvailRestricted"));
-                strReturn = strReturn.Replace("F", LanguageManager.GetString("String_AvailForbidden"));
+                if (strAvail == "F")
+                    strAvail = LanguageManager.GetString("String_AvailForbidden");
+                else if (strAvail == "R")
+                    strAvail = LanguageManager.GetString("String_AvailRestricted");
 
-                return strReturn;
+                return objAvailPair.Item1 + strAvail;
             }
         }
 
@@ -3146,6 +3149,8 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
+                if (_strAvail.Length == 0)
+                    return new Tuple<int, string>(0, string.Empty);
                 string strAvail = string.Empty;
                 string strAvailExpr = _strAvail;
                 int intAvail = 0;
@@ -3164,9 +3169,9 @@ namespace Chummer.Backend.Equipment
                         Tuple<int, string> objLoopAvail = objUnderbarrel.TotalAvailPair;
                         if (objLoopAvail.Item1 > intMaxChildAvail)
                             intMaxChildAvail = objLoopAvail.Item1;
-                        if (objLoopAvail.Item2.EndsWith("F"))
+                        if (objLoopAvail.Item2.EndsWith('F'))
                             strAvail = "F";
-                        else if (objLoopAvail.Item2.EndsWith("R") && strAvail != "F")
+                        else if (objLoopAvail.Item2.EndsWith('R') && strAvail != "F")
                             strAvail = "R";
                     }
                     strAvailExpr.Replace("{Children Avail}", intMaxChildAvail.ToString());
@@ -3190,12 +3195,12 @@ namespace Chummer.Backend.Equipment
 
                     if (!objAccessory.IncludedInWeapon)
                     {
-                        if (strAccAvail.StartsWith("+") || strAccAvail.StartsWith("-"))
+                        if (strAccAvail.StartsWith('+') || strAccAvail.StartsWith('-'))
                         {
                             strAccAvail += objAccessory.TotalAvail;
-                            if (strAccAvail.EndsWith("F"))
+                            if (strAccAvail.EndsWith('F'))
                                 strAvail = "F";
-                            if (strAccAvail.EndsWith("F") || strAccAvail.EndsWith("R"))
+                            if (strAccAvail.EndsWith('F') || strAccAvail.EndsWith('R'))
                                 strAccAvail = strAccAvail.Substring(0, strAccAvail.Length - 1);
                             intAccAvail = Convert.ToInt32(strAccAvail);
                             intAvail += intAccAvail;

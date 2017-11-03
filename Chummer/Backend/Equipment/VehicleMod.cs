@@ -108,15 +108,15 @@ namespace Chummer.Backend.Equipment
                 {
                     decimal decMin = 0;
                     decimal decMax = decimal.MaxValue;
-                    string strCost = _strCost.Replace("Variable(", string.Empty).Replace(")", string.Empty);
-                    if (strCost.Contains("-"))
+                    string strCost = _strCost.TrimStart("Variable", true).Trim("()".ToCharArray());
+                    if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
                         decMin = Convert.ToDecimal(strValues[0], GlobalOptions.InvariantCultureInfo);
                         decMax = Convert.ToDecimal(strValues[1], GlobalOptions.InvariantCultureInfo);
                     }
                     else
-                        decMin = Convert.ToDecimal(strCost.Replace("+", string.Empty), GlobalOptions.InvariantCultureInfo);
+                        decMin = Convert.ToDecimal(strCost.FastEscape('+'), GlobalOptions.InvariantCultureInfo);
 
                     if (decMin != 0 || decMax != decimal.MaxValue)
                     {
@@ -249,6 +249,28 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetBoolFieldQuickly("included", ref _blnIncludeInVehicle);
             objNode.TryGetBoolFieldQuickly("installed", ref _blnInstalled);
             objNode.TryGetStringFieldQuickly("subsystems", ref _strSubsystems);
+            // Legacy Shims
+            if (Name.StartsWith("Gecko Tips (Bod"))
+            {
+                Name = "Gecko Tips";
+                XmlNode objNewNode = MyXmlNode;
+                if (objNewNode != null)
+                {
+                    objNewNode.TryGetStringFieldQuickly("cost", ref _strCost);
+                    objNewNode.TryGetStringFieldQuickly("slots", ref _strSlots);
+                }
+            }
+            if (Name.StartsWith("Gliding System (Bod"))
+            {
+                Name = "Gliding System";
+                XmlNode objNewNode = MyXmlNode;
+                if (objNewNode != null)
+                {
+                    objNewNode.TryGetStringFieldQuickly("cost", ref _strCost);
+                    objNewNode.TryGetStringFieldQuickly("slots", ref _strSlots);
+                    objNewNode.TryGetStringFieldQuickly("avail", ref _strAvail);
+                }
+            }
 
             if (objNode.InnerXml.Contains("<weapons>"))
             {
@@ -817,7 +839,7 @@ namespace Chummer.Backend.Equipment
             get
             {
                 // If the Avail contains "+", return the base string and don't try to calculate anything since we're looking at a child component.
-                if (_strAvail.StartsWith("+"))
+                if (_strAvail.StartsWith('+'))
                     return _strAvail;
 
                 string strCalculated = _strAvail;
@@ -825,7 +847,7 @@ namespace Chummer.Backend.Equipment
                 // Reordered to process fixed value strings
                 if (strCalculated.StartsWith("FixedValues"))
                 {
-                    string[] strValues = strCalculated.Replace("FixedValues", string.Empty).Trim("()".ToCharArray()).Split(',');
+                    string[] strValues = strCalculated.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                     if (strValues.Length >= _intRating)
                         strCalculated = strValues[_intRating - 1];
                 }
@@ -835,59 +857,48 @@ namespace Chummer.Backend.Equipment
                     string[] strValues = strCalculated.Replace("MaxRating", MaxRating).Replace("Range", string.Empty).Trim("()".ToCharArray()).Split(',');
                     foreach (string strValue in strValues)
                     {
-                        string strAvailCode = strValue.Split('[')[1].Replace("[",string.Empty).Replace("]", string.Empty);
+                        string strAvailCode = strValue.Split('[')[1].Trim("[]".ToCharArray());
                         int intMax = Convert.ToInt32(strValue.Split('[')[0]);
                         if (Rating > intMax) continue;
                         strCalculated = $"{Rating}{strAvailCode}";
                         break;
                     }
                 }
-                if (strCalculated.Contains("Rating"))
-                {
-                    // If the availability is determined by the Rating, evaluate the expression.
-                    XmlDocument objXmlDocument = new XmlDocument();
-                    XPathNavigator nav = objXmlDocument.CreateNavigator();
-
-                    string strAvail = string.Empty;
-                    string strAvailExpr = strCalculated;
-
-                    if (strAvailExpr.Substring(strAvailExpr.Length - 1, 1) == "F" || strAvailExpr.Substring(strAvailExpr.Length - 1, 1) == "R")
-                    {
-                        strAvail = strAvailExpr.Substring(strAvailExpr.Length - 1, 1);
-                        // Remove the trailing character if it is "F" or "R".
-                        strAvailExpr = strAvailExpr.Substring(0, strAvailExpr.Length - 1);
-                    }
-                    XPathExpression xprAvail = nav.Compile(strAvailExpr.Replace("Rating", _intRating.ToString()));
-                    strCalculated = Convert.ToInt32(nav.Evaluate(xprAvail)).ToString() + strAvail;
-                }
-                else
-                {
-                    // Just a straight cost, so return the value.
-                    if (strCalculated.Contains("F") || strCalculated.Contains("R"))
-                    {
-                        strCalculated = Convert.ToInt32(strCalculated.Substring(0, strCalculated.Length - 1)).ToString() + strCalculated.Substring(strCalculated.Length - 1, 1);
-                    }
-                    else
-                        strCalculated = Convert.ToInt32(strCalculated).ToString();
-                }
-
-                int intAvail;
                 string strAvailText = string.Empty;
-                if (strCalculated.Contains("F") || strCalculated.Contains("R"))
+                if (strCalculated.EndsWith('F') || strCalculated.EndsWith('R'))
                 {
-                    strAvailText = strCalculated.Substring(strCalculated.Length - 1);
-                    intAvail = Convert.ToInt32(strCalculated.Replace(strAvailText, string.Empty));
+                    strAvailText = strCalculated.Substring(strCalculated.Length - 1, 1);
+                    // Translate the Avail string.
+                    if (strAvailText == "F")
+                        strAvailText = LanguageManager.GetString("String_AvailForbidden");
+                    else if (strAvailText == "R")
+                        strAvailText = LanguageManager.GetString("String_AvailRestricted");
+                    strCalculated = strCalculated.Substring(0, strCalculated.Length - 1);
                 }
-                else
-                    intAvail = Convert.ToInt32(strCalculated);
 
-                string strReturn = intAvail.ToString() + strAvailText;
+                // If the availability is determined by the Rating, evaluate the expression.
+                XmlDocument objXmlDocument = new XmlDocument();
+                XPathNavigator nav = objXmlDocument.CreateNavigator();
 
-                // Translate the Avail string.
-                strReturn = strReturn.Replace("R", LanguageManager.GetString("String_AvailRestricted"));
-                strReturn = strReturn.Replace("F", LanguageManager.GetString("String_AvailForbidden"));
+                string strAvailExpr = strCalculated.Replace("Rating", _intRating.ToString());
+                strAvailExpr = strAvailExpr.Replace("Vehicle Cost", Parent.OwnCost.ToString(CultureInfo.InvariantCulture));
+                // If the Body is 0 (Microdrone), treat it as 0.5 for the purposes of determine Modification cost.
+                strAvailExpr = strAvailExpr.Replace("Body", Parent.Body > 0 ? Parent.Body.ToString() : "0.5");
+                strAvailExpr = strAvailExpr.Replace("Speed", Parent.Speed.ToString());
+                strAvailExpr = strAvailExpr.Replace("Acceleration", Parent.Accel.ToString());
+                strAvailExpr = strAvailExpr.Replace("Handling", Parent.Handling.ToString());
+                string strReturn = string.Empty;
+                try
+                {
+                    XPathExpression xprAvail = nav.Compile(strAvailExpr);
+                    strReturn = Convert.ToInt32(nav.Evaluate(xprAvail)).ToString();
+                }
+                catch (XPathException)
+                {
+                    strReturn = strCalculated;
+                }
 
-                return strReturn;
+                return strReturn + strAvailText;
             }
         }
 
@@ -920,8 +931,7 @@ namespace Chummer.Backend.Equipment
                     {
                         if (_strCapacity.StartsWith("FixedValues"))
                         {
-                            char[] chrParentheses = { '(', ')' };
-                            string[] strValues = _strCapacity.Replace("FixedValues", string.Empty).Trim(chrParentheses).Split(',');
+                            string[] strValues = _strCapacity.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                             if (_intRating <= strValues.Length)
                                 strReturn = strValues[_intRating - 1];
                             else
@@ -944,7 +954,7 @@ namespace Chummer.Backend.Equipment
 
                     if (strSecondHalf.Contains("Rating"))
                     {
-                        strSecondHalf = strSecondHalf.Replace("[", string.Empty).Replace("]", string.Empty);
+                        strSecondHalf = strSecondHalf.Trim("[]".ToCharArray());
                         xprCapacity = nav.Compile(strSecondHalf.Replace("Rating", _intRating.ToString()));
                         strSecondHalf = "[" + Convert.ToDecimal(nav.Evaluate(xprCapacity)).ToString("N2", GlobalOptions.CultureInfo) + "]";
                     }
@@ -972,7 +982,7 @@ namespace Chummer.Backend.Equipment
                 {
                     if (_strCapacity.StartsWith("FixedValues"))
                     {
-                        string[] strValues = _strCapacity.Replace("FixedValues", string.Empty).Trim("()".ToCharArray()).Split(',');
+                        string[] strValues = _strCapacity.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                         if (strValues.Length >= _intRating)
                             strReturn = strValues[_intRating - 1];
                     }
@@ -1014,14 +1024,14 @@ namespace Chummer.Backend.Equipment
                         string strCapacity = objChildCyberware.CalculatedCapacity;
                         if (strCapacity.Contains("/["))
                             strCapacity = strCapacity.Substring(strCapacity.IndexOf('[') + 1, strCapacity.IndexOf(']') - strCapacity.IndexOf('[') - 1);
-                        else if (strCapacity.Contains("["))
+                        else if (strCapacity.Contains('['))
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacity == "*")
                             strCapacity = "0";
                         decCapacity -= Convert.ToDecimal(strCapacity, GlobalOptions.CultureInfo);
                     }
                 }
-                else if (!_strCapacity.Contains("["))
+                else if (!_strCapacity.Contains('['))
                 {
                     // Get the Cyberware base Capacity.
                     decCapacity = Convert.ToDecimal(CalculatedCapacity, GlobalOptions.CultureInfo);
@@ -1032,7 +1042,7 @@ namespace Chummer.Backend.Equipment
                         string strCapacity = objChildCyberware.CalculatedCapacity;
                         if (strCapacity.Contains("/["))
                             strCapacity = strCapacity.Substring(strCapacity.IndexOf('[') + 1, strCapacity.IndexOf(']') - strCapacity.IndexOf('[') - 1);
-                        else if (strCapacity.Contains("["))
+                        else if (strCapacity.Contains('['))
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacity == "*")
                             strCapacity = "0";
@@ -1067,9 +1077,9 @@ namespace Chummer.Backend.Equipment
                 XPathNavigator nav = objXmlDocument.CreateNavigator();
 
                 string strCostExpression = _strCost;
-                if (_strCost.StartsWith("FixedValues"))
+                if (strCostExpression.StartsWith("FixedValues"))
                 {
-                    string[] strValues = _strCost.Replace("FixedValues(", string.Empty).Replace(")", string.Empty).Split(',');
+                    string[] strValues = strCostExpression.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
                     if (_intRating > 0)
                         strCostExpression = (strValues[Math.Min(_intRating, strValues.Length) - 1]);
                 }
@@ -1103,22 +1113,26 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
-                if (_strSlots.StartsWith("FixedValues"))
-                {
-                    string[] strValues = _strSlots.Replace("FixedValues(", string.Empty).Replace(")", string.Empty).Split(',');
-                    return Convert.ToInt32(strValues[Convert.ToInt32(_intRating) - 1]);
-                }
-                else
-                {
-                    // If the slots is determined by the Rating, evaluate the expression.
-                    XmlDocument objXmlDocument = new XmlDocument();
-                    XPathNavigator nav = objXmlDocument.CreateNavigator();
+                // If the slots is determined by the Rating, evaluate the expression.
+                XmlDocument objXmlDocument = new XmlDocument();
+                XPathNavigator nav = objXmlDocument.CreateNavigator();
 
-                    //return Convert.ToInt32(_strSlots.Replace("Rating", _intRating.ToString()));
-                    XPathExpression xprSlots = nav.Compile(_strSlots.Replace("Rating", _intRating.ToString()));
-                    int intReturn = Convert.ToInt32(nav.Evaluate(xprSlots)?.ToString());
-                    return intReturn;
+                string strSlotsExpression = _strSlots;
+                if (strSlotsExpression.StartsWith("FixedValues"))
+                {
+                    string[] strValues = strSlotsExpression.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
+                    if (_intRating > 0)
+                        strSlotsExpression = (strValues[Math.Min(_intRating, strValues.Length) - 1]);
                 }
+                string strSlots = strSlotsExpression.Replace("Rating", _intRating.ToString());
+                strSlots = strSlots.Replace("Vehicle Cost", Parent.OwnCost.ToString(CultureInfo.InvariantCulture));
+                // If the Body is 0 (Microdrone), treat it as 0.5 for the purposes of determine Modification cost.
+                strSlots = strSlots.Replace("Body", Parent.Body > 0 ? Parent.Body.ToString() : "0.5");
+                strSlots = strSlots.Replace("Speed", Parent.Speed.ToString());
+                strSlots = strSlots.Replace("Acceleration", Parent.Accel.ToString());
+                strSlots = strSlots.Replace("Handling", Parent.Handling.ToString());
+                XPathExpression xprSlots = nav.Compile(strSlots);
+                return Convert.ToInt32(nav.Evaluate(xprSlots)?.ToString());
             }
         }
 
