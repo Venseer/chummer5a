@@ -5305,6 +5305,18 @@ Do you want to continue?</text>
       <key>Label_Contact_Loyalty</key>
       <text>Loyalty:</text>
     </string>
+	<string>
+      <key>Label_Contact_PersonalLife</key>
+      <text>Personal Life:</text>
+    </string>
+	<string>
+      <key>Label_Contact_PreferredPayment</key>
+      <text>Preferred Payment:</text>
+    </string>
+	<string>
+      <key>Label_Contact_HobbiesVice</key>
+      <text>Hobbies/Vice:</text>
+    </string>
     <string>
       <key>Label_Contact_Group</key>
       <text>Group:</text>
@@ -7108,6 +7120,10 @@ Do you want to continue?</text>
       <text>Use Unix-Style Parameters when opening PDFs</text>
     </string>
     <string>
+      <key>Checkbox_Options_SearchInCategoryOnly</key>
+      <text>Searching in selection forms is restricted to the current Category</text>
+    </string>
+    <string>
       <key>Button_ToggleSourcebooks</key>
       <text>Toggle all Sourcebooks On/Off</text>
     </string>
@@ -8132,6 +8148,14 @@ Do you want to continue?</text>
 	  <key>String_Update_Available</key>
 	  <text>Update available to version ({0})! Currently installed version is ({1}).</text>
 	</string>
+  <string>
+	  <key>String_Checking_For_Update</key>
+	  <text>Checking for Updates...</text>
+	</string>
+  <string>
+      <key>Message_Update_CloseForms</key>
+      <text>A newer version of Chummer5a has been automatically downloaded. Should we apply it and restart the application?</text>
+    </string>
     <!-- End Region-->
     <!-- Region Character Viewer Window -->
     <string>

@@ -83,6 +83,8 @@ namespace Chummer
                     return objImprovementAdder.selectspell;
                 case "ADDSPELL":
                     return objImprovementAdder.addspell;
+                case "ADDGEAR":
+                    return objImprovementAdder.addgear;
                 case "SELECTAIPROGRAM":
                     return objImprovementAdder.selectaiprogram;
                 case "SELECTINHERENTAIPROGRAM":
@@ -295,6 +297,14 @@ namespace Chummer
                     return objImprovementAdder.initiation;
                 case "SUBMERSION":
                     return objImprovementAdder.submersion;
+                case "ADDMETAMAGIC":
+                    return objImprovementAdder.addmetamagic;
+                case "SELECTMETAMAGIC":
+                    return objImprovementAdder.selectmetamagic;
+                case "ADDECHO":
+                    return objImprovementAdder.addecho;
+                case "SELECTECHO":
+                    return objImprovementAdder.selectecho;
                 case "SKILLWIRE":
                     return objImprovementAdder.skillwire;
                 case "HARDWIRES":
@@ -377,6 +387,10 @@ namespace Chummer
                     return objImprovementAdder.fadingresist;
                 case "NOTORIETY":
                     return objImprovementAdder.notoriety;
+                case "STREETCRED":
+                    return objImprovementAdder.streetcred;
+                case "STREETCREDMULTIPLIER":
+                    return objImprovementAdder.streetcredmultiplier;
                 case "COMPLEXFORMLIMIT":
                     return objImprovementAdder.complexformlimit;
                 case "SPELLLIMIT":

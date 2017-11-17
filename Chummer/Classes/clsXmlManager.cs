@@ -57,6 +57,7 @@ namespace Chummer
         }
 
         private static readonly HashSet<XmlReference> _lstXmlDocuments = new HashSet<XmlReference>();
+        private static object _lstXmlDocumentsLock = new object();
         private static readonly List<string> _lstDataDirectories = new List<string>();
 
         #region Constructor
@@ -99,19 +100,23 @@ namespace Chummer
             DateTime datDate = File.GetLastWriteTime(strPath);
 
             // Look to see if this XmlDocument is already loaded.
-            XmlReference objReference = _lstXmlDocuments.FirstOrDefault(x => x.FileName == strFileName);
-            if (objReference == null || blnLoadFile)
+            XmlReference objReference = null;
+            lock (_lstXmlDocumentsLock)
             {
-                // The file was not found in the reference list, so it must be loaded.
-                objReference = new XmlReference();
-                blnLoadFile = true;
-                _lstXmlDocuments.Add(objReference);
-            }
-            // The file was found in the List, so check the last write time.
-            else if (datDate != objReference.FileDate)
-            {
-                // The last write time does not match, so it must be reloaded.
-                blnLoadFile = true;
+                objReference = _lstXmlDocuments.FirstOrDefault(x => x.FileName == strFileName);
+                if (objReference == null || blnLoadFile)
+                {
+                    // The file was not found in the reference list, so it must be loaded.
+                    objReference = new XmlReference();
+                    blnLoadFile = true;
+                    _lstXmlDocuments.Add(objReference);
+                }
+                // The file was found in the List, so check the last write time.
+                else if (datDate != objReference.FileDate)
+                {
+                    // The last write time does not match, so it must be reloaded.
+                    blnLoadFile = true;
+                }
             }
 
             // Create a new document that everything will be merged into.
@@ -150,11 +155,15 @@ namespace Chummer
                                     string strFilter = string.Empty;
                                     if (objType["id"] != null)
                                         strFilter = "id = \"" + objType["id"].InnerText.Replace("&amp;", "&") + "\"";
-                                    if (objType["name"] != null)
+                                    else if (objType["name"] != null)
+                                        strFilter = "name = \"" + objType["name"].InnerText.Replace("&amp;", "&") + "\"";
+                                    // Child Nodes marked with "isidnode" serve as additional identifier nodes, in case something needs modifying that uses neither a name nor an ID.
+                                    XmlNodeList objAmendingNodeExtraIds = objType.SelectNodes("child::*[@isidnode = \"yes\"]");
+                                    foreach (XmlNode objExtraId in objAmendingNodeExtraIds)
                                     {
                                         if (!string.IsNullOrEmpty(strFilter))
                                             strFilter += " and ";
-                                        strFilter += "name = \"" + objType["name"].InnerText.Replace("&amp;", "&") + "\"";
+                                        strFilter += objExtraId.Name + " = \"" + objExtraId.InnerText.Replace("&amp;", "&") + "\"";
                                     }
                                     if (!string.IsNullOrEmpty(strFilter))
                                     {
@@ -222,7 +231,7 @@ namespace Chummer
                 }
 
                 // Load the translation file for the current base data file if the selected language is not en-us.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     // Everything is stored in the selected language file to make translations easier, keep all of the language-specific information together, and not require users to download 27 individual files.
                     // The structure is similar to the base data file, but the root node is instead a child /chummer node with a file attribute to indicate the XML file it translates.
@@ -475,35 +484,38 @@ namespace Chummer
         /// <param name="blnHasIdentifier">Whether or not the amending node or any of its children have an identifier element ("id" and/or "name" element). Can safely use a dummy boolean if this is the first call in a recursion.</param>
         private static bool AmendNodeChildern(XmlDocument objDoc, XmlNode objAmendingNode, string strXPath, out bool blnHasIdentifier)
         {
-            XmlNode objAmendingNodeId = objAmendingNode["id"];
-            XmlNode objAmendingNodeName = objAmendingNode["name"];
-            XmlAttributeCollection objAmendingNodeAttribs = objAmendingNode.Attributes;
-            blnHasIdentifier = (objAmendingNodeId != null || objAmendingNodeName != null);
-            XmlNode objNodeToEdit = null;
-            string strNewXPath = strXPath;
-
             // Fetch the old node based on identifiers present in the amending node (id and/or name)
             string strFilter = string.Empty;
+            XmlNode objAmendingNodeId = objAmendingNode["id"];
             if (objAmendingNodeId != null)
                 strFilter = "id = \"" + objAmendingNodeId.InnerText.Replace("&amp;", "&") + "\"";
-            if (objAmendingNodeName != null)
+            XmlNode objAmendingNodeName = objAmendingNode["name"];
+            if (objAmendingNodeName != null && string.IsNullOrEmpty(strFilter))
+            {
+                strFilter = "name = \"" + objAmendingNodeName.InnerText.Replace("&amp;", "&") + "\"";
+            }
+            // Child Nodes marked with "isidnode" serve as additional identifier nodes, in case something needs modifying that uses neither a name nor an ID.
+            XmlNodeList objAmendingNodeExtraIds = objAmendingNode.SelectNodes("child::*[@isidnode = \"yes\"]");
+            foreach (XmlNode objExtraId in objAmendingNodeExtraIds)
             {
                 if (!string.IsNullOrEmpty(strFilter))
                     strFilter += " and ";
-                strFilter += "name = \"" + objAmendingNode["name"].InnerText.Replace("&amp;", "&") + "\"";
+                strFilter += objExtraId.Name + " = \"" + objExtraId.InnerText.Replace("&amp;", "&") + "\"";
             }
             if (!string.IsNullOrEmpty(strFilter))
                 strFilter = "[" + strFilter + "]";
 
-            strNewXPath += "/" + objAmendingNode.Name + strFilter;
+            string strNewXPath = strXPath + "/" + objAmendingNode.Name + strFilter;
+            XmlNode objNodeToEdit = objDoc.SelectSingleNode(strNewXPath);
 
-            objNodeToEdit = objDoc.SelectSingleNode(strNewXPath);
+            blnHasIdentifier = (objAmendingNodeId != null || objAmendingNodeName != null || objAmendingNodeExtraIds.Count > 0);
+            XmlAttributeCollection objAmendingNodeAttribs = objAmendingNode.Attributes;
             // We don't want to edit a random element if we don't have an identifier, so select the one whose text matches our own if it exists.
             if (!blnHasIdentifier && objAmendingNodeAttribs?["requireinnertextmatch"]?.InnerText == "yes")
             {
                 blnHasIdentifier = true;
                 objNodeToEdit = null;
-                foreach (XmlNode objLoopNode in objDoc.SelectNodes(strNewXPath))
+                foreach (XmlNode objLoopNode in objDoc.SelectNodes(strXPath))
                 {
                     if (objLoopNode.Name == objAmendingNode.Name && objLoopNode.InnerText == objAmendingNode.InnerText)
                     {
@@ -540,7 +552,7 @@ namespace Chummer
                         objNodeToEditAttribs.RemoveAll();
                         foreach (XmlAttribute objNewAttribute in objAmendingNodeAttribs)
                         {
-                            if (objNewAttribute.Name != "requireinnertextmatch" && objNewAttribute.Name != "remove" && objNewAttribute.Name != "addifnotfound")
+                            if (objNewAttribute.Name != "requireinnertextmatch" && objNewAttribute.Name != "isidnode" && objNewAttribute.Name != "remove" && objNewAttribute.Name != "addifnotfound")
                                 objNodeToEditAttribs.Append(objNewAttribute);
                         }
                     }

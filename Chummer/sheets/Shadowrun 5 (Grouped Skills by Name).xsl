@@ -6,5 +6,5 @@
   <xsl:import href="Shadowrun 5 set.xslt"/>
   <xsl:import href="xs.SkillsGroupedByName.xslt"/>
 
-  <xsl:variable name="PrintSkillCategoryNames" select="False"/>
+  <xsl:variable name="PrintSkillCategoryNames" select="false()"/>
 </xsl:stylesheet>

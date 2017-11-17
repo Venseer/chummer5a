@@ -403,7 +403,7 @@ namespace Chummer
             XmlNode objXmlVehicleNode = _objVehicle.MyXmlNode;
 
             string strCategoryFilter = string.Empty;
-            if (cboCategory.SelectedValue != null && cboCategory.SelectedValue.ToString() != "Show All")
+            if (cboCategory.SelectedValue != null && cboCategory.SelectedValue.ToString() != "Show All" && (!string.IsNullOrWhiteSpace(txtSearch.Text) && !_objCharacter.Options.SearchInCategoryOnly))
                 strCategoryFilter = " and category = \"" + cboCategory.SelectedValue + "\"";
             else
             {
@@ -460,15 +460,14 @@ namespace Chummer
                             objForbiddenAccessory.Add(node.InnerText);
                         }
 
-                        foreach (VehicleMod objAccessory in _lstMods.Where(objAccessory => objForbiddenAccessory.Contains(objAccessory.Name)))
+                        if (_lstMods.Any(objAccessory => objForbiddenAccessory.Contains(objAccessory.Name)))
                         {
-                            goto NextItem;
+                            continue;
                         }
                     }
 
                     if (objXmlMod["required"]?["oneof"] != null)
                     {
-                        bool boolCanAdd = false;
                         XmlNodeList objXmlRequiredList = objXmlMod.SelectNodes("required/oneof/mods");
                         //Add to set for O(N log M) runtime instead of O(N * M)
 
@@ -478,13 +477,10 @@ namespace Chummer
                             objRequiredAccessory.Add(node.InnerText);
                         }
 
-                        foreach (VehicleMod objAccessory in _lstMods.Where(objAccessory => objRequiredAccessory.Contains(objAccessory.Name)))
+                        if (!_lstMods.Any(objAccessory => objRequiredAccessory.Contains(objAccessory.Name)))
                         {
-                            boolCanAdd = true;
-                            break;
-                        }
-                        if (!boolCanAdd)
                             continue;
+                        }
                     }
 
                     XmlNode objXmlRequirements = objXmlMod.SelectSingleNode("requires");
@@ -503,7 +499,6 @@ namespace Chummer
                         objItem.Name = objXmlMod["translate"]?.InnerText ?? objXmlMod["name"].InnerText;
                         lstMods.Add(objItem);
                     }
-                NextItem:;
                 }
             SortListItem objSort = new SortListItem();
             lstMods.Sort(objSort.Compare);
@@ -733,7 +728,7 @@ namespace Chummer
                     if (objXmlMod["category"].InnerText == "Weapon Mod")
                         lblCategory.Text = LanguageManager.GetString("String_WeaponModification");
                     // Translate the Category if possible.
-                    else if (GlobalOptions.Language != "en-us")
+                    else if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                     {
                         XmlNode objXmlCategory = _objXmlDocument.SelectSingleNode("/chummer/modcategories/category[. = \"" + objXmlMod["category"].InnerText + "\"]");
                         if (objXmlCategory?.Attributes["translate"] != null)
@@ -746,7 +741,7 @@ namespace Chummer
                 if (objXmlMod["limit"] != null)
                 {
                     // Translate the Limit if possible.
-                    if (GlobalOptions.Language != "en-us")
+                    if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                     {
                         XmlNode objXmlLimit = _objXmlDocument.SelectSingleNode("/chummer/limits/limit[. = \"" + objXmlMod["limit"].InnerText + "\"]");
                         lblLimit.Text = objXmlLimit.Attributes["translate"] != null

@@ -155,6 +155,8 @@ namespace Chummer
             else
                 chkTransgenic.Visible = false;
             _blnLoading = false;
+
+            txtSearch_TextChanged(sender, e);
         }
 
         private void cboGrade_SelectedIndexChanged(object sender, EventArgs e)
@@ -248,55 +250,53 @@ namespace Chummer
             XmlNode objXmlCyberware = _objXmlDocument.SelectSingleNode("/chummer/" + _strNode + "s/" + _strNode + "[name = \"" + lstCyberware.SelectedValue + "\"]");
             if (objXmlCyberware == null) return;
             // If the piece has a Rating value, enable the Rating control, otherwise, disable it and set its value to 0.
-            if (objXmlCyberware.InnerXml.Contains("<rating>"))
+            if (objXmlCyberware["rating"] != null)
             {
                 nudRating.Enabled = true;
-                switch (objXmlCyberware["rating"]?.InnerText)
+
+                string strMinRating = objXmlCyberware["minrating"]?.InnerText;
+                int intMinRating = 1;
+                // Not a simple integer, so we need to start mucking around with strings
+                if (!string.IsNullOrEmpty(strMinRating) && !int.TryParse(strMinRating, out intMinRating))
                 {
-                    case "MaximumSTR":
-                        if (ParentVehicle != null)
-                        {
-                            nudRating.Maximum = ParentVehicle.TotalBody * 2;
-                            nudRating.Minimum = ParentVehicle.TotalBody;
-                        }
-                        else
-                        {
-                            nudRating.Maximum = _objCharacter.STR.TotalMaximum;
-                        }
-                        break;
-                    case "MaximumAGI":
-                        if (ParentVehicle != null)
-                        {
-                            nudRating.Maximum = ParentVehicle.Pilot * 2;
-                        }
-                        else
-                        {
-                            nudRating.Maximum = _objCharacter.AGI.TotalMaximum;
-                        }
-                        break;
-                    default:
-                        nudRating.Maximum = Convert.ToInt32(objXmlCyberware["rating"]?.InnerText);
-                        break;
-                }
-                if (objXmlCyberware["minrating"] != null)
-                {
-                    switch (objXmlCyberware["minrating"].InnerText)
+                    strMinRating = strMinRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString());
+                    strMinRating = strMinRating.CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString());
+                    strMinRating = strMinRating.CheapReplace("MinimumSTR", () => (ParentVehicle != null ? ParentVehicle.TotalBody : 3).ToString());
+                    strMinRating = strMinRating.CheapReplace("MinimumAGI", () => (ParentVehicle != null ? ParentVehicle.Pilot : 3).ToString());
+                    XmlDocument objDummyDoc = new XmlDocument();
+                    XPathNavigator objNav = objDummyDoc.CreateNavigator();
+                    try
                     {
-                        case "MinimumAGI":
-                            nudRating.Minimum = ParentVehicle?.Pilot ?? 4;
-                            break;
-                        case "MinimumSTR":
-                            nudRating.Minimum = ParentVehicle?.TotalBody ?? 4;
-                            break;
-                        default:
-                            nudRating.Minimum = Convert.ToInt32(objXmlCyberware["minrating"].InnerText);
-                            break;
+                        intMinRating = Convert.ToInt32(objNav.Evaluate(strMinRating));
+                    }
+                    catch (XPathException)
+                    {
+                        intMinRating = 1;
                     }
                 }
-                else
+                nudRating.Minimum = intMinRating;
+
+                string strMaxRating = objXmlCyberware["rating"].InnerText;
+                int intMaxRating = 0;
+                // Not a simple integer, so we need to start mucking around with strings
+                if (!string.IsNullOrEmpty(strMaxRating) && !int.TryParse(strMaxRating, out intMaxRating))
                 {
-                    nudRating.Minimum = 1;
+                    strMaxRating = strMaxRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString());
+                    strMaxRating = strMaxRating.CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString());
+                    strMaxRating = strMaxRating.CheapReplace("MinimumSTR", () => (ParentVehicle != null ? ParentVehicle.TotalBody : 3).ToString());
+                    strMaxRating = strMaxRating.CheapReplace("MinimumAGI", () => (ParentVehicle != null ? ParentVehicle.Pilot : 3).ToString());
+                    XmlDocument objDummyDoc = new XmlDocument();
+                    XPathNavigator objNav = objDummyDoc.CreateNavigator();
+                    try
+                    {
+                        intMaxRating = Convert.ToInt32(objNav.Evaluate(strMaxRating));
+                    }
+                    catch (XPathException)
+                    {
+                    }
                 }
+                nudRating.Maximum = intMaxRating;
+                nudRating.Value = nudRating.Minimum;
             }
             else
             {
@@ -426,7 +426,7 @@ namespace Chummer
             }
 
             string strCategoryFilter = "(";
-            if (cboCategory.SelectedValue == null || cboCategory.SelectedValue.ToString() == "Show All")
+            if (cboCategory.SelectedValue == null || cboCategory.SelectedValue.ToString() == "Show All" || !_objCharacter.Options.SearchInCategoryOnly)
                 strCategoryFilter += _lstCategory.Where(objAllowedCategory => !string.IsNullOrEmpty(objAllowedCategory.Value)).Aggregate(string.Empty, (current, objAllowedCategory) => current + ("category = \"" + objAllowedCategory.Value + "\" or "));
             else
                 strCategoryFilter += "category = \"" + cboCategory.SelectedValue + "\" or ";
@@ -756,26 +756,8 @@ namespace Chummer
                     strAvailExpr = strAvailExpr.Substring(0, strAvailExpr.Length - 1);
                 }
 
-                if (strAvailExpr.Contains("MinRating"))
-                {
-                    XmlNode xmlMinRatingNode = objXmlCyberware["minrating"];
-                    if (xmlMinRatingNode != null)
-                    {
-                        switch (xmlMinRatingNode.InnerText)
-                        {
-                            case "MinimumAGI":
-                                strAvailExpr = strAvailExpr.Replace("MinRating", ParentVehicle?.Pilot.ToString() ?? 3.ToString());
-                                break;
-                            case "MinimumSTR":
-                                strAvailExpr = strAvailExpr.Replace("MinRating", ParentVehicle?.TotalBody.ToString() ?? 3.ToString());
-                                break;
-                            default:
-                                strAvailExpr = strAvailExpr.Replace("MinRating", 3.ToString());
-                                break;
-                        }
-                    }
-                }
-                strAvailExpr = strAvailExpr.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
+                strAvailExpr = strAvailExpr.CheapReplace("MinRating", () => nudRating.Minimum.ToString(GlobalOptions.InvariantCultureInfo));
+                strAvailExpr = strAvailExpr.CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
 
                 try
                 {
@@ -832,8 +814,8 @@ namespace Chummer
                     {
                         if (CyberwareParent != null)
                         {
-                            strCost = strCost.Replace("Parent Cost", CyberwareParent.Cost);
-                            strCost = strCost.Replace("Parent Gear Cost", CyberwareParent.Gear.Sum(x => x.TotalCost).ToString(GlobalOptions.InvariantCultureInfo));
+                            strCost = strCost.CheapReplace("Parent Cost", () => CyberwareParent.Cost);
+                            strCost = strCost.CheapReplace("Parent Gear Cost", () => CyberwareParent.Gear.AsParallel().Sum(x => x.TotalCost).ToString(GlobalOptions.InvariantCultureInfo));
                         }
                         else
                         {
@@ -841,23 +823,8 @@ namespace Chummer
                             strCost = strCost.Replace("Parent Gear Cost", "0");
                         }
                     }
-                    if (strCost.Contains("MinRating"))
-                    {
-                        XmlNode xmlMinRatingNode = objXmlCyberware["minrating"];
-                        if (xmlMinRatingNode != null)
-                        {
-                            switch (xmlMinRatingNode.InnerText)
-                            {
-                                case "MinimumAGI":
-                                    strCost = strCost.Replace("MinRating", ParentVehicle?.Pilot.ToString() ?? 3.ToString());
-                                    break;
-                                case "MinimumSTR":
-                                    strCost = strCost.Replace("MinRating", ParentVehicle?.TotalBody.ToString() ?? 3.ToString());
-                                    break;
-                            }
-                        }
-                    }
-                    strCost = strCost.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
+                    strCost = strCost.CheapReplace("MinRating", () => nudRating.Minimum.ToString(GlobalOptions.InvariantCultureInfo));
+                    strCost = strCost.CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
                     try
                     {
                         XPathExpression xprCost = _nav.Compile(strCost);
@@ -986,6 +953,8 @@ namespace Chummer
 
         private void BuildCyberwareList(XmlNodeList objXmlCyberwareList = null)
         {
+            if (_blnLoading)
+                return;
             if (!string.IsNullOrEmpty(txtSearch.Text) && objXmlCyberwareList == null)
             {
                 txtSearch_TextChanged(null, EventArgs.Empty);
@@ -1019,6 +988,8 @@ namespace Chummer
             {
                 bool blnCyberwareDisabled = _objCharacter.Improvements.Any(x => x.ImproveType == Improvement.ImprovementType.DisableCyberware && x.Enabled);
                 bool blnBiowareDisabled = _objCharacter.Improvements.Any(x => x.ImproveType == Improvement.ImprovementType.DisableBioware && x.Enabled);
+                XmlDocument objDummyDoc = new XmlDocument();
+                XPathNavigator objNav = objDummyDoc.CreateNavigator();
                 foreach (XmlNode objXmlCyberware in objXmlCyberwareList)
                 {
                     if (!string.IsNullOrEmpty(_strSelectedGrade) && objXmlCyberware["forcegrade"] == null)
@@ -1053,7 +1024,7 @@ namespace Chummer
                     // TODO: Fix if someone has an amount of limbs different from the default amount
                     if (!string.IsNullOrEmpty(_strHasModularMounts) && objXmlCyberware["blocksmounts"] != null)
                     {
-                        List<Cyberware> lstWareListToCheck = CyberwareParent == null ? (ParentVehicle == null ? _objCharacter.Cyberware : null) : CyberwareParent.Children;
+                        IList<Cyberware> lstWareListToCheck = CyberwareParent == null ? (ParentVehicle == null ? _objCharacter.Cyberware : null) : CyberwareParent.Children;
                         if (objXmlCyberware["selectside"] == null || !string.IsNullOrEmpty(CyberwareParent?.Location) || (lstWareListToCheck != null && lstWareListToCheck.Any(x => x.Location == "Left") && lstWareListToCheck.Any(x => x.Location == "Right")))
                         {
                             string[] astrBlockedMounts = objXmlCyberware["blocksmounts"].InnerText.Split(',');
@@ -1077,6 +1048,40 @@ namespace Chummer
                                 goto NextCyberware;
                             }
                         }
+                    }
+                    string strMaxRating = objXmlCyberware["rating"]?.InnerText;
+                    int intMaxRating = 0;
+                    string strMinRating = objXmlCyberware["minrating"]?.InnerText;
+                    int intMinRating = 1;
+                    // If our rating tag is a complex property, check to make sure our maximum rating is not less than our minimum rating
+                    if ((!string.IsNullOrEmpty(strMaxRating) && !int.TryParse(strMaxRating, out intMaxRating)) || (!string.IsNullOrEmpty(strMinRating) && !int.TryParse(strMinRating, out intMinRating)))
+                    {
+                        strMinRating = strMinRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString());
+                        strMinRating = strMinRating.CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString());
+                        strMinRating = strMinRating.CheapReplace("MinimumSTR", () => (ParentVehicle != null ? ParentVehicle.TotalBody : 3).ToString());
+                        strMinRating = strMinRating.CheapReplace("MinimumAGI", () => (ParentVehicle != null ? ParentVehicle.Pilot : 3).ToString());
+                        try
+                        {
+                            intMinRating = Convert.ToInt32(objNav.Evaluate(strMinRating));
+                        }
+                        catch (XPathException)
+                        {
+                            intMinRating = 1;
+                        }
+
+                        strMaxRating = strMaxRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString());
+                        strMaxRating = strMaxRating.CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString());
+                        strMaxRating = strMaxRating.CheapReplace("MinimumSTR", () => (ParentVehicle != null ? ParentVehicle.TotalBody : 3).ToString());
+                        strMaxRating = strMaxRating.CheapReplace("MinimumAGI", () => (ParentVehicle != null ? ParentVehicle.Pilot : 3).ToString());
+                        try
+                        {
+                            intMaxRating = Convert.ToInt32(objNav.Evaluate(strMaxRating));
+                        }
+                        catch (XPathException)
+                        {
+                        }
+                        if (intMaxRating < intMinRating)
+                            continue;
                     }
                     if (!Backend.Shared_Methods.SelectionShared.CheckAvailRestriction(objXmlCyberware, _objCharacter,
                         chkHideOverAvailLimit.Checked, Convert.ToInt32(nudRating.Value), objXmlCyberware["forcegrade"]?.InnerText == "None" ? 0 : _intAvailModifier))

@@ -326,10 +326,6 @@ namespace Chummer
                 }
             }
 
-            // Load Metatypes
-            LoadMetatypes();
-            PopulateTalents();
-
             // Set Priority defaults.
             if (!string.IsNullOrEmpty(_strAttributes))
             {
@@ -349,6 +345,19 @@ namespace Chummer
                 //Magical/Resonance Talent
                 index = cboTalent.FindString(_strSpecial);
                 cboTalent.SelectedIndex = index;
+
+                LoadMetatypes();
+                //Selected Category of Metatype
+                index = cboCategory.FindString(_strSelectedMetatypeCategory);
+                cboCategory.SelectedIndex = index;
+                PopulateMetatypes();
+                //Selected Metatype
+                index = lstMetatypes.FindString(_strSelectedMetatype);
+                lstMetatypes.SelectedIndex = index;
+                //Selected Metavariant
+                index = cboMetavariant.FindString(_strSelectedMetavariant);
+                cboMetavariant.SelectedIndex = index;
+
                 //Magical/Resonance Type
                 index = cboTalents.FindString(_strSelectedTalent);
                 cboTalents.SelectedIndex = index;
@@ -377,15 +386,6 @@ namespace Chummer
                 }
                 else
                     cboSkill3.Visible = false;
-                //Selected Category of Metatype
-                index = cboCategory.FindString(_strSelectedMetatypeCategory);
-                cboCategory.SelectedIndex = index;
-                //Selected Metatype
-                index = lstMetatypes.FindString(_strSelectedMetatype);
-                lstMetatypes.SelectedIndex = index;
-                //Selected Metavariant
-                index = cboMetavariant.FindString(_strSelectedMetavariant);
-                cboMetavariant.SelectedIndex = index;
             }
             else
             {
@@ -394,6 +394,7 @@ namespace Chummer
                 cboAttributes.SelectedIndex = 2;
                 cboSkills.SelectedIndex = 3;
                 cboResources.SelectedIndex = 4;
+                LoadMetatypes();
                 lstMetatypes.SelectedIndex = 0;
             }
             _blnInitializing = false;
@@ -401,23 +402,6 @@ namespace Chummer
             {
                 SumtoTen();
             }
-
-            // Make sure lists are properly populated so that you can't e.g. select Magician if you're reprioritizing a Mundane
-            string strMetatype = string.Empty;
-            string strMetavariant = string.Empty;
-            if (lstMetatypes.SelectedIndex >= 0)
-            {
-                strMetatype = lstMetatypes.SelectedValue.ToString();
-                strMetavariant = cboMetavariant.SelectedValue.ToString();
-            }
-            LoadMetatypes();
-            if (lstMetatypes.SelectedIndex >= 0)
-            {
-                lstMetatypes.SelectedValue = strMetatype;
-                cboMetavariant.SelectedValue = strMetavariant;
-            }
-            PopulateTalents();
-
 
             // Add Possession and Inhabitation to the list of Critter Tradition variations.
             tipTooltip.SetToolTip(chkPossessionBased, LanguageManager.GetString("Tip_Metatype_PossessionTradition"));
@@ -836,7 +820,7 @@ namespace Chummer
                 foreach (XmlNode objXmlQuality in objXmlMetavariant.SelectNodes("qualities/positive/quality"))
                 {
                     strQuality = string.Empty;
-                    if (GlobalOptions.Language != "en-us")
+                    if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                     {
                         XmlNode objQuality = objXmlQualityDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + objXmlQuality.InnerText + "\"]");
                         strQuality += objQuality["translate"]?.InnerText ?? objXmlQuality.InnerText;
@@ -861,7 +845,7 @@ namespace Chummer
                 foreach (XmlNode objXmlQuality in objXmlMetavariant.SelectNodes("qualities/negative/quality"))
                 {
                     strQuality = string.Empty;
-                    if (GlobalOptions.Language != "en-us")
+                    if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                     {
                         XmlNode objQuality = objXmlQualityDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + objXmlQuality.InnerText + "\"]");
                         strQuality += objQuality["translate"]?.InnerText ?? objXmlQuality.InnerText;
@@ -925,7 +909,7 @@ namespace Chummer
                     foreach (XmlNode objXmlQuality in objXmlMetatype.SelectNodes("qualities/positive/quality"))
                     {
                         strQuality = string.Empty;
-                        if (GlobalOptions.Language != "en-us")
+                        if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                         {
                             XmlNode objQuality = objXmlQualityDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + objXmlQuality.InnerText + "\"]");
                             strQuality += objQuality["translate"]?.InnerText ?? objXmlQuality.InnerText;
@@ -950,7 +934,7 @@ namespace Chummer
                     foreach (XmlNode objXmlQuality in objXmlMetatype.SelectNodes("qualities/negative/quality"))
                     {
                         strQuality = string.Empty;
-                        if (GlobalOptions.Language != "en-us")
+                        if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                         {
                             XmlNode objQuality = objXmlQualityDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + objXmlQuality.InnerText + "\"]");
                             strQuality += objQuality["translate"]?.InnerText ?? objXmlQuality.InnerText;
@@ -1043,7 +1027,7 @@ namespace Chummer
                 strMetatype = lstMetatypes.SelectedValue.ToString();
             LoadMetatypes();
             lstMetatypes.SelectedValue = strMetatype;
-            }
+        }
 
         private void cboTalent_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -1170,8 +1154,15 @@ namespace Chummer
                         intMaxModifier = 3;
                     }
                 }*/
-
-                XmlNode charNode = objXmlMetavariant ?? objXmlMetatype;
+                XmlNode charNode;
+                if (cboCategory.SelectedValue.ToString() == "Shapeshifter")
+                {
+                    charNode = objXmlMetatype;
+                }
+                else
+                {
+                    charNode = objXmlMetavariant ?? objXmlMetatype;
+                }
                 // Set Metatype information.
                 _objCharacter.BOD.AssignLimits(ExpressionToString(charNode["bodmin"]?.InnerText, intForce, intMinModifier), ExpressionToString(charNode["bodmax"]?.InnerText, intForce, intMaxModifier), ExpressionToString(charNode["bodaug"]?.InnerText, intForce, intMaxModifier));
                 _objCharacter.AGI.AssignLimits(ExpressionToString(charNode["agimin"]?.InnerText, intForce, intMinModifier), ExpressionToString(charNode["agimax"]?.InnerText, intForce, intMaxModifier), ExpressionToString(charNode["agiaug"]?.InnerText, intForce, intMaxModifier));
@@ -1463,34 +1454,35 @@ namespace Chummer
             }
         }
 
-        private void AddFreeSkills(int intFreeLevels, Improvement.ImprovementType type = Improvement.ImprovementType.SkillGroupBase)
+        private void AddFreeSkills(int intFreeLevels, Improvement.ImprovementType type)
         {
-            if (cboSkill1.Visible && cboSkill1.SelectedValue != null)
+            if (intFreeLevels != 0)
             {
-                if ("Aware" == cboTalents.SelectedValue.ToString())
+                bool blnCommit = false;
+                if (cboSkill1.Visible && cboSkill1.SelectedValue != null)
                 {
-                    SkillsSection.FilterOptions skills = SkillsSection.FilterOptions.Name;
-                    _objCharacter.SkillsSection.AddSkills(skills, cboSkill1.SelectedValue.ToString());
-                    ImprovementManager.CreateImprovement(_objCharacter, skills.ToString(), Improvement.ImprovementSource.Heritage, "Heritage",
-                        Improvement.ImprovementType.SpecialSkills, string.Empty);
+                    blnCommit = true;
+                    ImprovementManager.CreateImprovement(_objCharacter, cboSkill1.SelectedValue.ToString(), Improvement.ImprovementSource.Heritage, "Heritage",
+                        type, string.Empty, intFreeLevels);
                 }
-                ImprovementManager.CreateImprovement(_objCharacter, cboSkill1.SelectedValue.ToString(), Improvement.ImprovementSource.Heritage, "Heritage",
-                    type, string.Empty, intFreeLevels);
-            }
 
-            if (cboSkill2.Visible && cboSkill2.SelectedValue != null)
-            {
-                ImprovementManager.CreateImprovement(_objCharacter, cboSkill2.SelectedValue.ToString(), Improvement.ImprovementSource.Heritage, "Heritage",
-                    type, string.Empty, intFreeLevels);
-            }
+                if (cboSkill2.Visible && cboSkill2.SelectedValue != null)
+                {
+                    blnCommit = true;
+                    ImprovementManager.CreateImprovement(_objCharacter, cboSkill2.SelectedValue.ToString(), Improvement.ImprovementSource.Heritage, "Heritage",
+                        type, string.Empty, intFreeLevels);
+                }
 
-            if (cboSkill3.Visible && cboSkill3.SelectedValue != null)
-            {
-                ImprovementManager.CreateImprovement(_objCharacter, cboSkill3.SelectedValue.ToString(), Improvement.ImprovementSource.Heritage, "Heritage",
-                    type, string.Empty, intFreeLevels);
-            }
+                if (cboSkill3.Visible && cboSkill3.SelectedValue != null)
+                {
+                    blnCommit = true;
+                    ImprovementManager.CreateImprovement(_objCharacter, cboSkill3.SelectedValue.ToString(), Improvement.ImprovementSource.Heritage, "Heritage",
+                        type, string.Empty, intFreeLevels);
+                }
 
-            ImprovementManager.Commit(_objCharacter);
+                if (blnCommit)
+                    ImprovementManager.Commit(_objCharacter);
+            }
         }
 
         /// <summary>

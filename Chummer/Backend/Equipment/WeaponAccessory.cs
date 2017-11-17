@@ -184,7 +184,7 @@ namespace Chummer.Backend.Equipment
                     objGear.Cost = "0";
                     objGear.MinRating = intGearRating;
                     objGear.MaxRating = intGearRating;
-                    objGear.IncludedInParent = true;
+                    objGear.ParentID = InternalId;
                     if (!string.IsNullOrEmpty(strChildForceSource))
                         objGear.Source = strChildForceSource;
                     if (!string.IsNullOrEmpty(strChildForcePage))
@@ -202,7 +202,7 @@ namespace Chummer.Backend.Equipment
                 }
             }
 
-            if (GlobalOptions.Language != "en-us")
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
                 XmlNode objAccessoryNode = MyXmlNode;
                 if (objAccessoryNode != null)
@@ -342,7 +342,7 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objNode.TryGetBoolFieldQuickly("discountedcost", ref _blnDiscountCost);
 
-            if (GlobalOptions.Language != "en-us")
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
                 XmlNode objAccessoryNode = MyXmlNode;
                 if (objAccessoryNode != null)

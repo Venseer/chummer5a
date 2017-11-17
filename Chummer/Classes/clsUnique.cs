@@ -233,7 +233,7 @@ namespace Chummer
             if(objXmlQuality["id"] != null)
                 _qualiyGuid = Guid.Parse(objXmlQuality["id"].InnerText);
 
-            if (GlobalOptions.Language != "en-us")
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
                 XmlNode objQualityNode = MyXmlNode;
                 if (objQualityNode != null)
@@ -439,7 +439,7 @@ namespace Chummer
                     objNewNode.TryGetField("id", Guid.TryParse, out _qualiyGuid);
             }
 
-            if (GlobalOptions.Language != "en-us")
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
                 XmlNode objQualityNode = MyXmlNode;
                 if (objQualityNode != null)
@@ -470,7 +470,7 @@ namespace Chummer
                 objWriter.WriteElementString("extra", LanguageManager.TranslateExtra(_strExtra) + strRatingString + strSourceName);
                 objWriter.WriteElementString("bp", _intBP.ToString());
                 string strQualityType = _objQualityType.ToString();
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlDocument objXmlDocument = XmlManager.Load("qualities.xml");
 
@@ -879,13 +879,15 @@ namespace Chummer
 
                     if (objXmlQuality["required"]["oneof"]["metatype"] != null)
                     {
+                        reason |= QualityFailureReason.MetatypeRequired;
                         XmlNodeList objXmlRequiredList = objXmlQuality.SelectNodes("required/oneof/metatype");
-
-                        bool blnFound = objXmlRequiredList.Cast<XmlNode>().Any(node => node.InnerText == objCharacter.Metatype);
-
-                        if (!blnFound)
+                        foreach (XmlNode objNode in objXmlRequiredList)
                         {
-                            reason |= QualityFailureReason.MetatypeRequired;
+                            if (objNode.InnerText == objCharacter.Metatype)
+                            {
+                                reason &= ~QualityFailureReason.MetatypeRequired;
+                                break;
+                            }
                         }
                     }
                 }
@@ -1091,7 +1093,7 @@ namespace Chummer
             // Translate the Critter name if applicable.
             string strName = _strName;
             XmlNode objXmlCritterNode = MyXmlNode;
-            if (GlobalOptions.Language != "en-us")
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
                 strName = objXmlCritterNode?["translate"]?.InnerText;
             }
@@ -1380,7 +1382,7 @@ namespace Chummer
         {
             objXmlSpellNode.TryGetStringFieldQuickly("name", ref _strName);
             _blnExtended = blnExtended;
-            if (GlobalOptions.Language != "en-us")
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
                 XmlDocument objXmlDocument = XmlManager.Load("spells.xml");
                 XmlNode objSpellNode = objXmlDocument.SelectSingleNode("/chummer/spells/spell[name = \"" + _strName + "\"]");
@@ -1391,7 +1393,7 @@ namespace Chummer
                 }
 
                 objSpellNode = objXmlDocument.SelectSingleNode("/chummer/categories/category[. = \"" + _strCategory + "\"]");
-                    _strAltCategory = objSpellNode?.Attributes?["translate"]?.InnerText;
+                _strAltCategory = objSpellNode?.Attributes?["translate"]?.InnerText;
             }
 
             ImprovementManager.ForcedValue = strForcedValue;
@@ -1525,7 +1527,7 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("extra", ref _strExtra);
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
 
-            if (GlobalOptions.Language != "en-us")
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
                 XmlDocument objXmlDocument = XmlManager.Load("spells.xml");
                 XmlNode objSpellNode = objXmlDocument.SelectSingleNode("/chummer/spells/spell[name = \"" + _strName + "\"]");
@@ -1536,7 +1538,7 @@ namespace Chummer
                 }
 
                 objSpellNode = objXmlDocument.SelectSingleNode("/chummer/categories/category[. = \"" + _strCategory + "\"]");
-                    _strAltCategory = objSpellNode?.Attributes?["translate"]?.InnerText;
+                _strAltCategory = objSpellNode?.Attributes?["translate"]?.InnerText;
             }
         }
 
@@ -1786,12 +1788,12 @@ namespace Chummer
             get
             {
                 string strReturn = DV.Replace('/', '÷');
-                strReturn = strReturn.Replace("F", LanguageManager.GetString("String_SpellForce"));
-                strReturn = strReturn.Replace("Overflow damage", LanguageManager.GetString("String_SpellOverflowDamage"));
-                strReturn = strReturn.Replace("Damage Value", LanguageManager.GetString("String_SpellDamageValue"));
-                strReturn = strReturn.Replace("Toxin DV", LanguageManager.GetString("String_SpellToxinDV"));
-                strReturn = strReturn.Replace("Disease DV", LanguageManager.GetString("String_SpellDiseaseDV"));
-                strReturn = strReturn.Replace("Radiation Power", LanguageManager.GetString("String_SpellRadiationPower"));
+                strReturn = strReturn.CheapReplace("F", () => LanguageManager.GetString("String_SpellForce"));
+                strReturn = strReturn.CheapReplace("Overflow damage", () => LanguageManager.GetString("String_SpellOverflowDamage"));
+                strReturn = strReturn.CheapReplace("Damage Value", () => LanguageManager.GetString("String_SpellDamageValue"));
+                strReturn = strReturn.CheapReplace("Toxin DV", () => LanguageManager.GetString("String_SpellToxinDV"));
+                strReturn = strReturn.CheapReplace("Disease DV", () => LanguageManager.GetString("String_SpellDiseaseDV"));
+                strReturn = strReturn.CheapReplace("Radiation Power", () => LanguageManager.GetString("String_SpellRadiationPower"));
 
                 //if (_blnExtended)
                 //{
@@ -1895,12 +1897,12 @@ namespace Chummer
             get
             {
                 string strReturn = _strRange;
-                strReturn = strReturn.Replace("Self", LanguageManager.GetString("String_SpellRangeSelf"));
-                strReturn = strReturn.Replace("LOS", LanguageManager.GetString("String_SpellRangeLineOfSight"));
-                strReturn = strReturn.Replace("LOI", LanguageManager.GetString("String_SpellRangeLineOfInfluence"));
-                strReturn = strReturn.Replace("T", LanguageManager.GetString("String_SpellRangeTouch"));
-                strReturn = strReturn.Replace("(A)", "(" + LanguageManager.GetString("String_SpellRangeArea") + ")");
-                strReturn = strReturn.Replace("MAG", LanguageManager.GetString("String_AttributeMAGShort"));
+                strReturn = strReturn.CheapReplace("Self", () => LanguageManager.GetString("String_SpellRangeSelf"));
+                strReturn = strReturn.CheapReplace("LOS", () => LanguageManager.GetString("String_SpellRangeLineOfSight"));
+                strReturn = strReturn.CheapReplace("LOI", () => LanguageManager.GetString("String_SpellRangeLineOfInfluence"));
+                strReturn = strReturn.CheapReplace("T", () => LanguageManager.GetString("String_SpellRangeTouch"));
+                strReturn = strReturn.CheapReplace("(A)", () => "(" + LanguageManager.GetString("String_SpellRangeArea") + ")");
+                strReturn = strReturn.CheapReplace("MAG", () => LanguageManager.GetString("String_AttributeMAGShort"));
 
                 return strReturn;
             }
@@ -2009,7 +2011,7 @@ namespace Chummer
                         _objCharacter.Improvements.Where(
                             i =>
                                 i.ImproveType == Improvement.ImprovementType.DrainValue &&
-                                (i.UniqueName == string.Empty || i.UniqueName == Category)))
+                                (i.UniqueName == string.Empty || i.UniqueName == Category) && i.Enabled))
                     {
                         dv += $" + {imp.Value:+0;-0;0}";
                     }
@@ -2164,6 +2166,32 @@ namespace Chummer
 
         #region ComplexProperties
         /// <summary>
+        /// Skill used by this spell
+        /// </summary>
+        public Skill Skill
+        {
+            get
+            {
+                if (_blnAlchemical)
+                {
+                    return _objCharacter.SkillsSection.GetActiveSkill("Alchemy");
+                }
+                else if (_strCategory == "Enchantments")
+                {
+                    return _objCharacter.SkillsSection.GetActiveSkill("Artificing");
+                }
+                else if (_strCategory == "Rituals")
+                {
+                    return _objCharacter.SkillsSection.GetActiveSkill("Ritual Spellcasting");
+                }
+                else
+                {
+                    return _objCharacter.SkillsSection.GetActiveSkill(UsesUnarmed ? "Unarmed Combat" : "Spellcasting");
+                }
+            }
+        }
+
+        /// <summary>
         /// The Dice Pool size for the Active Skill required to cast the Spell.
         /// </summary>
         public int DicePool
@@ -2171,52 +2199,16 @@ namespace Chummer
             get
             {
                 int intReturn = 0;
-                foreach (Skill objSkill in _objCharacter.SkillsSection.Skills)
+                Skill objSkill = Skill;
+                if (objSkill != null)
                 {
-                    if (_blnAlchemical)
-                    {
-                        if (objSkill.Name == "Alchemy")
-                        {
-                            intReturn = objSkill.Pool;
-                            // Add any Specialization bonus if applicable.
-                            if (objSkill.HasSpecialization(_strCategory))
-                                intReturn += 2;
-                            break;
-                        }
-                    }
-                    else if (_strCategory == "Enchantments")
-                    {
-                        if (objSkill.Name == "Artificing")
-                        {
-                            intReturn = objSkill.Pool;
-                            // Add any Specialization bonus if applicable.
-                            if (objSkill.HasSpecialization(_strCategory))
-                                intReturn += 2;
-                            break;
-                        }
-                    }
-                    else if (_strCategory == "Rituals")
-                    {
-                        if (objSkill.Name == "Ritual Spellcasting")
-                        {
-                            intReturn = objSkill.Pool;
-                            // Add any Specialization bonus if applicable.
-                            if (objSkill.HasSpecialization(_strCategory))
-                                intReturn += 2;
-                            break;
-                        }
-                    }
-                    else if ((!UsesUnarmed && objSkill.Name == "Spellcasting") || (UsesUnarmed && objSkill.Name == "Unarmed Combat"))
-                    {
-                        if (UsesUnarmed)
-                            intReturn = objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue);
-                        else
-                            intReturn = objSkill.Pool;
-                        // Add any Specialization bonus if applicable.
-                        if (objSkill.HasSpecialization(_strCategory))
-                            intReturn += 2;
-                        break;
-                    }
+                    if (UsesUnarmed)
+                        intReturn = objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue);
+                    else
+                        intReturn = objSkill.Pool;
+                    // Add any Specialization bonus if applicable.
+                    if (objSkill.HasSpecialization(_strCategory))
+                        intReturn += 2;
                 }
 
                 // Include any Improvements to the Spell Category.
@@ -2234,37 +2226,18 @@ namespace Chummer
             get
             {
                 string strReturn = string.Empty;
-
-                foreach (Skill objSkill in _objCharacter.SkillsSection.Skills)
+                Skill objSkill = Skill;
+                if (objSkill != null)
                 {
-                    if (objSkill.Name == "Spellcasting" && !_blnAlchemical && _strCategory != "Rituals" && _strCategory != "Enchantments")
-                    {
-                        strReturn = objSkill.GetDisplayName() + " (" + objSkill.Pool.ToString() + ")";
-                        // Add any Specialization bonus if applicable.
-                        if (objSkill.HasSpecialization(_strCategory))
-                            strReturn += " + " + LanguageManager.GetString("String_ExpenseSpecialization") + ": " + DisplayCategory + " (2)";
-                    }
-                    if (objSkill.Name == "Ritual Spellcasting" && !_blnAlchemical && _strCategory == "Rituals")
-                    {
-                        strReturn = objSkill.GetDisplayName() + " (" + objSkill.Pool.ToString() + ")";
-                        // Add any Specialization bonus if applicable.
-                        if (objSkill.HasSpecialization(_strCategory))
-                            strReturn += " + " + LanguageManager.GetString("String_ExpenseSpecialization") + ": " + DisplayCategory + " (2)";
-                    }
-                    if (objSkill.Name == "Artificing" && !_blnAlchemical && _strCategory == "Enchantments")
-                    {
-                        strReturn = objSkill.GetDisplayName() + " (" + objSkill.Pool.ToString() + ")";
-                        // Add any Specialization bonus if applicable.
-                        if (objSkill.HasSpecialization(_strCategory))
-                            strReturn += " + " + LanguageManager.GetString("String_ExpenseSpecialization") + ": " + DisplayCategory + " (2)";
-                    }
-                    if (objSkill.Name == "Alchemy" && _blnAlchemical)
-                    {
-                        strReturn = objSkill.GetDisplayName() + " (" + objSkill.Pool.ToString() + ")";
-                        // Add any Specialization bonus if applicable.
-                        if (objSkill.HasSpecialization(_strCategory))
-                            strReturn += " + " + LanguageManager.GetString("String_ExpenseSpecialization") + ": " + DisplayCategory + " (2)";
-                    }
+                    int intPool = 0;
+                    if (UsesUnarmed)
+                        intPool = objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue);
+                    else
+                        intPool = objSkill.Pool;
+                    strReturn = objSkill.GetDisplayName() + " (" + intPool.ToString() + ")";
+                    // Add any Specialization bonus if applicable.
+                    if (objSkill.HasSpecialization(_strCategory))
+                        strReturn += " + " + LanguageManager.GetString("String_ExpenseSpecialization") + ": " + DisplayCategory + " (2)";
                 }
 
                 // Include any Improvements to the Spell Category.
@@ -2735,7 +2708,7 @@ namespace Chummer
             {
                 string strReturn = _strName;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language == "en-us") return strReturn;
+                if (GlobalOptions.Language == GlobalOptions.DefaultLanguage) return strReturn;
 
                 return MyXmlNode?["translate"]?.InnerText ?? strReturn;
             }
@@ -2755,7 +2728,7 @@ namespace Chummer
         }
 
         /// <summary>
-        /// Grade.
+        /// Grade to which the Metamagic is tied. Negative if the Metamagic was added by an Improvement and not by an Initiation/Submersion.
         /// </summary>
         public Int32 Grade
         {
@@ -2781,7 +2754,7 @@ namespace Chummer
             {
                 string strReturn = _strPage;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlNode objNode = MyXmlNode;
                     if (objNode != null)
@@ -2981,7 +2954,7 @@ namespace Chummer
             get
             {
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language == "en-us") return _strName;
+                if (GlobalOptions.Language == GlobalOptions.DefaultLanguage) return _strName;
                 return MyXmlNode?["translate"]?.InnerText ?? _strName;
             }
         }
@@ -3026,7 +2999,7 @@ namespace Chummer
             {
                 string strReturn = _strPage;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlNode objNode = MyXmlNode;
                     if (objNode != null)
@@ -3213,7 +3186,7 @@ namespace Chummer
             get
             {
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language == "en-us") return _strName;;
+                if (GlobalOptions.Language == GlobalOptions.DefaultLanguage) return _strName;;
                 return MyXmlNode?["translate"]?.InnerText ?? _strName;
             }
         }
@@ -3258,7 +3231,7 @@ namespace Chummer
             {
                 string strReturn = _strPage;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlNode objNode = MyXmlNode;
                     if (objNode != null)
@@ -3340,7 +3313,7 @@ namespace Chummer
             objXmlComplexFormNode.TryGetStringFieldQuickly("duration", ref _strDuration);
             objXmlComplexFormNode.TryGetStringFieldQuickly("fv", ref _strFV);
             _strExtra = strExtra;
-            if (GlobalOptions.Language != "en-us")
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
                 XmlNode objComplexFormNode = MyXmlNode;
                 if (objComplexFormNode != null)
@@ -3446,13 +3419,13 @@ namespace Chummer
             {
                 string strReturn = _strName;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                     strReturn = MyXmlNode?["translate"]?.InnerText ?? _strName;
 
                 if (!string.IsNullOrEmpty(_strExtra))
                 {
                     string strExtra = _strExtra;
-                    if (GlobalOptions.Language != "en-us")
+                    if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                         strExtra = LanguageManager.TranslateExtra(_strExtra);
                     strReturn += " (" + strExtra + ")";
                 }
@@ -3517,7 +3490,7 @@ namespace Chummer
             {
                 string strReturn = _strPage;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlNode objNode = MyXmlNode;
                     if (objNode?["altpage"] != null)
@@ -3591,7 +3564,7 @@ namespace Chummer
             _strExtra = strExtra;
             _boolIsAdvancedProgram = boolIsAdvancedProgram;
 
-            if (GlobalOptions.Language != "en-us")
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
                 XmlNode objProgramNode = MyXmlNode;
                 if (objProgramNode != null)
@@ -3699,13 +3672,13 @@ namespace Chummer
             {
                 string strReturn = _strName;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                     strReturn = MyXmlNode?["translate"]?.InnerText ?? _strName;
 
                 if (!string.IsNullOrEmpty(_strExtra))
                 {
                     string strExtra = _strExtra;
-                    if (GlobalOptions.Language != "en-us")
+                    if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                         strExtra = LanguageManager.TranslateExtra(_strExtra);
                     strReturn += " (" + strExtra + ")";
                 }
@@ -3750,7 +3723,7 @@ namespace Chummer
                 if (!string.IsNullOrEmpty(_strExtra))
                     strReturn += " (" + _strExtra + ")";
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language == "en-us") return strReturn;
+                if (GlobalOptions.Language == GlobalOptions.DefaultLanguage) return strReturn;
                 XmlNode objNode = XmlManager.Load("programs.xml")?.SelectSingleNode("/chummer/programs/program[name = \"" + RequiresProgram + "\"]");
                 return objNode?["translate"]?.InnerText ?? _strName;
             }
@@ -3783,7 +3756,7 @@ namespace Chummer
             {
                 string strReturn = _strPage;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlNode objNode = MyXmlNode;
                     if (objNode?["altpage"] != null)
@@ -3959,7 +3932,7 @@ namespace Chummer
             get
             {
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language == "en-us")
+                if (GlobalOptions.Language == GlobalOptions.DefaultLanguage)
                     return _strName;
                 return MyXmlNode?["translate"]?.InnerText ?? _strName;
             }
@@ -3996,7 +3969,7 @@ namespace Chummer
             {
                 string strReturn = _strPage;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlNode objNode = MyXmlNode;
                     if (objNode != null)
@@ -4033,7 +4006,7 @@ namespace Chummer
         /// Selected Martial Arts Advantages.
         /// </summary>
         public List<MartialArtAdvantage> Advantages => _lstAdvantages;
-        public List<MartialArtAdvantage> Children => Advantages;
+        public IList<MartialArtAdvantage> Children => Advantages;
 
         /// <summary>
         /// Notes.
@@ -4168,7 +4141,7 @@ namespace Chummer
             {
                 string strReturn = _strName;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language == "en-us") return strReturn;
+                if (GlobalOptions.Language == GlobalOptions.DefaultLanguage) return strReturn;
                 return MyXmlNode?.Attributes?["translate"]?.InnerText ?? strReturn;
             }
         }
@@ -4314,7 +4287,7 @@ namespace Chummer
             {
                 string strReturn = _strName;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlNode objNode = MyXmlNode;
                     if (objNode?["translate"] != null)
@@ -4358,7 +4331,7 @@ namespace Chummer
             {
                 string strReturn = _strPage;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlNode objNode = MyXmlNode;
                     if (objNode?["altpage"] != null)
@@ -4622,6 +4595,13 @@ namespace Chummer
 
         private int _intConnection = 1;
         private int _intLoyalty = 1;
+        private string _strMetatype = string.Empty;
+        private string _strSex = string.Empty;
+        private string _strAge = string.Empty;
+        private string _strType = string.Empty;
+        private string _strPreferredPayment = string.Empty;
+        private string _strHobbiesVice = string.Empty;
+        private string _strPersonalLife = string.Empty;
 
         private string _strGroupName = string.Empty;
         private ContactType _objContactType = ContactType.Contact;
@@ -4674,6 +4654,13 @@ namespace Chummer
             objWriter.WriteElementString("location", _strLocation);
             objWriter.WriteElementString("connection", _intConnection.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("loyalty", _intLoyalty.ToString(CultureInfo.InvariantCulture));
+            objWriter.WriteElementString("metatype", _strMetatype);
+            objWriter.WriteElementString("sex", _strSex);
+            objWriter.WriteElementString("age", _strAge);
+            objWriter.WriteElementString("contacttype", _strType);
+            objWriter.WriteElementString("preferredpayment", _strPreferredPayment);
+            objWriter.WriteElementString("hobbiesvice", _strHobbiesVice);
+            objWriter.WriteElementString("personallife", _strPersonalLife);
             objWriter.WriteElementString("type", _objContactType.ToString());
             objWriter.WriteElementString("file", _strFileName);
             objWriter.WriteElementString("relative", _strRelativeName);
@@ -4706,8 +4693,15 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("location", ref _strLocation);
             objNode.TryGetInt32FieldQuickly("connection", ref _intConnection);
             objNode.TryGetInt32FieldQuickly("loyalty", ref _intLoyalty);
+            objNode.TryGetStringFieldQuickly("metatype", ref _strMetatype);
+            objNode.TryGetStringFieldQuickly("sex", ref _strSex);
+            objNode.TryGetStringFieldQuickly("age", ref _strAge);
+            objNode.TryGetStringFieldQuickly("contacttype", ref _strType);
+            objNode.TryGetStringFieldQuickly("preferredpayment", ref _strPreferredPayment);
+            objNode.TryGetStringFieldQuickly("hobbiesvice", ref _strHobbiesVice);
+            objNode.TryGetStringFieldQuickly("personallife", ref _strPersonalLife);
             if (objNode["type"] != null)
-            _objContactType = ConvertToContactType(objNode["type"].InnerText);
+                _objContactType = ConvertToContactType(objNode["type"].InnerText);
             objNode.TryGetStringFieldQuickly("file", ref _strFileName);
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objNode.TryGetStringFieldQuickly("groupname", ref _strGroupName);
@@ -4742,6 +4736,13 @@ namespace Chummer
             else
                 objWriter.WriteElementString("connection", "Group(" + _intConnection.ToString() + ")");
             objWriter.WriteElementString("loyalty", _intLoyalty.ToString());
+            objWriter.WriteElementString("metatype", _strMetatype);
+            objWriter.WriteElementString("sex", _strSex);
+            objWriter.WriteElementString("age", _strAge);
+            objWriter.WriteElementString("contacttype", _strType);
+            objWriter.WriteElementString("preferredpayment", _strPreferredPayment);
+            objWriter.WriteElementString("hobbiesvice", _strHobbiesVice);
+            objWriter.WriteElementString("personallife", _strPersonalLife);
             objWriter.WriteElementString("type", LanguageManager.GetString("String_" + _objContactType.ToString()));
             objWriter.WriteElementString("mademan", _blnMadeMan.ToString());
             objWriter.WriteElementString("blackmail", _blnBlackmail.ToString());
@@ -4820,6 +4821,111 @@ namespace Chummer
         {
             get => _intLoyalty;
             set => _intLoyalty = value;
+        }
+
+        /// <summary>
+        /// Metatype of this Contact.
+        /// </summary>
+        public string Metatype
+        {
+            get
+            {
+                return _strMetatype;
+            }
+            set
+            {
+                _strMetatype = value;
+            }
+        }
+
+        /// <summary>
+        /// Gender of this Contact.
+        /// </summary>
+        public string Sex
+        {
+            get
+            {
+                return _strSex;
+            }
+            set
+            {
+                _strSex = value;
+            }
+        }
+
+        /// <summary>
+        /// How old is this Contact.
+        /// </summary>
+        public string Age
+        {
+            get
+            {
+                return _strAge;
+            }
+            set
+            {
+                _strAge = value;
+            }
+        }
+
+        /// <summary>
+        /// What type of Contact is this.
+        /// </summary>
+        public string Type
+        {
+            get
+            {
+                return _strType;
+            }
+            set
+            {
+                _strType = value;
+            }
+        }
+
+        /// <summary>
+        /// Preferred payment method of this Contact.
+        /// </summary>
+        public string PreferredPayment
+        {
+            get
+            {
+                return _strPreferredPayment;
+            }
+            set
+            {
+                _strPreferredPayment = value;
+            }
+        }
+
+        /// <summary>
+        /// Hobbies/Vice of this Contact.
+        /// </summary>
+        public string HobbiesVice
+        {
+            get
+            {
+                return _strHobbiesVice;
+            }
+            set
+            {
+                _strHobbiesVice = value;
+            }
+        }
+
+        /// <summary>
+        /// Personal Life of this Contact.
+        /// </summary>
+        public string PersonalLife
+        {
+            get
+            {
+                return _strPersonalLife;
+            }
+            set
+            {
+                _strPersonalLife = value;
+            }
         }
 
         /// <summary>
@@ -5156,13 +5262,13 @@ namespace Chummer
             get
             {
                 string strReturn = _strName;
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                     strReturn = MyXmlNode?["translate"]?.InnerText ?? _strName;
 
                 if (!string.IsNullOrEmpty(_strExtra))
                 {
                     string strExtra = _strExtra;
-                    if (GlobalOptions.Language != "en-us")
+                    if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                         strExtra = LanguageManager.TranslateExtra(_strExtra);
                     strReturn += " (" + strExtra + ")";
                 }
@@ -5217,7 +5323,7 @@ namespace Chummer
             {
                 string strReturn = _strPage;
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language != "en-us")
+                if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
                     XmlNode objNode = MyXmlNode;
                     if (objNode?["altpage"] != null)
@@ -5248,7 +5354,7 @@ namespace Chummer
             get
             {
                 // Get the translated name if applicable.
-                if (GlobalOptions.Language == "en-us") return _strCategory;
+                if (GlobalOptions.Language == GlobalOptions.DefaultLanguage) return _strCategory;
                 XmlNode objNode = XmlManager.Load("critterpowers.xml")?.SelectSingleNode("/chummer/categories/category[. = \"" + _strCategory + "\"]");
                 return objNode.Attributes?["translate"]?.InnerText ?? _strCategory;
             }
@@ -5356,13 +5462,13 @@ namespace Chummer
             get
             {
                 string strReturn = _strRange;
-                strReturn = strReturn.Replace("Self", LanguageManager.GetString("String_SpellRangeSelf"));
-                strReturn = strReturn.Replace("Special", LanguageManager.GetString("String_SpellDurationSpecial"));
-                strReturn = strReturn.Replace("LOS", LanguageManager.GetString("String_SpellRangeLineOfSight"));
-                strReturn = strReturn.Replace("LOI", LanguageManager.GetString("String_SpellRangeLineOfInfluence"));
-                strReturn = strReturn.Replace("T", LanguageManager.GetString("String_SpellRangeTouch"));
-                strReturn = strReturn.Replace("(A)", "(" + LanguageManager.GetString("String_SpellRangeArea") + ")");
-                strReturn = strReturn.Replace("MAG", LanguageManager.GetString("String_AttributeMAGShort"));
+                strReturn = strReturn.CheapReplace("Self", () => LanguageManager.GetString("String_SpellRangeSelf"));
+                strReturn = strReturn.CheapReplace("Special", () => LanguageManager.GetString("String_SpellDurationSpecial"));
+                strReturn = strReturn.CheapReplace("LOS", () => LanguageManager.GetString("String_SpellRangeLineOfSight"));
+                strReturn = strReturn.CheapReplace("LOI", () => LanguageManager.GetString("String_SpellRangeLineOfInfluence"));
+                strReturn = strReturn.CheapReplace("T", () => LanguageManager.GetString("String_SpellRangeTouch"));
+                strReturn = strReturn.CheapReplace("(A)", () => "(" + LanguageManager.GetString("String_SpellRangeArea") + ")");
+                strReturn = strReturn.CheapReplace("MAG", () => LanguageManager.GetString("String_AttributeMAGShort"));
 
                 return strReturn;
             }

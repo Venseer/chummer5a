@@ -37,6 +37,9 @@ using System.Reflection;
  using Point = System.Drawing.Point;
  using Rectangle = System.Drawing.Rectangle;
  using Size = System.Drawing.Size;
+using System.Threading.Tasks;
+using System.Diagnostics;
+using System.ComponentModel;
 
 namespace Chummer
 {
@@ -46,15 +49,15 @@ namespace Chummer
         private frmDiceRoller _frmRoller;
         private frmUpdate _frmUpdate;
         private List<Character> _lstCharacters = new List<Character>();
+        private readonly BackgroundWorker _workerVersionUpdateChecker = new BackgroundWorker();
+        private readonly Version _objCurrentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        private readonly string _strCurrentVersion = string.Empty;
         #region Control Events
         public frmMain()
         {
             InitializeComponent();
-            Version version = Assembly.GetExecutingAssembly().GetName().Version;
-            string strCurrentVersion = $"{version.Major}.{version.Minor}.{version.Build}";
-
-            Text = string.Format("Chummer 5a - Version " + strCurrentVersion);
-
+            _strCurrentVersion = $"{_objCurrentVersion.Major}.{_objCurrentVersion.Minor}.{_objCurrentVersion.Build}";
+            this.Text = "Chummer 5a - Version " + _strCurrentVersion;
 #if DEBUG
             Text += " DEBUG BUILD";
 #endif
@@ -67,21 +70,13 @@ namespace Chummer
 
             // If Automatic Updates are enabled, check for updates immediately.
 
-#if RELEASE
-            if (Utils.GitUpdateAvailable() > 0)
-            {
-                if (GlobalOptions.AutomaticUpdate)
-                {
-                    frmUpdate frmAutoUpdate = new frmUpdate();
-                    frmAutoUpdate.SilentMode = true;
-                    frmAutoUpdate.Visible = false;
-                    frmAutoUpdate.ShowDialog(this);
-                }
-                else
-                {
-                    this.Text += String.Format(" - Update {0} now available!", Utils.GitVersion());
-                }
-            }
+#if !DEBUG
+            _workerVersionUpdateChecker.WorkerReportsProgress = false;
+            _workerVersionUpdateChecker.WorkerSupportsCancellation = false;
+            _workerVersionUpdateChecker.DoWork += Utils.DoCacheGitVersion;
+            _workerVersionUpdateChecker.RunWorkerCompleted += CheckForUpdate;
+            Application.Idle += IdleUpdateCheck;
+            _workerVersionUpdateChecker.RunWorkerAsync();
 #endif
 
             GlobalOptions.MRUChanged += PopulateMRU;
@@ -119,39 +114,42 @@ namespace Chummer
 
             // Attempt to cache all XML files that are used the most.
             Timekeeper.Start("cache_load");
-            XmlManager.Load("armor.xml");
-            XmlManager.Load("bioware.xml");
-            XmlManager.Load("books.xml");
-            XmlManager.Load("complexforms.xml");
-            XmlManager.Load("contacts.xml");
-            XmlManager.Load("critters.xml");
-            XmlManager.Load("critterpowers.xml");
-            XmlManager.Load("cyberware.xml");
-            // XmlManager.Load("drugcomponents.xml"); TODO: Re-enable when Custom Drugs branch is merged
-            XmlManager.Load("echoes.xml");
-            XmlManager.Load("gameplayoptions.xml");
-            XmlManager.Load("gear.xml");
-            XmlManager.Load("improvements.xml");
-            XmlManager.Load("licenses.xml");
-            XmlManager.Load("lifemodules.xml");
-            XmlManager.Load("lifestyles.xml");
-            XmlManager.Load("martialarts.xml");
-            XmlManager.Load("mentors.xml");
-            XmlManager.Load("metamagic.xml");
-            XmlManager.Load("metatypes.xml");
-            XmlManager.Load("options.xml");
-            XmlManager.Load("packs.xml");
-            XmlManager.Load("powers.xml");
-            XmlManager.Load("priorities.xml");
-            XmlManager.Load("programs.xml");
-            XmlManager.Load("qualities.xml");
-            XmlManager.Load("ranges.xml");
-            XmlManager.Load("skills.xml");
-            XmlManager.Load("spells.xml");
-            XmlManager.Load("spiritpowers.xml");
-            XmlManager.Load("traditions.xml");
-            XmlManager.Load("vehicles.xml");
-            XmlManager.Load("weapons.xml");
+            Parallel.Invoke(
+                () => XmlManager.Load("armor.xml"),
+                () => XmlManager.Load("bioware.xml"),
+                () => XmlManager.Load("books.xml"),
+                () => XmlManager.Load("complexforms.xml"),
+                () => XmlManager.Load("contacts.xml"),
+                () => XmlManager.Load("critters.xml"),
+                () => XmlManager.Load("critterpowers.xml"),
+                () => XmlManager.Load("cyberware.xml"),
+                //() => XmlManager.Load("drugcomponents.xml"), TODO: Re-enable when Custom Drugs branch is merged
+                () => XmlManager.Load("echoes.xml"),
+                () => XmlManager.Load("gameplayoptions.xml"),
+                () => XmlManager.Load("gear.xml"),
+                () => XmlManager.Load("improvements.xml"),
+                () => XmlManager.Load("licenses.xml"),
+                () => XmlManager.Load("lifemodules.xml"),
+                () => XmlManager.Load("lifestyles.xml"),
+                () => XmlManager.Load("martialarts.xml"),
+                () => XmlManager.Load("mentors.xml"),
+                () => XmlManager.Load("metamagic.xml"),
+                () => XmlManager.Load("metatypes.xml"),
+                () => XmlManager.Load("options.xml"),
+                () => XmlManager.Load("packs.xml"),
+                () => XmlManager.Load("powers.xml"),
+                () => XmlManager.Load("priorities.xml"),
+                () => XmlManager.Load("programs.xml"),
+                () => XmlManager.Load("qualities.xml"),
+                () => XmlManager.Load("ranges.xml"),
+                () => XmlManager.Load("sheets.xml"),
+                () => XmlManager.Load("skills.xml"),
+                () => XmlManager.Load("spells.xml"),
+                () => XmlManager.Load("spiritpowers.xml"),
+                () => XmlManager.Load("traditions.xml"),
+                () => XmlManager.Load("vehicles.xml"),
+                () => XmlManager.Load("weapons.xml")
+            );
             Timekeeper.Finish("cache_load");
 
             frmCharacterRoster frmCharacter = new frmCharacterRoster();
@@ -159,22 +157,51 @@ namespace Chummer
 
             // Retrieve the arguments passed to the application. If more than 1 is passed, we're being given the name of a file to open.
             string[] strArgs = Environment.GetCommandLineArgs();
-            if (strArgs.GetUpperBound(0) > 0)
+            string strLoop = string.Empty;
+            for (int i = 1; i < strArgs.Length; ++i)
             {
-                if (strArgs[1] != "/debug")
-                    LoadCharacter(strArgs[1]);
-                if (strArgs.Length > 2)
+                strLoop = strArgs[i];
+                if (strLoop == "/test")
                 {
-                    if (strArgs[2] == "/test")
-                    {
-                        frmTest frmTestData = new frmTest();
-                        frmTestData.Show();
-                    }
+                    frmTest frmTestData = new frmTest();
+                    frmTestData.Show();
+                }
+                else if (!strLoop.StartsWith('/'))
+                {
+                    LoadCharacter(strLoop);
                 }
             }
 
             frmCharacter.WindowState = FormWindowState.Maximized;
             frmCharacter.Show();
+        }
+
+        public void CheckForUpdate(object sender, EventArgs e)
+        {
+            if (Utils.GitUpdateAvailable() > 0)
+            {
+                if (GlobalOptions.AutomaticUpdate)
+                {
+                    if (_frmUpdate == null)
+                    {
+                        _frmUpdate = new frmUpdate();
+                        _frmUpdate.FormClosed += ResetFrmUpdate;
+                        _frmUpdate.SilentMode = true;
+                    }
+                }
+                this.Text = string.Format("Chummer 5a - Version " + _strCurrentVersion + " - Update {0} now available!", Utils.CachedGitVersion);
+            }
+        }
+
+        private Stopwatch IdleUpdateCheck_StopWatch = Stopwatch.StartNew();
+        public void IdleUpdateCheck(object sender, EventArgs e)
+        {
+            // Automatically check for updates every hour
+            if (IdleUpdateCheck_StopWatch.ElapsedMilliseconds >= 3600000 && !_workerVersionUpdateChecker.IsBusy)
+            {
+                IdleUpdateCheck_StopWatch.Restart();
+                _workerVersionUpdateChecker.RunWorkerAsync();
+            }
         }
 
         /*
@@ -215,12 +242,24 @@ namespace Chummer
             if (_frmUpdate == null)
             {
                 _frmUpdate = new frmUpdate();
+                _frmUpdate.FormClosed += ResetFrmUpdate;
+                _frmUpdate.Show();
+            }
+            // Silent updater is running, so make it visible
+            else if (_frmUpdate.SilentMode)
+            {
+                _frmUpdate.SilentMode = false;
                 _frmUpdate.Show();
             }
             else
             {
                 _frmUpdate.Focus();
             }
+        }
+
+        private void ResetFrmUpdate(object sender, EventArgs e)
+        {
+            _frmUpdate = null;
         }
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -416,11 +455,11 @@ namespace Chummer
                 if (objCharacter != null)
                 {
                     string strTitle = objCharacter.Name;
-                    if (!string.IsNullOrEmpty(objCharacter.Alias.Trim()))
+                    if (!string.IsNullOrWhiteSpace(objCharacter.Alias))
                     {
                         strTitle = objCharacter.Alias.Trim();
                     }
-                    else if (string.IsNullOrEmpty(strTitle))
+                    else if (string.IsNullOrWhiteSpace(strTitle))
                     {
                         strTitle = LanguageManager.GetString("String_UnnamedCharacter");
                     }
@@ -652,7 +691,6 @@ namespace Chummer
             frmNewCharacter.WindowState = FormWindowState.Maximized;
             frmNewCharacter.Show();
 
-            OpenCharacters.Add(objCharacter);
             objCharacter.CharacterNameChanged += objCharacter_CharacterNameChanged;
             Cursor.Current = Cursors.Default;
         }

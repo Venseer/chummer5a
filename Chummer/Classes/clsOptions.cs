@@ -146,14 +146,16 @@ namespace Chummer
 
         private static frmMain _frmMainForm;
         private static readonly RegistryKey _objBaseChummerKey;
+        public static readonly string DefaultLanguage = "en-us";
+        public static readonly string DefaultCharacterSheetDefaultValue = "Shadowrun 5 (Rating greater 0)";
 
         private static bool _blnAutomaticUpdate = false;
         private static bool _blnLiveCustomData = false;
         private static bool _blnLocalisedUpdatesOnly = false;
         private static bool _blnStartupFullscreen = false;
         private static bool _blnSingleDiceRoller = true;
-        private static string _strLanguage = "en-us";
-        private static string _strDefaultCharacterSheet = "Shadowrun 5 (Rating greater 0)";
+        private static string _strLanguage = DefaultLanguage;
+        private static string _strDefaultCharacterSheet = DefaultCharacterSheetDefaultValue;
         private static bool _blnDatesIncludeTime = true;
         private static bool _blnPrintToFileFirst = false;
         private static bool _lifeModuleEnabled;
@@ -274,7 +276,7 @@ namespace Chummer
             LoadStringFromRegistry(ref _strLanguage, "language");
             if (_strLanguage == "en-us2")
             {
-                _strLanguage = "en-us";
+                _strLanguage = GlobalOptions.DefaultLanguage;
             }
             // Startup in Fullscreen mode.
             LoadBoolFromRegistry(ref _blnStartupFullscreen, "startupfullscreen");
@@ -302,7 +304,7 @@ namespace Chummer
                 string[] astrCustomDataDirectoryNames = objCustomDataDirectoryKey.GetSubKeyNames();
                 int intMinLoadOrderValue = int.MaxValue;
                 int intMaxLoadOrderValue = int.MinValue;
-                for (int i = 0; i < astrCustomDataDirectoryNames.Count(); ++i)
+                for (int i = 0; i < astrCustomDataDirectoryNames.Length; ++i)
                 {
                     RegistryKey objLoopKey = objCustomDataDirectoryKey.OpenSubKey(astrCustomDataDirectoryNames[i]);
                     string strPath = string.Empty;
@@ -858,18 +860,19 @@ namespace Chummer
         /// </summary>
         public static List<string> ReadMRUList(string strMRUType = "mru")
         {
-            List<string> lstFiles = new List<string>();
+            List<string> lstFiles = new List<string>(10);
 
             for (int i = 1; i <= 10; i++)
             {
                 object objLoopValue = _objBaseChummerKey.GetValue(strMRUType + i.ToString());
                 if (objLoopValue != null)
                 {
-                    lstFiles.Add(objLoopValue.ToString());
+                    string strFileName = objLoopValue.ToString();
+                    if (File.Exists(strFileName))
+                        lstFiles.Add(strFileName);
                 }
             }
-            lstFiles = lstFiles.Distinct().ToList();
-            return lstFiles;
+            return lstFiles.Distinct().ToList();
         }
         #endregion
 

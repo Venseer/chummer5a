@@ -64,7 +64,7 @@ namespace Chummer
         private void cmdOK_Click(object sender, EventArgs e)
         {
             // Make sure the current Setting has a name.
-            if (string.IsNullOrEmpty(txtSettingName.Text.Trim()))
+            if (string.IsNullOrWhiteSpace(txtSettingName.Text))
             {
                 MessageBox.Show("You must give your Settings a name.", "Chummer Settings", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 txtSettingName.Focus();
@@ -76,14 +76,8 @@ namespace Chummer
                 string text = LanguageManager.GetString("Message_Options_SaveForms");
                 string caption = LanguageManager.GetString("MessageTitle_Options_CloseForms");
 
-                switch (MessageBox.Show(text, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question))
-                {
-                    case DialogResult.Yes:
-                        break;
-                    default:
-                        return;
-                }
-                Utils.RestartApplication("Message_Options_CloseForms");
+                if (MessageBox.Show(text, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    return;
             }
 
             DialogResult = DialogResult.OK;
@@ -146,6 +140,7 @@ namespace Chummer
             _characterOptions.PrintNotes = chkPrintNotes.Checked;
             _characterOptions.PrintSkillsWithZeroRating = chkPrintSkillsWithZeroRating.Checked;
             _characterOptions.RestrictRecoil = chkRestrictRecoil.Checked;
+            _characterOptions.SpecialKarmaCostBasedOnShownValue = chkSpecialKarmaCost.Checked;
             _characterOptions.UseCalculatedPublicAwareness = chkUseCalculatedPublicAwareness.Checked;
             _characterOptions.StrictSkillGroupsInCreateMode = chkStrictSkillGroups.Checked;
             _characterOptions.AllowPointBuySpecializationsOnKarmaSkills = chkAllowPointBuySpecializationsOnKarmaSkills.Checked;
@@ -156,6 +151,8 @@ namespace Chummer
             _characterOptions.EducationQualitiesApplyOnChargenKarma = chkEducationQualitiesApplyOnChargenKarma.Checked;
             _characterOptions.LimbCount = Convert.ToInt32(cboLimbCount.SelectedValue.ToString().Split('/')[0]);
             _characterOptions.ExcludeLimbSlot = cboLimbCount.SelectedValue.ToString().Split('/')[1];
+            _characterOptions.AllowHoverIncrement = chkAllowHoverIncrement.Checked;
+            _characterOptions.SearchInCategoryOnly = chkSearchInCategoryOnly.Checked;
 
             // Karma options.
             _characterOptions.KarmaAttribute = Convert.ToInt32(nudKarmaAttribute.Value);
@@ -186,7 +183,6 @@ namespace Chummer
             _characterOptions.KarmaLeaveGroup = Convert.ToInt32(nudKarmaLeaveGroup.Value);
             _characterOptions.KarmaNewAIProgram = Convert.ToInt32(nudKarmaNewAIProgram.Value);
             _characterOptions.KarmaNewAIAdvancedProgram = Convert.ToInt32(nudKarmaNewAIAdvancedProgram.Value);
-            _characterOptions.AllowHoverIncrement = chkAllowHoverIncrement.Checked;
 
             // Focus costs
             _characterOptions.KarmaAlchemicalFocus = Convert.ToInt32(nudKarmaAlchemicalFocus.Value);
@@ -213,6 +209,9 @@ namespace Chummer
 
             _characterOptions.Name = txtSettingName.Text;
             _characterOptions.Save();
+
+            if (blnDirty)
+                Utils.RestartApplication("Message_Options_CloseForms");
         }
 
         private void cboBuildMethod_SelectedIndexChanged(object sender, EventArgs e)
@@ -238,9 +237,36 @@ namespace Chummer
 
         private void cboLanguage_SelectedIndexChanged(object sender, EventArgs e)
         {
-            bool isEnabled = cboLanguage.SelectedValue.ToString() != "en-us";
+            bool isEnabled = cboLanguage.SelectedValue.ToString() != GlobalOptions.DefaultLanguage;
             cmdVerify.Enabled = isEnabled;
             cmdVerifyData.Enabled = isEnabled;
+
+            if (!blnLoading)
+            {
+                string strOldSelected = cboXSLT.SelectedValue.ToString();
+                // Strip away the language prefix
+                if (strOldSelected.Contains('\\'))
+                    strOldSelected = strOldSelected.Substring(strOldSelected.LastIndexOf('\\') + 1, strOldSelected.Length - 1 - strOldSelected.LastIndexOf('\\'));
+                PopulateXsltList();
+                string strNewLanguage = cboLanguage.SelectedValue.ToString();
+                if (strNewLanguage == GlobalOptions.DefaultLanguage)
+                    cboXSLT.SelectedValue = strOldSelected;
+                else
+                    cboXSLT.SelectedValue = Path.Combine(strNewLanguage, strOldSelected);
+                // If the desired sheet was not found, fall back to the Shadowrun 5 sheet.
+                if (cboXSLT.SelectedIndex == -1)
+                {
+                    if (strNewLanguage == GlobalOptions.DefaultLanguage)
+                        cboXSLT.SelectedValue = GlobalOptions.DefaultCharacterSheetDefaultValue;
+                    else
+                        cboXSLT.SelectedValue = Path.Combine(strNewLanguage, GlobalOptions.DefaultCharacterSheetDefaultValue);
+                    if (cboXSLT.SelectedIndex == -1)
+                    {
+                        cboXSLT.SelectedIndex = 0;
+                    }
+                }
+            }
+
             OptionsChanged(sender,e);
         }
 
@@ -684,6 +710,7 @@ namespace Chummer
             chkAlternateMetatypeAttributeKarma.Checked = _characterOptions.AlternateMetatypeAttributeKarma;
             chkReverseAttributePriorityOrder.Checked = _characterOptions.ReverseAttributePriorityOrder;
             chkAllowHoverIncrement.Checked = _characterOptions.AllowHoverIncrement;
+            chkSearchInCategoryOnly.Checked = _characterOptions.SearchInCategoryOnly;
             nudBP.Value = _characterOptions.BuildPoints;
             nudContactMultiplier.Enabled = _characterOptions.FreeContactsMultiplierEnabled;
             nudContactMultiplier.Value = _characterOptions.FreeContactsMultiplier;
@@ -757,7 +784,7 @@ namespace Chummer
             GlobalOptions.SingleDiceRoller = chkSingleDiceRoller.Checked;
             if (cboXSLT.SelectedValue == null || string.IsNullOrEmpty(cboXSLT.SelectedValue.ToString()))
             {
-                cboXSLT.SelectedValue = "Shadowrun 5";
+                cboXSLT.SelectedValue = GlobalOptions.DefaultCharacterSheetDefaultValue;
             }
             GlobalOptions.DefaultCharacterSheet = cboXSLT.SelectedValue.ToString();
             GlobalOptions.DatesIncludeTime = chkDatesIncludeTime.Checked;
@@ -1158,48 +1185,24 @@ namespace Chummer
             return names;
         }
 
-        private List<ListItem> GetXslFilesFromSheetsDirectory()
+        private List<ListItem> GetXslFilesFromLocalDirectory(string strLanguage)
         {
-            var items = new List<ListItem>();
-            
-            XmlDocument manifest = XmlManager.Load("sheets.xml");
-            XmlNodeList sheets = manifest.SelectNodes($"/chummer/sheets[@lang='en-us']/sheet");
+            List<ListItem> lstSheets = new List<ListItem>();
 
+            // Populate the XSL list with all of the manifested XSL files found in the sheets\[language] directory.
+            XmlDocument objLanguageDocument = LanguageManager.XmlDoc;
+            XmlDocument manifest = XmlManager.Load("sheets.xml");
+            XmlNodeList sheets = manifest.SelectNodes($"/chummer/sheets[@lang='{strLanguage}']/sheet[not(hide)]");
             foreach (XmlNode sheet in sheets)
             {
                 ListItem objItem = new ListItem();
-                objItem.Value = sheet["filename"].InnerText;
+                objItem.Value = strLanguage != GlobalOptions.DefaultLanguage ? Path.Combine(strLanguage, sheet["filename"].InnerText) : sheet["filename"].InnerText;
                 objItem.Name = sheet["name"].InnerText;
 
-                items.Add(objItem);
+                lstSheets.Add(objItem);
             }
 
-            return items;
-        }
-
-        private List<ListItem> GetXslFilesFromLanguageDirectory()
-        {
-            var items = new List<ListItem>();
-
-            // Populate the XSL list with all of the XSL files found in the sheets\[language] directory.
-            if (GlobalOptions.Language != "en-us")
-            {
-                XmlDocument objLanguageDocument = LanguageManager.XmlDoc;
-                XmlDocument manifest = XmlManager.Load("sheets.xml");
-                XmlNodeList sheets = manifest.SelectNodes($"/chummer/sheets[@lang='{GlobalOptions.Language}']/sheet");
-                string strLanguage = objLanguageDocument.SelectSingleNode("/chummer/name").InnerText;
-
-                foreach (XmlNode sheet in sheets)
-                {
-                    ListItem objItem = new ListItem();
-                    objItem.Value = Path.Combine(GlobalOptions.Language, sheet["filename"].InnerText);
-                    objItem.Name = strLanguage + ": " + sheet["name"].InnerText;
-
-                    items.Add(objItem);
-                }
-            }
-
-            return items;
+            return lstSheets;
         }
 
         private List<ListItem> GetXslFilesFromOmaeDirectory()
@@ -1230,8 +1233,7 @@ namespace Chummer
         {
             List<ListItem> lstFiles = new List<ListItem>();
 
-            lstFiles.AddRange(GetXslFilesFromSheetsDirectory());
-            lstFiles.AddRange(GetXslFilesFromLanguageDirectory());
+            lstFiles.AddRange(GetXslFilesFromLocalDirectory(cboLanguage.SelectedValue.ToString()));
             if (GlobalOptions.OmaeEnabled)
             {
                 lstFiles.AddRange(GetXslFilesFromOmaeDirectory());
@@ -1258,13 +1260,13 @@ namespace Chummer
             cboLanguage.SelectedValue = GlobalOptions.Language;
 
             if (cboLanguage.SelectedIndex == -1)
-                cboLanguage.SelectedValue = "en-us";
+                cboLanguage.SelectedValue = GlobalOptions.DefaultLanguage;
         }
 
         private void SetDefaultValueForXsltList()
         {
             if (string.IsNullOrEmpty(GlobalOptions.DefaultCharacterSheet))
-                GlobalOptions.DefaultCharacterSheet = "Shadowrun 5 (Rating greater 0)";
+                GlobalOptions.DefaultCharacterSheet = GlobalOptions.DefaultCharacterSheetDefaultValue;
 
             cboXSLT.SelectedValue = GlobalOptions.DefaultCharacterSheet;
         }
@@ -1306,12 +1308,24 @@ namespace Chummer
             Data["api_option"] = "paste";
 
             WebClient wb = new WebClient();
-                byte[] bytes = wb.UploadValues("http://pastebin.com/api/api_post.php", Data);
+            byte[] bytes = null;
+            try
+            {
+                bytes = wb.UploadValues("http://pastebin.com/api/api_post.php", Data);
+            }
+            catch (WebException)
+            {
+                return;
+            }
 
-                string response;
-                using (MemoryStream ms = new MemoryStream(bytes))
+            string response;
+            using (MemoryStream ms = new MemoryStream(bytes))
+            {
                 using (StreamReader reader = new StreamReader(ms))
+                {
                     response = reader.ReadToEnd();
+                }
+            }
             Clipboard.SetText(response);
             #endif
         }

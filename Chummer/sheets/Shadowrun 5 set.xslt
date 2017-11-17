@@ -208,7 +208,7 @@
                 <td width="10%" class="upper">
                   <xsl:value-of select="$lang.Nuyen"/>:
                 </td>
-                <td width="10%">
+                <td width="10%" style="white-space: nowrap;">
                   <xsl:call-template name="fnx-fmt-nmbr">
                     <xsl:with-param name="nmbr" select="nuyen"/>
                   </xsl:call-template><xsl:value-of select="$lang.NuyenSymbol"/>
@@ -1696,6 +1696,29 @@
                 <xsl:text> </xsl:text>
                 <xsl:value-of select="rating"/>
               </xsl:if>
+              <xsl:if test="gears/gear">
+                (
+                <xsl:for-each select="gears/gear">
+                  <xsl:sort select="name"/>
+                  <xsl:value-of select="name"/>
+                  <xsl:if test="rating != 0">
+                    <xsl:text> </xsl:text>
+                    <xsl:value-of select="$lang.Rating"/>
+                    <xsl:text> </xsl:text>
+                    <xsl:value-of select="rating"/>
+                  </xsl:if>
+                  <xsl:if test="children/gear">
+                    <xsl:text> </xsl:text>
+                    <xsl:value-of select="$lang.with"/>
+                    <xsl:text> </xsl:text>
+                    <xsl:call-template name="gearplugin">
+                      <xsl:with-param name="gear" select="."/>
+                    </xsl:call-template>
+                  </xsl:if>
+                  <xsl:if test="last() &gt; 1">; </xsl:if>
+                </xsl:for-each>
+                )
+              </xsl:if>
               <xsl:if test="last() &gt; 1">; </xsl:if>
             </xsl:for-each>
           </td>
@@ -2628,7 +2651,7 @@
             </tr>
             <xsl:call-template name="Expenses">
               <xsl:with-param name="type" select="'Nuyen'" />
-              <xsl:with-param name="sfx" select="' '" />
+              <xsl:with-param name="sfx" select="$lang.NuyenSymbol" />
             </xsl:call-template>
           </table>
           <xsl:call-template name="RowSummary">

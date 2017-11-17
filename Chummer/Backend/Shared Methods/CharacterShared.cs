@@ -32,6 +32,7 @@ using System.Xml;
 using System.Xml.XPath;
 using Chummer.Backend.Attributes;
 using TheArtOfDev.HtmlRenderer.WinForms;
+using System.Text;
 
 namespace Chummer
 {
@@ -103,91 +104,6 @@ namespace Chummer
             string strFilePath = Path.Combine(Application.StartupPath, "saves", "autosave", strShowFileName);
             _objCharacter.Save(strFilePath);
             Autosave_StopWatch.Restart();
-        }
-        protected void RedlinerCheck()
-        {
-            string strSeekerImprovPrefix = "SEEKER";
-            var lstSeekerAttributes = new List<string>();
-            var lstSeekerImprovements = new List<Improvement>();
-            //Get attributes affected by redliner/cyber singularity seeker
-            foreach (Improvement objLoopImprovement in _objCharacter.Improvements)
-            {
-                if (objLoopImprovement.ImproveType == Improvement.ImprovementType.Seeker)
-                {
-                    lstSeekerAttributes.Add(objLoopImprovement.ImprovedName);
-                }
-                else if ((objLoopImprovement.ImproveType == Improvement.ImprovementType.Attribute ||
-                       objLoopImprovement.ImproveType == Improvement.ImprovementType.PhysicalCM) &&
-                      objLoopImprovement.SourceName.Contains(strSeekerImprovPrefix))
-                {
-                    lstSeekerImprovements.Add(objLoopImprovement);
-                }
-            }
-
-            //if neither contains anything, it is safe to exit
-            if (lstSeekerImprovements.Count == 0 && lstSeekerAttributes.Count == 0)
-            {
-                _objCharacter.RedlinerBonus = 0;
-                return;
-            }
-
-            //Calculate bonus from cyberlimbs
-            int count = 0;
-            foreach (Cyberware objCyberware in _objCharacter.Cyberware)
-            {
-                count += objCyberware.CyberlimbCount;
-            }
-            count = Math.Min(count/2, 2);
-            if (lstSeekerImprovements.Any(x => x.ImprovedName == "STR" || x.ImprovedName == "AGI"))
-            {
-                _objCharacter.RedlinerBonus = count;
-            }
-            else
-            {
-                _objCharacter.RedlinerBonus = 0;
-            }
-
-            for (int i = 0; i < lstSeekerAttributes.Count; i++)
-            {
-                Improvement objImprove =
-                    lstSeekerImprovements.FirstOrDefault(
-                        x =>
-                            x.SourceName == strSeekerImprovPrefix + "_" + lstSeekerAttributes[i] &&
-                            x.Value == (lstSeekerAttributes[i] == "BOX" ? count*-3 : count));
-                if (objImprove != null)
-                {
-                    lstSeekerAttributes.RemoveAt(i);
-                    lstSeekerImprovements.Remove(objImprove);
-                    i--;
-                }
-            }
-            //Improvement manager defines the functions we need to manipulate improvements
-            //When the locals (someday) gets moved to this class, this can be removed and use
-            //the local
-
-            // Remove which qualites have been removed or which values have changed
-            foreach (Improvement improvement in lstSeekerImprovements)
-            {
-                ImprovementManager.RemoveImprovements(_objCharacter, improvement.ImproveSource, improvement.SourceName);
-            }
-
-            // Add new improvements or old improvements with new values
-            foreach (string attribute in lstSeekerAttributes)
-            {
-                if (attribute == "BOX")
-                {
-                    ImprovementManager.CreateImprovement(_objCharacter, attribute, Improvement.ImprovementSource.Quality,
-                        strSeekerImprovPrefix + "_" + attribute, Improvement.ImprovementType.PhysicalCM,
-                        Guid.NewGuid().ToString(), count*-3);
-                }
-                else
-                {
-                    ImprovementManager.CreateImprovement(_objCharacter, attribute, Improvement.ImprovementSource.Quality,
-                        strSeekerImprovPrefix + "_" + attribute, Improvement.ImprovementType.Attribute,
-                        Guid.NewGuid().ToString(), count, 1, 0, 0, count);
-                }
-            }
-            ImprovementManager.Commit(_objCharacter);
         }
 
         /// <summary>
@@ -279,12 +195,12 @@ namespace Chummer
 
             if (tipTooltip != null)
             {
-                string strPhysical =
-                    $"({_objCharacter.STR.DisplayAbbrev} [{_objCharacter.STR.TotalValue}] * 2) + {_objCharacter.BOD.DisplayAbbrev} [{_objCharacter.BOD.TotalValue}] + {_objCharacter.REA.DisplayAbbrev} [{_objCharacter.REA.TotalValue}] / 3";
-                string strMental =
-                    $"({_objCharacter.LOG.DisplayAbbrev} [{_objCharacter.LOG.TotalValue}] * 2) + {_objCharacter.INT.DisplayAbbrev} [{_objCharacter.INT.TotalValue}] + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] / 3";
-                string strSocial =
-                    $"({_objCharacter.CHA.DisplayAbbrev} [{_objCharacter.CHA.TotalValue}] * 2) + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] + {_objCharacter.ESS.DisplayAbbrev} [{_objCharacter.Essence.ToString(GlobalOptions.CultureInfo)}] / 3";
+                StringBuilder objPhysical = new StringBuilder(
+                    $"({_objCharacter.STR.DisplayAbbrev} [{_objCharacter.STR.TotalValue}] * 2) + {_objCharacter.BOD.DisplayAbbrev} [{_objCharacter.BOD.TotalValue}] + {_objCharacter.REA.DisplayAbbrev} [{_objCharacter.REA.TotalValue}] / 3");
+                StringBuilder objMental = new StringBuilder(
+                    $"({_objCharacter.LOG.DisplayAbbrev} [{_objCharacter.LOG.TotalValue}] * 2) + {_objCharacter.INT.DisplayAbbrev} [{_objCharacter.INT.TotalValue}] + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] / 3");
+                StringBuilder objSocial = new StringBuilder(
+                    $"({_objCharacter.CHA.DisplayAbbrev} [{_objCharacter.CHA.TotalValue}] * 2) + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] + {_objCharacter.ESS.DisplayAbbrev} [{_objCharacter.Essence.ToString(GlobalOptions.CultureInfo)}] / 3");
 
                 foreach (Improvement objLoopImprovement in _objCharacter.Improvements.Where(
                     objLoopImprovment => (objLoopImprovment.ImproveType == Improvement.ImprovementType.PhysicalLimit
@@ -294,20 +210,20 @@ namespace Chummer
                     switch (objLoopImprovement.ImproveType)
                     {
                         case Improvement.ImprovementType.PhysicalLimit:
-                            strPhysical += $" + {_objCharacter.GetObjectName(objLoopImprovement)} ({objLoopImprovement.Value})";
+                            objPhysical.Append($" + {_objCharacter.GetObjectName(objLoopImprovement)} ({objLoopImprovement.Value})");
                             break;
                         case Improvement.ImprovementType.MentalLimit:
-                            strMental += $" + {_objCharacter.GetObjectName(objLoopImprovement)} ({objLoopImprovement.Value})";
+                            objMental.Append($" + {_objCharacter.GetObjectName(objLoopImprovement)} ({objLoopImprovement.Value})");
                             break;
                         case Improvement.ImprovementType.SocialLimit:
-                            strSocial += $" + {_objCharacter.GetObjectName(objLoopImprovement)} ({objLoopImprovement.Value})";
+                            objSocial.Append($" + {_objCharacter.GetObjectName(objLoopImprovement)} ({objLoopImprovement.Value})");
                             break;
                     }
                 }
 
-                tipTooltip.SetToolTip(lblPhysical, strPhysical);
-                tipTooltip.SetToolTip(lblMental, strMental);
-                tipTooltip.SetToolTip(lblSocial, strSocial);
+                tipTooltip.SetToolTip(lblPhysical, objPhysical.ToString());
+                tipTooltip.SetToolTip(lblMental, objMental.ToString());
+                tipTooltip.SetToolTip(lblSocial, objSocial.ToString());
             }
 
             lblAstral.Text = _objCharacter.LimitAstral.ToString();
@@ -329,9 +245,7 @@ namespace Chummer
         {
             int pilotRating = vehicle.Pilot;
 
-            Gear maybeAutoSoft =
-                vehicle.Gear.SelectMany(x => x.ThisAndAllChildren())
-                    .FirstOrDefault(x => x.Name == "[Weapon] Targeting Autosoft" && (x.Extra == weapon.Name || x.Extra == weapon.DisplayName));
+            Gear maybeAutoSoft = vehicle.Gear.DeepFirstOrDefault(x => x.Children, x => x.Name == "[Weapon] Targeting Autosoft" && (x.Extra == weapon.Name || x.Extra == weapon.DisplayName));
 
             if (maybeAutoSoft != null)
             {
@@ -470,17 +384,12 @@ namespace Chummer
                 }
                 foreach (Quality objQuality in _objCharacter.Qualities)
                 {
-                    if (!strQualitiesToPrint.Contains(objQuality.QualityId + " " + objQuality.SourceName + " " + objQuality.Extra))
-                    {
-                        strQualitiesToPrint.Add(objQuality.QualityId + " " + objQuality.SourceName + " " + objQuality.Extra);
-                    }
+                    strQualitiesToPrint.Add(objQuality.QualityId + " " + objQuality.SourceName + " " + objQuality.Extra);
                 }
                 // Populate the Qualities list.
                 foreach (Quality objQuality in _objCharacter.Qualities)
                 {
-                    if (strQualitiesToPrint.Contains(objQuality.QualityId + " " + objQuality.SourceName + " " + objQuality.Extra))
-                        strQualitiesToPrint.Remove(objQuality.QualityId + " " + objQuality.SourceName + " " + objQuality.Extra);
-                    else
+                    if (!strQualitiesToPrint.Remove(objQuality.QualityId + " " + objQuality.SourceName + " " + objQuality.Extra))
                         continue;
                     TreeNode objNode = new TreeNode();
                     objNode.Text = objQuality.DisplayName;
@@ -534,9 +443,11 @@ namespace Chummer
                         if (objTreeNode.Tag.ToString() == objQuality.InternalId)
                         {
                             objTreeNode.Text = objQuality.DisplayName;
+                            goto NextQuality;
                         }
                     }
                 }
+                NextQuality:;
             }
             if (objSelectedNode != null)
                 treQualities.SelectedNode = objSelectedNode;
@@ -674,30 +585,55 @@ namespace Chummer
         /// <param name="attributeText"></param>
         /// <param name="valueText"></param>
         /// <param name="tooltip"></param>
-        public void CalculateTraditionDrain(string strDrain, Improvement.ImprovementType drain, Label attributeText, Label valueText, ToolTip tooltip)
+        public void CalculateTraditionDrain(string strDrain, Improvement.ImprovementType drain, Label attributeText = null, Label valueText = null, ToolTip tooltip = null)
         {
-            if (string.IsNullOrWhiteSpace(strDrain))
+            if (string.IsNullOrWhiteSpace(strDrain) || (attributeText == null && valueText == null && tooltip == null))
                 return;
-            string strDisplayDrain = strDrain;
-            string strTip = strDrain;
-            var intDrain = 0;
+            StringBuilder objDrain = valueText != null ? new StringBuilder(strDrain) : null;
+            StringBuilder objDisplayDrain = attributeText != null ? new StringBuilder(strDrain) : null;
+            StringBuilder objTip = tooltip != null ? new StringBuilder(strDrain) : null;
+            int intDrain = 0;
             // Update the Fading CharacterAttribute Value.
-            var objXmlDocument = new XmlDocument();
-            XPathNavigator nav = objXmlDocument.CreateNavigator();
             foreach (string strAttribute in AttributeSection.AttributeStrings)
             {
                 CharacterAttrib objAttrib = _objCharacter.GetAttribute(strAttribute);
-                strDrain = strDrain.Replace(objAttrib.Abbrev, objAttrib.TotalValue.ToString());
-                strDisplayDrain = strDisplayDrain.Replace(objAttrib.Abbrev, objAttrib.DisplayAbbrev);
+                if (strDrain.Contains(objAttrib.Abbrev))
+                {
+                    string strAttribTotalValue = objAttrib.TotalValue.ToString();
+                    objDrain?.Replace(objAttrib.Abbrev, strAttribTotalValue);
+                    objDisplayDrain?.Replace(objAttrib.Abbrev, objAttrib.DisplayAbbrev);
+                    objTip?.Replace(objAttrib.Abbrev, objAttrib.DisplayAbbrev + " (" + strAttribTotalValue + ")");
+                }
             }
-            XPathExpression xprFading = nav.Compile(strDrain);
-            object o = nav.Evaluate(xprFading);
-            if (o != null) intDrain = Convert.ToInt32(o.ToString());
-            intDrain += ImprovementManager.ValueOf(_objCharacter, drain);
-            attributeText.Text = strDisplayDrain;
-            valueText.Text = intDrain.ToString();
-            strTip = AttributeSection.AttributeStrings.Select(strAttribute => _objCharacter.GetAttribute(strAttribute)).Aggregate(strTip, (current, objAttrib) => current.Replace(objAttrib.Abbrev, objAttrib.DisplayAbbrev + " (" + objAttrib.TotalValue.ToString() + ")"));
-            tooltip.SetToolTip(valueText, strTip);
+            if (objDrain != null)
+            {
+                XmlDocument objXmlDocument = new XmlDocument();
+                XPathNavigator nav = objXmlDocument.CreateNavigator();
+                try
+                {
+                    intDrain = Convert.ToInt32(nav.Evaluate(objDrain.ToString()));
+                }
+                catch (XPathException)
+                {
+                }
+            }
+
+            if (valueText != null || tooltip != null)
+            {
+                int intBonusDrain = ImprovementManager.ValueOf(_objCharacter, drain);
+                if (intBonusDrain != 0)
+                {
+                    intDrain += intBonusDrain;
+                    objTip?.Append(" + " + LanguageManager.GetString("Tip_Modifiers") + " (" + intBonusDrain.ToString() + ")");
+                }
+            }
+
+            if (attributeText != null)
+                attributeText.Text = objDisplayDrain.ToString();
+            if (valueText != null)
+                valueText.Text = intDrain.ToString();
+            if (tooltip != null)
+                tooltip.SetToolTip(valueText, objTip.ToString());
         }
     }
 }

@@ -24,7 +24,6 @@ using System.Diagnostics;
  using System.Drawing;
  using System.Linq;
  using Chummer.Backend.Equipment;
-using Chummer.Backend.Extensions;
 using System.Xml;
 
 namespace Chummer
@@ -407,7 +406,8 @@ namespace Chummer
         public static Gear FindArmorGear(string strGuid, IEnumerable<Armor> lstArmors)
         {
             Armor objFoundArmor = null;
-            return FindArmorGear(strGuid, lstArmors, out objFoundArmor);
+            ArmorMod objFoundArmorMod = null;
+            return FindArmorGear(strGuid, lstArmors, out objFoundArmor, out objFoundArmorMod);
         }
 
         /// <summary>
@@ -417,6 +417,31 @@ namespace Chummer
         /// <param name="lstArmors">List of Armors to search.</param>
         /// <param name="objFoundArmor">Armor that the Gear was found in.</param>
         public static Gear FindArmorGear(string strGuid, IEnumerable<Armor> lstArmors, out Armor objFoundArmor)
+        {
+            ArmorMod objFoundArmorMod = null;
+            return FindArmorGear(strGuid, lstArmors, out objFoundArmor, out objFoundArmorMod);
+        }
+
+        /// <summary>
+        /// Locate a piece of Gear within the character's Armors.
+        /// </summary>
+        /// <param name="strGuid">InternalId of the Gear to find.</param>
+        /// <param name="lstArmors">List of Armors to search.</param>
+        /// <param name="objFoundArmorMod">Armor mod that the Gear was found in.</param>
+        public static Gear FindArmorGear(string strGuid, IEnumerable<Armor> lstArmors, out ArmorMod objFoundArmorMod)
+        {
+            Armor objFoundArmor = null;
+            return FindArmorGear(strGuid, lstArmors, out objFoundArmor, out objFoundArmorMod);
+        }
+
+        /// <summary>
+        /// Locate a piece of Gear within the character's Armors.
+        /// </summary>
+        /// <param name="strGuid">InternalId of the Gear to find.</param>
+        /// <param name="lstArmors">List of Armors to search.</param>
+        /// <param name="objFoundArmor">Armor that the Gear was found in.</param>
+        /// <param name="objFoundArmorMod">Armor mod that the Gear was found in.</param>
+        public static Gear FindArmorGear(string strGuid, IEnumerable<Armor> lstArmors, out Armor objFoundArmor, out ArmorMod objFoundArmorMod)
         {
             if (strGuid != Guid.Empty.ToString())
             {
@@ -430,13 +455,26 @@ namespace Chummer
                         if (!string.IsNullOrEmpty(objReturn?.Name))
                         {
                             objFoundArmor = objArmor;
+                            objFoundArmorMod = null;
                             return objReturn;
+                        }
+                        foreach (ArmorMod objMod in objArmor.ArmorMods)
+                        {
+                            objReturn = DeepFindById(strGuid, objMod.Gear);
+
+                            if (!string.IsNullOrEmpty(objReturn?.Name))
+                            {
+                                objFoundArmor = objArmor;
+                                objFoundArmorMod = objMod;
+                                return objReturn;
+                            }
                         }
                     }
                 }
             }
 
             objFoundArmor = null;
+            objFoundArmorMod = null;
             return null;
         }
 
@@ -649,7 +687,7 @@ namespace Chummer
         /// <param name="treTree">TreeView to search.</param>
         public static TreeNode FindNode(string strGuid, TreeView treTree)
         {
-            if (strGuid != Guid.Empty.ToString())
+            if (strGuid != Guid.Empty.ToString() && treTree != null)
             {
                 TreeNode objFound;
                 foreach (TreeNode objNode in treTree.Nodes)
@@ -686,111 +724,6 @@ namespace Chummer
                 }
             }
             return null;
-        }
-
-        /// <summary>
-        /// Find all of the Commlinks carried by the character.
-        /// </summary>
-        /// <param name="lstGear">List of Gear to search within for Commlinks.</param>
-        public static HashSet<Commlink> FindCharacterCommlinks(IEnumerable<Gear> lstGear)
-        {
-            HashSet<Commlink> lstReturn = new HashSet<Commlink>();
-            foreach (Gear objGear in lstGear.DeepWhere(x => x.Children, x => x.GetType() == typeof(Commlink)))
-            {
-                lstReturn.Add(objGear as Commlink);
-            }
-
-            return lstReturn;
-        }
-
-        /// <summary>
-        /// Change the active Commlink for the Character.
-        /// </summary>
-        /// <param name="objCommlink">Current commlink to process.</param>
-        /// <param name="blnActivateCommlink">Mark current commlink as active.</param>
-        public static void ChangeActiveCommlink(Character objCharacter, Commlink objCommlink, bool blnActivateCommlink = true)
-        {
-            List<Gear> lstGearToSearch = new List<Gear>(objCharacter.Gear);
-            foreach (Cyberware objCyberware in objCharacter.Cyberware.DeepWhere(x => x.Children, x => x.Gear.Count > 0))
-            {
-                lstGearToSearch.AddRange(objCyberware.Gear);
-            }
-            foreach (Weapon objWeapon in objCharacter.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
-            {
-                foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
-                {
-                    lstGearToSearch.AddRange(objAccessory.Gear);
-                }
-            }
-            foreach (Armor objArmor in objCharacter.Armor)
-            {
-                lstGearToSearch.AddRange(objArmor.Gear);
-            }
-            foreach (Vehicle objVehicle in objCharacter.Vehicles)
-            {
-                lstGearToSearch.AddRange(objVehicle.Gear);
-                foreach (Weapon objWeapon in objVehicle.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
-                {
-                    foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
-                    {
-                        lstGearToSearch.AddRange(objAccessory.Gear);
-                    }
-                }
-                foreach (VehicleMod objVehicleMod in objVehicle.Mods.Where(x => x.Cyberware.Count > 0 || x.Weapons.Count > 0))
-                {
-                    foreach (Cyberware objCyberware in objVehicleMod.Cyberware.DeepWhere(x => x.Children, x => x.Gear.Count > 0))
-                    {
-                        lstGearToSearch.AddRange(objCyberware.Gear);
-                    }
-                    foreach (Weapon objWeapon in objVehicleMod.Weapons.DeepWhere(x => x.Children, x => x.WeaponAccessories.Any(y => y.Gear.Count > 0)))
-                    {
-                        foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
-                        {
-                            lstGearToSearch.AddRange(objAccessory.Gear);
-                        }
-                    }
-                }
-            }
-            HashSet<Commlink> lstCommlinks = FindCharacterCommlinks(lstGearToSearch);
-
-            bool blnHasNoActive = true;
-            foreach (Commlink objLoopCommlink in lstCommlinks)
-            {
-                objLoopCommlink.IsActive = (blnActivateCommlink && objLoopCommlink.InternalId == objCommlink.InternalId) ||
-                        (!blnActivateCommlink && objLoopCommlink.InternalId != objCommlink.InternalId && blnHasNoActive);
-                if (blnHasNoActive && objLoopCommlink.IsActive)
-                    blnHasNoActive = false;
-            }
-        }
-
-        /// <summary>
-        /// Replace a character's active home node.
-        /// </summary>
-        /// <param name="objCharacter">Character whose home node needs replacing.</param>
-        /// <param name="objNewCommlinkHomeNode">New commlink home node. Null if new home node is not a commlink.</param>
-        /// <param name="objNewVehicleHomeNode">New vehicle home node. Null if new home node is not a vehicle.</param>
-        public static void ReplaceHomeNode(Character objCharacter, Commlink objNewCommlinkHomeNode, Vehicle objNewVehicleHomeNode)
-        {
-            if (objCharacter.HomeNodeVehicle != null)
-            {
-                objCharacter.HomeNodeVehicle.HomeNode = false;
-                objCharacter.HomeNodeVehicle = null;
-            }
-            if (objCharacter.HomeNodeCommlink != null)
-            {
-                objCharacter.HomeNodeCommlink.HomeNode = false;
-                objCharacter.HomeNodeCommlink = null;
-            }
-            if (objNewVehicleHomeNode != null)
-            {
-                objCharacter.HomeNodeVehicle = objNewVehicleHomeNode;
-                objNewVehicleHomeNode.HomeNode = true;
-            }
-            else if (objNewCommlinkHomeNode != null)
-            {
-                objCharacter.HomeNodeCommlink = objNewCommlinkHomeNode;
-                objNewCommlinkHomeNode.HomeNode = true;
-            }
         }
         #endregion
 
@@ -882,10 +815,8 @@ namespace Chummer
             }
 
             Commlink objCommlink = (objGear as Commlink);
-            if (objCommlink?.IsActive == true)
-            {
-                ChangeActiveCommlink(objCharacter, objCommlink, false);
-            }
+            if (objCommlink != null)
+                objCommlink.IsActive = false;
             return decReturn;
         }
 
@@ -1076,6 +1007,9 @@ namespace Chummer
                     }
 
                     ImprovementManager.RemoveImprovements(objCharacter, Improvement.ImprovementSource.ArmorMod, objMod.InternalId);
+                    // Remove any Improvements created by the Armor's Gear.
+                    foreach (Gear objGear in objMod.Gear)
+                        decReturn += DeleteGear(objCharacter, objGear, treWeapons);
                 }
                 ImprovementManager.RemoveImprovements(objCharacter, Improvement.ImprovementSource.Armor, objArmor.InternalId);
 
@@ -1145,28 +1079,41 @@ namespace Chummer
                 else
                 {
                     Armor objSelectedArmor;
-                    Gear objGear = FindArmorGear(objSelectedNode.Tag.ToString(), objCharacter.Armor, out objSelectedArmor);
+                    ArmorMod objSelectedArmorMod;
+                    Gear objGear = FindArmorGear(objSelectedNode.Tag.ToString(), objCharacter.Armor, out objSelectedArmor, out objSelectedArmorMod);
                     if (objGear != null)
                     {
+                        Gear objGearParent = objGear.Parent;
+                        if (objGearParent != null)
+                            objGearParent.Children.Remove(objGear);
+                        else if (objSelectedArmorMod != null)
+                            objSelectedArmorMod.Gear.Remove(objGear);
+                        else
+                            objSelectedArmor.Gear.Remove(objGear);
                         decReturn += DeleteGear(objCharacter, objGear, treWeapons);
-                        objSelectedArmor.Gear.Remove(objGear);
                     }
                 }
             }
             else if (objSelectedNode.Level > 2)
             {
                 Armor objSelectedArmor;
-                Gear objGear = FindArmorGear(objSelectedNode.Tag.ToString(), objCharacter.Armor, out objSelectedArmor);
+                ArmorMod objSelectedArmorMod;
+                Gear objGear = FindArmorGear(objSelectedNode.Tag.ToString(), objCharacter.Armor, out objSelectedArmor, out objSelectedArmorMod);
                 if (objGear != null)
                 {
-                    objGear.Parent.Children.Remove(objGear);
-                    Commlink objCommlink = objGear.Parent as Commlink;
+                    Gear objGearParent = objGear.Parent;
+                    if (objGearParent != null)
+                        objGearParent.Children.Remove(objGear);
+                    else if (objSelectedArmorMod != null)
+                        objSelectedArmorMod.Gear.Remove(objGear);
+                    else
+                        objSelectedArmor.Gear.Remove(objGear);
+                    Commlink objCommlink = objGearParent as Commlink;
                     if (objCommlink?.CanSwapAttributes == true)
                     {
                         objCommlink.RefreshCyberdeckArray();
                     }
                     decReturn += DeleteGear(objCharacter, objGear, treWeapons);
-                    objSelectedArmor.Gear.Remove(objGear);
                 }
             }
             objSelectedNode.Remove();
@@ -1223,6 +1170,7 @@ namespace Chummer
         /// <param name="objMenu">ContextMenuStrip that the new TreeNodes should use.</param>
         public static void BuildGearTree(Gear objGear, TreeNode objNode, ContextMenuStrip objMenu)
         {
+            bool blnExpandNode = false;
             foreach (Gear objChild in objGear.Children)
             {
                 TreeNode objChildNode = new TreeNode();
@@ -1236,13 +1184,13 @@ namespace Chummer
                 objChildNode.ToolTipText = objChild.Notes;
 
                 objNode.Nodes.Add(objChildNode);
-                objNode.Expand();
-
-                // Set the Gear's Parent.
-                objChild.Parent = objGear;
+                if (objChild.ParentID != objGear.InternalId || (objGear.MyXmlNode?["gears"]?.Attributes?["startcollapsed"]?.InnerText != "yes"))
+                    blnExpandNode = true;
 
                 BuildGearTree(objChild, objChildNode, objMenu);
             }
+            if (blnExpandNode)
+                objNode.Expand();
         }
 
         /// <summary>
@@ -1315,12 +1263,29 @@ namespace Chummer
                 TreeNode objChild = new TreeNode();
                 objChild.Text = objMod.DisplayName;
                 objChild.Tag = objMod.InternalId;
-                objChild.ContextMenuStrip = cmsArmorMod;
+                objChild.ContextMenuStrip = string.IsNullOrEmpty(objMod.GearCapacity) ? cmsArmorMod : cmsArmorGear;
                 if (!string.IsNullOrEmpty(objMod.Notes))
                     objChild.ForeColor = Color.SaddleBrown;
                 else if (objMod.IncludedInArmor)
                     objChild.ForeColor = SystemColors.GrayText;
                 objChild.ToolTipText = objMod.Notes;
+                foreach (Gear objGear in objMod.Gear)
+                {
+                    TreeNode objChildGear = new TreeNode();
+                    objChildGear.Text = objGear.DisplayName;
+                    objChildGear.Tag = objGear.InternalId;
+                    if (!string.IsNullOrEmpty(objGear.Notes))
+                        objChildGear.ForeColor = Color.SaddleBrown;
+                    else if (objGear.IncludedInParent)
+                        objChildGear.ForeColor = SystemColors.GrayText;
+                    objChildGear.ToolTipText = objGear.Notes;
+
+                    BuildGearTree(objGear, objChildGear, cmsArmorGear);
+
+                    objChildGear.ContextMenuStrip = cmsArmorGear;
+                    objChild.Nodes.Add(objChildGear);
+                    objChild.Expand();
+                }
                 objNode.Nodes.Add(objChild);
                 objNode.Expand();
             }
@@ -1579,7 +1544,7 @@ namespace Chummer
             }
 
             // Locate the currently selected piece of Gear.
-            Gear objGear = CommonFunctions.DeepFindById(treGear.SelectedNode.Tag.ToString(), objCharacter.Gear);
+            Gear objGear = DeepFindById(treGear.SelectedNode.Tag.ToString(), objCharacter.Gear);
 
             // Gear cannot be moved to one if its children.
             bool blnAllowMove = true;
@@ -1606,9 +1571,10 @@ namespace Chummer
             else
             {
                 objGear.Parent.Children.Remove(objGear);
-                if ((objGear.Parent as Commlink)?.CanSwapAttributes == true)
+                Commlink objCommlink = objGear.Parent as Commlink;
+                if (objCommlink?.CanSwapAttributes == true)
                 {
-                    (objGear.Parent as Commlink).RefreshCyberdeckArray();
+                    objCommlink.RefreshCyberdeckArray();
                 }
             }
 
@@ -1622,7 +1588,7 @@ namespace Chummer
             else
             {
                 // Locate the Gear that the item was dropped on.
-                Gear objParent = CommonFunctions.DeepFindById(objDestination.Tag.ToString(), objCharacter.Gear);
+                Gear objParent = DeepFindById(objDestination.Tag.ToString(), objCharacter.Gear);
 
                 // Add the Gear as a child of the destination Node and clear its location.
                 objParent.Children.Add(objGear);
@@ -1758,7 +1724,7 @@ namespace Chummer
         public static void MoveArmorNode(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeView treArmor)
         {
             // Locate the currently selected Armor.
-            Armor objArmor = CommonFunctions.FindByIdWithNameCheck(treArmor.SelectedNode.Tag.ToString(), objCharacter.Armor);
+            Armor objArmor = FindByIdWithNameCheck(treArmor.SelectedNode.Tag.ToString(), objCharacter.Armor);
 
             objCharacter.Armor.Remove(objArmor);
             if (intNewIndex > objCharacter.Armor.Count)
@@ -1909,14 +1875,14 @@ namespace Chummer
         /// <param name="lstNewList">New list to which the Cyberware is being moved.</param>
         /// <param name="objDestination">New parent node.</param>
         /// <param name="treOldTreeView">Old tree view from which we are moving the Cyberware.</param>
-        public static void MoveCyberwareNode(Character objCharacter, int intNewIndex, List<Cyberware> lstNewList, TreeNode objDestination, TreeView treOldTreeView)
+        public static void MoveCyberwareNode(Character objCharacter, int intNewIndex, IList<Cyberware> lstNewList, TreeNode objDestination, TreeView treOldTreeView)
         {
             TreeNode objCyberwareNode = treOldTreeView.SelectedNode;
-            Cyberware objCyberware = CommonFunctions.DeepFindById(objCyberwareNode.Tag.ToString(), objCharacter.Cyberware);
+            Cyberware objCyberware = DeepFindById(objCyberwareNode.Tag.ToString(), objCharacter.Cyberware);
             VehicleMod objOldParentVehicleMod = null;
             if (objCyberware == null)
             {
-                objCyberware = CommonFunctions.FindVehicleCyberware(objCyberwareNode.Tag.ToString(), objCharacter.Vehicles, out objOldParentVehicleMod);
+                objCyberware = FindVehicleCyberware(objCyberwareNode.Tag.ToString(), objCharacter.Vehicles, out objOldParentVehicleMod);
             }
             Cyberware objOldParentCyberware = objCyberware.Parent;
             if (objOldParentCyberware != null)
@@ -2268,20 +2234,27 @@ namespace Chummer
         }
 
         /// <summary>
-        /// Clera all Initiation tab elements from the character.
+        /// Clear all Initiation tab elements from the character that were not added by improvements.
         /// </summary>
-        public static void ClearInitiationTab(Character objCharacter, TreeView treMetamagic)
+        public static void ClearInitiations(Character objCharacter)
         {
-            // Remove any Metamagic/Echo Improvements.
-            ImprovementManager.RemoveImprovements(objCharacter, Improvement.ImprovementSource.Echo);
-            ImprovementManager.RemoveImprovements(objCharacter, Improvement.ImprovementSource.Metamagic);
-
             objCharacter.InitiateGrade = 0;
             objCharacter.SubmersionGrade = 0;
-            objCharacter.Metamagics.Clear();
             objCharacter.InitiationGrades.Clear();
-
-            treMetamagic.Nodes.Clear();
+            // Metamagics/Echoes can add addition bonus metamagics/echoes, so we cannot use foreach or RemoveAll()
+            for (int j = objCharacter.Metamagics.Count - 1; j >= 0; j--)
+            {
+                if (j < objCharacter.Metamagics.Count)
+                {
+                    Metamagic objToRemove = objCharacter.Metamagics[j];
+                    if (objToRemove.Grade >= 0)
+                    {
+                        // Remove the Improvements created by the Metamagic.
+                        ImprovementManager.RemoveImprovements(objCharacter, objToRemove.SourceType, objToRemove.InternalId);
+                        objCharacter.Metamagics.Remove(objToRemove);
+                    }
+                }
+            }
         }
         #endregion
 
@@ -2582,7 +2555,7 @@ namespace Chummer
         /// </summary>
         /// <param name="lstGear">List of child Gear to change.</param>
         /// <param name="blnEquipped">Whether or not the children should be marked as Equipped.</param>
-        public static void ChangeGearEquippedStatus(Character objCharacter, List<Gear> lstGear, bool blnEquipped)
+        public static void ChangeGearEquippedStatus(Character objCharacter, IEnumerable<Gear> lstGear, bool blnEquipped)
         {
             foreach (Gear objGear in lstGear)
             {
