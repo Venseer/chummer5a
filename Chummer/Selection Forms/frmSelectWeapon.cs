@@ -62,9 +62,16 @@ namespace Chummer
             {
                 objLabel.Text = string.Empty;
             }
-            chkHideOverAvailLimit.Text = chkHideOverAvailLimit.Text.Replace("{0}",
-                    _objCharacter.MaximumAvailability.ToString());
-            chkHideOverAvailLimit.Checked = _objCharacter.Options.HideItemsOverAvailLimit;
+            if (_objCharacter.Created)
+            {
+                chkHideOverAvailLimit.Visible = false;
+                chkHideOverAvailLimit.Checked = false;
+            }
+            else
+            {
+                chkHideOverAvailLimit.Text = chkHideOverAvailLimit.Text.Replace("{0}", _objCharacter.MaximumAvailability.ToString());
+                chkHideOverAvailLimit.Checked = _objCharacter.Options.HideItemsOverAvailLimit;
+            }
 
             // Populate the Weapon Category list.
             if (_strLimitToCategories.Length > 0)
@@ -171,7 +178,7 @@ namespace Chummer
 
             Weapon objWeapon = new Weapon(_objCharacter);
             TreeNode objNode = new TreeNode();
-            objWeapon.Create(objXmlWeapon, objNode, null, null);
+            objWeapon.Create(objXmlWeapon, objNode, null, null, null, true, false);
 
             lblWeaponReach.Text = objWeapon.TotalReach.ToString();
             lblWeaponDamage.Text = objWeapon.CalculatedDamage();
@@ -294,7 +301,7 @@ namespace Chummer
 
                     TreeNode objNode = new TreeNode();
                     Weapon objWeapon = new Weapon(_objCharacter);
-                    objWeapon.Create(objXmlWeapon, objNode, null, null);
+                    objWeapon.Create(objXmlWeapon, objNode, null, null, null, true, false);
 
                     string strID = objWeapon.SourceID.ToString();
                     string strWeaponName = objWeapon.DisplayName;
@@ -368,15 +375,10 @@ namespace Chummer
                     {
                         blnHide = !Mounts.Contains(objXmlWeapon["extramount"].InnerText);
                     }
-                    if (!blnHide && !Backend.Shared_Methods.SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter, chkHideOverAvailLimit.Checked))
+                    if (blnHide || !Backend.Shared_Methods.SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter, chkHideOverAvailLimit.Checked))
                     {
                         continue;
                     }
-                    if (!Backend.Shared_Methods.SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter,chkHideOverAvailLimit.Checked))
-                    {
-                        continue;
-                    }
-                    if (blnHide) continue;
                     ListItem objItem = new ListItem
                     {
                         Value = objXmlWeapon["id"]?.InnerText,

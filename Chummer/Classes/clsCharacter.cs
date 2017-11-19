@@ -50,7 +50,7 @@ namespace Chummer
     /// <summary>
     /// Class that holds all of the information that makes up a complete Character.
     /// </summary>
-    public class Character : INotifyPropertyChanged
+    public class Character : INotifyPropertyChanged, IDisposable
     {
         private XmlNode oldSkillsBackup;
         private XmlNode oldSKillGroupBackup;
@@ -207,6 +207,7 @@ namespace Chummer
         private List<string> _lstSources = new List<string>();
         private List<string> _lstCustomDataDirectoryNames = new List<string>();
         private List<Improvement> _lstImprovements = new List<Improvement>();
+        private List<MentorSpirit> _lstMentorSpirits = new List<MentorSpirit>();
         private List<Contact> _lstContacts = new List<Contact>();
         private List<Spirit> _lstSpirits = new List<Spirit>();
         private List<Spell> _lstSpells = new List<Spell>();
@@ -289,9 +290,9 @@ namespace Chummer
 	    public AttributeSection AttributeSection { get; set; }
 
 	    /// <summary>
-        /// Save the Character to an XML file.
+        /// Save the Character to an XML file. Returns true if successful.
         /// </summary>
-        public void Save(string strFileName = "")
+        public bool Save(string strFileName = "")
         {
             if (string.IsNullOrWhiteSpace(strFileName))
             {
@@ -822,7 +823,14 @@ namespace Chummer
             // </improvements>
             objWriter.WriteEndElement();
 
-
+            // <improvements>
+            objWriter.WriteStartElement("mentorspirits");
+            foreach (MentorSpirit objMentor in _lstMentorSpirits)
+            {
+                objMentor.Save(objWriter);
+            }
+            // </improvements>
+            objWriter.WriteEndElement();
 
             // <expenses>
             objWriter.WriteStartElement("expenses");
@@ -901,9 +909,9 @@ namespace Chummer
 
             objWriter.WriteEndDocument();
             objWriter.Flush();
-            objStream.Flush();
             objStream.Position = 0;
 
+            bool blnErrorFree = true;
             // Validate that the character can save properly. If there's no error, save the file to the listed file location.
             try
             {
@@ -914,13 +922,16 @@ namespace Chummer
             catch (XmlException)
             {
                 MessageBox.Show(LanguageManager.GetString("Message_Save_Error_Warning"));
+                blnErrorFree = false;
             }
             catch (System.UnauthorizedAccessException)
             {
                 MessageBox.Show(LanguageManager.GetString("Message_Save_Error_Warning"));
+                blnErrorFree = false;
             }
             objWriter.Close();
-            objStream.Close();
+
+            return blnErrorFree;
         }
 
         /// <summary>
@@ -1084,9 +1095,10 @@ namespace Chummer
                 List<string> lstMugshotsBase64 = new List<string>(objXmlMugshotsList.Count);
                 foreach (XmlNode objXmlMugshot in objXmlMugshotsList)
                 {
-                    if (!string.IsNullOrWhiteSpace(objXmlMugshot.InnerText))
+                    string strMugshot = objXmlMugshot.InnerText;
+                    if (!string.IsNullOrWhiteSpace(strMugshot))
                     {
-                        lstMugshotsBase64.Add(objXmlMugshot.InnerText);
+                        lstMugshotsBase64.Add(strMugshot);
                     }
                 }
                 if (lstMugshotsBase64.Count > 1)
@@ -1110,10 +1122,13 @@ namespace Chummer
             {
                 XmlNode objOldMugshotNode = objXmlDocument.SelectSingleNode("/character/mugshot");
                 if (objOldMugshotNode != null)
-                    if (!string.IsNullOrWhiteSpace(objOldMugshotNode.InnerText))
+                {
+                    string strMugshot = objOldMugshotNode.InnerText;
+                    if (!string.IsNullOrWhiteSpace(strMugshot))
                     {
-                        Mugshots.Add(objOldMugshotNode.InnerText.ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb));
+                        Mugshots.Add(strMugshot.ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb));
                     }
+                }
             }
             objXmlCharacter.TryGetStringFieldQuickly("sex", ref _strSex);
             objXmlCharacter.TryGetStringFieldQuickly("age", ref _strAge);
@@ -1238,15 +1253,28 @@ namespace Chummer
             objXmlCharacter.TryGetStringFieldQuickly("groupname", ref _strGroupName);
             objXmlCharacter.TryGetStringFieldQuickly("groupnotes", ref _strGroupNotes);
             Timekeeper.Finish("load_char_misc");
+            Timekeeper.Start("load_char_mentorspirit");
+            // Improvements.
+            XmlNodeList objXmlNodeList = objXmlDocument.SelectNodes("/character/mentorspirits/mentorspirit");
+            foreach (XmlNode objXmlMentor in objXmlNodeList)
+            {
+                MentorSpirit objMentor = new MentorSpirit(this);
+                objMentor.Load(objXmlMentor);
+                _lstMentorSpirits.Add(objMentor);
+            }
+            Timekeeper.Finish("load_char_mentorspirit");
             bool blnImprovementError = false;
             Timekeeper.Start("load_char_imp");
             // Improvements.
-            XmlNodeList objXmlNodeList = objXmlDocument.SelectNodes("/character/improvements/improvement");
+            objXmlNodeList = objXmlDocument.SelectNodes("/character/improvements/improvement");
+            string strCharacterInnerXml = objXmlCharacter.InnerXml;
             foreach (XmlNode objXmlImprovement in objXmlNodeList)
             {
                 string strLoopSourceName = objXmlImprovement["sourcename"]?.InnerText;
-                // Hacky way to make sure we aren't loading in any orphaned improvements: SourceName ID will pop up minimum twice in the save if the improvement's source is actually present.
-                if ((objXmlCharacter.InnerXml.IndexOf(strLoopSourceName) != objXmlCharacter.InnerXml.LastIndexOf(strLoopSourceName)) || Convert.ToBoolean(objXmlImprovement["custom"].InnerText))
+                
+                if ((objXmlImprovement["custom"]?.InnerText == System.Boolean.TrueString) ||
+                    // Hacky way to make sure we aren't loading in any orphaned improvements: SourceName ID will pop up minimum twice in the save if the improvement's source is actually present: once in the improvement and once in the parent that added it.
+                    (!string.IsNullOrEmpty(strLoopSourceName) && strCharacterInnerXml.IndexOf(strLoopSourceName) != strCharacterInnerXml.LastIndexOf(strLoopSourceName)))
                 {
                     Improvement objImprovement = new Improvement();
                     try
@@ -1433,8 +1461,8 @@ namespace Chummer
             foreach (XmlNode objXmlPower in objXmlNodeList)
             {
                 ListItem objGroup = new ListItem();
-                objGroup.Value = objXmlPower["extra"]?.InnerText;
-                objGroup.Name = objXmlPower["name"]?.InnerText;
+                objGroup.Value = objXmlPower["extra"]?.InnerText ?? string.Empty;
+                objGroup.Name = objXmlPower["name"]?.InnerText ?? string.Empty;
 
                 lstPowerOrder.Add(objGroup);
             }
@@ -1543,8 +1571,9 @@ namespace Chummer
             objXmlNodeList = objXmlDocument.SelectNodes("/character/gears/gear");
             foreach (XmlNode objXmlGear in objXmlNodeList)
             {
-                if (objXmlGear["iscommlink"]?.InnerText == System.Boolean.TrueString || (objXmlGear["category"].InnerText == "Commlinks" ||
-                    objXmlGear["category"].InnerText == "Commlink Accessories" || objXmlGear["category"].InnerText == "Cyberdecks" || objXmlGear["category"].InnerText == "Rigger Command Consoles"))
+                string strCategory = objXmlGear["category"]?.InnerText;
+                if (objXmlGear["iscommlink"]?.InnerText == System.Boolean.TrueString ||
+                    (strCategory == "Commlinks" || strCategory == "Commlink Accessories" || strCategory == "Cyberdecks" || strCategory == "Rigger Command Consoles"))
                 {
                     Commlink objCommlink = new Commlink(this);
                     objCommlink.Load(objXmlGear);
@@ -1559,9 +1588,32 @@ namespace Chummer
                     _lstGear.Add(objGear);
                 }
             }
-            // If we have a technomancer quality but no Living Persona commlink, we want the user to re-apply improvements
+            // If we have a technomancer quality but no Living Persona commlink, we re-apply its improvements immediately
             if (objLivingPersonaQuality != null)
-                blnImprovementError = true;
+            {
+                ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.Quality, objLivingPersonaQuality.InternalId);
+                string strSelected = objLivingPersonaQuality.Extra;
+
+                XmlNode objNode = objLivingPersonaQuality.MyXmlNode;
+                if (objNode != null)
+                {
+                    if (objNode["bonus"] != null)
+                    {
+                        objLivingPersonaQuality.Bonus = objNode["bonus"];
+                        ImprovementManager.ForcedValue = strSelected;
+                        ImprovementManager.CreateImprovements(this, Improvement.ImprovementSource.Quality, objLivingPersonaQuality.InternalId, objNode["bonus"], false, 1, objLivingPersonaQuality.DisplayNameShort);
+                        if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
+                        {
+                            objLivingPersonaQuality.Extra = ImprovementManager.SelectedValue;
+                        }
+                    }
+                }
+                else
+                {
+                    // Failed to re-apply the improvements, so let's show up the error
+                    blnImprovementError = true;
+                }
+            }
 
             Timekeeper.Finish("load_char_gear");
             Timekeeper.Start("load_char_car");
@@ -1775,16 +1827,16 @@ namespace Chummer
                 {
                     string strKarma = objXmlGameplayOption["karma"]?.InnerText;
                     string strNuyen = objXmlGameplayOption["maxnuyen"]?.InnerText;
-                    string strContactMultiplier = objXmlGameplayOption["contactmultiplier"]?.InnerText;
+                    string strContactMultiplier = string.Empty;
                     if (_objOptions.FreeContactsMultiplierEnabled)
-                {
-                    strContactMultiplier = _objOptions.FreeContactsMultiplier.ToString();
-                }
-                _intMaxKarma = Convert.ToInt32(strKarma);
+                        strContactMultiplier = _objOptions.FreeContactsMultiplier.ToString();
+                    else
+                        strContactMultiplier = objXmlGameplayOption["contactmultiplier"]?.InnerText;
+                    _intMaxKarma = Convert.ToInt32(strKarma);
                     _decMaxNuyen = Convert.ToDecimal(strNuyen);
-                _intContactMultiplier = Convert.ToInt32(strContactMultiplier);
-                _intContactPoints = (CHA.Base + CHA.Karma) * _intContactMultiplier;
-            }
+                    _intContactMultiplier = Convert.ToInt32(strContactMultiplier);
+                    _intContactPoints = (CHA.Base + CHA.Karma) * _intContactMultiplier;
+                }
             }
 
             Timekeeper.Finish("load_char_cfix");
@@ -1796,16 +1848,36 @@ namespace Chummer
             }
             Timekeeper.Finish("load_char_maxkarmafix");
             Timekeeper.Start("load_char_mentorspiritfix");
-            // If the character doesn't have an Improvement marker that uniquely identifies what the Mentor Spirit is, create it now.
-            if (Qualities.Any(q => q.Name == "Mentor Spirit") && Improvements.All(imp => imp.ImproveType != Improvement.ImprovementType.MentorSpirit))
+            Quality objMentorQuality = Qualities.FirstOrDefault(q => q.Name == "Mentor Spirit");
+            if (objMentorQuality != null)
             {
-                Quality mentorQuality = Qualities.First(q => q.Name == "Mentor Spirit");
-                if (!string.IsNullOrWhiteSpace(mentorQuality.Extra))
+                // We don't have any improvements tied to a cached Mentor Spirit value, so re-apply the improvement that adds the Mentor spirit
+                if (!Improvements.Any(imp => imp.ImproveType == Improvement.ImprovementType.MentorSpirit && imp.ImprovedName != string.Empty))
                 {
-                    XmlDocument doc = XmlManager.Load("mentors.xml");
-                    XmlNode mentorDoc = doc.SelectSingleNode("/chummer/mentors/mentor[name = \"" + mentorQuality.Extra + "\"]");
-                    ImprovementManager.CreateImprovement(this, string.Empty, Improvement.ImprovementSource.Quality, mentorQuality.InternalId,
-                        Improvement.ImprovementType.MentorSpirit, mentorDoc["id"].InnerText);
+                    /* This gets confusing when selecting a mentor spirit mid-load, so just show the error and let the player manually re-apply
+                    ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.Quality, objMentorQuality.InternalId);
+                    string strSelected = objMentorQuality.Extra;
+
+                    XmlNode objNode = objMentorQuality.MyXmlNode;
+                    if (objNode != null)
+                    {
+                        if (objNode["bonus"] != null)
+                        {
+                            objMentorQuality.Bonus = objNode["bonus"];
+                            ImprovementManager.ForcedValue = strSelected;
+                            ImprovementManager.CreateImprovements(this, Improvement.ImprovementSource.Quality, objMentorQuality.InternalId, objNode["bonus"], false, 1, objMentorQuality.DisplayNameShort);
+                            if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
+                            {
+                                objMentorQuality.Extra = ImprovementManager.SelectedValue;
+                            }
+                        }
+                    }
+                    else
+                    */
+                    {
+                        // Failed to re-apply the improvements, so let's show up the error
+                        blnImprovementError = true;
+                    }
                 }
             }
             Timekeeper.Finish("load_char_mentorspiritfix");
@@ -2695,7 +2767,6 @@ namespace Chummer
             // Finish the document and flush the Writer and Stream.
             objWriter.WriteEndDocument();
             objWriter.Flush();
-            objStream.Flush();
 
             // Read the stream.
             StreamReader objReader = new StreamReader(objStream);
@@ -2707,7 +2778,6 @@ namespace Chummer
             objCharacterXML.LoadXml(strXML);
 
             objWriter.Close();
-            objStream.Close();
 
             // If a reference to the Viewer window does not yet exist for this character, open a new Viewer window and set the reference to it.
             // If a Viewer window already exists for this character, use it instead.
@@ -5293,6 +5363,17 @@ namespace Chummer
         }
 
         /// <summary>
+        /// Gear.
+        /// </summary>
+        public List<MentorSpirit> MentorSpirits
+        {
+            get
+            {
+                return _lstMentorSpirits;
+            }
+        }
+
+        /// <summary>
         /// Contacts and Enemies.
         /// </summary>
         public List<Contact> Contacts
@@ -6247,15 +6328,21 @@ namespace Chummer
                     XmlDocument objXmlDocument = XmlManager.Load(_blnIsCritter ? "critters.xml" : "metatypes.xml");
                     XmlNode meta = objXmlDocument.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + _strMetatype + "\"]");
                     XmlNode variant = meta?.SelectSingleNode("metavariants/metavariant[name = \"" + _strMetavariant + "\"]");
+                    XmlNode objRunNode = variant?["run"] ?? meta?["run"];
+                    XmlNode objWalkNode = variant?["walk"] ?? meta?["walk"];
+                    XmlNode objSprintNode = variant?["sprint"] ?? meta?["sprint"];
 
                     _strMovement = variant?["movement"]?.InnerText ?? meta?["movement"]?.InnerText ?? string.Empty;
-                    _strRun = variant?["run"]?.InnerText ?? meta?["run"]?.InnerText ?? string.Empty;
-                    _strWalk = variant?["walk"]?.InnerText ?? meta?["walk"]?.InnerText ?? string.Empty;
-                    _strSprint = variant?["sprint"]?.InnerText ?? meta?["sprint"]?.InnerText ?? string.Empty;
+                    _strRun = objRunNode?.InnerText ?? string.Empty;
+                    _strWalk = objWalkNode?.InnerText ?? string.Empty;
+                    _strSprint = objSprintNode?.InnerText ?? string.Empty;
 
-                    _strRunAlt = variant?["run"]?.Attributes?["alt"]?.InnerText ?? meta?["run"]?.Attributes?["alt"]?.InnerText ?? string.Empty;
-                    _strWalkAlt = variant?["walk"]?.Attributes?["alt"]?.InnerText ?? meta?["walk"]?.Attributes?["alt"]?.InnerText ?? string.Empty;
-                    _strSprintAlt = variant?["sprint"]?.Attributes?["alt"]?.InnerText ?? meta?["sprint"]?.Attributes?["alt"]?.InnerText ?? string.Empty;
+                    objRunNode = objRunNode?.Attributes?["alt"];
+                    objWalkNode = objWalkNode?.Attributes?["alt"];
+                    objSprintNode = objSprintNode?.Attributes?["alt"];
+                    _strRunAlt = objRunNode?.InnerText ?? string.Empty;
+                    _strWalkAlt = objWalkNode?.InnerText ?? string.Empty;
+                    _strSprintAlt = objSprintNode?.InnerText ?? string.Empty;
                 }
                 // Don't attempt to do anything if the character's Movement is "Special" (typically for A.I.s).
                 if (_strMovement == "Special")
@@ -8102,5 +8189,28 @@ namespace Chummer
             }
         }
 
-	}
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    _frmPrintView?.Dispose();
+                    _objOptions?.Dispose();
+                }
+                disposedValue = true;
+            }
+        }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        #endregion
+
+    }
 }

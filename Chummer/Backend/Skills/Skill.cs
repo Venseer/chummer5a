@@ -393,7 +393,7 @@ namespace Chummer.Skills
                 }
             }
 
-            string strGroup = n?["skillgroup"]?.InnerText;
+            string strGroup = n["skillgroup"]?.InnerText;
 
             if (!string.IsNullOrEmpty(strGroup))
             {
@@ -528,7 +528,7 @@ namespace Chummer.Skills
             get { return false; }
         }
 
-        public virtual string Name
+        public string Name
         {
             get { return _name; }
             set { _name = value; }
@@ -823,6 +823,31 @@ namespace Chummer.Skills
                     {
                         Power power = _character.Powers.FirstOrDefault(x => x.InternalId == source.SourceName);
                         value = power?.DisplayNameShort;
+                    }
+                    break;
+                case Improvement.ImprovementSource.MentorSpirit:
+                    {
+                        MentorSpirit mentor = _character.MentorSpirits.FirstOrDefault(x => x.InternalId == source.SourceName);
+                        value = mentor?.DisplayName;
+                    }
+                    break;
+                case Improvement.ImprovementSource.Metamagic:
+                case Improvement.ImprovementSource.Echo:
+                    {
+                        Metamagic metamagic = _character.Metamagics.FirstOrDefault(x => x.InternalId == source.SourceName);
+                        value = metamagic?.DisplayName;
+                    }
+                    break;
+                case Improvement.ImprovementSource.Art:
+                    {
+                        Art art = _character.Arts.FirstOrDefault(x => x.InternalId == source.SourceName);
+                        value = art?.DisplayName;
+                    }
+                    break;
+                case Improvement.ImprovementSource.Enhancement:
+                    {
+                        Enhancement enhancement = _character.Enhancements.FirstOrDefault(x => x.InternalId == source.SourceName);
+                        value = enhancement?.DisplayName;
                     }
                     break;
                 case Improvement.ImprovementSource.Custom:

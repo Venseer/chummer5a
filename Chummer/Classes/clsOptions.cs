@@ -146,8 +146,8 @@ namespace Chummer
 
         private static frmMain _frmMainForm;
         private static readonly RegistryKey _objBaseChummerKey;
-        public static readonly string DefaultLanguage = "en-us";
-        public static readonly string DefaultCharacterSheetDefaultValue = "Shadowrun 5 (Rating greater 0)";
+        public const string DefaultLanguage = "en-us";
+        public const string DefaultCharacterSheetDefaultValue = "Shadowrun 5 (Rating greater 0)";
 
         private static bool _blnAutomaticUpdate = false;
         private static bool _blnLiveCustomData = false;
@@ -868,11 +868,11 @@ namespace Chummer
                 if (objLoopValue != null)
                 {
                     string strFileName = objLoopValue.ToString();
-                    if (File.Exists(strFileName))
+                    if (File.Exists(strFileName) && !lstFiles.Contains(strFileName))
                         lstFiles.Add(strFileName);
                 }
             }
-            return lstFiles.Distinct().ToList();
+            return lstFiles;
         }
         #endregion
 

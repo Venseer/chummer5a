@@ -70,7 +70,7 @@ namespace Chummer.Backend.Equipment
         /// <param name="objNode">TreeNode to populate a TreeView.</param>
         /// <param name="strMount">Mount slot that the Weapon Accessory will consume.</param>
         /// <param name="intRating">Rating of the Weapon Accessory.</param>
-        public void Create(XmlNode objXmlAccessory, TreeNode objNode, Tuple<string, string> strMount, int intRating, ContextMenuStrip cmsAccessoryGear, bool blnSkipCost = false, bool blnCreateChildren = true)
+        public void Create(XmlNode objXmlAccessory, TreeNode objNode, Tuple<string, string> strMount, int intRating, ContextMenuStrip cmsAccessoryGear, bool blnSkipCost = false, bool blnCreateChildren = true, bool blnCreateImprovements = true)
         {
             objXmlAccessory.TryGetStringFieldQuickly("name", ref _strName);
             _strMount = strMount.Item1;
@@ -144,28 +144,30 @@ namespace Chummer.Backend.Equipment
                 XmlDocument objXmlGearDocument = XmlManager.Load("gear.xml");
                 foreach (XmlNode objXmlAccessoryGear in objXmlAccessory.SelectNodes("gears/usegear"))
                 {
+                    XmlNode objXmlAccessoryGearName = objXmlAccessoryGear["name"];
+                    XmlAttributeCollection objXmlAccessoryGearNameAttributes = objXmlAccessoryGearName.Attributes;
                     int intGearRating = 0;
                     decimal decGearQty = 1;
                     string strChildForceSource = string.Empty;
                     string strChildForcePage = string.Empty;
                     string strChildForceValue = string.Empty;
-                    bool blnStartCollapsed = objXmlAccessoryGear["name"].Attributes?["startcollapsed"]?.InnerText == "yes";
-                    bool blnChildCreateChildren = objXmlAccessoryGear["name"].Attributes?["createchildren"]?.InnerText != "no";
-                    bool blnAddChildImprovements = !blnSkipCost;
-                    if (objXmlAccessoryGear["name"].Attributes?["addimprovements"]?.InnerText == "no")
+                    bool blnStartCollapsed = objXmlAccessoryGearNameAttributes?["startcollapsed"]?.InnerText == "yes";
+                    bool blnChildCreateChildren = objXmlAccessoryGearNameAttributes?["createchildren"]?.InnerText != "no";
+                    bool blnAddChildImprovements = blnCreateImprovements;
+                    if (objXmlAccessoryGearNameAttributes?["addimprovements"]?.InnerText == "no")
                         blnAddChildImprovements = false;
                     if (objXmlAccessoryGear["rating"] != null)
                         intGearRating = Convert.ToInt32(objXmlAccessoryGear["rating"].InnerText);
-                    if (objXmlAccessoryGear["name"].Attributes?["qty"] != null)
-                        decGearQty = Convert.ToDecimal(objXmlAccessoryGear["name"].Attributes["qty"].InnerText, GlobalOptions.InvariantCultureInfo);
-                    if (objXmlAccessoryGear["name"].Attributes?["select"] != null)
-                        strChildForceValue = objXmlAccessoryGear["name"].Attributes["select"].InnerText;
+                    if (objXmlAccessoryGearNameAttributes?["qty"] != null)
+                        decGearQty = Convert.ToDecimal(objXmlAccessoryGearNameAttributes["qty"].InnerText, GlobalOptions.InvariantCultureInfo);
+                    if (objXmlAccessoryGearNameAttributes?["select"] != null)
+                        strChildForceValue = objXmlAccessoryGearNameAttributes["select"].InnerText;
                     if (objXmlAccessoryGear["source"] != null)
                         strChildForceSource = objXmlAccessoryGear["source"].InnerText;
                     if (objXmlAccessoryGear["page"] != null)
                         strChildForcePage = objXmlAccessoryGear["page"].InnerText;
 
-                    XmlNode objXmlGear = objXmlGearDocument.SelectSingleNode("/chummer/gears/gear[name = \"" + objXmlAccessoryGear["name"].InnerText + "\" and category = \"" + objXmlAccessoryGear["category"].InnerText + "\"]");
+                    XmlNode objXmlGear = objXmlGearDocument.SelectSingleNode("/chummer/gears/gear[name = \"" + objXmlAccessoryGearName.InnerText + "\" and category = \"" + objXmlAccessoryGear["category"].InnerText + "\"]");
                     Gear objGear = new Gear(_objCharacter);
 
                     TreeNode objGearNode = new TreeNode();

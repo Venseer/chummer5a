@@ -60,6 +60,7 @@ namespace Chummer.Backend.Equipment
         private int _intMatrixCMFilled = 0;
         private string _strForcedValue = string.Empty;
         private bool _blnDisableQuantity = false;
+        private bool _blnAllowRename = false;
 
         #region Constructor, Create, Save, Load, and Print Methods
         public Gear(Character objCharacter)
@@ -109,6 +110,7 @@ namespace Chummer.Backend.Equipment
             objXmlGear.TryGetBoolFieldQuickly("disablequantity", ref _blnDisableQuantity);
             objXmlGear.TryGetInt32FieldQuickly("childcostmultiplier", ref _intChildCostMultiplier);
             objXmlGear.TryGetInt32FieldQuickly("childavailmodifier", ref _intChildAvailModifier);
+            objXmlGear.TryGetBoolFieldQuickly("allowrename", ref _blnAllowRename);
 
             if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
@@ -251,7 +253,7 @@ namespace Chummer.Backend.Equipment
 
                     TreeNode objGearWeaponNode = new TreeNode();
                     Weapon objGearWeapon = new Weapon(_objCharacter);
-                    objGearWeapon.Create(objXmlWeapon, objGearWeaponNode, null, null);
+                    objGearWeapon.Create(objXmlWeapon, objGearWeaponNode, null, null, null, true, blnAddImprovements);
                     objGearWeapon.ParentID = InternalId;
                     objGearWeaponNode.ForeColor = SystemColors.GrayText;
                     if (blnAerodynamic)
@@ -482,7 +484,9 @@ namespace Chummer.Backend.Equipment
 
         protected void CreateChild(XmlDocument objXmlGearDocument, XmlNode objXmlChild, Gear objParent, TreeNode objNode, bool blnHacked, bool blnAddImprovements)
         {
-            XmlNode objXmlGearNode = objXmlGearDocument.SelectSingleNode("/chummer/gears/gear[name = \"" + objXmlChild["name"].InnerText + "\" and category = \"" + objXmlChild["category"].InnerText + "\"]");
+            XmlNode objXmlChildName = objXmlChild["name"];
+            XmlAttributeCollection objXmlChildNameAttributes = objXmlChildName.Attributes;
+            XmlNode objXmlGearNode = objXmlGearDocument.SelectSingleNode("/chummer/gears/gear[name = \"" + objXmlChildName.InnerText + "\" and category = \"" + objXmlChild["category"].InnerText + "\"]");
             if (objXmlGearNode == null)
                 return;
             int intChildRating = 0;
@@ -490,16 +494,16 @@ namespace Chummer.Backend.Equipment
             string strChildForceSource = string.Empty;
             string strChildForcePage = string.Empty;
             string strChildForceValue = string.Empty;
-            bool blnCreateChildren = objXmlChild["name"].Attributes?["createchildren"]?.InnerText != "no";
+            bool blnCreateChildren = objXmlChildNameAttributes["createchildren"]?.InnerText != "no";
             bool blnAddChildImprovements = blnAddImprovements;
-            if (objXmlChild["name"].Attributes?["addimprovements"]?.InnerText == "no")
+            if (objXmlChildNameAttributes["addimprovements"]?.InnerText == "no")
                 blnAddChildImprovements = false;
             if (objXmlChild["rating"] != null)
                 intChildRating = Convert.ToInt32(objXmlChild["rating"].InnerText);
-            if (objXmlChild["name"].Attributes["qty"] != null)
-                decChildQty = Convert.ToDecimal(objXmlChild["name"].Attributes["qty"].InnerText, GlobalOptions.InvariantCultureInfo);
-            if (objXmlChild["name"].Attributes["select"] != null)
-                strChildForceValue = objXmlChild["name"].Attributes["select"].InnerText;
+            if (objXmlChildNameAttributes["qty"] != null)
+                decChildQty = Convert.ToDecimal(objXmlChildNameAttributes["qty"].InnerText, GlobalOptions.InvariantCultureInfo);
+            if (objXmlChildNameAttributes["select"] != null)
+                strChildForceValue = objXmlChildNameAttributes["select"].InnerText;
             if (objXmlChild["source"] != null)
                 strChildForceSource = objXmlChild["source"].InnerText;
             if (objXmlChild["page"] != null)
@@ -548,6 +552,7 @@ namespace Chummer.Backend.Equipment
         public void Copy(Gear objGear, TreeNode objNode, List<Weapon> objWeapons, List<TreeNode> objWeaponNodes)
         {
             _SourceGuid = objGear._SourceGuid;
+            _blnAllowRename = objGear.AllowRename;
             _strName = objGear.Name;
             _strCategory = objGear.Category;
             _intMaxRating = objGear.MaxRating;
@@ -654,6 +659,7 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteElementString("matrixcmfilled", _intMatrixCMFilled.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("matrixcmbonus", _intMatrixCMBonus.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("parentid", _strParentID);
+            objWriter.WriteElementString("allowrename", _blnAllowRename.ToString());
             if (_intChildCostMultiplier != 1)
                 objWriter.WriteElementString("childcostmultiplier", _intChildCostMultiplier.ToString(CultureInfo.InvariantCulture));
             if (_intChildAvailModifier != 0)
@@ -754,7 +760,7 @@ namespace Chummer.Backend.Equipment
 
             objNode.TryGetStringFieldQuickly("gearname", ref _strGearName);
             objNode.TryGetStringFieldQuickly("forcedvalue", ref _strForcedValue);
-
+            objNode.TryGetBoolFieldQuickly("allowrename", ref _blnAllowRename);
             if (!objNode.TryGetStringFieldQuickly("parentid", ref _strParentID))
             {
                 // Legacy Shim
@@ -1425,6 +1431,11 @@ namespace Chummer.Backend.Equipment
                 _strDeviceRating = value;
             }
         }
+
+        /// <summary>
+        /// Allow Renaming the Gear in Create Mode
+        /// </summary>
+        public bool AllowRename => _blnAllowRename;
 
         public string GetMatrixAttributeString(string strAttributeName)
         {

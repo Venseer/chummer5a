@@ -1023,6 +1023,7 @@ namespace Chummer
                 }
 
                 // Trash the global variables and dispose of the Form.
+                _objCharacter.Dispose();
                 _objOptions = null;
                 _objCharacter = null;
                 Dispose(true);
@@ -1967,6 +1968,7 @@ namespace Chummer
                 {
                     if (objNode["bonus"] != null)
                     {
+                        objQuality.Bonus = objNode["bonus"];
                         ImprovementManager.ForcedValue = strSelected;
                         ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.Quality, objQuality.InternalId, objNode["bonus"], false, 1, objQuality.DisplayNameShort);
                         if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
@@ -2045,6 +2047,7 @@ namespace Chummer
                 {
                     if (objNode["bonus"] != null)
                     {
+                        objPower.Bonus = objNode["bonus"];
                         ImprovementManager.ForcedValue = objPower.Extra;
                         ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.Power, objPower.InternalId, objNode["bonus"], false, Convert.ToInt32(objPower.TotalRating), objPower.DisplayNameShort);
                     }
@@ -2123,6 +2126,7 @@ namespace Chummer
                 {
                     if (objNode["bonus"] != null)
                     {
+                        objPower.Bonus = objNode["bonus"];
                         string strSelected = objPower.Extra;
                         int intRating = 0;
                         if (!int.TryParse(strSelected, out intRating))
@@ -2163,7 +2167,10 @@ namespace Chummer
                 if (objNode != null)
                 {
                     if (objNode["bonus"] != null)
+                    {
+                        objMetamagic.Bonus = objNode["bonus"];
                         ImprovementManager.CreateImprovements(_objCharacter, objMetamagic.SourceType, objMetamagic.InternalId, objNode["bonus"], false, 1, objMetamagic.DisplayNameShort);
+                    }
                 }
                 else
                 {
@@ -2180,11 +2187,12 @@ namespace Chummer
                 {
                     if (objNode["bonus"] != null || (objCyberware.WirelessOn && objNode["wirelessbonus"] != null))
                     {
+                        objCyberware.Bonus = objNode["bonus"];
                         if (objNode["bonus"] != null)
                             ImprovementManager.CreateImprovements(_objCharacter, objCyberware.SourceType, objCyberware.InternalId, objNode["bonus"], false, objCyberware.Rating, objCyberware.DisplayNameShort);
                         if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
                             objCyberware.Extra = ImprovementManager.SelectedValue;
-
+                        objCyberware.WirelessBonus = objNode["wirelessbonus"];
                         if (objCyberware.WirelessOn && objNode["wirelessbonus"] != null)
                             ImprovementManager.CreateImprovements(_objCharacter, objCyberware.SourceType, objCyberware.InternalId, objNode["wirelessbonus"], false, objCyberware.Rating, objCyberware.DisplayNameShort);
                         if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue) && string.IsNullOrEmpty(objCyberware.Extra))
@@ -2197,6 +2205,7 @@ namespace Chummer
                 }
                 if (objCyberware.PairBonus != null || objNode?["pairbonus"] != null)
                 {
+                    objCyberware.PairBonus = objNode["pairbonus"];
                     Cyberware objMatchingCyberware = dicPairableCyberwares.Keys.FirstOrDefault(x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra);
                     if (objMatchingCyberware != null)
                         dicPairableCyberwares[objMatchingCyberware] = dicPairableCyberwares[objMatchingCyberware] + 1;
@@ -2220,18 +2229,21 @@ namespace Chummer
                 {
                     intCyberwaresCount = Math.Min(intCyberwaresCount, _objCharacter.Cyberware.DeepCount(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.Location != objCyberware.Location && x.IsModularCurrentlyEquipped));
                 }
-                foreach (Cyberware objLoopCyberware in _objCharacter.Cyberware.DeepWhere(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.IsModularCurrentlyEquipped))
+                if (intCyberwaresCount > 0)
                 {
-                    if (intCyberwaresCount % 2 == 0)
+                    foreach (Cyberware objLoopCyberware in _objCharacter.Cyberware.DeepWhere(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.IsModularCurrentlyEquipped))
                     {
-                        ImprovementManager.CreateImprovements(_objCharacter, objLoopCyberware.SourceType, objLoopCyberware.InternalId, objLoopCyberware.MyXmlNode?["pairbonus"], false, objLoopCyberware.Rating, objLoopCyberware.DisplayNameShort);
-                        TreeNode objNode = CommonFunctions.FindNode(objLoopCyberware.InternalId, treCyberware);
-                        if (objNode != null)
-                            objNode.Text = objCyberware.DisplayName;
+                        if (intCyberwaresCount % 2 == 0)
+                        {
+                            ImprovementManager.CreateImprovements(_objCharacter, objLoopCyberware.SourceType, objLoopCyberware.InternalId, objLoopCyberware.PairBonus, false, objLoopCyberware.Rating, objLoopCyberware.DisplayNameShort);
+                            TreeNode objNode = CommonFunctions.FindNode(objLoopCyberware.InternalId, treCyberware);
+                            if (objNode != null)
+                                objNode.Text = objCyberware.DisplayName;
+                        }
+                        intCyberwaresCount -= 1;
+                        if (intCyberwaresCount <= 0)
+                            break;
                     }
-                    intCyberwaresCount -= 1;
-                    if (intCyberwaresCount <= 0)
-                        break;
                 }
             }
 
@@ -2243,6 +2255,7 @@ namespace Chummer
                 {
                     if (objNode["bonus"] != null)
                     {
+                        objArmor.Bonus = objNode["bonus"];
                         ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.Armor, objArmor.InternalId, objNode["bonus"], false, 1, objArmor.DisplayNameShort);
                         if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
                         {
@@ -2267,6 +2280,7 @@ namespace Chummer
                     {
                         if (objChild["bonus"] != null)
                         {
+                            objMod.Bonus = objChild["bonus"];
                             ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.ArmorMod, objMod.InternalId, objChild["bonus"], false, 1, objMod.DisplayNameShort);
                             if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
                             {
@@ -2401,7 +2415,6 @@ namespace Chummer
                     // Finish the document and flush the Writer and Stream.
                     objWriter.WriteEndDocument();
                     objWriter.Flush();
-                    objStream.Flush();
 
                     // Read the stream.
                     StreamReader objReader = new StreamReader(objStream);
@@ -2413,7 +2426,6 @@ namespace Chummer
                     objCharacterXML.LoadXml(strXML);
 
                     objWriter.Close();
-                    objStream.Close();
 
                     GlobalOptions.Clipboard = objCharacterXML;
                     GlobalOptions.ClipboardContentType = ClipboardContentType.Lifestyle;
@@ -2421,7 +2433,7 @@ namespace Chummer
                 }
 
                 // Armor Tab.
-                if (tabStreetGearTabs.SelectedTab == tabArmor)
+                else if (tabStreetGearTabs.SelectedTab == tabArmor)
                 {
                     // Copy the selected Armor.
                     Armor objCopyArmor = CommonFunctions.FindByIdWithNameCheck(treArmor.SelectedNode.Tag.ToString(), _objCharacter.Armor);
@@ -2447,7 +2459,6 @@ namespace Chummer
                         // Finish the document and flush the Writer and Stream.
                         objWriter.WriteEndDocument();
                         objWriter.Flush();
-                        objStream.Flush();
 
                         // Read the stream.
                         StreamReader objReader = new StreamReader(objStream);
@@ -2459,7 +2470,6 @@ namespace Chummer
                         objCharacterXML.LoadXml(strXML);
 
                         objWriter.Close();
-                        objStream.Close();
 
                         GlobalOptions.Clipboard = objCharacterXML;
                         GlobalOptions.ClipboardContentType = ClipboardContentType.Armor;
@@ -2514,7 +2524,6 @@ namespace Chummer
                         // Finish the document and flush the Writer and Stream.
                         objWriter.WriteEndDocument();
                         objWriter.Flush();
-                        objStream.Flush();
 
                         // Read the stream.
                         StreamReader objReader = new StreamReader(objStream);
@@ -2526,7 +2535,6 @@ namespace Chummer
                         objCharacterXML.LoadXml(strXML);
 
                         objWriter.Close();
-                        objStream.Close();
 
                         GlobalOptions.Clipboard = objCharacterXML;
 
@@ -2536,7 +2544,7 @@ namespace Chummer
                 }
 
                 // Weapons Tab.
-                if (tabStreetGearTabs.SelectedTab == tabWeapons)
+                else if (tabStreetGearTabs.SelectedTab == tabWeapons)
                 {
                     // Copy the selected Weapon.
                     Weapon objCopyWeapon = CommonFunctions.DeepFindById(treWeapons.SelectedNode.Tag.ToString(), _objCharacter.Weapons);
@@ -2566,7 +2574,6 @@ namespace Chummer
                         // Finish the document and flush the Writer and Stream.
                         objWriter.WriteEndDocument();
                         objWriter.Flush();
-                        objStream.Flush();
 
                         // Read the stream.
                         StreamReader objReader = new StreamReader(objStream);
@@ -2578,7 +2585,6 @@ namespace Chummer
                         objCharacterXML.LoadXml(strXML);
 
                         objWriter.Close();
-                        objStream.Close();
 
                         GlobalOptions.Clipboard = objCharacterXML;
                         GlobalOptions.ClipboardContentType = ClipboardContentType.Weapon;
@@ -2632,7 +2638,6 @@ namespace Chummer
                         // Finish the document and flush the Writer and Stream.
                         objWriter.WriteEndDocument();
                         objWriter.Flush();
-                        objStream.Flush();
 
                         // Read the stream.
                         StreamReader objReader = new StreamReader(objStream);
@@ -2644,7 +2649,6 @@ namespace Chummer
                         objCharacterXML.LoadXml(strXML);
 
                         objWriter.Close();
-                        objStream.Close();
 
                         GlobalOptions.Clipboard = objCharacterXML;
 
@@ -2654,7 +2658,7 @@ namespace Chummer
                 }
 
                 // Gear Tab.
-                if (tabStreetGearTabs.SelectedTab == tabGear)
+                else if (tabStreetGearTabs.SelectedTab == tabGear)
                 {
                     // Copy the selected Gear.
                     Gear objCopyGear = CommonFunctions.DeepFindById(treGear.SelectedNode.Tag.ToString(), _objCharacter.Gear);
@@ -2703,7 +2707,6 @@ namespace Chummer
                     // Finish the document and flush the Writer and Stream.
                     objWriter.WriteEndDocument();
                     objWriter.Flush();
-                    objStream.Flush();
 
                     // Read the stream.
                     StreamReader objReader = new StreamReader(objStream);
@@ -2715,7 +2718,6 @@ namespace Chummer
                     objCharacterXML.LoadXml(strXML);
 
                     objWriter.Close();
-                    objStream.Close();
 
                     GlobalOptions.Clipboard = objCharacterXML;
                     //Clipboard.SetText(objCharacterXML.OuterXml);
@@ -2723,7 +2725,7 @@ namespace Chummer
             }
 
             // Vehicles Tab.
-            if (tabCharacterTabs.SelectedTab == tabVehicles)
+            else if (tabCharacterTabs.SelectedTab == tabVehicles)
             {
                 if (treVehicles.SelectedNode.Level == 1)
                 {
@@ -2749,7 +2751,6 @@ namespace Chummer
                     // Finish the document and flush the Writer and Stream.
                     objWriter.WriteEndDocument();
                     objWriter.Flush();
-                    objStream.Flush();
 
                     // Read the stream.
                     StreamReader objReader = new StreamReader(objStream);
@@ -2761,7 +2762,6 @@ namespace Chummer
                     objCharacterXML.LoadXml(strXML);
 
                     objWriter.Close();
-                    objStream.Close();
 
                     GlobalOptions.Clipboard = objCharacterXML;
                     GlobalOptions.ClipboardContentType = ClipboardContentType.Vehicle;
@@ -2814,7 +2814,6 @@ namespace Chummer
                         // Finish the document and flush the Writer and Stream.
                         objWriter.WriteEndDocument();
                         objWriter.Flush();
-                        objStream.Flush();
 
                         // Read the stream.
                         StreamReader objReader = new StreamReader(objStream);
@@ -2826,7 +2825,6 @@ namespace Chummer
                         objCharacterXML.LoadXml(strXML);
 
                         objWriter.Close();
-                        objStream.Close();
 
                         GlobalOptions.Clipboard = objCharacterXML;
 
@@ -2864,7 +2862,6 @@ namespace Chummer
                                 // Finish the document and flush the Writer and Stream.
                                 objWriter.WriteEndDocument();
                                 objWriter.Flush();
-                                objStream.Flush();
 
                                 // Read the stream.
                                 StreamReader objReader = new StreamReader(objStream);
@@ -2876,7 +2873,6 @@ namespace Chummer
                                 objCharacterXML.LoadXml(strXML);
 
                                 objWriter.Close();
-                                objStream.Close();
 
                                 GlobalOptions.Clipboard = objCharacterXML;
                                 GlobalOptions.ClipboardContentType = ClipboardContentType.Weapon;
@@ -7856,6 +7852,21 @@ namespace Chummer
             tsGearAddAsPlugin_Click(sender, e);
         }
 
+        private void tsGearRename_Click(object sender, EventArgs e)
+        {
+            frmSelectText frmPickText = new frmSelectText();
+            //frmPickText.Description = LanguageManager.GetString("String_AddLocation");
+            frmPickText.ShowDialog(this);
+
+            if (frmPickText.DialogResult == DialogResult.Cancel)
+                return;
+
+            Gear g = CommonFunctions.FindById(treGear.SelectedNode.Tag.ToString(), _objCharacter.Gear);
+            g.Extra = frmPickText.SelectedValue;
+            treGear.SelectedNode.Text = g.DisplayName;
+            _blnIsDirty = true;
+            UpdateWindowTitle();
+        }
         private void tsVehicleAddNexus_Click(object sender, EventArgs e)
         {
             while (treVehicles.SelectedNode != null && treVehicles.SelectedNode.Level > 1)
@@ -12855,13 +12866,13 @@ namespace Chummer
         /// <summary>
         /// Calculate the number of Build Points the character has remaining.
         /// </summary>
-        private int CalculateBP()
+        private int CalculateBP(bool blnDoUIUpdate = true)
         {
             int intKarmaPointsRemain =_objCharacter.BuildKarma;
             //int intPointsUsed = 0; // used as a running total for each section
             int intFreestyleBPMin = 0;
             int intFreestyleBP = 0;
-            string strPoints = LanguageManager.GetString("String_Karma");
+            string strPoints = blnDoUIUpdate ? LanguageManager.GetString("String_Karma") : string.Empty;
 
             // ------------------------------------------------------------------------------
             // Metatype/Metavariant only cost points when working with BP (or when the Metatype Costs Karma option is enabled when working with Karma).
@@ -12930,40 +12941,10 @@ namespace Chummer
 
             _objCharacter.ContactPointsUsed = intContactPointsLeft;
 
-            string strOf = LanguageManager.GetString("String_Of");
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append(_objCharacter.ContactPointsUsed);
-            if (_objCharacter.FriendsInHighPlaces)
-            {
-                sb.Append('/');
-                sb.Append(Math.Max(0,(_objCharacter.CHA.Value * 4) -intHighPlacesFriends));
-            }
-            sb.Append(' ');
-            sb.Append(strOf);
-            sb.Append(' ');
-
-            sb.Append(intContactPoints);
-            if (_objCharacter.FriendsInHighPlaces)
-            {
-                sb.Append('/');
-                sb.Append(_objCharacter.CHA.Value * 4);
-            }
-
             if (intPointsInContacts > 0 || (_objCharacter.CHA.Value * 4 < intHighPlacesFriends))
             {
                 intPointsInContacts += Math.Max(0, intHighPlacesFriends - (_objCharacter.CHA.Value * 4));
-
-                sb.Append(" (");
-                sb.Append(intPointsInContacts);
-                sb.Append(' ');
-                sb.Append(strPoints);
-                sb.Append(')');
-
             }
-
-            lblContactsBP.Text = sb.ToString();
-            lblContactPoints.Text = sb.ToString();
 
             intKarmaPointsRemain -= intPointsInContacts;
 
@@ -12979,7 +12960,6 @@ namespace Chummer
                     intEnemyPoints -= (objContactControl.ConnectionRating + objContactControl.LoyaltyRating) * _objOptions.KarmaEnemy;
                 }
             }
-            lblEnemiesBP.Text = string.Format("{0} " + strPoints, intEnemyPoints.ToString());
 
                 // dont add in enemy costs here, carry it over later under qualities
 
@@ -13019,13 +12999,6 @@ namespace Chummer
             }
 
             intQualityPointsUsed = intLifeModuleQualities + intNegativeQualities + intPositiveQualities + unlimitedPositive + unlimitedNegative;
-            lblPositiveQualitiesBP.Text = unlimitedPositive > 0
-                ? $"{intPositiveQualities}/{_objCharacter.GameplayOptionQualityLimit} {strPoints} ({intPositiveQualities + unlimitedPositive})"
-                : $"{intPositiveQualities}/{_objCharacter.GameplayOptionQualityLimit} {strPoints}";
-
-            lblNegativeQualitiesBP.Text = unlimitedNegative > 0
-                ? $"{intNegativeQualities * -1}/{_objCharacter.GameplayOptionQualityLimit} {strPoints} ({intNegativeQualities + unlimitedNegative})"
-                : $"{intNegativeQualities * -1}/{_objCharacter.GameplayOptionQualityLimit} {strPoints}";
 
             intKarmaPointsRemain -= intQualityPointsUsed;
             intFreestyleBP += intQualityPointsUsed;
@@ -13033,11 +13006,9 @@ namespace Chummer
             // ------------------------------------------------------------------------------
             // Update Primary Attributes and Special Attributes values.
             int intAttributePointsUsed = CalculateAttributeBP(_objCharacter.AttributeSection.AttributeList);
-			lblAttributesBP.Text = string.Format("{0} " + strPoints, intAttributePointsUsed.ToString());
 			intAttributePointsUsed += CalculateAttributeBP(_objCharacter.AttributeSection.SpecialAttributeList);
 			intKarmaPointsRemain -= intAttributePointsUsed;
-			lblAttributesBP.Text = BuildAttributes(_objCharacter.AttributeSection.AttributeList, null);
-			lblPBuildSpecial.Text = BuildAttributes(_objCharacter.AttributeSection.SpecialAttributeList, null,true);
+
 			// ------------------------------------------------------------------------------
 			// Include the BP used by Martial Arts.
 			int intMartialArtsPoints = 0;
@@ -13066,14 +13037,12 @@ namespace Chummer
             int knowledgeKarmaUsed = _objCharacter.SkillsSection.KnowledgeSkills.Sum(x => x.CurrentKarmaCost());
             //TODO: Remaining is named USED?
             intKarmaPointsRemain -= knowledgeKarmaUsed;
-            tabSkillUc.MissingDatabindingsWorkaround();
 
             intFreestyleBP += knowledgeKarmaUsed;
 
             // ------------------------------------------------------------------------------
             // Calculate the BP used by Resources/Nuyen.
             intKarmaPointsRemain -= (int)nudNuyen.Value;
-            lblNuyenBP.Text = nudNuyen.Value.ToString(GlobalOptions.CultureInfo) + " " + strPoints;
 
             intFreestyleBP += (int)nudNuyen.Value;
 
@@ -13178,44 +13147,47 @@ namespace Chummer
                 intSpellPointsUsed += Math.Max(Math.Max(0, spells) * (spellCost), 0);
                 intRitualPointsUsed += Math.Max(Math.Max(0, rituals) * (spellCost), 0);
                 intPrepPointsUsed += Math.Max(Math.Max(0, preps) * spellCost, 0);
-                tipTooltip.SetToolTip(lblSpellsBP, $"{spells} x {spellCost} + {LanguageManager.GetString("String_Karma")} = {intSpellPointsUsed} {LanguageManager.GetString("String_Karma")}");
-                tipTooltip.SetToolTip(lblBuildRitualsBP, $"{rituals} x {spellCost} + {LanguageManager.GetString("String_Karma")} = {intRitualPointsUsed} {LanguageManager.GetString("String_Karma")}");
-                tipTooltip.SetToolTip(lblBuildPrepsBP, $"{preps} x {spellCost} + {LanguageManager.GetString("String_Karma")} = {intPrepPointsUsed} {LanguageManager.GetString("String_Karma")}");
-                if (limit + limitMod > 0)
+                if (blnDoUIUpdate)
                 {
-                    lblBuildPrepsBP.Text =
-                        string.Format(
-                            $"{prepPoints} {LanguageManager.GetString("String_Of")} {limit + limitMod}: {intPrepPointsUsed} {strPoints}");
-                    lblSpellsBP.Text =
-                        string.Format(
-                            $"{spellPoints} {LanguageManager.GetString("String_Of")} {limit + limitMod}: {intSpellPointsUsed} {strPoints}");
-                    lblBuildRitualsBP.Text =
-                        string.Format(
-                            $"{ritualPoints} {LanguageManager.GetString("String_Of")} {limit + limitMod}: {intRitualPointsUsed} {strPoints}");
-                }
-                else
-                {
-                    if (limitMod == 0)
+                    tipTooltip.SetToolTip(lblSpellsBP, $"{spells} x {spellCost} + {LanguageManager.GetString("String_Karma")} = {intSpellPointsUsed} {LanguageManager.GetString("String_Karma")}");
+                    tipTooltip.SetToolTip(lblBuildRitualsBP, $"{rituals} x {spellCost} + {LanguageManager.GetString("String_Karma")} = {intRitualPointsUsed} {LanguageManager.GetString("String_Karma")}");
+                    tipTooltip.SetToolTip(lblBuildPrepsBP, $"{preps} x {spellCost} + {LanguageManager.GetString("String_Karma")} = {intPrepPointsUsed} {LanguageManager.GetString("String_Karma")}");
+                    if (limit + limitMod > 0)
                     {
                         lblBuildPrepsBP.Text =
-                            string.Format($"{intPrepPointsUsed} {strPoints}");
+                            string.Format(
+                                $"{prepPoints} {LanguageManager.GetString("String_Of")} {limit + limitMod}: {intPrepPointsUsed} {strPoints}");
                         lblSpellsBP.Text =
-                            string.Format($"{intSpellPointsUsed} {strPoints}");
+                            string.Format(
+                                $"{spellPoints} {LanguageManager.GetString("String_Of")} {limit + limitMod}: {intSpellPointsUsed} {strPoints}");
                         lblBuildRitualsBP.Text =
-                            string.Format($"{intRitualPointsUsed} {strPoints}");
+                            string.Format(
+                                $"{ritualPoints} {LanguageManager.GetString("String_Of")} {limit + limitMod}: {intRitualPointsUsed} {strPoints}");
                     }
                     else
                     {
-                        //TODO: Make the costs render better, currently looks wrong as hell
-                        lblBuildPrepsBP.Text =
-                            string.Format(
-                                $"{prepPoints} {LanguageManager.GetString("String_Of")} {limitMod}: {intPrepPointsUsed} {strPoints}");
-                        lblSpellsBP.Text =
-                            string.Format(
-                                $"{spellPoints} {LanguageManager.GetString("String_Of")} {limitMod}: {intSpellPointsUsed} {strPoints}");
-                        lblBuildRitualsBP.Text =
-                            string.Format(
-                                $"{ritualPoints} {LanguageManager.GetString("String_Of")} {limitMod}: {intRitualPointsUsed} {strPoints}");
+                        if (limitMod == 0)
+                        {
+                            lblBuildPrepsBP.Text =
+                                string.Format($"{intPrepPointsUsed} {strPoints}");
+                            lblSpellsBP.Text =
+                                string.Format($"{intSpellPointsUsed} {strPoints}");
+                            lblBuildRitualsBP.Text =
+                                string.Format($"{intRitualPointsUsed} {strPoints}");
+                        }
+                        else
+                        {
+                            //TODO: Make the costs render better, currently looks wrong as hell
+                            lblBuildPrepsBP.Text =
+                                string.Format(
+                                    $"{prepPoints} {LanguageManager.GetString("String_Of")} {limitMod}: {intPrepPointsUsed} {strPoints}");
+                            lblSpellsBP.Text =
+                                string.Format(
+                                    $"{spellPoints} {LanguageManager.GetString("String_Of")} {limitMod}: {intSpellPointsUsed} {strPoints}");
+                            lblBuildRitualsBP.Text =
+                                string.Format(
+                                    $"{ritualPoints} {LanguageManager.GetString("String_Of")} {limitMod}: {intRitualPointsUsed} {strPoints}");
+                        }
                     }
                 }
             }
@@ -13304,7 +13276,6 @@ namespace Chummer
                 }
             }
 
-            lblFociBP.Text = string.Format("{0} " + strPoints, intFociPointsUsed.ToString());
             intFreestyleBP += intFociPointsUsed;
 
             // ------------------------------------------------------------------------------
@@ -13324,7 +13295,6 @@ namespace Chummer
                     intSpiritPointsUsed += objSpiritControl.Force * 3;
                 }
             }
-            lblSpiritsBP.Text = string.Format("{0} " + strPoints, intSpiritPointsUsed.ToString());
             intFreestyleBP += intSpiritPointsUsed;
 
             // ------------------------------------------------------------------------------
@@ -13336,7 +13306,6 @@ namespace Chummer
                 intKarmaPointsRemain -= objSpriteControl.ServicesOwed * _objOptions.KarmaSpirit;
                 intSpritePointsUsed += objSpriteControl.ServicesOwed * _objOptions.KarmaSpirit;
             }
-            lblSpritesBP.Text = string.Format("{0} " + strPoints, intSpritePointsUsed.ToString());
             intFreestyleBP += intSpritePointsUsed;
 
             // ------------------------------------------------------------------------------
@@ -13348,21 +13317,6 @@ namespace Chummer
             }
             if (intFormsPointsUsed > _objCharacter.CFPLimit)
                 intKarmaPointsRemain -= (intFormsPointsUsed - _objCharacter.CFPLimit) * _objOptions.KarmaNewComplexForm;
-            string s = $"0 {strPoints}";
-            if (_objCharacter.CFPLimit > 0)
-            {
-                s = $"{intFormsPointsUsed} {LanguageManager.GetString("String_Of")} {_objCharacter.CFPLimit}";
-                if (intFormsPointsUsed > 0)
-                {
-                    s +=
-                        $": {(intFormsPointsUsed - _objCharacter.CFPLimit) * _objOptions.KarmaNewComplexForm} {strPoints}";
-                }
-            }
-            else
-            {
-                s = $"{(intFormsPointsUsed - _objCharacter.CFPLimit) * _objOptions.KarmaNewComplexForm} {strPoints}";
-            }
-            lblComplexFormsBP.Text = s;
             intFreestyleBP += intFormsPointsUsed;
 
             // ------------------------------------------------------------------------------
@@ -13396,15 +13350,12 @@ namespace Chummer
                 intKarmaCost += (intAIAdvancedProgramPointsUsed - _objCharacter.AIAdvancedProgramLimit) * _objOptions.KarmaNewAIAdvancedProgram;
             }
             intKarmaPointsRemain -= intKarmaCost;
-            lblAINormalProgramsBP.Text = string.Format("{0} " + strPoints, ((intAINormalProgramPointsUsed - _objCharacter.AINormalProgramLimit) * _objOptions.KarmaNewAIProgram).ToString());
-            lblAIAdvancedProgramsBP.Text = string.Format("{0} " + strPoints, ((intAIAdvancedProgramPointsUsed - _objCharacter.AIAdvancedProgramLimit) * _objOptions.KarmaNewAIAdvancedProgram).ToString());
             intFreestyleBP += intAIAdvancedProgramPointsUsed + intAINormalProgramPointsUsed + intNumAdvancedProgramPointsAsNormalPrograms;
 
             // ------------------------------------------------------------------------------
             // Calculate the BP used by Martial Art Maneuvers.
             // Each Maneuver costs KarmaManeuver.
             int intManeuverPointsUsed = _objCharacter.MartialArtManeuvers.Count * _objOptions.KarmaManeuver;
-            lblManeuversBP.Text = string.Format("{0} " + strPoints, intManeuverPointsUsed.ToString());
             intFreestyleBP += intManeuverPointsUsed;
             intKarmaPointsRemain -= intManeuverPointsUsed;
 
@@ -13451,7 +13402,6 @@ namespace Chummer
                 intInitiationPoints += _objOptions.KarmaJoinGroup;
 
             intKarmaPointsRemain -= intInitiationPoints;
-            lblInitiationBP.Text = string.Format("{0} " + strPoints, intInitiationPoints.ToString());
             intFreestyleBP += intInitiationPoints;
 
             // Add the Karma cost of any Critter Powers.
@@ -13460,19 +13410,84 @@ namespace Chummer
                 intKarmaPointsRemain -= objPower.Karma;
             }
 
-            // ------------------------------------------------------------------------------
-            // Update the number of BP remaining in the StatusBar.
-            tssBP.Text = _objCharacter.BuildKarma.ToString();
-            tssBPRemain.Text = intKarmaPointsRemain.ToString();
             _objCharacter.Karma = intKarmaPointsRemain;
 
-            if (_blnFreestyle)
+            if (blnDoUIUpdate)
             {
-                tssBP.Text = Math.Max(intFreestyleBP, intFreestyleBPMin).ToString();
-                if (intFreestyleBP < intFreestyleBPMin)
-                    tssBP.ForeColor = Color.OrangeRed;
+                string strContactPoints = _objCharacter.ContactPointsUsed.ToString();
+                if (_objCharacter.FriendsInHighPlaces)
+                {
+                    strContactPoints += '/' + Math.Max(0, (_objCharacter.CHA.Value * 4) - intHighPlacesFriends).ToString();
+                }
+                strContactPoints += ' ' + LanguageManager.GetString("String_Of") + ' ' + intContactPoints.ToString();
+                if (_objCharacter.FriendsInHighPlaces)
+                {
+                    strContactPoints += '/' + (_objCharacter.CHA.Value * 4).ToString();
+                }
+                if (intPointsInContacts > 0 || (_objCharacter.CHA.Value * 4 < intHighPlacesFriends))
+                {
+                    strContactPoints += " (" + intPointsInContacts.ToString() + ' ' + strPoints + ')';
+                }
+
+                lblContactsBP.Text = strContactPoints.ToString();
+                lblContactPoints.Text = strContactPoints.ToString();
+                lblEnemiesBP.Text = string.Format("{0} " + strPoints, intEnemyPoints.ToString());
+
+                lblPositiveQualitiesBP.Text = unlimitedPositive > 0
+                   ? $"{intPositiveQualities}/{_objCharacter.GameplayOptionQualityLimit} {strPoints} ({intPositiveQualities + unlimitedPositive})"
+                   : $"{intPositiveQualities}/{_objCharacter.GameplayOptionQualityLimit} {strPoints}";
+
+                lblNegativeQualitiesBP.Text = unlimitedNegative > 0
+                    ? $"{intNegativeQualities * -1}/{_objCharacter.GameplayOptionQualityLimit} {strPoints} ({intNegativeQualities + unlimitedNegative})"
+                    : $"{intNegativeQualities * -1}/{_objCharacter.GameplayOptionQualityLimit} {strPoints}";
+
+                lblAttributesBP.Text = BuildAttributes(_objCharacter.AttributeSection.AttributeList, null);
+                lblPBuildSpecial.Text = BuildAttributes(_objCharacter.AttributeSection.SpecialAttributeList, null, true);
+
+                tabSkillUc.MissingDatabindingsWorkaround();
+
+                lblNuyenBP.Text = nudNuyen.Value.ToString(GlobalOptions.CultureInfo) + " " + strPoints;
+
+                lblFociBP.Text = string.Format("{0} " + strPoints, intFociPointsUsed.ToString());
+
+                lblSpiritsBP.Text = string.Format("{0} " + strPoints, intSpiritPointsUsed.ToString());
+
+                lblSpritesBP.Text = string.Format("{0} " + strPoints, intSpritePointsUsed.ToString());
+
+                string s = $"0 {strPoints}";
+                if (_objCharacter.CFPLimit > 0)
+                {
+                    s = $"{intFormsPointsUsed} {LanguageManager.GetString("String_Of")} {_objCharacter.CFPLimit}";
+                    if (intFormsPointsUsed > 0)
+                    {
+                        s +=
+                            $": {(intFormsPointsUsed - _objCharacter.CFPLimit) * _objOptions.KarmaNewComplexForm} {strPoints}";
+                    }
+                }
                 else
-                    tssBP.ForeColor = SystemColors.ControlText;
+                {
+                    s = $"{(intFormsPointsUsed - _objCharacter.CFPLimit) * _objOptions.KarmaNewComplexForm} {strPoints}";
+                }
+                lblComplexFormsBP.Text = s;
+
+                lblAINormalProgramsBP.Text = string.Format("{0} " + strPoints, ((intAINormalProgramPointsUsed - _objCharacter.AINormalProgramLimit) * _objOptions.KarmaNewAIProgram).ToString());
+                lblAIAdvancedProgramsBP.Text = string.Format("{0} " + strPoints, ((intAIAdvancedProgramPointsUsed - _objCharacter.AIAdvancedProgramLimit) * _objOptions.KarmaNewAIAdvancedProgram).ToString());
+
+                lblManeuversBP.Text = string.Format("{0} " + strPoints, intManeuverPointsUsed.ToString());
+
+                lblInitiationBP.Text = string.Format("{0} " + strPoints, intInitiationPoints.ToString());
+                // ------------------------------------------------------------------------------
+                // Update the number of BP remaining in the StatusBar.
+                tssBP.Text = _objCharacter.BuildKarma.ToString();
+                tssBPRemain.Text = intKarmaPointsRemain.ToString();
+                if (_blnFreestyle)
+                {
+                    tssBP.Text = Math.Max(intFreestyleBP, intFreestyleBPMin).ToString();
+                    if (intFreestyleBP < intFreestyleBPMin)
+                        tssBP.ForeColor = Color.OrangeRed;
+                    else
+                        tssBP.ForeColor = SystemColors.ControlText;
+                }
             }
 
             return intKarmaPointsRemain;
@@ -13849,7 +13864,7 @@ namespace Chummer
         /// <summary>
         /// Calculate the amount of Nuyen the character has remaining.
         /// </summary>
-        private decimal CalculateNuyen()
+        private decimal CalculateNuyen(bool blnDoUIUpdate = true)
         {
             decimal decNuyen = _objCharacter.StartingNuyen;
             decNuyen += nudNuyen.Value * _objOptions.NuyenPerBP;
@@ -13889,9 +13904,12 @@ namespace Chummer
                 decDeductions += objVehcile.TotalCost;
 
             _objCharacter.Nuyen = decNuyen - decDeductions;
-            lblRemainingNuyen.Text = $"{_objCharacter.Nuyen:###,###,##0.##¥}";
-            tssNuyenRemaining.Text = $"{_objCharacter.Nuyen:###,###,##0.##¥}";
-            //lblNuyenBP.Text = $"{_objCharacter.Nuyen:###,###,##0.##¥}";
+            if (blnDoUIUpdate)
+            {
+                lblRemainingNuyen.Text = $"{_objCharacter.Nuyen:###,###,##0.##¥}";
+                tssNuyenRemaining.Text = $"{_objCharacter.Nuyen:###,###,##0.##¥}";
+                //lblNuyenBP.Text = $"{_objCharacter.Nuyen:###,###,##0.##¥}";
+            }
 
             return _objCharacter.Nuyen;
         }
@@ -15031,64 +15049,63 @@ namespace Chummer
         /// <summary>
         /// Save the Character.
         /// </summary>
-        private bool SaveCharacter()
+        private bool SaveCharacter(bool blnNeedConfirm = true)
         {
-            bool blnSaved = false;
-
             // If the Character does not have a file name, trigger the Save As menu item instead.
             if (string.IsNullOrEmpty(_objCharacter.FileName))
-                blnSaved = SaveCharacterAs(true);
-            else
             {
-                // If the Created is checked, make sure the user wants to actually save this character.
+                return SaveCharacterAs();
+            }
+            // If the Created is checked, make sure the user wants to actually save this character.
+            if (chkCharacterCreated.Checked)
+            {
+                if (blnNeedConfirm && !ConfirmSaveCreatedCharacter())
+                {
+                    chkCharacterCreated.Checked = false;
+                    return false;
+                }
+            }
+            //if (_objCharacter.Created)
+            //{
+            //    foreach (Skill objSkill in _objCharacter.Skills)
+            //    {
+            //        if (objSkill.RatingMaximum == 6)
+            //            objSkill.RatingMaximum = 12;
+            //        else if (objSkill.RatingMaximum == 7)
+            //            objSkill.RatingMaximum = 13;
+            //    }
+            //    foreach (SkillGroup objSkillGroup in _objCharacter.SkillGroups)
+            //    {
+            //        if (objSkillGroup.RatingMaximum == 6)
+            //            objSkillGroup.RatingMaximum = 12;
+            //    }
+            //}
+
+            Cursor = Cursors.WaitCursor;
+            if (_objCharacter.Save())
+            {
+                _blnIsDirty = false;
+                GlobalOptions.AddToMRUList(_objCharacter.FileName);
+                UpdateWindowTitle(false);
+                Cursor = Cursors.Default;
+
+                // If this character has just been saved as Created, close this form and re-open the character which will open it in the Career window instead.
                 if (chkCharacterCreated.Checked)
                 {
-                    if (!ConfirmSaveCreatedCharacter())
-                    {
-                        chkCharacterCreated.Checked = false;
-                        return false;
-                    }
+                    SaveCharacterAsCreated();
                 }
 
-                //if (_objCharacter.Created)
-                //{
-                //    foreach (Skill objSkill in _objCharacter.Skills)
-                //    {
-                //        if (objSkill.RatingMaximum == 6)
-                //            objSkill.RatingMaximum = 12;
-                //        else if (objSkill.RatingMaximum == 7)
-                //            objSkill.RatingMaximum = 13;
-                //    }
-                //    foreach (SkillGroup objSkillGroup in _objCharacter.SkillGroups)
-                //    {
-                //        if (objSkillGroup.RatingMaximum == 6)
-                //            objSkillGroup.RatingMaximum = 12;
-                //    }
-                //}
-
-                _objCharacter.Save();
-                _blnIsDirty = false;
-                blnSaved = true;
-                GlobalOptions.AddToMRUList(_objCharacter.FileName);
-            }
-            UpdateWindowTitle(false);
-
-            // If this character has just been saved as Created, close this form and re-open the character which will open it in the Career window instead.
-            if (blnSaved && chkCharacterCreated.Checked)
-            {
-                SaveCharacterAsCreated();
+                return true;
             }
 
-            return blnSaved;
+            return false;
         }
 
         /// <summary>
         /// Save the Character using the Save As dialogue box.
         /// </summary>
-        private bool SaveCharacterAs(bool blnEscapeAfterSave = false)
+        private bool SaveCharacterAs()
         {
-            bool blnSaved = false;
-
             // If the Created is checked, make sure the user wants to actually save this character.
             if (chkCharacterCreated.Checked)
             {
@@ -15113,24 +15130,11 @@ namespace Chummer
 
             if (saveFileDialog.ShowDialog(this) == DialogResult.OK)
             {
-                string strFileName = saveFileDialog.FileName;
-                _objCharacter.FileName = strFileName;
-                _objCharacter.Save();
-                _blnIsDirty = false;
-                blnSaved = true;
-                GlobalOptions.AddToMRUList(_objCharacter.FileName);
-            }
-            if (blnEscapeAfterSave)
-                return blnSaved;
-            UpdateWindowTitle(false);
-
-            // If this character has just been saved as Created, close this form and re-open the character which will open it in the Career window instead.
-            if (blnSaved && chkCharacterCreated.Checked)
-            {
-                SaveCharacterAsCreated();
+                _objCharacter.FileName = saveFileDialog.FileName;
+                return SaveCharacter(false);
             }
 
-            return blnSaved;
+            return false;
         }
 
         /// <summary>
@@ -15138,6 +15142,7 @@ namespace Chummer
         /// </summary>
         private void SaveCharacterAsCreated()
         {
+            Cursor = Cursors.WaitCursor;
             // If the character was built with Karma, record their staring Karma amount (if any).
             if (_objCharacter.Karma > 0)
             {
@@ -15179,10 +15184,17 @@ namespace Chummer
             objNuyen.Undo = objNuyenUndo;
 
             _blnSkipToolStripRevert = true;
-            _objCharacter.Save();
+            if (_objCharacter.Save())
+            {
+                Cursor = Cursors.Default;
 
-            GlobalOptions.MainForm.LoadCharacter(_objCharacter.FileName, false);
-            Close();
+                GlobalOptions.MainForm.LoadCharacter(_objCharacter.FileName, false);
+                Close();
+            }
+            else
+            {
+                Cursor = Cursors.Default;
+            }
         }
 
         /// <summary>
@@ -15610,6 +15622,11 @@ namespace Chummer
             // Select the node that was just added.
             if (objNode.Level < 2)
                 treGear.SelectedNode = objNode;
+
+            if (objNewGear.AllowRename)
+            {
+                objNode.ContextMenuStrip = cmsGearAllowRename;
+            }
 
             ScheduleCharacterUpdate();
             RefreshSelectedGear();
@@ -17051,8 +17068,11 @@ namespace Chummer
         /// Check the character and determine if it has broken any of the rules.
         /// </summary>
         /// <returns></returns>
-        public bool CheckCharacterValidity()
+        public bool CheckCharacterValidity(bool blnUseArgBuildPoints = false, int intBuildPoints = 0)
         {
+            if (_objCharacter.IgnoreRules)
+                return true;
+            Cursor = Cursors.WaitCursor;
             bool blnValid = true;
             string strMessage = LanguageManager.GetString("Message_InvalidBeginning");
 
@@ -17115,8 +17135,6 @@ namespace Chummer
 
             // If the option for CHA * X free points of Contacts is enabled, deduct that amount of points (or as many points have been spent if not the full amount).
             int intFreePoints = (_objCharacter.CHA.TotalValue * _objOptions.FreeContactsMultiplier);
-
-
 
             if (intContactPointsUsed >= intFreePoints)
             {
@@ -17198,14 +17216,15 @@ namespace Chummer
                 blnValid = false;
             }
 
-            if (_objCharacter.Contacts.Any(x => x.Connection <= 7 && (x.Connection + x.Loyalty) > 7 && !x.Free))
+            if (_objCharacter.Contacts.Any(x => (Math.Max(0, x.Connection) + Math.Max(0, x.Loyalty)) > 7 && !x.Free))
             {
                 blnValid = false;
                 strMessage += "\n\t" + LanguageManager.GetString("Message_HighContact");
             }
 
             // Check if the character has gone over the Build Point total.
-            int intBuildPoints = CalculateBP();
+            if (!blnUseArgBuildPoints)
+                intBuildPoints = CalculateBP(false);
             if (intBuildPoints < 0 && !_blnFreestyle)
             {
                 blnValid = false;
@@ -17306,7 +17325,7 @@ namespace Chummer
             }
 
             // Check if the character has gone over the Nuyen limit.
-            decimal decNuyen = CalculateNuyen();
+            decimal decNuyen = CalculateNuyen(false);
             if (decNuyen < 0)
             {
                 blnValid = false;
@@ -17870,14 +17889,9 @@ namespace Chummer
                         MessageBoxIcon.Warning) == DialogResult.No)
                     blnValid = false;
             }
-
-            if (!_objCharacter.IgnoreRules)
-            {
-                if (!blnValid && strMessage.Length > LanguageManager.GetString("Message_InvalidBeginning").Length)
-                    MessageBox.Show(strMessage, LanguageManager.GetString("MessageTitle_Invalid"), MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            else
-                blnValid = true;
+            Cursor = Cursors.Default;
+            if (!blnValid && strMessage.Length > LanguageManager.GetString("Message_InvalidBeginning").Length)
+                MessageBox.Show(strMessage, LanguageManager.GetString("MessageTitle_Invalid"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             return blnValid;
         }
 
@@ -17975,11 +17989,29 @@ namespace Chummer
         /// </summary>
         public bool ValidateCharacter()
         {
-            bool blnValid = CheckCharacterValidity();
-            int intBuildPoints = CalculateBP();
+            int intBuildPoints = CalculateBP(false);
 
-            if (blnValid)
+            if (CheckCharacterValidity(true, intBuildPoints))
             {
+                // See if the character has any Karma remaining.
+                if (intBuildPoints > _objOptions.KarmaCarryover)
+                {
+                    if (_objCharacter.BuildMethod == CharacterBuildMethod.Karma)
+                    {
+                        if (MessageBox.Show(LanguageManager.GetString("Message_NoExtraKarma").Replace("{0}", intBuildPoints.ToString()), LanguageManager.GetString("MessageTitle_ExtraKarma"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
+                            return false;
+                    }
+                    else
+                    {
+                        if (MessageBox.Show(LanguageManager.GetString("Message_ExtraKarma").Replace("{0}", intBuildPoints.ToString()).Replace("{1}", _objOptions.KarmaCarryover.ToString()), LanguageManager.GetString("MessageTitle_ExtraKarma"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
+                            return false;
+                    }
+                }
+                if (_objCharacter.Nuyen > 5000)
+                {
+                    if (MessageBox.Show(LanguageManager.GetString("Message_ExtraNuyen").Replace("{0}", _objCharacter.Nuyen.ToString()).Replace("{1}", (5000).ToString()), LanguageManager.GetString("MessageTitle_ExtraNuyen"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
+                        return false;
+                }
                 if (_objOptions.CreateBackupOnCareer && chkCharacterCreated.Checked)
                 {
                     // Create a pre-Career Mode backup of the character.
@@ -17993,6 +18025,7 @@ namespace Chummer
                         catch (UnauthorizedAccessException)
                         {
                             MessageBox.Show(LanguageManager.GetString("Message_Insufficient_Permissions_Warning"));
+                            return false;
                         }
                     }
 
@@ -18011,7 +18044,13 @@ namespace Chummer
 
                     strNewName = Path.Combine(Application.StartupPath, "saves", "backup", strNewName);
 
-                    _objCharacter.Save(strNewName);
+                    Cursor = Cursors.WaitCursor;
+                    if (!_objCharacter.Save(strNewName))
+                    {
+                        Cursor = Cursors.Default;
+                        return false;
+                    }
+                    Cursor = Cursors.Default;
                 }
 
                 // See if the character has any Karma remaining.
@@ -18019,17 +18058,11 @@ namespace Chummer
                 {
                     if (_objCharacter.BuildMethod == CharacterBuildMethod.Karma)
                     {
-                        if (MessageBox.Show(LanguageManager.GetString("Message_NoExtraKarma").Replace("{0}", intBuildPoints.ToString()), LanguageManager.GetString("MessageTitle_ExtraKarma"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
-                            blnValid = false;
-                        else
-                            _objCharacter.Karma = 0;
+                        _objCharacter.Karma = 0;
                     }
                     else
                     {
-                        if (MessageBox.Show(LanguageManager.GetString("Message_ExtraKarma").Replace("{0}", intBuildPoints.ToString()).Replace("{1}", _objOptions.KarmaCarryover.ToString()), LanguageManager.GetString("MessageTitle_ExtraKarma"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
-                            blnValid = false;
-                        else
-                            _objCharacter.Karma = _objOptions.KarmaCarryover;
+                        _objCharacter.Karma = _objOptions.KarmaCarryover;
                     }
                 }
                 else
@@ -18064,48 +18097,24 @@ namespace Chummer
                 frmStartingNuyen.Dice = objLifestyle.Dice;
                 frmStartingNuyen.Multiplier = objLifestyle.Multiplier;
 
-                if (blnValid)
+                if (_objCharacter.Nuyen > 5000)
                 {
-                    if (_objCharacter.Nuyen > 5000)
-                    {
-                        if (MessageBox.Show(LanguageManager.GetString("Message_ExtraNuyen").Replace("{0}", _objCharacter.Nuyen.ToString()).Replace("{1}", (5000).ToString()), LanguageManager.GetString("MessageTitle_ExtraNuyen"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
-                            blnValid = false;
-                        else
-                            _objCharacter.Nuyen = 5000;
-                    }
+                    _objCharacter.Nuyen = 5000;
                 }
 
-                if (blnValid)
-                {
-                    frmStartingNuyen.ShowDialog(this);
+                frmStartingNuyen.ShowDialog(this);
 
-                    // Assign the starting Nuyen amount.
-                    decimal decStartingNuyen = frmStartingNuyen.StartingNuyen;
-                    if (decStartingNuyen < 0)
-                        decStartingNuyen = 0;
+                // Assign the starting Nuyen amount.
+                decimal decStartingNuyen = frmStartingNuyen.StartingNuyen;
+                if (decStartingNuyen < 0)
+                    decStartingNuyen = 0;
 
-                    _objCharacter.Nuyen += decStartingNuyen;
-                }
+                _objCharacter.Nuyen += decStartingNuyen;
 
-                // Cannot carry over more than 7 karma from the build process
-                if (_objCharacter.Karma > 7)
-                    _objCharacter.Karma = 7;
-
-                // Break any Skill Groups if any of their associated Skills have a Rating while that does not match the Group's.
-                foreach (SkillGroup objGroup in _objCharacter.SkillsSection.SkillGroups)
-                {
-                    foreach (Skill objSkill in _objCharacter.SkillsSection.Skills)
-                    {
-                        if (objSkill.Rating != objGroup.Rating && objSkill.SkillGroup == objGroup.Name)
-                        {
-                            //objGroup.Broken = true;
-                            break;
-                        }
-                    }
-                }
+                return true;
             }
 
-            return blnValid;
+            return false;
         }
 
         /// <summary>
@@ -18211,6 +18220,9 @@ namespace Chummer
             //if (frmPickPACKSKit.SelectedCategory == "Custom")
             //blnCreateChildren = false;
 
+            TreeNode objWeaponTreeNodes = treWeapons.Nodes[0];
+            TreeNode objVehicleTreeNodes = treVehicles.Nodes[0];
+
             XmlNode objXmlKit = objXmlDocument.SelectSingleNode("/chummer/packs/pack[name = \"" + frmPickPACKSKit.SelectedKit + "\" and category = \"" + frmPickPACKSKit.SelectedCategory + "\"]");
             bool blnDoQualityTreeUpdate = false;
             // Update Qualities.
@@ -18251,8 +18263,8 @@ namespace Chummer
                     foreach (TreeNode objWeaponNode in objWeaponNodes)
                     {
                         objWeaponNode.ContextMenuStrip = cmsWeapon;
-                        treWeapons.Nodes[0].Nodes.Add(objWeaponNode);
-                        treWeapons.Nodes[0].Expand();
+                        objWeaponTreeNodes.Nodes.Add(objWeaponNode);
+                        objWeaponTreeNodes.Expand();
                     }
                 }
 
@@ -18289,8 +18301,8 @@ namespace Chummer
                     foreach (TreeNode objWeaponNode in objWeaponNodes)
                     {
                         objWeaponNode.ContextMenuStrip = cmsWeapon;
-                        treWeapons.Nodes[0].Nodes.Add(objWeaponNode);
-                        treWeapons.Nodes[0].Expand();
+                        objWeaponTreeNodes.Nodes.Add(objWeaponNode);
+                        objWeaponTreeNodes.Expand();
                     }
                 }
             }
@@ -18449,14 +18461,41 @@ namespace Chummer
 
                 foreach (XmlNode objXmlSpell in objXmlKit.SelectNodes("spells/spell"))
                 {
+                    TreeNode objCategoryNode = null;
+                    switch (objXmlSpell["category"]?.InnerText)
+                    {
+                        case "Combat":
+                            objCategoryNode = treSpells.Nodes[1];
+                            break;
+                        case "Detection":
+                            objCategoryNode = treSpells.Nodes[2];
+                            break;
+                        case "Health":
+                            objCategoryNode = treSpells.Nodes[3];
+                            break;
+                        case "Illusion":
+                            objCategoryNode = treSpells.Nodes[4];
+                            break;
+                        case "Manipulation":
+                            objCategoryNode = treSpells.Nodes[5];
+                            break;
+                        case "Rituals":
+                            objCategoryNode = treSpells.Nodes[6];
+                            break;
+                    }
                     // Make sure the Spell has not already been added to the character.
                     bool blnFound = false;
-                    foreach (TreeNode nodSpell in treSpells.Nodes[0].Nodes)
+                    if (objCategoryNode == null)
+                        blnFound = true;
+                    else
                     {
-                        if (nodSpell.Text == objXmlSpell.InnerText)
+                        foreach (TreeNode nodSpell in objCategoryNode.Nodes)
                         {
-                            blnFound = true;
-                            break;
+                            if (nodSpell.Text == objXmlSpell.InnerText)
+                            {
+                                blnFound = true;
+                                break;
+                            }
                         }
                     }
 
@@ -18474,45 +18513,11 @@ namespace Chummer
                         objSpell.Create(objXmlSpellNode, objNode, strForceValue);
                         objNode.ContextMenuStrip = cmsSpell;
                         _objCharacter.Spells.Add(objSpell);
-
-                        switch (objSpell.Category)
-                        {
-                            case "Combat":
-                                treSpells.Nodes[0].Nodes.Add(objNode);
-                                treSpells.Nodes[0].Expand();
-                                break;
-                            case "Detection":
-                                treSpells.Nodes[1].Nodes.Add(objNode);
-                                treSpells.Nodes[1].Expand();
-                                break;
-                            case "Health":
-                                treSpells.Nodes[2].Nodes.Add(objNode);
-                                treSpells.Nodes[2].Expand();
-                                break;
-                            case "Illusion":
-                                treSpells.Nodes[3].Nodes.Add(objNode);
-                                treSpells.Nodes[3].Expand();
-                                break;
-                            case "Manipulation":
-                                treSpells.Nodes[4].Nodes.Add(objNode);
-                                treSpells.Nodes[4].Expand();
-                                break;
-                            case "Rituals":
-                                /*
-                                int intNode = 5;
-                                if (_objCharacter.AdeptEnabled && !_objCharacter.MagicianEnabled)
-                                    intNode = 0;
-                                treSpells.Nodes[intNode].Nodes.Add(objNode);
-                                treSpells.Nodes[intNode].Expand();
-                                */
-                                treSpells.Nodes[5].Nodes.Add(objNode);
-                                treSpells.Nodes[5].Expand();
-                                break;
-                        }
-
-                        treSpells.SortCustom();
+                        objCategoryNode.Nodes.Add(objNode);
+                        objCategoryNode.Expand();
                     }
                 }
+                treSpells.SortCustom();
             }
 
             // Update Spirits.
@@ -18664,15 +18669,15 @@ namespace Chummer
                             foreach (TreeNode objWeaponNode in lstWeaponNodes)
                             {
                                 objWeaponNode.ContextMenuStrip = cmsWeapon;
-                                treWeapons.Nodes[0].Nodes.Add(objWeaponNode);
-                                treWeapons.Nodes[0].Expand();
+                                objWeaponTreeNodes.Nodes.Add(objWeaponNode);
+                                objWeaponTreeNodes.Expand();
                             }
                         }
                     }
 
                     foreach (Weapon objWeapon in objWeapons)
                     {
-                        CommonFunctions.CreateWeaponTreeNode(objWeapon, treWeapons.Nodes[0], cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                        CommonFunctions.CreateWeaponTreeNode(objWeapon, objWeaponTreeNodes, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
                     }
 
                     XmlDocument objXmlGearDocument = XmlManager.Load("gear.xml");
@@ -18753,8 +18758,8 @@ namespace Chummer
                     }
 
                     objNode.ContextMenuStrip = cmsWeapon;
-                    treWeapons.Nodes[0].Nodes.Add(objNode);
-                    treWeapons.Nodes[0].Expand();
+                    objWeaponTreeNodes.Nodes.Add(objNode);
+                    objWeaponTreeNodes.Expand();
 
                     Application.DoEvents();
                 }
@@ -18831,8 +18836,8 @@ namespace Chummer
                     foreach (TreeNode objWeaponNode in objWeaponNodes)
                     {
                         objWeaponNode.ContextMenuStrip = cmsWeapon;
-                        treWeapons.Nodes[0].Nodes.Add(objWeaponNode);
-                        treWeapons.Nodes[0].Expand();
+                        objWeaponTreeNodes.Nodes.Add(objWeaponNode);
+                        objWeaponTreeNodes.Expand();
                     }
 
                     foreach (Vehicle objVehicle in objVehicles)
@@ -18841,8 +18846,8 @@ namespace Chummer
                     foreach (TreeNode objVehicleNode in objVehicleNodes)
                     {
                         objVehicleNode.ContextMenuStrip = cmsVehicle;
-                        treVehicles.Nodes[0].Nodes.Add(objVehicleNode);
-                        treVehicles.Nodes[0].Expand();
+                        objVehicleTreeNodes.Nodes.Add(objVehicleNode);
+                        objVehicleTreeNodes.Expand();
                     }
 
                     Application.DoEvents();
@@ -18894,8 +18899,8 @@ namespace Chummer
                     foreach (TreeNode objWeaponNode in objWeaponNodes)
                     {
                         objWeaponNode.ContextMenuStrip = cmsWeapon;
-                        treWeapons.Nodes[0].Nodes.Add(objWeaponNode);
-                        treWeapons.Nodes[0].Expand();
+                        objWeaponTreeNodes.Nodes.Add(objWeaponNode);
+                        objWeaponTreeNodes.Expand();
                     }
 
                     foreach (Vehicle objVehicle in objVehicles)
@@ -18904,8 +18909,8 @@ namespace Chummer
                     foreach (TreeNode objVehicleNode in objVehicleNodes)
                     {
                         objVehicleNode.ContextMenuStrip = cmsVehicle;
-                        treVehicles.Nodes[0].Nodes.Add(objVehicleNode);
-                        treVehicles.Nodes[0].Expand();
+                        objVehicleTreeNodes.Nodes.Add(objVehicleNode);
+                        objVehicleTreeNodes.Expand();
                     }
 
                     Application.DoEvents();
@@ -19114,8 +19119,8 @@ namespace Chummer
                     }
 
                     objNode.ContextMenuStrip = cmsVehicle;
-                    treVehicles.Nodes[0].Nodes.Add(objNode);
-                    treVehicles.Nodes[0].Expand();
+                    objVehicleTreeNodes.Nodes.Add(objNode);
+                    objVehicleTreeNodes.Expand();
 
                     Application.DoEvents();
                 }
@@ -19489,10 +19494,7 @@ namespace Chummer
         /// </summary>
         private void UpdateMentorSpirits()
         {
-
-            MentorSpirit objMentor = null;
-            if (_objCharacter.MAGEnabled) objMentor = CommonFunctions.MentorInformation(_objCharacter);
-            else if (_objCharacter.RESEnabled) objMentor = CommonFunctions.MentorInformation(_objCharacter, Improvement.ImprovementType.Paragon);
+            MentorSpirit objMentor = _objCharacter.MentorSpirits.FirstOrDefault();
 
             if (objMentor == null)
             {
@@ -19505,8 +19507,11 @@ namespace Chummer
                 lblMentorSpiritLabel.Visible = true;
                 lblMentorSpirit.Visible = true;
                 lblMentorSpiritInformation.Visible = true;
-                lblMentorSpirit.Text = objMentor.Name;
-                lblMentorSpiritInformation.Text = objMentor.Advantages;
+                lblMentorSpirit.Text = objMentor.DisplayName;
+                lblMentorSpiritInformation.Text = LanguageManager.GetString("Label_SelectMentorSpirit_Advantage") + " " +
+                                   objMentor.DisplayAdvantage + "\n\n" +
+                                   LanguageManager.GetString("Label_SelectMetamagic_Disadvantage") + " " +
+                                   objMentor.Disadvantage;
             }
         }
 
@@ -21439,7 +21444,7 @@ namespace Chummer
                     break;
             }
         }
-        private void objAttribute_ValueChanged(Object sender)
+        private void objAttribute_ValueChanged(Object sender, EventArgs e)
         {
             // Handle the AttributeValueChanged Event for the AttributeControl object.
             ScheduleCharacterUpdate();
