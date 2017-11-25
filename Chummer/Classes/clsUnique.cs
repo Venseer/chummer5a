@@ -454,13 +454,13 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public void Print(XmlTextWriter objWriter, int intRating)
+        public void Print(XmlTextWriter objWriter, int intRating, CultureInfo objCulture)
         {
             if (_blnPrint)
             {
                 string strRatingString = string.Empty;
                 if (intRating > 1)
-                    strRatingString = " " + intRating.ToString(GlobalOptions.CultureInfo);
+                    strRatingString = " " + intRating.ToString(objCulture);
                 string strSourceName = string.Empty;
                 if (!string.IsNullOrWhiteSpace(SourceName))
                     strSourceName = " (" + SourceName + ")";
@@ -468,7 +468,7 @@ namespace Chummer
                 objWriter.WriteElementString("name", DisplayNameShort);
                 objWriter.WriteElementString("name_english", Name + strRatingString);
                 objWriter.WriteElementString("extra", LanguageManager.TranslateExtra(_strExtra) + strRatingString + strSourceName);
-                objWriter.WriteElementString("bp", _intBP.ToString());
+                objWriter.WriteElementString("bp", _intBP.ToString(objCulture));
                 string strQualityType = _objQualityType.ToString();
                 if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
@@ -696,38 +696,18 @@ namespace Chummer
         {
             get
             {
-                bool blnReturn = _blnContributeToLimit;
-
-                if (!_blnContributeToLimit)
-                {
-                    return false;
-                }
                 if (_objQualitySource == QualitySource.Metatype || _objQualitySource == QualitySource.MetatypeRemovable)
                     return false;
 
                 //Positive Metagenetic Qualities are free if you're a Changeling.
                 if (_strMetagenetic == "yes" && _objCharacter.MetageneticLimit > 0)
-                {
                     return false;
-                }
 
                 //The Beast's Way and the Spiritual Way get the Mentor Spirit for free.
-                switch (_strName)
-                {
-                    case "Mentor Spirit":
-                        if (_objCharacter.Qualities.Any(objQuality => objQuality.Name == "The Beast's Way" || objQuality.Name == "The Spiritual Way"))
-                            return false;
-                        break;
-                    case "High Pain Tolerance (Rating 1)":
-                        if (_objCharacter.Qualities.Any(objQuality => objQuality.Name == "Pie Iesu Domine. Dona Eis Requiem."))
-                        {
-                            return false;
-                        }
-                        break;
-                    default:
-                        return true;
-                }
-                return blnReturn;
+                if (_strName == "Mentor Spirit" && _objCharacter.Qualities.Any(objQuality => objQuality.Name == "The Beast's Way" || objQuality.Name == "The Spiritual Way"))
+                    return false;
+
+                return _blnContributeToLimit;
             }
             set => _blnContributeToLimit = value;
         }
@@ -742,28 +722,15 @@ namespace Chummer
                 if (_objQualitySource == QualitySource.Metatype || _objQualitySource == QualitySource.MetatypeRemovable)
                     return false;
 
-                    //Positive Metagenetic Qualities are free if you're a Changeling.
-                    if (_strMetagenetic == "yes" && _objCharacter.MetageneticLimit > 0)
-                    {
-                        return false;
-                    }
+                //Positive Metagenetic Qualities are free if you're a Changeling.
+                if (_strMetagenetic == "yes" && _objCharacter.MetageneticLimit > 0)
+                {
+                    return false;
+                }
 
-                    //The Beast's Way and the Spiritual Way get the Mentor Spirit for free.
-                    switch (_strName)
-                    {
-                        case "Mentor Spirit":
-                            if (_objCharacter.Qualities.Any(objQuality => objQuality.Name == "The Beast's Way" || objQuality.Name == "The Spiritual Way"))
-                                return false;
-                            break;
-                        case "High Pain Tolerance (Rating 1)":
-                            if (_objCharacter.Qualities.Any(objQuality => objQuality.Name == "Pie Iesu Domine. Dona Eis Requiem."))
-                            {
-                                return false;
-                            }
-                            break;
-                        default:
-                            return true;
-                    }
+                //The Beast's Way and the Spiritual Way get the Mentor Spirit for free.
+                if (_strName == "Mentor Spirit" && _objCharacter.Qualities.Any(objQuality => objQuality.Name == "The Beast's Way" || objQuality.Name == "The Spiritual Way"))
+                    return false;
 
                 return true;
             }
@@ -1087,7 +1054,7 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public void Print(XmlTextWriter objWriter)
+        public void Print(XmlTextWriter objWriter, CultureInfo objCulture)
         {
             // Translate the Critter name if applicable.
             string strName = _strName;
@@ -1101,8 +1068,8 @@ namespace Chummer
             objWriter.WriteElementString("name", strName);
             objWriter.WriteElementString("name_english", _strName);
             objWriter.WriteElementString("crittername", _strCritterName);
-            objWriter.WriteElementString("services", _intServicesOwed.ToString());
-            objWriter.WriteElementString("force", _intForce.ToString());
+            objWriter.WriteElementString("services", _intServicesOwed.ToString(objCulture));
+            objWriter.WriteElementString("force", _intForce.ToString(objCulture));
 
             if (objXmlCritterNode != null)
             {
@@ -1127,7 +1094,7 @@ namespace Chummer
                             value = _intForce; //if failed to parse, default to force
                         }
                         value = Math.Max(value, 1); //Min value is 1
-                        objWriter.WriteElementString(attribute, value.ToString());
+                        objWriter.WriteElementString(attribute, value.ToString(objCulture));
 
                         attributes[attribute] = value;
                     }
@@ -1175,7 +1142,7 @@ namespace Chummer
                         objWriter.WriteStartElement("skill");
                         objWriter.WriteElementString("name", objXmlSkillNode.InnerText);
                         objWriter.WriteElementString("attr", attrName);
-                        objWriter.WriteElementString("pool", dicepool.ToString());
+                        objWriter.WriteElementString("pool", dicepool.ToString(objCulture));
                         objWriter.WriteEndElement();
                     }
                     objWriter.WriteEndElement();
@@ -1544,7 +1511,7 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public void Print(XmlTextWriter objWriter)
+        public void Print(XmlTextWriter objWriter, CultureInfo objCulture)
         {
             objWriter.WriteStartElement("spell");
             if (_blnLimited)
@@ -1563,7 +1530,7 @@ namespace Chummer
             objWriter.WriteElementString("duration", DisplayDuration);
             objWriter.WriteElementString("dv", DisplayDV);
             objWriter.WriteElementString("alchemy", Alchemical.ToString());
-            objWriter.WriteElementString("dicepool", DicePool.ToString());
+            objWriter.WriteElementString("dicepool", DicePool.ToString(objCulture));
             objWriter.WriteElementString("source", _objCharacter.Options.LanguageBookShort(_strSource));
             objWriter.WriteElementString("page", Page);
             objWriter.WriteElementString("extra", LanguageManager.TranslateExtra(_strExtra));
@@ -1826,7 +1793,7 @@ namespace Chummer
             get
             {
                 string strTip = LanguageManager.GetString("Tip_SpellDrainBase");
-                int intMAG = _objCharacter.MAG.TotalValue;
+                int intMAG = 0;
 
                 if (_objCharacter.AdeptEnabled && _objCharacter.MagicianEnabled)
                 {
@@ -1989,20 +1956,19 @@ namespace Chummer
                 {
                     XmlDocument objXmlDocument = new XmlDocument();
                     XPathNavigator nav = objXmlDocument.CreateNavigator();
-                    XPathExpression xprDV;
-                    string dv = string.Empty;
+                    string dv = strReturn.TrimStart('F');
                     //Navigator can't do math on a single value, so inject a mathable value.
-                    if (strReturn == "F")
+                    if (string.IsNullOrEmpty(dv))
                     {
-                        strReturn = "F+0";
+                        dv = "0";
                     }
-                    if (strReturn.Contains('-'))
+                    else if (strReturn.Contains('-'))
                     {
-                        dv = strReturn.Substring(strReturn.LastIndexOf('-'));
+                        dv = strReturn.Substring(strReturn.IndexOf('-'));
                     }
                     else if (strReturn.Contains('+'))
                     {
-                        dv = strReturn.Substring(strReturn.LastIndexOf('+'));
+                        dv = strReturn.Substring(strReturn.IndexOf('+'));
                     }
                     foreach (
                         Improvement imp in
@@ -2014,10 +1980,8 @@ namespace Chummer
                         dv += $" + {imp.Value:+0;-0;0}";
                     }
 
-                    object xprResult = null;
-                    xprDV = nav.Compile(dv.TrimStart('+'));
-
-                    xprResult = nav.Evaluate(xprDV);
+                    XPathExpression xprDV = nav.Compile(dv.TrimStart('+'));
+                    object xprResult = nav.Evaluate(xprDV);
                     if (force)
                     {
                         strReturn = $"F{xprResult:+0;-0;0}";
@@ -2263,16 +2227,18 @@ namespace Chummer
     public class Focus : INamedItemWithGuid
     {
         private Guid _guiID;
+        private Character _objCharacter;
         private string _strName = string.Empty;
         private Guid _guiGearId;
         private int _intRating;
         internal string DisplayName;
 
         #region Constructor, Create, Save, and Load Methods
-        public Focus()
+        public Focus(Character objCharacter)
         {
             // Create the GUID for the new Focus.
             _guiID = Guid.NewGuid();
+            _objCharacter = objCharacter;
         }
 
         /// <summary>
@@ -2319,6 +2285,7 @@ namespace Chummer
 
         /// <summary>
         /// GUID of the linked Gear.
+        /// TODO: Replace this with a pointer to the Gear instead of having to do lookups.
         /// </summary>
         public string GearId
         {
@@ -2443,10 +2410,15 @@ namespace Chummer
                 {
                     // Each Focus costs an amount of Karma equal to their Force x speicific Karma cost.
                     string strFocusName = objFocus.Name;
+                    string strFocusExtra = objFocus.Extra;
                     int intPosition = strFocusName.IndexOf('(');
                     if (intPosition > -1)
                         strFocusName = strFocusName.Substring(0, intPosition - 1);
-                    int intKarmaMultiplier = 0;
+                    intPosition = strFocusName.IndexOf(',');
+                    if (intPosition > -1)
+                        strFocusName = strFocusName.Substring(0, intPosition - 1);
+                    int intKarmaMultiplier = 1;
+                    int intExtraKarmaCost = 0;
                     switch (strFocusName)
                     {
                         case "Qi Focus":
@@ -2501,7 +2473,14 @@ namespace Chummer
                             intKarmaMultiplier = 1;
                             break;
                     }
-                    intCost += (objFocus.Rating * intKarmaMultiplier);
+                    foreach (Improvement objLoopImprovement in _objCharacter.Improvements.Where(x => x.ImprovedName == strFocusName && (string.IsNullOrEmpty(x.Target) || strFocusExtra.Contains(x.Target)) && x.Enabled))
+                    {
+                        if (objLoopImprovement.ImproveType == Improvement.ImprovementType.FocusBindingKarmaCost)
+                            intExtraKarmaCost += objLoopImprovement.Value;
+                        else if (objLoopImprovement.ImproveType == Improvement.ImprovementType.FocusBindingKarmaMultiplier)
+                            intKarmaMultiplier += objLoopImprovement.Value;
+                    }
+                    intCost += (objFocus.Rating * intKarmaMultiplier) + intExtraKarmaCost;
                 }
                 return intCost;
             }
@@ -2648,14 +2627,14 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public void Print(XmlTextWriter objWriter)
+        public void Print(XmlTextWriter objWriter, CultureInfo objCulture)
         {
             objWriter.WriteStartElement("metamagic");
             objWriter.WriteElementString("name", DisplayNameShort);
             objWriter.WriteElementString("name_english", Name);
             objWriter.WriteElementString("source", _objCharacter.Options.LanguageBookShort(_strSource));
             objWriter.WriteElementString("page", Page);
-            objWriter.WriteElementString("grade", _intGrade.ToString());
+            objWriter.WriteElementString("grade", _intGrade.ToString(objCulture));
             objWriter.WriteElementString("improvementsource", _objImprovementSource.ToString());
             if (_objCharacter.Options.PrintNotes)
                 objWriter.WriteElementString("notes", _strNotes);
@@ -3887,14 +3866,14 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public void Print(XmlTextWriter objWriter)
+        public void Print(XmlTextWriter objWriter, CultureInfo objCulture)
         {
             objWriter.WriteStartElement("martialart");
             objWriter.WriteElementString("name", DisplayNameShort);
             objWriter.WriteElementString("name_english", Name);
             objWriter.WriteElementString("source", _objCharacter.Options.LanguageBookShort(_strSource));
             objWriter.WriteElementString("page", Page);
-            objWriter.WriteElementString("rating", _intRating.ToString());
+            objWriter.WriteElementString("rating", _intRating.ToString(objCulture));
             objWriter.WriteStartElement("martialartadvantages");
             foreach (MartialArtAdvantage objAdvantage in _lstAdvantages)
             {
@@ -4720,17 +4699,17 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public void Print(XmlTextWriter objWriter)
+        public void Print(XmlTextWriter objWriter, CultureInfo objCulture)
         {
             objWriter.WriteStartElement("contact");
             objWriter.WriteElementString("name", _strName);
             objWriter.WriteElementString("role", _strRole);
             objWriter.WriteElementString("location", _strLocation);
             if (IsGroup == false)
-                objWriter.WriteElementString("connection", _intConnection.ToString());
+                objWriter.WriteElementString("connection", _intConnection.ToString(objCulture));
             else
-                objWriter.WriteElementString("connection", "Group(" + _intConnection.ToString() + ")");
-            objWriter.WriteElementString("loyalty", _intLoyalty.ToString());
+                objWriter.WriteElementString("connection", "Group(" + _intConnection.ToString(objCulture) + ")");
+            objWriter.WriteElementString("loyalty", _intLoyalty.ToString(objCulture));
             objWriter.WriteElementString("metatype", _strMetatype);
             objWriter.WriteElementString("sex", _strSex);
             objWriter.WriteElementString("age", _strAge);
@@ -5812,12 +5791,12 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public void Print(XmlTextWriter objWriter, bool blnPrintNotes = true)
+        public void Print(XmlTextWriter objWriter, CultureInfo objCulture, bool blnPrintNotes = true)
         {
             objWriter.WriteStartElement("week");
-            objWriter.WriteElementString("year", _intYear.ToString());
-            objWriter.WriteElementString("month", Month.ToString());
-            objWriter.WriteElementString("week", MonthWeek.ToString());
+            objWriter.WriteElementString("year", _intYear.ToString(objCulture));
+            objWriter.WriteElementString("month", Month.ToString(objCulture));
+            objWriter.WriteElementString("week", MonthWeek.ToString(objCulture));
             if (blnPrintNotes)
                 objWriter.WriteElementString("notes", _strNotes);
             objWriter.WriteEndElement();
@@ -6084,16 +6063,17 @@ namespace Chummer
             _nodBonus = objXmlMentor["bonus"];
             if (_nodBonus != null)
             {
+                string strOldForce = ImprovementManager.ForcedValue;
+                string strOldSelected = ImprovementManager.SelectedValue;
                 ImprovementManager.ForcedValue = strForceValue;
                 if (!ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.MentorSpirit, _guiID.ToString(), _nodBonus, false, 1, DisplayName))
                 {
                     _guiID = Guid.Empty;
                     return;
                 }
-                if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
-                {
-                    _strExtra = ImprovementManager.SelectedValue;
-                }
+                _strExtra = ImprovementManager.SelectedValue;
+                ImprovementManager.ForcedValue = strOldForce;
+                ImprovementManager.SelectedValue = strOldSelected;
             }
             else if (!string.IsNullOrEmpty(strForceValue))
             {
@@ -6102,16 +6082,20 @@ namespace Chummer
             _nodChoice1 = objXmlChoice1;
             if (_nodChoice1 != null)
             {
+                string strOldForce = ImprovementManager.ForcedValue;
+                string strOldSelected = ImprovementManager.SelectedValue;
                 ImprovementManager.ForcedValue = strForceValueChoice1;
                 if (!ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.MentorSpirit, _guiID.ToString(), _nodChoice1, false, 1, DisplayName))
                 {
                     _guiID = Guid.Empty;
                     return;
                 }
-                if (string.IsNullOrEmpty(_strExtra) && !string.IsNullOrEmpty(ImprovementManager.SelectedValue))
+                if (string.IsNullOrEmpty(_strExtra))
                 {
                     _strExtra = ImprovementManager.SelectedValue;
                 }
+                ImprovementManager.ForcedValue = strOldForce;
+                ImprovementManager.SelectedValue = strOldSelected;
             }
             else if (string.IsNullOrEmpty(_strExtra) && !string.IsNullOrEmpty(strForceValueChoice1))
             {
@@ -6120,16 +6104,20 @@ namespace Chummer
             _nodChoice2 = objXmlChoice2;
             if (_nodChoice2 != null)
             {
+                string strOldForce = ImprovementManager.ForcedValue;
+                string strOldSelected = ImprovementManager.SelectedValue;
                 ImprovementManager.ForcedValue = strForceValueChoice2;
                 if (!ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.MentorSpirit, _guiID.ToString(), _nodChoice2, false, 1, DisplayName))
                 {
                     _guiID = Guid.Empty;
                     return;
                 }
-                if (string.IsNullOrEmpty(_strExtra) && !string.IsNullOrEmpty(ImprovementManager.SelectedValue))
+                if (string.IsNullOrEmpty(_strExtra))
                 {
                     _strExtra = ImprovementManager.SelectedValue;
                 }
+                ImprovementManager.ForcedValue = strOldForce;
+                ImprovementManager.SelectedValue = strOldSelected;
             }
             else if (string.IsNullOrEmpty(_strExtra) && !string.IsNullOrEmpty(strForceValueChoice2))
             {
@@ -6157,6 +6145,7 @@ namespace Chummer
             objWriter.WriteElementString("page", _strPage);
             objWriter.WriteElementString("advantage", _strAdvantage);
             objWriter.WriteElementString("disadvantage", _strDisadvantage);
+            objWriter.WriteElementString("mentormask", _blnMentorMask.ToString());
             if (_nodBonus != null)
                 objWriter.WriteRaw("<bonus>" + _nodBonus.InnerXml + "</bonus>");
             else
@@ -6195,6 +6184,7 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("page", ref _strPage);
             objNode.TryGetStringFieldQuickly("advantage", ref _strAdvantage);
             objNode.TryGetStringFieldQuickly("disadvantage", ref _strDisadvantage);
+            objNode.TryGetBoolFieldQuickly("mentormask", ref _blnMentorMask);
             _nodBonus = objNode["bonus"];
             _nodChoice1 = objNode["choice1"];
             _nodChoice2 = objNode["choice2"];
@@ -6233,6 +6223,7 @@ namespace Chummer
             objWriter.WriteElementString("extra", LanguageManager.TranslateExtra(_strExtra));
             objWriter.WriteElementString("source", _objCharacter.Options.LanguageBookShort(_strSource));
             objWriter.WriteElementString("page", Page);
+            objWriter.WriteElementString("mentormask", MentorMask.ToString());
             if (_objCharacter.Options.PrintNotes)
                 objWriter.WriteElementString("notes", _strNotes);
             objWriter.WriteEndElement();
