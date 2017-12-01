@@ -44,6 +44,7 @@ namespace Chummer.Backend.Equipment
         private List<VehicleMod> _lstVehicleMods = new List<VehicleMod>();
         private List<Gear> _lstGear = new List<Gear>();
         private List<Weapon> _lstWeapons = new List<Weapon>();
+        private List<WeaponMount> _lstWeaponMounts = new List<WeaponMount>();
         private string _strNotes = string.Empty;
         private string _strAltName = string.Empty;
         private string _strAltCategory = string.Empty;
@@ -76,7 +77,7 @@ namespace Chummer.Backend.Equipment
         /// <param name="cmsVehicleWeapon">ContextMenuStrip to attach to Vehicle Weapons.</param>
         /// <param name="cmsVehicleWeaponAccessory">ContextMenuStrip to attach to Weapon Accessories.</param>
         /// <param name="blnCreateChildren">Whether or not child items should be created.</param>
-        public void Create(XmlNode objXmlVehicle, TreeNode objNode, ContextMenuStrip cmsVehicle, ContextMenuStrip cmsVehicleGear, ContextMenuStrip cmsVehicleWeapon, ContextMenuStrip cmsVehicleWeaponAccessory, ContextMenuStrip cmsVehicleWeaponAccessoryGear = null, bool blnCreateChildren = true)
+        public void Create(XmlNode objXmlVehicle, TreeNode objNode, ContextMenuStrip cmsVehicle, ContextMenuStrip cmsVehicleGear, ContextMenuStrip cmsVehicleWeapon, ContextMenuStrip cmsVehicleWeaponAccessory, ContextMenuStrip cmsVehicleWeaponAccessoryGear = null, ContextMenuStrip cmsVehicleWeaponMount = null, bool blnCreateChildren = true)
         {
             objXmlVehicle.TryGetField("id", Guid.TryParse, out _sourceID);
             objXmlVehicle.TryGetStringFieldQuickly("name", ref _strName);
@@ -161,7 +162,13 @@ namespace Chummer.Backend.Equipment
 
                     if (decMin != 0 || decMax != decimal.MaxValue)
                     {
-                        frmSelectNumber frmPickNumber = new frmSelectNumber();
+                        string strNuyenFormat = _objCharacter.Options.NuyenFormat;
+                        int intDecimalPlaces = strNuyenFormat.IndexOf('.');
+                        if (intDecimalPlaces == -1)
+                            intDecimalPlaces = 0;
+                        else
+                            intDecimalPlaces = strNuyenFormat.Length - intDecimalPlaces - 1;
+                        frmSelectNumber frmPickNumber = new frmSelectNumber(intDecimalPlaces);
                         if (decMax > 1000000)
                             decMax = 1000000;
                         frmPickNumber.Minimum = decMin;
@@ -230,10 +237,24 @@ namespace Chummer.Backend.Equipment
                     int.TryParse(objAddSlotsNode.InnerText, out _intAddSlots);
             }
 
+            // If there are any Weapon Mounts that come with the Vehicle, add them.
+            if (objXmlVehicle.InnerXml.Contains("<weaponmounts>") && blnCreateChildren)
+            {
+
+                XmlNodeList objXmlModList = objXmlVehicle.SelectNodes("weaponmounts/weaponmount");
+                foreach (XmlNode objXmlVehicleMod in objXmlModList)
+                {
+                    TreeNode t = new TreeNode();
+                    WeaponMount w = new WeaponMount(_objCharacter, this);
+                    w.CreateByName(objXmlVehicleMod, t);
+                    WeaponMounts.Add(w);
+                }
+            }
+
             // If there is any Gear that comes with the Vehicle, add them.
             if (objXmlVehicle.InnerXml.Contains("<gears>") && blnCreateChildren)
-            {
-                XmlDocument objXmlDocument = XmlManager.Load("gear.xml");
+			{
+				XmlDocument objXmlDocument = XmlManager.Load("gear.xml");
 
                 XmlNodeList objXmlGearList = objXmlVehicle.SelectNodes("gears/gear");
                 foreach (XmlNode objXmlVehicleGear in objXmlGearList)
@@ -297,27 +318,32 @@ namespace Chummer.Backend.Equipment
                 foreach (XmlNode objXmlWeapon in objXmlVehicle.SelectNodes("weapons/weapon"))
                 {
                     bool blnAttached = false;
-                    TreeNode objWeaponNode = new TreeNode();
+                    List<TreeNode> lstWeaponNodes = new List<TreeNode>();
                     Weapon objWeapon = new Weapon(_objCharacter);
 
+                    List<Weapon> objSubWeapons = new List<Weapon>();
                     XmlNode objXmlWeaponNode = objXmlWeaponDocument.SelectSingleNode("/chummer/weapons/weapon[name = \"" + objXmlWeapon["name"].InnerText + "\"]");
-                    objWeapon.Create(objXmlWeaponNode, objWeaponNode, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear);
+                    objWeapon.Create(objXmlWeaponNode, lstWeaponNodes, cmsVehicleWeapon, cmsVehicleWeaponAccessory, objSubWeapons, cmsVehicleWeaponAccessoryGear);
                     objWeapon.ParentID = InternalId;
                     objWeapon.Cost = 0;
                     objWeapon.VehicleMounted = true;
 
                     // Find the first free Weapon Mount in the Vehicle.
-                    foreach (VehicleMod objMod in _lstVehicleMods)
+                    foreach (WeaponMount w in _lstWeaponMounts)
                     {
-                        if ((objMod.Name.Contains("Weapon Mount") || (!String.IsNullOrEmpty(objMod.WeaponMountCategories) && objMod.WeaponMountCategories.Contains(objWeapon.Category) && objMod.Weapons.Count == 0)))
+                        if (!String.IsNullOrWhiteSpace(w.WeaponMountCategories) && w.WeaponMountCategories.Contains(objWeapon.Category) && w.Weapons.Count == 0)
                         {
-                            objMod.Weapons.Add(objWeapon);
+                            w.Weapons.Add(objWeapon);
+                            w.Weapons.AddRange(objSubWeapons);
                             foreach (TreeNode objModNode in objNode.Nodes)
                             {
-                                if (objModNode.Tag.ToString() == objMod.InternalId)
+                                if (objModNode.Tag.ToString() == w.InternalId)
                                 {
-                                    objWeaponNode.ContextMenuStrip = cmsVehicleWeapon;
-                                    objModNode.Nodes.Add(objWeaponNode);
+                                    foreach (TreeNode objWeaponNode in lstWeaponNodes)
+                                    {
+                                        objWeaponNode.ContextMenuStrip = cmsVehicleWeapon;
+                                        objModNode.Nodes.Add(objWeaponNode);
+                                    }
                                     objModNode.Expand();
                                     blnAttached = true;
                                     break;
@@ -327,20 +353,24 @@ namespace Chummer.Backend.Equipment
                         }
                     }
 
-                    // If a free Weapon Mount could not be found, just attach it to the first one found and let the player deal with it.
-                    if (!blnAttached)
-                    {
+					// If a free Weapon Mount could not be found, just attach it to the first one found and let the player deal with it.
+					if (!blnAttached)
+					{
                         foreach (VehicleMod objMod in _lstVehicleMods)
                         {
-                            if (objMod.Name.Contains("Weapon Mount") || (!String.IsNullOrEmpty(objMod.WeaponMountCategories) && objMod.WeaponMountCategories.Contains(objWeapon.Category)))
+                            if ((objMod.Name.Contains("Weapon Mount") || (!String.IsNullOrEmpty(objMod.WeaponMountCategories) && objMod.WeaponMountCategories.Contains(objWeapon.Category) && objMod.Weapons.Count == 0)))
                             {
                                 objMod.Weapons.Add(objWeapon);
+                                objMod.Weapons.AddRange(objSubWeapons);
                                 foreach (TreeNode objModNode in objNode.Nodes)
                                 {
                                     if (objModNode.Tag.ToString() == objMod.InternalId)
                                     {
-                                        objWeaponNode.ContextMenuStrip = cmsVehicleWeapon;
-                                        objModNode.Nodes.Add(objWeaponNode);
+                                        foreach (TreeNode objWeaponNode in lstWeaponNodes)
+                                        {
+                                            objWeaponNode.ContextMenuStrip = cmsVehicleWeapon;
+                                            objModNode.Nodes.Add(objWeaponNode);
+                                        }
                                         objModNode.Expand();
                                         blnAttached = true;
                                         break;
@@ -349,10 +379,36 @@ namespace Chummer.Backend.Equipment
                                 break;
                             }
                         }
+                        if (!blnAttached)
+                        {
+                            foreach (VehicleMod objMod in _lstVehicleMods)
+                            {
+                                if (objMod.Name.Contains("Weapon Mount") || (!String.IsNullOrEmpty(objMod.WeaponMountCategories) && objMod.WeaponMountCategories.Contains(objWeapon.Category)))
+                                {
+                                    objMod.Weapons.Add(objWeapon);
+                                    objMod.Weapons.AddRange(objSubWeapons);
+                                    foreach (TreeNode objModNode in objNode.Nodes)
+                                    {
+                                        if (objModNode.Tag.ToString() == objMod.InternalId)
+                                        {
+                                            foreach (TreeNode objWeaponNode in lstWeaponNodes)
+                                            {
+                                                objWeaponNode.ContextMenuStrip = cmsVehicleWeapon;
+                                                objModNode.Nodes.Add(objWeaponNode);
+                                            }
+                                            objModNode.Expand();
+                                            blnAttached = true;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
                     }
 
                     // Look for Weapon Accessories.
-                    if (objXmlWeapon["accessories"] != null)
+                    if (objXmlWeapon["accessories"] != null && lstWeaponNodes.Count > 0)
                     {
                         foreach (XmlNode objXmlAccessory in objXmlWeapon.SelectNodes("accessories/accessory"))
                         {
@@ -370,8 +426,8 @@ namespace Chummer.Backend.Equipment
 
                             objWeapon.WeaponAccessories.Add(objMod);
 
-                            objWeaponNode.Nodes.Add(objModNode);
-                            objWeaponNode.Expand();
+                            lstWeaponNodes[0].Nodes.Add(objModNode);
+                            lstWeaponNodes[0].Expand();
                         }
                     }
                 }
@@ -422,6 +478,10 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteStartElement("mods");
             foreach (VehicleMod objMod in _lstVehicleMods)
                 objMod.Save(objWriter);
+            objWriter.WriteEndElement();
+            objWriter.WriteStartElement("weaponmounts");
+            foreach (WeaponMount wm in WeaponMounts)
+                wm.Save(objWriter);
             objWriter.WriteEndElement();
             objWriter.WriteStartElement("gears");
             foreach (Gear objGear in _lstGear)
@@ -595,6 +655,18 @@ namespace Chummer.Backend.Equipment
                 }
             }
 
+            if (strNodeInnerXml.Contains("<weaponmounts>"))
+            {
+                XmlNodeList nodChildren = objNode.SelectNodes("weaponmounts/weaponmount");
+                foreach (XmlNode nodChild in nodChildren)
+                {
+                    WeaponMount wm = new WeaponMount(_objCharacter, this);
+                    wm.Parent = this;
+                    wm.Load(nodChild, this, blnCopy);
+                    WeaponMounts.Add(wm);
+                }
+            }
+
             if (strNodeInnerXml.Contains("<gears>"))
             {
                 XmlNodeList nodChildren = objNode.SelectNodes("gears/gear");
@@ -666,8 +738,8 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteElementString("seats", TotalSeats.ToString(objCulture));
             objWriter.WriteElementString("sensor", CalculatedSensor.ToString(objCulture));
             objWriter.WriteElementString("avail", CalculatedAvail);
-            objWriter.WriteElementString("cost", TotalCost.ToString("#,0.00", objCulture));
-            objWriter.WriteElementString("owncost", OwnCost.ToString("#,0.00", objCulture));
+            objWriter.WriteElementString("cost", TotalCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
+            objWriter.WriteElementString("owncost", OwnCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
             objWriter.WriteElementString("source", _objCharacter.Options.LanguageBookShort(_strSource));
             objWriter.WriteElementString("page", Page);
             objWriter.WriteElementString("physicalcm", PhysicalCM.ToString(objCulture));
@@ -1181,11 +1253,13 @@ namespace Chummer.Backend.Equipment
         /// <summary>
         /// Weapons applied to the Vehicle through Gear.
         /// </summary>
-        public List<Weapon> Weapons
+        public List<Weapon> Weapons => _lstWeapons;
+
+        public List<WeaponMount> WeaponMounts
         {
             get
             {
-                return _lstWeapons;
+                return _lstWeaponMounts;
             }
         }
 
@@ -1425,7 +1499,7 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
-                return _lstVehicleMods.Where(objMod => !objMod.IncludedInVehicle && objMod.Installed).AsParallel().Sum(objMod => objMod.CalculatedSlots);
+                return _lstVehicleMods.Where(objMod => !objMod.IncludedInVehicle && objMod.Installed).AsParallel().Sum(objMod => objMod.CalculatedSlots) + WeaponMounts.Where(wm => !wm.IncludedInVehicle && wm.Installed).AsParallel().Sum(wm => wm.CalculatedSlots);
             }
         }
 
@@ -1459,6 +1533,8 @@ namespace Chummer.Backend.Equipment
                             }
                     }
                 }
+                intDroneModSlots += WeaponMounts.Where(wm => !wm.IncludedInVehicle && wm.Installed).AsParallel().Sum(wm => wm.CalculatedSlots);
+
                 return intDroneModSlots;
             }
         }
@@ -1538,6 +1614,7 @@ namespace Chummer.Backend.Equipment
                         intModSlotsUsed += intActualSlots;
                     }
                 }
+                intModSlotsUsed += WeaponMounts.Where(wm => !wm.IncludedInVehicle && wm.Installed).AsParallel().Sum(wm => wm.CalculatedSlots);
                 return intModSlotsUsed;
             }
         }
@@ -1566,7 +1643,7 @@ namespace Chummer.Backend.Equipment
                         decCost += objMod.Cyberware.AsParallel().Sum(objCyberware => objCyberware.TotalCost);
                     }
                 }
-
+                decCost += WeaponMounts.AsParallel().Sum(wm => wm.TotalCost);
                 decCost += _lstGear.AsParallel().Sum(objGear => objGear.TotalCost);
 
                 return decCost;
@@ -1620,8 +1697,6 @@ namespace Chummer.Backend.Equipment
 
                 // Then check for mods that modify the seat value (needs separate loop in case of % modifiers on top of stat-overriding mods)
                 int intTotalBonusSeats = 0;
-                XmlDocument objXmlDocument = new XmlDocument();
-                XPathNavigator nav = objXmlDocument.CreateNavigator();
                 foreach (VehicleMod objMod in _lstVehicleMods.Where(objMod => !objMod.IncludedInVehicle && objMod.Installed))
                 {
                     if (objMod.Bonus != null && objMod.Bonus.InnerXml.Contains("<seats>"))
@@ -1630,8 +1705,7 @@ namespace Chummer.Backend.Equipment
                         if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                         {
                             // If the bonus is determined by the existing seat number, evaluate the expression.
-                            XPathExpression xprSeats = nav.Compile(objMod.Bonus["seats"].InnerText.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Seats", intTotalSeats.ToString()));
-                            intTotalBonusSeats += Convert.ToInt32(nav.Evaluate(xprSeats), GlobalOptions.InvariantCultureInfo);
+                            intTotalBonusSeats += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(objMod.Bonus["seats"].InnerText.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Seats", intTotalSeats.ToString())), GlobalOptions.InvariantCultureInfo);
                         }
                     }
                     if (objMod.WirelessOn && objMod.WirelessBonus != null && objMod.WirelessBonus.InnerXml.Contains("<seats>"))
@@ -1640,8 +1714,7 @@ namespace Chummer.Backend.Equipment
                         if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                         {
                             // If the bonus is determined by the existing seat number, evaluate the expression.
-                            XPathExpression xprSeats = nav.Compile(objMod.WirelessBonus["seats"].InnerText.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Seats", intTotalSeats.ToString()));
-                            intTotalBonusSeats += Convert.ToInt32(nav.Evaluate(xprSeats), GlobalOptions.InvariantCultureInfo);
+                            intTotalBonusSeats += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(objMod.WirelessBonus["seats"].InnerText.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Seats", intTotalSeats.ToString())), GlobalOptions.InvariantCultureInfo);
                         }
                     }
                 }
@@ -1728,8 +1801,6 @@ namespace Chummer.Backend.Equipment
                 // Then check for mods that modify the speed value (needs separate loop in case of % modifiers on top of stat-overriding mods)
                 int intTotalBonusSpeed = 0;
                 int intTotalBonusOffroadSpeed = 0;
-                XmlDocument objXmlDocument = new XmlDocument();
-                XPathNavigator nav = objXmlDocument.CreateNavigator();
                 foreach (VehicleMod objMod in _lstVehicleMods.Where(objMod => !objMod.IncludedInVehicle && objMod.Installed))
                 {
                     if (objMod.Bonus != null)
@@ -1741,8 +1812,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing speed number, evaluate the expression.
-                                XPathExpression xprSpeed = nav.Compile(strSpeed.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Speed", intTotalSpeed.ToString()));
-                                intTotalBonusSpeed += Convert.ToInt32(nav.Evaluate(xprSpeed), GlobalOptions.CultureInfo);
+                                intTotalBonusSpeed += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strSpeed.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Speed", intTotalSpeed.ToString())), GlobalOptions.CultureInfo);
                             }
                         }
                         strSpeed = objMod.Bonus["offroadspeed"]?.InnerText;
@@ -1752,8 +1822,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing speed number, evaluate the expression.
-                                XPathExpression xprSpeed = nav.Compile(strSpeed.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadSpeed", intBaseOffroadSpeed.ToString()));
-                                intTotalBonusOffroadSpeed += Convert.ToInt32(nav.Evaluate(xprSpeed), GlobalOptions.InvariantCultureInfo);
+                                intTotalBonusOffroadSpeed += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strSpeed.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadSpeed", intBaseOffroadSpeed.ToString())), GlobalOptions.InvariantCultureInfo);
                             }
                         }
                     }
@@ -1766,8 +1835,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing speed number, evaluate the expression.
-                                XPathExpression xprSpeed = nav.Compile(strSpeed.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Speed", intTotalSpeed.ToString()));
-                                intTotalBonusSpeed += Convert.ToInt32(nav.Evaluate(xprSpeed), GlobalOptions.CultureInfo);
+                                intTotalBonusSpeed += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strSpeed.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Speed", intTotalSpeed.ToString())), GlobalOptions.CultureInfo);
                             }
                         }
                         strSpeed = objMod.WirelessBonus["offroadspeed"]?.InnerText;
@@ -1777,8 +1845,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing speed number, evaluate the expression.
-                                XPathExpression xprSpeed = nav.Compile(strSpeed.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadSpeed", intBaseOffroadSpeed.ToString()));
-                                intTotalBonusOffroadSpeed += Convert.ToInt32(nav.Evaluate(xprSpeed), GlobalOptions.InvariantCultureInfo);
+                                intTotalBonusOffroadSpeed += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strSpeed.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadSpeed", intBaseOffroadSpeed.ToString())), GlobalOptions.InvariantCultureInfo);
                             }
                         }
                     }
@@ -1876,8 +1943,6 @@ namespace Chummer.Backend.Equipment
                 // Then check for mods that modify the accel value (needs separate loop in case of % modifiers on top of stat-overriding mods)
                 int intTotalBonusAccel = 0;
                 int intTotalBonusOffroadAccel = 0;
-                XmlDocument objXmlDocument = new XmlDocument();
-                XPathNavigator nav = objXmlDocument.CreateNavigator();
                 foreach (VehicleMod objMod in _lstVehicleMods.Where(objMod => !objMod.IncludedInVehicle && objMod.Installed))
                 {
                     if (objMod.Bonus != null)
@@ -1889,8 +1954,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing accel number, evaluate the expression.
-                                XPathExpression xprAccel = nav.Compile(strAccel.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Accel", intTotalAccel.ToString()));
-                                intTotalBonusAccel += Convert.ToInt32(nav.Evaluate(xprAccel), GlobalOptions.CultureInfo);
+                                intTotalBonusAccel += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strAccel.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Accel", intTotalAccel.ToString())), GlobalOptions.CultureInfo);
                             }
                         }
                         strAccel = objMod.Bonus["offroadaccel"]?.InnerText;
@@ -1900,8 +1964,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing accel number, evaluate the expression.
-                                XPathExpression xprAccel = nav.Compile(strAccel.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadAccel", intBaseOffroadAccel.ToString()));
-                                intTotalBonusOffroadAccel += Convert.ToInt32(nav.Evaluate(xprAccel), GlobalOptions.InvariantCultureInfo);
+                                intTotalBonusOffroadAccel += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strAccel.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadAccel", intBaseOffroadAccel.ToString())), GlobalOptions.InvariantCultureInfo);
                             }
                         }
                     }
@@ -1914,8 +1977,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing accel number, evaluate the expression.
-                                XPathExpression xprAccel = nav.Compile(strAccel.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Accel", intTotalAccel.ToString()));
-                                intTotalBonusAccel += Convert.ToInt32(nav.Evaluate(xprAccel), GlobalOptions.CultureInfo);
+                                intTotalBonusAccel += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strAccel.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Accel", intTotalAccel.ToString())), GlobalOptions.CultureInfo);
                             }
                         }
                         strAccel = objMod.WirelessBonus["offroadaccel"]?.InnerText;
@@ -1925,8 +1987,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing accel number, evaluate the expression.
-                                XPathExpression xprAccel = nav.Compile(strAccel.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadAccel", intBaseOffroadAccel.ToString()));
-                                intTotalBonusOffroadAccel += Convert.ToInt32(nav.Evaluate(xprAccel), GlobalOptions.InvariantCultureInfo);
+                                intTotalBonusOffroadAccel += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strAccel.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadAccel", intBaseOffroadAccel.ToString())), GlobalOptions.InvariantCultureInfo);
                             }
                         }
                     }
@@ -1954,9 +2015,7 @@ namespace Chummer.Backend.Equipment
             get
             {
                 int intBody = _intBody;
-
-                XmlDocument objXmlDocument = new XmlDocument();
-                XPathNavigator nav = objXmlDocument.CreateNavigator();
+                
                 foreach (VehicleMod objMod in _lstVehicleMods)
                 {
                     if (!objMod.IncludedInVehicle && objMod.Installed)
@@ -1970,8 +2029,7 @@ namespace Chummer.Backend.Equipment
                             {
                                 // If the cost is determined by the Rating, evaluate the expression.
                                 string strBody = strBodyElement.Replace("Rating", objMod.Rating.ToString());
-                                XPathExpression xprBody = nav.Compile(strBody);
-                                intBody += Convert.ToInt32(nav.Evaluate(xprBody).ToString());
+                                intBody += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strBody));
                             }
                             else
                             {
@@ -1988,8 +2046,7 @@ namespace Chummer.Backend.Equipment
                                 {
                                     // If the cost is determined by the Rating, evaluate the expression.
                                     string strBody = strBodyElement.Replace("Rating", objMod.Rating.ToString());
-                                    XPathExpression xprBody = nav.Compile(strBody);
-                                    intBody += Convert.ToInt32(nav.Evaluate(xprBody).ToString());
+                                    intBody += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strBody));
                                 }
                                 else
                                 {
@@ -2082,8 +2139,6 @@ namespace Chummer.Backend.Equipment
                 // Then check for mods that modify the handling value (needs separate loop in case of % modifiers on top of stat-overriding mods)
                 int intTotalBonusHandling = 0;
                 int intTotalBonusOffroadHandling = 0;
-                XmlDocument objXmlDocument = new XmlDocument();
-                XPathNavigator nav = objXmlDocument.CreateNavigator();
                 foreach (VehicleMod objMod in _lstVehicleMods.Where(objMod => !objMod.IncludedInVehicle && objMod.Installed))
                 {
                     if (objMod.Bonus != null)
@@ -2095,8 +2150,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing accel number, evaluate the expression.
-                                XPathExpression xprAccel = nav.Compile(strHandling.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Handling", intBaseHandling.ToString()));
-                                intTotalBonusHandling += Convert.ToInt32(nav.Evaluate(xprAccel), GlobalOptions.CultureInfo);
+                                intTotalBonusHandling += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strHandling.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Handling", intBaseHandling.ToString())), GlobalOptions.CultureInfo);
                             }
                         }
                         strHandling = objMod.Bonus["offroadhandling"]?.InnerText;
@@ -2106,8 +2160,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing accel number, evaluate the expression.
-                                XPathExpression xprAccel = nav.Compile(strHandling.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadHandling", intBaseOffroadHandling.ToString()));
-                                intTotalBonusOffroadHandling += Convert.ToInt32(nav.Evaluate(xprAccel), GlobalOptions.InvariantCultureInfo);
+                                intTotalBonusOffroadHandling += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strHandling.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadHandling", intBaseOffroadHandling.ToString())), GlobalOptions.InvariantCultureInfo);
                             }
                         }
                     }
@@ -2120,8 +2173,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing accel number, evaluate the expression.
-                                XPathExpression xprAccel = nav.Compile(strHandling.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Handling", intBaseHandling.ToString()));
-                                intTotalBonusHandling += Convert.ToInt32(nav.Evaluate(xprAccel), GlobalOptions.CultureInfo);
+                                intTotalBonusHandling += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strHandling.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("Handling", intBaseHandling.ToString())), GlobalOptions.CultureInfo);
                             }
                         }
                         strHandling = objMod.WirelessBonus["offroadhandling"]?.InnerText;
@@ -2131,8 +2183,7 @@ namespace Chummer.Backend.Equipment
                             if (chrFirstCharacter == '+' || chrFirstCharacter == '-')
                             {
                                 // If the bonus is determined by the existing accel number, evaluate the expression.
-                                XPathExpression xprAccel = nav.Compile(strHandling.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadHandling", intBaseOffroadHandling.ToString()));
-                                intTotalBonusOffroadHandling += Convert.ToInt32(nav.Evaluate(xprAccel), GlobalOptions.InvariantCultureInfo);
+                                intTotalBonusOffroadHandling += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strHandling.TrimStart('+').Replace("Rating", objMod.Rating.ToString()).Replace("OffroadHandling", intBaseOffroadHandling.ToString())), GlobalOptions.InvariantCultureInfo);
                             }
                         }
                     }
@@ -2360,14 +2411,20 @@ namespace Chummer.Backend.Equipment
             {
                 int intProtection = _intBody + _intAddProtectionModSlots;
 
-                foreach (VehicleMod objMod in _lstVehicleMods.Where(objMod => !objMod.IncludedInVehicle && objMod.Installed && objMod.Category == "Protection"))
+                foreach (VehicleMod objMod in _lstVehicleMods.AsParallel().Where(objMod => !objMod.IncludedInVehicle && objMod.Installed && objMod.Category == "Protection"))
                 {
                     // Subtract the Modification's Slots from the Vehicle's base Body.
                     int intSlots = objMod.CalculatedSlots;
                     if (intSlots > 0)
                         intProtection -= intSlots;
                 }
-
+                foreach (WeaponMount wm in WeaponMounts.AsParallel().Where(wm => !wm.IncludedInVehicle && wm.Installed))
+                {
+                    // Subtract the Modification's Slots from the Vehicle's base Body.
+                    int intSlots = wm.CalculatedSlots;
+                    if (intSlots > 0)
+                        intProtection -= intSlots;
+                }
                 return intProtection;
             }
         }

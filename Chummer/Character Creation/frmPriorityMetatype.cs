@@ -1134,7 +1134,7 @@ namespace Chummer
 
                 int intForce = 0;
                 if (nudForce.Visible)
-                    intForce = Convert.ToInt32(nudForce.Value);
+                    intForce = decimal.ToInt32(nudForce.Value);
 
                 _objCharacter.MetatypeBP = Convert.ToInt32(lblMetavariantBP.Text);
 
@@ -1555,18 +1555,15 @@ namespace Chummer
             if (string.IsNullOrWhiteSpace(strIn))
                 return intOffset.ToString();
             int intValue = 1;
-            XmlDocument objXmlDocument = new XmlDocument();
-            XPathNavigator nav = objXmlDocument.CreateNavigator();
-            XPathExpression xprAttribute = nav.Compile(strIn.Replace("/", " div ").Replace("F", intForce.ToString()).Replace("1D6", intForce.ToString()).Replace("2D6", intForce.ToString()));
-            object xprEvaluateResult = null;
+            string strForce = intForce.ToString();
             // This statement is wrapped in a try/catch since trying 1 div 2 results in an error with XSLT.
             try
             {
-                xprEvaluateResult = nav.Evaluate(xprAttribute);
+                intValue = Convert.ToInt32(Math.Ceiling((double)CommonFunctions.EvaluateInvariantXPath(strIn.Replace("/", " div ").Replace("F", strForce).Replace("1D6", strForce).Replace("2D6", strForce))));
             }
             catch (XPathException) { }
-            if (xprEvaluateResult is double)
-                intValue = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(xprEvaluateResult.ToString(), GlobalOptions.InvariantCultureInfo)));
+            catch (OverflowException) { } // Result is text and not a double
+            catch (InvalidCastException) { }
             intValue += intOffset;
             if (intForce > 0)
             {

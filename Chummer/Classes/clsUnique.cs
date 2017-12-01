@@ -196,7 +196,7 @@ namespace Chummer
 
                     if (decMin != 0 || decMax != decimal.MaxValue)
                     {
-                        frmSelectNumber frmPickNumber = new frmSelectNumber(false);
+                        frmSelectNumber frmPickNumber = new frmSelectNumber(0);
                         if (decMax > 1000000)
                             decMax = 1000000;
                         frmPickNumber.Minimum = decMin;
@@ -204,7 +204,7 @@ namespace Chummer
                         frmPickNumber.Description = LanguageManager.GetString("String_SelectVariableCost").Replace("{0}", DisplayNameShort);
                         frmPickNumber.AllowCancel = false;
                         frmPickNumber.ShowDialog();
-                        _intBP = Convert.ToInt32(frmPickNumber.SelectedValue);
+                        _intBP = decimal.ToInt32(frmPickNumber.SelectedValue);
                     }
                 }
                 else
@@ -259,12 +259,15 @@ namespace Chummer
                             ? objXmlWeaponDocument.SelectSingleNode("/chummer/weapons/weapon[id = \"" + strLoopID + "\"]")
                             : objXmlWeaponDocument.SelectSingleNode("/chummer/weapons/weapon[name = \"" + strLoopID + "\"]");
 
-                        TreeNode objGearWeaponNode = new TreeNode();
+                        List<TreeNode> lstGearWeaponNodes = new List<TreeNode>();
                         Weapon objGearWeapon = new Weapon(objCharacter);
-                        objGearWeapon.Create(objXmlWeapon, objGearWeaponNode, null, null);
+                        objGearWeapon.Create(objXmlWeapon, lstGearWeaponNodes, null, null, objWeapons);
                         objGearWeapon.ParentID = InternalId;
-                        objGearWeaponNode.ForeColor = SystemColors.GrayText;
-                        objWeaponNodes.Add(objGearWeaponNode);
+                        foreach (TreeNode objLoopNode in lstGearWeaponNodes)
+                        {
+                            objLoopNode.ForeColor = SystemColors.GrayText;
+                            objWeaponNodes.Add(objLoopNode);
+                        }
                         objWeapons.Add(objGearWeapon);
 
                         _guiWeaponID = Guid.Parse(objGearWeapon.InternalId);
@@ -1082,16 +1085,17 @@ namespace Chummer
                     String strInner = string.Empty;
                     if (objXmlCritterNode.TryGetStringFieldQuickly(attribute, ref strInner))
                     {
-                        //Here is some black magic (used way too many places)
-                        //To calculate the int value of a string
-                        //TODO: implement a sane expression evaluator
-
-                        XPathNavigator navigator = objXmlCritterNode.CreateNavigator();
-                        XPathExpression exp = navigator.Compile(strInner.Replace("F", _intForce.ToString()));
-                        int value;
-                        if (!int.TryParse(navigator.Evaluate(exp).ToString(), out value))
+                        int value = 1;
+                        try
                         {
-                            value = _intForce; //if failed to parse, default to force
+                            value = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strInner.Replace("F", _intForce.ToString())));
+                        }
+                        catch (XPathException)
+                        {
+                            if (!int.TryParse(strInner, out value))
+                            {
+                                value = _intForce; //if failed to parse, default to force
+                            }
                         }
                         value = Math.Max(value, 1); //Min value is 1
                         objWriter.WriteElementString(attribute, value.ToString(objCulture));
@@ -1799,19 +1803,14 @@ namespace Chummer
                 {
                     intMAG = _objCharacter.Options.SpiritForceBasedOnTotalMAG ? _objCharacter.MAG.TotalValue : _objCharacter.MAG.Value;
                 }
-
-                XmlDocument objXmlDocument = new XmlDocument();
-                XPathNavigator nav = objXmlDocument.CreateNavigator();
-
+                
                 for (int i = 1; i <= intMAG * 2; i++)
                 {
                     // Calculate the Spell's Drain for the current Force.
-                    XPathExpression xprDV = nav.Compile(DV.Replace("F", i.ToString()).Replace("/", " div "));
-
                     object xprResult = null;
                     try
                     {
-                        xprResult = nav.Evaluate(xprDV);
+                        xprResult = CommonFunctions.EvaluateInvariantXPath(DV.Replace("F", i.ToString()).Replace("/", " div "));
                     }
                     catch (XPathException)
                     {
@@ -1954,8 +1953,6 @@ namespace Chummer
                 bool force = _strDV.StartsWith('F');
                 if (_objCharacter.Improvements.Any(i => i.ImproveType == Improvement.ImprovementType.DrainValue))
                 {
-                    XmlDocument objXmlDocument = new XmlDocument();
-                    XPathNavigator nav = objXmlDocument.CreateNavigator();
                     string dv = strReturn.TrimStart('F');
                     //Navigator can't do math on a single value, so inject a mathable value.
                     if (string.IsNullOrEmpty(dv))
@@ -1980,8 +1977,7 @@ namespace Chummer
                         dv += $" + {imp.Value:+0;-0;0}";
                     }
 
-                    XPathExpression xprDV = nav.Compile(dv.TrimStart('+'));
-                    object xprResult = nav.Evaluate(xprDV);
+                    object xprResult = CommonFunctions.EvaluateInvariantXPath(dv.TrimStart('+'));
                     if (force)
                     {
                         strReturn = $"F{xprResult:+0;-0;0}";
@@ -4590,6 +4586,7 @@ namespace Chummer
         private bool _blnBlackmail;
         private bool _blnFamily;
         private bool _readonly;
+        private bool _blnForceLoyalty;
 
         #region Helper Methods
         /// <summary>
@@ -4643,7 +4640,7 @@ namespace Chummer
             objWriter.WriteElementString("colour", _objColour.ToArgb().ToString());
             objWriter.WriteElementString("free", _blnFree.ToString());
             objWriter.WriteElementString("group", _blnIsGroup.ToString());
-            objWriter.WriteElementString("mademan", _blnMadeMan.ToString());
+            objWriter.WriteElementString("forceloyalty", _blnForceLoyalty.ToString());
             objWriter.WriteElementString("family",_blnFamily.ToString());
             objWriter.WriteElementString("blackmail", _blnBlackmail.ToString());
 
@@ -4692,7 +4689,15 @@ namespace Chummer
             }
 
             if (objNode["readonly"] != null) _readonly = true;
-            objNode.TryGetBoolFieldQuickly("mademan", ref _blnMadeMan);
+            if (objNode["forceloyalty"] != null)
+            {
+                objNode.TryGetBoolFieldQuickly("forceloyalty", ref _blnForceLoyalty);
+            }
+            else if (objNode["mademan"] != null)
+            {
+                objNode.TryGetBoolFieldQuickly("mademan", ref _blnForceLoyalty);
+            }
+                
         }
 
         /// <summary>
@@ -4718,7 +4723,7 @@ namespace Chummer
             objWriter.WriteElementString("hobbiesvice", _strHobbiesVice);
             objWriter.WriteElementString("personallife", _strPersonalLife);
             objWriter.WriteElementString("type", LanguageManager.GetString("String_" + _objContactType.ToString()));
-            objWriter.WriteElementString("mademan", _blnMadeMan.ToString());
+            objWriter.WriteElementString("forceloyalty", _blnForceLoyalty.ToString());
             objWriter.WriteElementString("blackmail", _blnBlackmail.ToString());
             objWriter.WriteElementString("family", _blnFamily.ToString());
             if (_objCharacter.Options.PrintNotes)
@@ -4907,23 +4912,23 @@ namespace Chummer
         /// </summary>
         public bool IsGroup
         {
-            get => _blnIsGroup || _blnMadeMan;
+            get => _blnIsGroup;
             set
             {
                 _blnIsGroup = value;
 
-                if (value)
+                if (value && !ForceLoyalty)
                 {
                     _intLoyalty = 1;
                 }
             }
         }
 
-        public bool LoyaltyEnabled => !IsGroup;
+        public bool LoyaltyEnabled => !IsGroup && !ForceLoyalty;
 
         public int ConnectionMaximum => !_objCharacter.Created ? (_objCharacter.FriendsInHighPlaces ? 12 : 6) : 12;
 
-        public string QuickText => $"({Connection}/{(IsGroup ? (MadeMan ? "M" : "G") : Loyalty.ToString())})";
+        public string QuickText => $"({Connection}/{(IsGroup ? $"{Loyalty}G" : Loyalty.ToString())})";
 
         /// <summary>
         /// The Contact's type, either Contact or Enemy.
@@ -5031,6 +5036,12 @@ namespace Chummer
             set => _blnFamily = value;
         }
 
+        public bool ForceLoyalty
+        {
+            get => _blnForceLoyalty;
+            set => _blnForceLoyalty = value;
+        }
+
         #endregion
     }
 
@@ -5050,7 +5061,7 @@ namespace Chummer
         private string _strSource = string.Empty;
         private string _strPage = string.Empty;
         private int _intKarma;
-        private double _dblPowerPoints;
+        private decimal _decPowerPoints = 0.0m;
         private XmlNode _nodBonus;
         private string _strNotes = string.Empty;
         private readonly Character _objCharacter;
@@ -5129,7 +5140,7 @@ namespace Chummer
             objWriter.WriteElementString("source", _strSource);
             objWriter.WriteElementString("page", _strPage);
             objWriter.WriteElementString("karma", _intKarma.ToString(CultureInfo.InvariantCulture));
-            objWriter.WriteElementString("points", _dblPowerPoints.ToString(GlobalOptions.InvariantCultureInfo));
+            objWriter.WriteElementString("points", _decPowerPoints.ToString(GlobalOptions.InvariantCultureInfo));
             objWriter.WriteElementString("counttowardslimit", _blnCountTowardsLimit.ToString());
             if (_nodBonus != null)
                 objWriter.WriteRaw("<bonus>" + _nodBonus.InnerXml + "</bonus>");
@@ -5156,7 +5167,7 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("duration", ref _strDuration);
             objNode.TryGetStringFieldQuickly("source", ref _strSource);
             objNode.TryGetStringFieldQuickly("page", ref _strPage);
-            objNode.TryGetDoubleFieldQuickly("points", ref _dblPowerPoints);
+            objNode.TryGetDecFieldQuickly("points", ref _decPowerPoints);
             objNode.TryGetBoolFieldQuickly("counttowardslimit", ref _blnCountTowardsLimit);
             _nodBonus = objNode["bonus"];
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
@@ -5492,10 +5503,10 @@ namespace Chummer
         /// <summary>
         /// Power Points used by the Critter Power (Free Spirits only).
         /// </summary>
-        public double PowerPoints
+        public decimal PowerPoints
         {
-            get => _dblPowerPoints;
-            set => _dblPowerPoints = value;
+            get => _decPowerPoints;
+            set => _decPowerPoints = value;
         }
 
         /// <summary>
@@ -5667,22 +5678,22 @@ namespace Chummer
         {
             get
             {
-                double dblCost = 10.0 + (_intGrade * _objOptions.KarmaInitiation);
-                double dblMultiplier = 1.0;
+                int intCost = _objOptions.KarmaInititationFlat + (_intGrade * _objOptions.KarmaInitiation);
+                decimal decMultiplier = 1.0m;
 
                 // Discount for Group.
                 if (_blnGroup)
-                    dblMultiplier -= 0.1;
+                    decMultiplier -= 0.1m;
 
                 // Discount for Ordeal.
                 if (_blnOrdeal)
-                    dblMultiplier -= 0.1;
+                    decMultiplier -= 0.1m;
 
                 // Discount for Schooling.
                 if (_blnSchooling)
-                    dblMultiplier -= 0.1;
+                    decMultiplier -= 0.1m;
 
-                return Convert.ToInt32(Math.Ceiling(dblCost * dblMultiplier));
+                return decimal.ToInt32(decimal.Ceiling(intCost * decMultiplier));
             }
         }
 
@@ -6125,8 +6136,8 @@ namespace Chummer
             }
             if (_blnMentorMask)
             {
-                ImprovementManager.CreateImprovement(_objCharacter, _guiID.ToString(), Improvement.ImprovementSource.MentorSpirit, DisplayName, Improvement.ImprovementType.AdeptPowerPoints, string.Empty, 1);
-                ImprovementManager.CreateImprovement(_objCharacter, _guiID.ToString(), Improvement.ImprovementSource.MentorSpirit, DisplayName, Improvement.ImprovementType.DrainValue, string.Empty, -1);
+                ImprovementManager.CreateImprovement(_objCharacter, string.Empty, Improvement.ImprovementSource.MentorSpirit, _guiID.ToString(), Improvement.ImprovementType.AdeptPowerPoints, string.Empty, 1);
+                ImprovementManager.CreateImprovement(_objCharacter, string.Empty, Improvement.ImprovementSource.MentorSpirit, _guiID.ToString(), Improvement.ImprovementType.DrainValue, string.Empty, -1);
             }
         }
 
@@ -6343,7 +6354,7 @@ namespace Chummer
         {
             get
             {
-                return XmlManager.Load(_eMentorType == Improvement.ImprovementType.MentorSpirit ? "mentors.xml" : "paragons.xml").SelectSingleNode("/chummer/mentors/mentor[id = \"" + _sourceID + "\"]");
+                return XmlManager.Load(_eMentorType == Improvement.ImprovementType.MentorSpirit ? "mentors.xml" : "paragons.xml").SelectSingleNode("/chummer/mentors/mentor[id = \"" + _sourceID.ToString() + "\"]");
             }
         }
 

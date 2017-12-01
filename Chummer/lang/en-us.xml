@@ -4547,6 +4547,14 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <key>Label_VehicleSeats</key>
       <text>Seats:</text>
     </string>
+    <string>
+      <key>Menu_AddWeaponMount</key>
+      <text>Add Weapon Mount</text>
+    </string>
+    <string>
+      <key>String_WeaponMounts</key>
+      <text>Weapon Mounts</text>
+    </string>
     <!-- End Region-->
     <!-- Region Character Info Tab -->
     <string>
@@ -4916,6 +4924,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Mystic Adepts use second MAG attribute for Adept abilities instead of special PP rules</text>
     </string>
     <string>
+      <key>Checkbox_Options_CompensateSkillGroupKarmaDifference</key>
+      <text>Compensate for higher karma costs when raising the rating of the last skill in a skill group</text>
+    </string>
+    <string>
       <key>String_SelectBP_LifeModuleSummary</key>
       <text>Enter the maximum availability and karma you are allowed to create your character with (Default {0})</text>
     </string>
@@ -4929,8 +4941,7 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <string>
       <key>Tip_Omae_Warning</key>
-      <text>Omae is outside the current developers control and contain old characters that may not work or crash the current version of chummer. Proceed at your own risk.
-Do you want to continue?</text>
+      <text>Omae is outside the current developers control and contain old characters that may not work or crash the current version of chummer. Proceed at your own risk.\nDo you want to continue?</text>
     </string>
     <string>
       <key>Tip_BuildFoci</key>
@@ -5326,12 +5337,20 @@ Do you want to continue?</text>
       <text>Hobbies/Vice:</text>
     </string>
     <string>
-      <key>Label_Contact_Group</key>
-      <text>Group:</text>
+      <key>Checkbox_Contact_Group</key>
+      <text>Group</text>
     </string>
     <string>
-      <key>Label_Contact_Free</key>
-      <text>Free:</text>
+      <key>Checkbox_Contact_Free</key>
+      <text>Free</text>
+    </string>
+    <string>
+      <key>Checkbox_Contact_Blackmail</key>
+      <text>Blackmail</text>
+    </string>
+    <string>
+      <key>Checkbox_Contact_Family</key>
+      <text>Family</text>
     </string>
     <string>
       <key>Label_Enemy_Incidence</key>
@@ -6468,6 +6487,10 @@ Do you want to continue?</text>
       <text>Allow Live Data Updates from customdata Directory</text>
     </string>
     <string>
+      <key>Checkbox_Options_LiveUpdateCleanCharacterFiles</key>
+      <text>Automatically load changes from open characters' save files if there are no pending changes to be saved</text>
+    </string>
+    <string>
       <key>Checkbox_Options_UseLogging</key>
       <text>Use Debug Logging</text>
     </string>
@@ -6565,7 +6588,11 @@ Do you want to continue?</text>
     </string>
     <string>
       <key>Label_Options_NewSpecialization</key>
-      <text>New Specialization</text>
+      <text>New Active Skill Specialization</text>
+    </string>
+    <string>
+      <key>Label_Options_NewKnoSpecialization</key>
+      <text>New Knowledge Skill Specialization</text>
     </string>
     <string>
       <key>Label_Options_NewKnowledgeSkill</key>
@@ -6584,8 +6611,8 @@ Do you want to continue?</text>
       <text>x New Rating</text>
     </string>
     <string>
-      <key>Label_Options_NewRatingTen</key>
-      <text>x New Rating) + 10</text>
+      <key>Label_Options_NewRatingPlus</key>
+      <text>x New Rating) +</text>
     </string>
     <string>
       <key>Label_Options_BPCost</key>
@@ -6944,6 +6971,10 @@ Do you want to continue?</text>
       <text>Allow characters to exceed their Positive Quality limit</text>
     </string>
     <string>
+      <key>Checkbox_Options_ExceedPositiveQualitiesCostDoubled</key>
+      <text>Double all Positive Quality karma costs in excess of the limit</text>
+    </string>
+    <string>
       <key>Checkbox_Options_ExceedNegativeQualities</key>
       <text>Allow characters to exceed their Negative Quality limit</text>
     </string>
@@ -7056,6 +7087,10 @@ Do you want to continue?</text>
       <text>Number of decimal places to round Essence to:</text>
     </string>
     <string>
+      <key>Checkbox_Option_DontRoundEssenceInternally</key>
+      <text>Only round Essence for display purposes, not for internal calculations</text>
+    </string>
+    <string>
       <key>Checkbox_Option_FreeSpiritPowerPointsMAG</key>
       <text>Free Spirits receive Power Points based on MAG instead of EDG</text>
     </string>
@@ -7138,6 +7173,14 @@ Do you want to continue?</text>
     <string>
       <key>Label_Options_CharacterRoster</key>
       <text>Character Roster Watch Folder</text>
+    </string>
+    <string>
+      <key>Label_Options_NuyenDecimalsAlways</key>
+      <text>Number of Nuyen decimal places to always display:</text>
+    </string>
+    <string>
+      <key>Label_Options_NuyenDecimalsMaximum</key>
+      <text>Maximum number of Nuyen decimal places to display:</text>
     </string>
     <!-- End Region-->
     <!-- Region Print Multiple Window -->

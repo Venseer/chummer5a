@@ -192,7 +192,7 @@ namespace Chummer.Skills
             string upgradetext =
                 $"{LanguageManager.GetString("String_ExpenseSkillGroup")} {DisplayName} {Rating} -> {(Rating + 1)}";
 
-            ExpenseLogEntry entry = new ExpenseLogEntry();
+            ExpenseLogEntry entry = new ExpenseLogEntry(_character);
             entry.Create(price * -1, upgradetext, ExpenseType.Karma, DateTime.Now);
             entry.Undo = new ExpenseUndo().CreateKarma(Rating == 0 ? KarmaExpenseType.AddSkill : KarmaExpenseType.ImproveSkill, Name);
 
@@ -360,8 +360,7 @@ namespace Chummer.Skills
                 {
                     return LanguageManager.GetString("Label_SkillGroup_Broken");
                 }
-                return GetEnumerable().Min(x => x.TotalBaseRating).ToString();
-
+                return SkillList.Min(x => x.TotalBaseRating).ToString();
             }
         }
 
@@ -378,7 +377,7 @@ namespace Chummer.Skills
 
         public string UpgradeToolTip
         {
-            get { return string.Format(LanguageManager.GetString("Tip_ImproveItem"), GetEnumerable().Min(x => x.TotalBaseRating) + 1, UpgradeKarmaCost()); }
+            get { return string.Format(LanguageManager.GetString("Tip_ImproveItem"), SkillList.Min(x => x.TotalBaseRating) + 1, UpgradeKarmaCost()); }
         }
 
         public Guid Id { get; } = Guid.NewGuid();
@@ -497,7 +496,7 @@ namespace Chummer.Skills
                 }
             }
             if (decMultiplier != 1.0m)
-                intReturn = Convert.ToInt32(Math.Ceiling(intReturn * decMultiplier));
+                intReturn = decimal.ToInt32(decimal.Ceiling(intReturn * decMultiplier));
             intReturn += intExtra;
 
             return Math.Max(intReturn, 0);
@@ -544,7 +543,7 @@ namespace Chummer.Skills
                 }
             }
             if (decMultiplier != 1.0m)
-                cost = Convert.ToInt32(Math.Ceiling(cost * decMultiplier));
+                cost = decimal.ToInt32(decimal.Ceiling(cost * decMultiplier));
             cost += intExtra;
 
             return Math.Max(cost, 0); 
@@ -555,7 +554,7 @@ namespace Chummer.Skills
             if (_character.Improvements.Any(x => ((x.ImproveType == Improvement.ImprovementType.SkillGroupDisable && x.ImprovedName == Name) ||
                 (x.ImproveType == Improvement.ImprovementType.SkillGroupCategoryDisable && GetRelevantSkillCategories.Contains(x.ImprovedName))) && x.Enabled))
                 return -1;
-            int rating = GetEnumerable().Min(x => x.TotalBaseRating);
+            int rating = SkillList.Min(x => x.TotalBaseRating);
             int intReturn = 0;
             int intOptionsCost = 1;
             if (rating == 0)
@@ -598,7 +597,7 @@ namespace Chummer.Skills
                 }
             }
             if (decMultiplier != 1.0m)
-                intReturn = Convert.ToInt32(Math.Ceiling(intReturn * decMultiplier));
+                intReturn = decimal.ToInt32(decimal.Ceiling(intReturn * decMultiplier));
             intReturn += intExtra;
 
             return Math.Max(intReturn, Math.Min(1, intOptionsCost));
@@ -615,11 +614,16 @@ namespace Chummer.Skills
             return Id.GetHashCode();
         }
 
-        public IEnumerable<Skill> GetEnumerable() //Databinding shits itself if this implements IEnumerable
+        /// <summary>
+        /// List of skills that belong to this skill group.
+        /// </summary>
+        public List<Skill> SkillList
         {
-            return _affectedSkills;
+            get
+            {
+                return _affectedSkills;
+            }
         }
-
         #endregion
     }
 }

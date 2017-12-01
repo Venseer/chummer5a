@@ -1729,6 +1729,10 @@
           <name>Technical Active</name>
           <val>200</val>
         </skillcategorykarmacostmultiplier>
+        <skillcategoryspecializationkarmacostmultiplier>
+          <name>Technical Active</name>
+          <val>200</val>
+        </skillcategoryspecializationkarmacostmultiplier>
         <skillgroupcategorykarmacostmultiplier>
           <name>Technical Active</name>
           <val>200</val>
@@ -1737,10 +1741,18 @@
           <name>Professional</name>
           <val>200</val>
         </skillcategorykarmacostmultiplier>
+        <skillcategoryspecializationkarmacostmultiplier>
+          <name>Professional</name>
+          <val>200</val>
+        </skillcategoryspecializationkarmacostmultiplier>
         <skillcategorykarmacostmultiplier>
           <name>Academic</name>
           <val>200</val>
         </skillcategorykarmacostmultiplier>
+        <skillcategoryspecializationkarmacostmultiplier>
+          <name>Academic</name>
+          <val>200</val>
+        </skillcategoryspecializationkarmacostmultiplier>
         <uneducated />
       </bonus>
       <source>SR5</source>
@@ -2826,30 +2838,30 @@
       <karma>2</karma>
       <category>Positive</category>
       <bonus>
-        <knowledgeskillpointcost>
+        <knowledgeskillkarmacost>
           <name />
           <val>-1</val>
           <max>5</max>
           <condition>career</condition>
-        </knowledgeskillpointcost>
-        <activeskillpointcost>
+        </knowledgeskillkarmacost>
+        <activeskillkarmacost>
           <name />
           <val>-1</val>
           <max>5</max>
           <condition>career</condition>
-        </activeskillpointcost>
-        <knowledgeskillpointcost>
+        </activeskillkarmacost>
+        <knowledgeskillkarmacost>
           <name />
           <val>2</val>
           <min>6</min>
           <condition>career</condition>
-        </knowledgeskillpointcost>
-        <activeskillpointcost>
+        </knowledgeskillkarmacost>
+        <activeskillkarmacost>
           <name />
           <val>2</val>
           <min>6</min>
           <condition>career</condition>
-        </activeskillpointcost>
+        </activeskillkarmacost>
       </bonus>
       <source>RF</source>
       <page>147</page>
@@ -2900,7 +2912,8 @@
       <bonus>
         <mademan />
         <selectcontact>
-          <mademan />
+          <forceloyalty />
+          <loyalty>3</loyalty>
           <type>group</type>
         </selectcontact>
       </bonus>
@@ -10511,6 +10524,7 @@
         <addcontact>
           <loyalty>3</loyalty>
           <connection>5</connection>
+          <forceloyalty />
           <free />
           <group />
         </addcontact>

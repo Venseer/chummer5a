@@ -1490,13 +1490,16 @@ namespace Chummer.Classes
             {
                 Contact selectedContact = selectedContactsList[index];
 
-                if (nodSelect["mademan"] != null)
+                if (nodSelect["forceloyalty"] != null)
                 {
-                    selectedContact.MadeMan = true;
+                    selectedContact.ForceLoyalty = true;
                     CreateImprovement(selectedContact.GUID, Improvement.ImprovementSource.Quality, SourceName,
-                        Improvement.ImprovementType.ContactMadeMan, selectedContact.GUID);
+                        Improvement.ImprovementType.ContactForceLoyalty, selectedContact.GUID);
                 }
-
+                if (nodSelect["loyalty"] != null)
+                {
+                    selectedContact.Loyalty = Convert.ToInt32(nodSelect["loyalty"].InnerText);
+                }
                 if (String.IsNullOrWhiteSpace(SelectedValue))
                 {
                     SelectedValue = selectedContact.Name;
@@ -1524,11 +1527,12 @@ namespace Chummer.Classes
             bool group = bonusNode["group"] != null;
             bool free = bonusNode["free"] != null;
             bool canwrite = bonusNode["canwrite"] != null;
-
+            bool forceloyalty = bonusNode["forceloyalty"] != null;
             Contact contact = new Contact(_objCharacter);
             contact.Free = free;
             contact.IsGroup = group;
             contact.Loyalty = loyalty;
+            contact.ForceLoyalty = forceloyalty;
             contact.Connection = connection;
             contact.ReadOnly = !canwrite;
             _objCharacter.Contacts.Add(contact);
@@ -3211,7 +3215,7 @@ namespace Chummer.Classes
                     if (objNode["val"] != null)
                         intLevels = Convert.ToInt32(objNode["val"].InnerText.Replace("Rating", _intRating.ToString()));
                     if (objNode["pointsperlevel"] != null)
-                        frmPickPower.PointsPerLevel = Convert.ToDouble(objNode["pointsperlevel"].InnerText, GlobalOptions.InvariantCultureInfo);
+                        frmPickPower.PointsPerLevel = Convert.ToDecimal(objNode["pointsperlevel"].InnerText, GlobalOptions.InvariantCultureInfo);
                     if (objNode["limit"] != null)
                         frmPickPower.LimitToRating = Convert.ToInt32(objNode["limit"].InnerText.Replace("Rating", _intRating.ToString()));
                     if (objNode.OuterXml.Contains("limittopowers"))
@@ -4913,6 +4917,17 @@ namespace Chummer.Classes
                 0, 0, string.Empty, false, string.Empty, bonusNode["condition"]?.InnerText ?? string.Empty);
         }
 
+        public void skillcategoryspecializationkarmacost(XmlNode bonusNode)
+        {
+            Log.Info("skillcategoryspecializationkarmacost");
+            Log.Info("skillcategoryspecializationkarmacost = " + bonusNode.OuterXml.ToString());
+            Log.Info("Calling CreateImprovement");
+            CreateImprovement(bonusNode["name"].InnerText, _objImprovementSource, SourceName, Improvement.ImprovementType.SkillCategorySpecializationKarmaCost, _strUnique,
+                ValueToInt(_objCharacter, bonusNode["val"].InnerText, _intRating),
+                1, ValueToInt(_objCharacter, bonusNode["min"]?.InnerText, _intRating), ValueToInt(_objCharacter, bonusNode["max"]?.InnerText, _intRating),
+                0, 0, string.Empty, false, string.Empty, bonusNode["condition"]?.InnerText ?? string.Empty);
+        }
+
         public void attributepointcost(XmlNode bonusNode)
         {
             Log.Info("attributepointcost");
@@ -5076,6 +5091,17 @@ namespace Chummer.Classes
             Log.Info("skillcategorykarmacostmultiplier = " + bonusNode.OuterXml.ToString());
             Log.Info("Calling CreateImprovement");
             CreateImprovement(bonusNode["name"].InnerText, _objImprovementSource, SourceName, Improvement.ImprovementType.SkillCategoryKarmaCostMultiplier, _strUnique,
+                ValueToInt(_objCharacter, bonusNode["val"].InnerText, _intRating),
+                1, ValueToInt(_objCharacter, bonusNode["min"]?.InnerText, _intRating), ValueToInt(_objCharacter, bonusNode["max"]?.InnerText, _intRating),
+                0, 0, string.Empty, false, string.Empty, bonusNode["condition"]?.InnerText ?? string.Empty);
+        }
+
+        public void skillcategoryspecializationkarmacostmultiplier(XmlNode bonusNode)
+        {
+            Log.Info("skillcategoryspecializationkarmacostmultiplier");
+            Log.Info("skillcategoryspecializationkarmacostmultiplier = " + bonusNode.OuterXml.ToString());
+            Log.Info("Calling CreateImprovement");
+            CreateImprovement(bonusNode["name"].InnerText, _objImprovementSource, SourceName, Improvement.ImprovementType.SkillCategorySpecializationKarmaCostMultiplier, _strUnique,
                 ValueToInt(_objCharacter, bonusNode["val"].InnerText, _intRating),
                 1, ValueToInt(_objCharacter, bonusNode["min"]?.InnerText, _intRating), ValueToInt(_objCharacter, bonusNode["max"]?.InnerText, _intRating),
                 0, 0, string.Empty, false, string.Empty, bonusNode["condition"]?.InnerText ?? string.Empty);

@@ -29,6 +29,7 @@ using System.Reflection;
 ﻿using System.Windows;
 ﻿using Application = System.Windows.Forms.Application;
 ﻿using MessageBox = System.Windows.Forms.MessageBox;
+using System.Collections.Generic;
 
 namespace Chummer
 {
@@ -137,7 +138,7 @@ namespace Chummer
             {
                 MessageBox.Show(LanguageManager.GetString("Warning_Update_CouldNotConnect"), "Chummer5", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 _blnIsConnected = false;
-                this.Invoke(new Action(() => Close()));
+                this.DoThreadSafe(new Action(() => Close()));
             }
             else if (LatestVersion != LanguageManager.GetString("String_No_Update_Found"))
             {
@@ -162,14 +163,14 @@ namespace Chummer
                     {
                         MessageBox.Show(LanguageManager.GetString("Warning_Update_CouldNotConnect"), "Chummer5", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         _blnIsConnected = false;
-                        this.Invoke(new Action(() => Close()));
+                        this.DoThreadSafe(new Action(() => Close()));
                     }
                 }
                 else
                 {
                     MessageBox.Show(LanguageManager.GetString("Warning_Update_CouldNotConnect"), "Chummer5", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     _blnIsConnected = false;
-                    this.Invoke(new Action(() => Close()));
+                    this.DoThreadSafe(new Action(() => Close()));
                 }
             }
         }
@@ -396,6 +397,28 @@ namespace Chummer
                     return;
                 }
 
+                bool blnDoRestart = true;
+                HashSet<string> lstFilesToDelete = new HashSet<string>(Directory.GetFiles(_strAppPath, "*", SearchOption.AllDirectories));
+                HashSet<string> lstFilesToNotDelete = new HashSet<string>();
+                foreach (string strFileToDelete in lstFilesToDelete)
+                {
+                    string strFileName = Path.GetFileName(strFileToDelete);
+                    string strFilePath = Path.GetDirectoryName(strFileToDelete).TrimStart(_strAppPath);
+                    int intSeparatorIndex = strFilePath.LastIndexOf(Path.DirectorySeparatorChar);
+                    string strTopLevelFolder = intSeparatorIndex != -1 ? strFilePath.Substring(intSeparatorIndex + 1) : string.Empty;
+                    if (strFileName.EndsWith(".old") ||
+                        strFileName.StartsWith("custom") ||
+                        strFileName.StartsWith("override") ||
+                        strFileName.StartsWith("amend") ||
+                        strFilePath.Contains("customdata") ||
+                        strFilePath.Contains("saves") ||
+                        strFilePath.Contains("settings") ||
+                        (strFilePath.Contains("sheets") && strTopLevelFolder != "de" && strTopLevelFolder != "fr" && strTopLevelFolder != "jp" && strTopLevelFolder != "zh") ||
+                        (strTopLevelFolder == "lang" && strFileName != "de.xml" && strFileName != "fr.xml" && strFileName != "jp.xml" && strFileName != "zh.xml" && strFileName != "de_data.xml" && strFileName != "fr_data.xml" && strFileName != "jp_data.xml" && strFileName != "zh_data.xml"))
+                        lstFilesToNotDelete.Add(strFileToDelete);
+                }
+                lstFilesToDelete.RemoveWhere(x => lstFilesToNotDelete.Contains(x));
+
                 // Copy over the archive from the temp directory.
                 Log.Info("Extracting downloaded archive into application path: ", _strTempPath);
                 using (ZipArchive archive = ZipFile.Open(_strTempPath, ZipArchiveMode.Read, Encoding.GetEncoding(850)))
@@ -410,18 +433,25 @@ namespace Chummer
                         {
                             Directory.CreateDirectory(Path.GetDirectoryName(strLoopPath));
                             entry.ExtractToFile(strLoopPath, true);
+                            lstFilesToDelete.Remove(strLoopPath.Replace('/', Path.DirectorySeparatorChar));
                         }
                         catch (UnauthorizedAccessException)
                         {
                             MessageBox.Show(LanguageManager.GetString("Message_Insufficient_Permissions_Warning"));
+                            blnDoRestart = false;
                             break;
                         }
                     }
                 }
-                Log.Info("Restart Chummer");
-                Utils.RestartApplication(string.Empty);
-                cmdUpdate.Enabled = true;
-                cmdRestart.Enabled = true;
+                if (blnDoRestart)
+                {
+                    foreach (string strFileToDelete in lstFilesToDelete)
+                    {
+                        if (File.Exists(strFileToDelete))
+                            File.Delete(strFileToDelete);
+                    }
+                    Utils.RestartApplication(string.Empty);
+                }
             }
         }
 
@@ -481,7 +511,7 @@ namespace Chummer
                 else
                 {
                     _blnIsConnected = false;
-                    this.Invoke(new Action(() => Close()));
+                    this.DoThreadSafe(new Action(() => Close()));
                 }
             }
         }

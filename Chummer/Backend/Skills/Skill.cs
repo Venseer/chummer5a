@@ -715,7 +715,7 @@ namespace Chummer.Skills
                     {
                         s.Append("\n");
                         s.AppendFormat("{0} {1} ", cyberware.Location, cyberware.DisplayNameShort);
-                        if (cyberware.Grade != GlobalOptions.CyberwareGrades.GetGrade("Standard"))
+                        if (cyberware.Grade.Name != "Standard")
                         {
                             s.AppendFormat("({0}) ", cyberware.Grade.DisplayName);
                         }
@@ -761,7 +761,7 @@ namespace Chummer.Skills
                                 s.AppendFormat("{0}: ", objSwapSkillAttribute.Exclude);
                             s.AppendFormat("{0} ", GetName(objSwapSkillAttribute));
                             s.AppendFormat("{0} {1} ", cyberware.Location, cyberware.DisplayNameShort);
-                            if (cyberware.Grade != GlobalOptions.CyberwareGrades.GetGrade("Standard"))
+                            if (cyberware.Grade.Name != "Standard")
                             {
                                 s.AppendFormat("({0}) ", cyberware.Grade.DisplayName);
                             }
@@ -911,8 +911,29 @@ namespace Chummer.Skills
         {
             get
             {
-                return string.Format(LanguageManager.GetString("Tip_Skill_AddSpecialization"),
-                    IsKnowledgeSkill ? CharacterObject.Options.KarmaKnowledgeSpecialization : CharacterObject.Options.KarmaSpecialization);
+                int price = IsKnowledgeSkill ? CharacterObject.Options.KarmaKnowledgeSpecialization : CharacterObject.Options.KarmaSpecialization;
+
+                int intExtraSpecCost = 0;
+                int intTotalBaseRating = TotalBaseRating;
+                decimal decSpecCostMultiplier = 1.0m;
+                foreach (Improvement objLoopImprovement in CharacterObject.Improvements)
+                {
+                    if (objLoopImprovement.Minimum <= intTotalBaseRating &&
+                        (string.IsNullOrEmpty(objLoopImprovement.Condition) || (objLoopImprovement.Condition == "career") == CharacterObject.Created || (objLoopImprovement.Condition == "create") != CharacterObject.Created) && objLoopImprovement.Enabled)
+                    {
+                        if (objLoopImprovement.ImprovedName == SkillCategory)
+                        {
+                            if (objLoopImprovement.ImproveType == Improvement.ImprovementType.SkillCategorySpecializationKarmaCost)
+                                intExtraSpecCost += objLoopImprovement.Value;
+                            else if (objLoopImprovement.ImproveType == Improvement.ImprovementType.SkillCategorySpecializationKarmaCostMultiplier)
+                                decSpecCostMultiplier *= objLoopImprovement.Value / 100.0m;
+                        }
+                    }
+                }
+                if (decSpecCostMultiplier != 1.0m)
+                    price = decimal.ToInt32(decimal.Ceiling(price * decSpecCostMultiplier));
+                price += intExtraSpecCost; //Spec
+                return string.Format(LanguageManager.GetString("Tip_Skill_AddSpecialization"), price.ToString());
             }
         }
 
@@ -1050,9 +1071,15 @@ namespace Chummer.Skills
             int skillWireRating = ImprovementManager.ValueOf(CharacterObject, Improvement.ImprovementType.Skillwire);
             if ((skillWireRating > 0 || IsKnowledgeSkill) && CharacterObject.SkillsoftAccess)
             {
+                int intMax = 0;
                 //TODO this works with translate?
-                return CachedWareRating = Math.Min(CharacterObject.Gear.DeepWhere(x => x.Children, x => x.Equipped && x.Category == "Skillsofts" &&
-                    (x.Extra == Name || x.Extra == Name + ", " + LanguageManager.GetString("Label_SelectGear_Hacked"))).Max(x => x.Rating), skillWireRating);
+                foreach (Gear objSkillsoft in CharacterObject.Gear.DeepWhere(x => x.Children, x => x.Equipped && x.Category == "Skillsofts" &&
+                    (x.Extra == Name || x.Extra == Name + ", " + LanguageManager.GetString("Label_SelectGear_Hacked"))))
+                {
+                    if (objSkillsoft.Rating > intMax)
+                        intMax = objSkillsoft.Rating;
+                }
+                return CachedWareRating = Math.Min(intMax, skillWireRating);
             }
 
             return CachedWareRating = 0;
@@ -1135,6 +1162,11 @@ namespace Chummer.Skills
                     _oldUpgrade = CanUpgradeCareer;
                     OnPropertyChanged(nameof(CanUpgradeCareer));
                 }
+                if (_oldCanAffordSpecialization != CanAffordSpecialization)
+                {
+                    _oldCanAffordSpecialization = CanAffordSpecialization;
+                    OnPropertyChanged(nameof(CanAffordSpecialization));
+                }
             }
         }
 
@@ -1185,6 +1217,24 @@ namespace Chummer.Skills
             else if (improvements.Any(imp => imp.ImproveType == Improvement.ImprovementType.BlockSkillDefault))
             {
                 OnPropertyChanged(nameof(PoolToolTip));
+            }
+            if (improvements.Any(imp => imp.ImprovedName == SkillCategory &&
+                (imp.ImproveType == Improvement.ImprovementType.SkillCategorySpecializationKarmaCost ||
+                imp.ImproveType == Improvement.ImprovementType.SkillCategorySpecializationKarmaCostMultiplier)))
+            {
+                OnPropertyChanged(nameof(CanAffordSpecialization));
+            }
+            if (improvements.Any(imp =>
+                ((imp.ImprovedName == Name || string.IsNullOrEmpty(imp.ImprovedName)) && 
+                (imp.ImproveType == Improvement.ImprovementType.ActiveSkillKarmaCost ||
+                imp.ImproveType == Improvement.ImprovementType.ActiveSkillKarmaCostMultiplier ||
+                imp.ImproveType == Improvement.ImprovementType.KnowledgeSkillKarmaCost ||
+                imp.ImproveType == Improvement.ImprovementType.KnowledgeSkillKarmaCostMultiplier)) ||
+                (imp.ImprovedName == SkillCategory) &&
+                (imp.ImproveType == Improvement.ImprovementType.SkillCategoryKarmaCost ||
+                imp.ImproveType == Improvement.ImprovementType.SkillCategoryKarmaCostMultiplier)))
+            {
+                OnPropertyChanged(nameof(CanUpgradeCareer));
             }
         }
     }

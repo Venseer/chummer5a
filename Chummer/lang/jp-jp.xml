@@ -3960,8 +3960,12 @@
       <text>忠誠値:</text>
     </string>
     <string>
-      <key>Label_Contact_Group</key>
-      <text>グループ:</text>
+      <key>Checkbox_Contact_Group</key>
+      <text>グループ</text>
+    </string>
+    <string>
+      <key>Checkbox_Contact_Free</key>
+      <text>無料</text>
     </string>
     <string>
       <key>Label_Enemy_Incidence</key>
@@ -5113,8 +5117,8 @@
       <text>× 成長後の値</text>
     </string>
     <string>
-      <key>Label_Options_NewRatingTen</key>
-      <text>× 成長後の階梯) + 10</text>
+      <key>Label_Options_NewRatingPlus</key>
+      <text>× 成長後の階梯) +</text>
     </string>
     <string>
       <key>Label_Options_BPCost</key>
@@ -5202,7 +5206,7 @@
     </string>
     <string>
       <key>Label_Options_Enemies</key>
-      <text>Enemies</text>
+      <text>敵</text>
     </string>
     <string>
       <key>Label_Options_Carryover</key>

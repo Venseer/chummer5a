@@ -58,6 +58,7 @@ namespace Chummer
         private readonly CharacterOptions _objOptions;
 
         private string _strFileName = string.Empty;
+        private DateTime _dateFileLastWriteTime = DateTime.MinValue;
         private string _strSettingsFileName = "default.xml";
         private bool _blnIgnoreRules = false;
         private int _intKarma = 0;
@@ -932,6 +933,7 @@ namespace Chummer
             }
             objWriter.Close();
 
+            _dateFileLastWriteTime = File.GetLastWriteTimeUtc(strFileName);
             return blnErrorFree;
         }
 
@@ -956,6 +958,7 @@ namespace Chummer
                 }
             }
             Timekeeper.Finish("load_xml");
+            _dateFileLastWriteTime = File.GetLastWriteTimeUtc(_strFileName);
             Timekeeper.Start("load_char_misc");
             XmlNode objXmlCharacter = objXmlDocument.SelectSingleNode("/character");
 
@@ -1277,7 +1280,7 @@ namespace Chummer
                     // Hacky way to make sure we aren't loading in any orphaned improvements: SourceName ID will pop up minimum twice in the save if the improvement's source is actually present: once in the improvement and once in the parent that added it.
                     (!string.IsNullOrEmpty(strLoopSourceName) && strCharacterInnerXml.IndexOf(strLoopSourceName) != strCharacterInnerXml.LastIndexOf(strLoopSourceName)))
                 {
-                    Improvement objImprovement = new Improvement();
+                    Improvement objImprovement = new Improvement(this);
                     try
                     {
                         objImprovement.Load(objXmlImprovement);
@@ -1307,7 +1310,7 @@ namespace Chummer
                         if (objQuality.MyXmlNode?["bonus"]?["addgear"]?["name"]?.InnerText == "Living Persona")
                             objLivingPersonaQuality = objQuality;
                         // Legacy shim
-                        if ((objQuality.Name == "The Artisan's Way" ||
+                        if (LastSavedVersion <= Version.Parse("5.195.1") && (objQuality.Name == "The Artisan's Way" ||
                             objQuality.Name == "The Artist's Way" ||
                             objQuality.Name == "The Athlete's Way" ||
                             objQuality.Name == "The Burnout's Way" ||
@@ -1316,7 +1319,26 @@ namespace Chummer
                             objQuality.Name == "The Speaker's Way" ||
                             objQuality.Name == "The Warrior's Way") && objQuality.Bonus?.HasChildNodes == false)
                         {
-                            _lstInternalIdsNeedingReapplyImprovements.Add(objQuality.InternalId);
+                            ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.Quality, objQuality.InternalId);
+                            XmlNode objNode = objQuality.MyXmlNode;
+                            if (objNode != null)
+                            {
+                                objQuality.Bonus = objNode["bonus"];
+                                if (objQuality.Bonus != null)
+                                {
+                                    ImprovementManager.ForcedValue = objQuality.Extra;
+                                    ImprovementManager.CreateImprovements(this, Improvement.ImprovementSource.Quality, objQuality.InternalId, objQuality.Bonus, false, 1, objQuality.DisplayNameShort);
+                                    if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
+                                    {
+                                        objQuality.Extra = ImprovementManager.SelectedValue;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                // Failed to re-apply the improvements immediately, so let's just add it for processing when the character is opened
+                                _lstInternalIdsNeedingReapplyImprovements.Add(objQuality.InternalId);
+                            }
                         }
                     }
                 }
@@ -1419,6 +1441,8 @@ namespace Chummer
             Timekeeper.Finish("load_char_weapons");
             Timekeeper.Start("load_char_ware");
 
+            // Dictionary for instantly re-applying outdated improvements for 'ware with pair bonuses in legacy shim
+            Dictionary<Cyberware, int> dicPairableCyberwares = new Dictionary<Cyberware, int>();
             // Cyberware/Bioware.
             objXmlNodeList = objXmlDocument.SelectNodes("/character/cyberwares/cyberware");
             foreach (XmlNode objXmlCyberware in objXmlNodeList)
@@ -1429,9 +1453,71 @@ namespace Chummer
                 // Legacy shim
                 if (objCyberware.Name == "Myostatin Inhibitor")
                 {
-                    if (!Improvements.Any(x => x.SourceName == objCyberware.InternalId && x.ImproveType == Improvement.ImprovementType.AttributeKarmaCost))
+                    if (LastSavedVersion <= Version.Parse("5.195.1") && !Improvements.Any(x => x.SourceName == objCyberware.InternalId && x.ImproveType == Improvement.ImprovementType.AttributeKarmaCost))
                     {
-                        _lstInternalIdsNeedingReapplyImprovements.Add(objCyberware.InternalId);
+                        XmlNode objNode = objCyberware.MyXmlNode;
+                        if (objNode != null)
+                        {
+                            objCyberware.Bonus = objNode["bonus"];
+                            objCyberware.WirelessBonus = objNode["wirelessbonus"];
+                            objCyberware.PairBonus = objNode["pairbonus"];
+                            if (objCyberware.IsModularCurrentlyEquipped)
+                            {
+                                if (!string.IsNullOrEmpty(objCyberware.Forced) && objCyberware.Forced != "Right" && objCyberware.Forced != "Left")
+                                    ImprovementManager.ForcedValue = objCyberware.Forced;
+                                if (objCyberware.Bonus != null)
+                                {
+                                    ImprovementManager.CreateImprovements(this, objCyberware.SourceType, objCyberware.InternalId, objCyberware.Bonus, false, objCyberware.Rating, objCyberware.DisplayNameShort);
+                                    if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
+                                        objCyberware.Extra = ImprovementManager.SelectedValue;
+                                }
+                                if (objCyberware.WirelessOn && objCyberware.WirelessBonus != null)
+                                {
+                                    ImprovementManager.CreateImprovements(this, objCyberware.SourceType, objCyberware.InternalId, objCyberware.WirelessBonus, false, objCyberware.Rating, objCyberware.DisplayNameShort);
+                                    if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue) && string.IsNullOrEmpty(objCyberware.Extra))
+                                        objCyberware.Extra = ImprovementManager.SelectedValue;
+                                }
+                                if (objCyberware.PairBonus != null)
+                                {
+                                    Cyberware objMatchingCyberware = dicPairableCyberwares.Keys.FirstOrDefault(x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra);
+                                    if (objMatchingCyberware != null)
+                                        dicPairableCyberwares[objMatchingCyberware] = dicPairableCyberwares[objMatchingCyberware] + 1;
+                                    else
+                                        dicPairableCyberwares.Add(objCyberware, 1);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            _lstInternalIdsNeedingReapplyImprovements.Add(objCyberware.InternalId);
+                        }
+                    }
+                }
+            }
+            // Separate Pass for PairBonuses
+            foreach (KeyValuePair<Cyberware, int> objItem in dicPairableCyberwares)
+            {
+                Cyberware objCyberware = objItem.Key;
+                int intCyberwaresCount = objItem.Value;
+                if (!string.IsNullOrEmpty(objCyberware.Location))
+                {
+                    intCyberwaresCount = Math.Min(intCyberwaresCount, Cyberware.DeepCount(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.Location != objCyberware.Location && x.IsModularCurrentlyEquipped));
+                }
+                if (intCyberwaresCount > 0)
+                {
+                    foreach (Cyberware objLoopCyberware in Cyberware.DeepWhere(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.IsModularCurrentlyEquipped))
+                    {
+                        if (intCyberwaresCount % 2 == 0)
+                        {
+                            if (!string.IsNullOrEmpty(objCyberware.Forced) && objCyberware.Forced != "Right" && objCyberware.Forced != "Left")
+                                ImprovementManager.ForcedValue = objCyberware.Forced;
+                            ImprovementManager.CreateImprovements(this, objLoopCyberware.SourceType, objLoopCyberware.InternalId, objLoopCyberware.PairBonus, false, objLoopCyberware.Rating, objLoopCyberware.DisplayNameShort);
+                            if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue) && string.IsNullOrEmpty(objCyberware.Extra))
+                                objCyberware.Extra = ImprovementManager.SelectedValue;
+                        }
+                        intCyberwaresCount -= 1;
+                        if (intCyberwaresCount <= 0)
+                            break;
                     }
                 }
             }
@@ -1610,7 +1696,7 @@ namespace Chummer
                 }
             }
             // If we have a technomancer quality but no Living Persona commlink, we re-apply its improvements immediately
-            if (objLivingPersonaQuality != null)
+            if (objLivingPersonaQuality != null && LastSavedVersion <= Version.Parse("5.195.1"))
             {
                 ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.Quality, objLivingPersonaQuality.InternalId);
 
@@ -1713,7 +1799,7 @@ namespace Chummer
             XmlNodeList objXmlExpenseList = objXmlDocument.SelectNodes("/character/expenses/expense");
             foreach (XmlNode objXmlExpense in objXmlExpenseList)
             {
-                ExpenseLogEntry objExpenseLogEntry = new ExpenseLogEntry();
+                ExpenseLogEntry objExpenseLogEntry = new ExpenseLogEntry(this);
                 objExpenseLogEntry.Load(objXmlExpense);
                 _lstExpenseLog.Add(objExpenseLogEntry);
             }
@@ -1791,9 +1877,8 @@ namespace Chummer
                     XmlNode objXmlWeapon = objXmlWeaponDoc.SelectSingleNode("/chummer/weapons/weapon[name = \"Unarmed Attack\"]");
                 if (objXmlWeapon != null)
                 {
-                    TreeNode objGearWeaponNode = new TreeNode();
                     Weapon objWeapon = new Weapon(this);
-                    objWeapon.Create(objXmlWeapon, objGearWeaponNode, null, null);
+                    objWeapon.Create(objXmlWeapon, null, null, null, Weapons);
                     objWeapon.IncludedInWeapon = true; // Unarmed attack can never be removed
                     _lstWeapons.Add(objWeapon);
                 }
@@ -1992,7 +2077,7 @@ namespace Chummer
             // <maxkarma />
             objWriter.WriteElementString("maxkarma", _intMaxKarma.ToString(objCulture));
             // <maxnuyen />
-            objWriter.WriteElementString("maxnuyen", _decMaxNuyen.ToString("#,0.00", objCulture));
+            objWriter.WriteElementString("maxnuyen", _decMaxNuyen.ToString(Options.NuyenFormat, objCulture));
             // <contactmultiplier />
             objWriter.WriteElementString("contactmultiplier", _intContactMultiplier.ToString(objCulture));
             // <prioritymetatype />
@@ -2013,8 +2098,20 @@ namespace Chummer
             }
             // </priorityskills>
             objWriter.WriteEndElement();
+
             // <handedness />
-            objWriter.WriteElementString("primaryarm", _strPrimaryArm);
+            if (Ambidextrous)
+            {
+                objWriter.WriteElementString("primaryarm", LanguageManager.GetString("String_Ambidextrous"));
+            }
+            else if (PrimaryArm == "Left")
+            {
+                objWriter.WriteElementString("primaryarm", LanguageManager.GetString("String_Improvement_SideLeft"));
+            }
+            else
+            {
+                objWriter.WriteElementString("primaryarm", LanguageManager.GetString("String_Improvement_SideRight"));
+            }
 
             // If the character does not have a name, call them Unnamed Character. This prevents a transformed document from having a self-terminated title tag which causes browser to not rendering anything.
             // <name />
@@ -2152,7 +2249,7 @@ namespace Chummer
             // <created />
             objWriter.WriteElementString("created", _blnCreated.ToString());
             // <nuyen />
-            objWriter.WriteElementString("nuyen", _decNuyen.ToString("#,0.00", objCulture));
+            objWriter.WriteElementString("nuyen", _decNuyen.ToString(Options.NuyenFormat, objCulture));
             // <adeptwaydiscount />
             objWriter.WriteElementString("adeptwaydiscount", _intAdeptWayDiscount.ToString(objCulture));
             // <adept />
@@ -2188,8 +2285,7 @@ namespace Chummer
                         strTraditionName = objXmlTradition["translate"]?.InnerText ?? objXmlTradition["name"].InnerText;
                     }
                 }
-
-                XPathNavigator nav = objXmlDocument.CreateNavigator();
+                
                 StringBuilder objDrain = new StringBuilder(strDrainAtt);
                 foreach (string strAttribute in AttributeSection.AttributeStrings)
                 {
@@ -2201,10 +2297,9 @@ namespace Chummer
                 {
                     strDrain = "0";
                 }
-                XPathExpression xprDrain = nav.Compile(strDrain);
 
                 // Add any Improvements for Drain Resistance.
-                int intDrain = Convert.ToInt32(nav.Evaluate(xprDrain)) + ImprovementManager.ValueOf(this, Improvement.ImprovementType.DrainResistance);
+                int intDrain = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strDrain)) + ImprovementManager.ValueOf(this, Improvement.ImprovementType.DrainResistance);
 
                 objWriter.WriteElementString("drain", strDrainAtt + " (" + intDrain.ToString(objCulture) + ")");
                 objWriter.WriteStartElement("drainattribute");
@@ -2265,8 +2360,6 @@ namespace Chummer
             if (!string.IsNullOrEmpty(TechnomancerStream))
             {
                 string strDrainAtt = TechnomancerFading;
-                objXmlDocument = new XmlDocument();
-                XPathNavigator nav = objXmlDocument.CreateNavigator();
                 StringBuilder objDrain = new StringBuilder(strDrainAtt);
                 foreach (string strAttribute in AttributeSection.AttributeStrings)
                 {
@@ -2276,10 +2369,9 @@ namespace Chummer
                 string strDrain = objDrain.ToString();
                 if (string.IsNullOrEmpty(strDrain))
                     strDrain = "0";
-                XPathExpression xprDrain = nav.Compile(strDrain);
 
                 // Add any Improvements for Fading Resistance.
-                int intDrain = Convert.ToInt32(nav.Evaluate(xprDrain)) + ImprovementManager.ValueOf(this, Improvement.ImprovementType.FadingResistance);
+                int intDrain = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strDrain)) + ImprovementManager.ValueOf(this, Improvement.ImprovementType.FadingResistance);
 
                 objWriter.WriteElementString("drain", strDrainAtt + " (" + intDrain.ToString(objCulture) + ")");
             }
@@ -2771,9 +2863,8 @@ namespace Chummer
                 {
                     this
                 };
-                frmViewer frmViewCharacter = new frmViewer();
-                frmViewCharacter.Characters = lstCharacters;
-                _frmPrintView = frmViewCharacter;
+                _frmPrintView = new frmViewer();
+                _frmPrintView.Characters = lstCharacters;
                 if (blnDialog)
                     _frmPrintView.ShowDialog();
                 else
@@ -2782,9 +2873,10 @@ namespace Chummer
             else
             {
                 _frmPrintView.Activate();
-                
             }
             _frmPrintView.RefreshView();
+            if (GlobalOptions.MainForm.PrintMultipleCharactersForm?.CharacterList?.Contains(this) == true)
+                GlobalOptions.MainForm.PrintMultipleCharactersForm.PrintViewForm?.RefreshView();
         }
 
         /// <summary>
@@ -3171,6 +3263,17 @@ namespace Chummer
             set
             {
                 _strFileName = value;
+            }
+        }
+
+        /// <summary>
+        /// Name of the file the Character is saved to.
+        /// </summary>
+        public DateTime FileLastWriteTime
+        {
+            get
+            {
+                return _dateFileLastWriteTime;
             }
         }
 
@@ -3887,18 +3990,9 @@ namespace Chummer
             }
             set
             {
-                bool oldCanAffordSpec = CanAffordSpecialization;
-
                 OnPropertyChanged(ref _intKarma, value);
-
-                if(oldCanAffordSpec != CanAffordSpecialization)
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanAffordSpecialization)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanAffordCareerPP)));
             }
-        }
-
-        public bool CanAffordSpecialization
-        {
-            get { return Karma >= Math.Min(Options.KarmaSpecialization, Options.KarmaKnowledgeSpecialization); }
         }
 
         /// <summary>
@@ -3974,7 +4068,7 @@ namespace Chummer
                 {
                     // Since we're only interested in the amount they have earned, only count values that are greater than 0 and are not refunds.
                     if (objEntry.Type == ExpenseType.Karma && objEntry.Amount > 0 && objEntry.Refund == false)
-                        intKarma += Convert.ToInt32(objEntry.Amount);
+                        intKarma += decimal.ToInt32(objEntry.Amount);
                 }
 
                 return intKarma;
@@ -4079,7 +4173,7 @@ namespace Chummer
                     }
                 }
                 if (decMultiplier != 1.0m)
-                    intReturn = Convert.ToInt32(Math.Ceiling(intReturn * decMultiplier));
+                    intReturn = decimal.ToInt32(decimal.Ceiling(intReturn * decMultiplier));
 
                 return Math.Max(intReturn, 0);
             }
@@ -4103,7 +4197,7 @@ namespace Chummer
                     }
                 }
                 if (decMultiplier != 1.0m)
-                    intReturn = Convert.ToInt32(Math.Ceiling(intReturn * decMultiplier));
+                    intReturn = decimal.ToInt32(decimal.Ceiling(intReturn * decMultiplier));
 
                 return Math.Max(intReturn, 0);
             }
@@ -4127,7 +4221,7 @@ namespace Chummer
                     }
                 }
                 if (decMultiplier != 1.0m)
-                    intReturn = Convert.ToInt32(Math.Ceiling(intReturn * decMultiplier));
+                    intReturn = decimal.ToInt32(decimal.Ceiling(intReturn * decMultiplier));
 
                 return Math.Max(intReturn, 0);
             }
@@ -4151,7 +4245,7 @@ namespace Chummer
                     }
                 }
                 if (decMultiplier != 1.0m)
-                    intReturn = Convert.ToInt32(Math.Ceiling(intReturn * decMultiplier));
+                    intReturn = decimal.ToInt32(decimal.Ceiling(intReturn * decMultiplier));
 
                 return Math.Max(intReturn, 0);
             }
@@ -4557,7 +4651,7 @@ namespace Chummer
                     TechnomancerStream = "Default";
                 else
                     TechnomancerStream = string.Empty;
-                ImprovementManager.ClearCachedValue(Improvement.ImprovementType.MatrixInitiativeDice);
+                ImprovementManager.ClearCachedValue(new Tuple<Character, Improvement.ImprovementType>(this, Improvement.ImprovementType.MatrixInitiativeDice));
                 if (value && Created)
                     _decEssenceAtSpecialStart = Essence;
                     if (blnOldValue != value)
@@ -4758,7 +4852,7 @@ namespace Chummer
             get
             {
                 // Subtract the character's current Essence from its maximum. Round the remaining amount up to get the total penalty to RES and DEP.
-                return Convert.ToInt32(Math.Ceiling(EssenceAtSpecialStart + Convert.ToDecimal(ImprovementManager.ValueOf(this, Improvement.ImprovementType.EssenceMax), GlobalOptions.InvariantCultureInfo) - Essence));
+                return decimal.ToInt32(decimal.Ceiling(EssenceAtSpecialStart + Convert.ToDecimal(ImprovementManager.ValueOf(this, Improvement.ImprovementType.EssenceMax), GlobalOptions.InvariantCultureInfo) - Essence));
             }
         }
 
@@ -4770,7 +4864,7 @@ namespace Chummer
             get
             {
                 // Subtract the character's current Essence from its maximum, but taking into account essence modifiers that only affect MAG. Round the remaining amount up to get the total penalty to MAG.
-                return Convert.ToInt32(Math.Ceiling(EssenceAtSpecialStart + Convert.ToDecimal(ImprovementManager.ValueOf(this, Improvement.ImprovementType.EssenceMax), GlobalOptions.InvariantCultureInfo) - Essence - (Convert.ToDecimal(ImprovementManager.ValueOf(this, Improvement.ImprovementType.EssencePenaltyMAGOnlyT100), GlobalOptions.InvariantCultureInfo) / 100.0m)));
+                return decimal.ToInt32(decimal.Ceiling(EssenceAtSpecialStart + Convert.ToDecimal(ImprovementManager.ValueOf(this, Improvement.ImprovementType.EssenceMax), GlobalOptions.InvariantCultureInfo) - Essence - (Convert.ToDecimal(ImprovementManager.ValueOf(this, Improvement.ImprovementType.EssencePenaltyMAGOnlyT100), GlobalOptions.InvariantCultureInfo) / 100.0m)));
             }
         }
 
@@ -5322,7 +5416,7 @@ namespace Chummer
             {
                 int intReturn = BOD.TotalValue + WIL.TotalValue + ImprovementManager.ValueOf(this, Improvement.ImprovementType.StunCMRecovery);
                 if (Improvements.Any(x => x.Enabled && x.ImproveType == Improvement.ImprovementType.AddESStoStunCMRecovery))
-                    intReturn += Convert.ToInt32(Math.Floor(Essence));
+                    intReturn += decimal.ToInt32(decimal.Floor(Essence));
                 return intReturn.ToString(GlobalOptions.CultureInfo);
             }
         }
@@ -5336,7 +5430,7 @@ namespace Chummer
             {
                 int intReturn = 2 * BOD.TotalValue + ImprovementManager.ValueOf(this, Improvement.ImprovementType.PhysicalCMRecovery);
                 if (Improvements.Any(x => x.Enabled && x.ImproveType == Improvement.ImprovementType.AddESStoPhysicalCMRecovery))
-                    intReturn += Convert.ToInt32(Math.Floor(Essence));
+                    intReturn += decimal.ToInt32(decimal.Floor(Essence));
                 return intReturn.ToString(GlobalOptions.CultureInfo);
             }
         }
@@ -6388,16 +6482,16 @@ namespace Chummer
                     int intHomeNodeDP = Math.Max(_objHomeNodeCommlink?.GetTotalMatrixAttribute("Data Processing") ?? 0, _objHomeNodeVehicle?.DeviceRating ?? 0);
                     if (intHomeNodeDP >= intHomeNodePilot)
                     {
-                        intLimit = (CHA.TotalValue + intHomeNodeDP + WIL.TotalValue + Convert.ToInt32(Math.Ceiling(Essence)) + 2) / 3;
+                        intLimit = (CHA.TotalValue + intHomeNodeDP + WIL.TotalValue + decimal.ToInt32(decimal.Ceiling(Essence)) + 2) / 3;
                     }
                     else
                     {
-                        intLimit = (CHA.TotalValue + intHomeNodePilot + WIL.TotalValue + Convert.ToInt32(Math.Ceiling(Essence)) + 2) / 3;
+                        intLimit = (CHA.TotalValue + intHomeNodePilot + WIL.TotalValue + decimal.ToInt32(decimal.Ceiling(Essence)) + 2) / 3;
                     }
                 }
                 else
                 {
-                    intLimit = (CHA.TotalValue * 2 + WIL.TotalValue + Convert.ToInt32(Math.Ceiling(Essence)) + 2) / 3;
+                    intLimit = (CHA.TotalValue * 2 + WIL.TotalValue + decimal.ToInt32(decimal.Ceiling(Essence)) + 2) / 3;
                 }
                 return intLimit + ImprovementManager.ValueOf(this, Improvement.ImprovementType.SocialLimit);
             }
@@ -8220,6 +8314,18 @@ namespace Chummer
             get { return AdeptEnabled && MagicianEnabled; }
         }
 
+
+        /// <summary>
+        /// Could this character buy Power Points in career mode if the optional/house rule is enabled
+        /// </summary>
+        public bool CanAffordCareerPP
+        {
+            get
+            {
+                return Options.MysaddPPCareer && Karma >= 5 && MAG.TotalValue > MysticAdeptPowerPoints;
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
@@ -8269,6 +8375,8 @@ namespace Chummer
             Improvement.ImprovementType.KnowledgeSkillKarmaCost,
             Improvement.ImprovementType.SkillCategoryKarmaCostMultiplier,
             Improvement.ImprovementType.SkillCategoryKarmaCost,
+            Improvement.ImprovementType.SkillCategorySpecializationKarmaCostMultiplier,
+            Improvement.ImprovementType.SkillCategorySpecializationKarmaCost,
             Improvement.ImprovementType.SkillGroupCategoryKarmaCostMultiplier,
             Improvement.ImprovementType.SkillGroupCategoryDisable,
             Improvement.ImprovementType.SkillGroupCategoryKarmaCost,
@@ -8290,7 +8398,6 @@ namespace Chummer
         public static readonly HashSet<Improvement.ImprovementType> AttribRelatedImprovements = new HashSet<Improvement.ImprovementType> {
             Improvement.ImprovementType.Attribute,
             Improvement.ImprovementType.Essence,
-            Improvement.ImprovementType.Infirm,
             Improvement.ImprovementType.EssenceMax,
             Improvement.ImprovementType.Attributelevel,
             Improvement.ImprovementType.Seeker,
@@ -8322,6 +8429,7 @@ namespace Chummer
             {
                 AttributeImprovementEvent?.Invoke(_lstTransaction);
                 _decCachedEssence = decimal.MinValue;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanAffordCareerPP)));
             }
             else if (_lstTransaction.Any(x => SkillRelatedImprovements.Contains(x.ImproveType)))
             {

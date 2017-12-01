@@ -57,6 +57,7 @@ namespace Chummer
         private bool _blnExceedNegativeQualities;
         private bool _blnExceedNegativeQualitiesLimit;
         private bool _blnExceedPositiveQualities;
+        private bool _blnExceedPositiveQualitiesCostDoubled;
         private bool _blnExtendAnyDetectionSpell;
         private bool _blnFreeContactsMultiplierEnabled;
         private bool _blnDroneArmorMultiplierEnabled;
@@ -91,6 +92,7 @@ namespace Chummer
         private bool _blnUsePointsOnBrokenGroups;
         private bool _blnUseTotalValueForFreeContacts;
         private bool _blnUseTotalValueForFreeKnowledge;
+        private bool _blnDoNotRoundEssenceInternally;
         private int _intEssenceDecimals = 2;
         private int _intForbiddenCostMultiplier = 1;
         private int _intFreeContactsFlatNumber = 0;
@@ -110,6 +112,8 @@ namespace Chummer
         private bool _blnHhideItemsOverAvailLimit = true;
         private bool _blnAllowHoverIncrement;
         private bool _blnSearchInCategoryOnly = true;
+        private string _strNuyenFormat = "#,0.00";
+        private bool _blnCompensateSkillGroupKarmaDifference = false;
 
         private readonly XmlDocument _objBookDoc = null;
         private string _strBookXPath = string.Empty;
@@ -144,6 +148,7 @@ namespace Chummer
         private int _intKarmaImproveKnowledgeSkill = 1;
         private int _intKarmaImproveSkillGroup = 5;
         private int _intKarmaInitiation = 3;
+        private int _intKarmaInitiationFlat = 10;
         private int _intKarmaJoinGroup = 5;
         private int _intKarmaLeaveGroup = 1;
         private int _intKarmaManeuver = 5;
@@ -347,6 +352,8 @@ namespace Chummer
             objWriter.WriteElementString("specialkarmacostbasedonshownvalue", _blnSpecialKarmaCostBasedOnShownValue.ToString());
             // <exceedpositivequalities />
             objWriter.WriteElementString("exceedpositivequalities", _blnExceedPositiveQualities.ToString());
+            // <exceedpositivequalitiescostdoubled />
+            objWriter.WriteElementString("exceedpositivequalitiescostdoubled", _blnExceedPositiveQualitiesCostDoubled.ToString());
 
             objWriter.WriteElementString("mysaddppcareer", MysaddPPCareer.ToString());
 
@@ -365,6 +372,10 @@ namespace Chummer
             objWriter.WriteElementString("restrictedcostmultiplier", _intRestrictedCostMultiplier.ToString());
             // <forbiddencostmultiplier />
             objWriter.WriteElementString("forbiddencostmultiplier", _intForbiddenCostMultiplier.ToString());
+            // <donotroundessenceinternally />
+            objWriter.WriteElementString("donotroundessenceinternally", _blnDoNotRoundEssenceInternally.ToString());
+            // <nuyenformat />
+            objWriter.WriteElementString("nuyenformat", _strNuyenFormat.ToString());
             // <essencedecimals />
             objWriter.WriteElementString("essencedecimals", _intEssenceDecimals.ToString());
             // <enforcecapacity />
@@ -427,6 +438,8 @@ namespace Chummer
             objWriter.WriteElementString("allowhoverincrement", AllowHoverIncrement.ToString());
             // <searchincategoryonly />
             objWriter.WriteElementString("searchincategoryonly", SearchInCategoryOnly.ToString());
+            // <compensateskillgroupkarmadifference />
+            objWriter.WriteElementString("compensateskillgroupkarmadifference", _blnCompensateSkillGroupKarmaDifference.ToString());
             // <autobackstory />
             objWriter.WriteElementString("autobackstory", _automaticBackstory.ToString());
             // <freemartialartspecialization />
@@ -516,6 +529,8 @@ namespace Chummer
             objWriter.WriteElementString("karmamaneuver", _intKarmaManeuver.ToString());
             // <karmainitiation />
             objWriter.WriteElementString("karmainitiation", _intKarmaInitiation.ToString());
+            // <karmainitiationflat />
+            objWriter.WriteElementString("karmainitiationflat", _intKarmaInitiationFlat.ToString());
             // <karmametamagic />
             objWriter.WriteElementString("karmametamagic", _intKarmaMetamagic.ToString());
             // <karmacomplexformoption />
@@ -735,6 +750,8 @@ namespace Chummer
             objXmlNode.TryGetBoolFieldQuickly("specialkarmacostbasedonshownvalue", ref _blnSpecialKarmaCostBasedOnShownValue);
             // Allow more than 35 BP in Positive Qualities.
             objXmlNode.TryGetBoolFieldQuickly("exceedpositivequalities", ref _blnExceedPositiveQualities);
+            // Double all positive qualities in excess of the limit
+            objXmlNode.TryGetBoolFieldQuickly("exceedpositivequalitiescostdoubled", ref _blnExceedPositiveQualitiesCostDoubled);
 
             objXmlNode.TryGetBoolFieldQuickly("mysaddppcareer", ref _mysaddPpCareer);
 
@@ -757,6 +774,10 @@ namespace Chummer
             objXmlNode.TryGetInt32FieldQuickly("restrictedcostmultiplier", ref _intRestrictedCostMultiplier);
             // Forbidden cost multiplier.
             objXmlNode.TryGetInt32FieldQuickly("forbiddencostmultiplier", ref _intForbiddenCostMultiplier);
+            // Only round essence when its value is displayed
+            objXmlNode.TryGetBoolFieldQuickly("donotroundessenceinternally", ref _blnDoNotRoundEssenceInternally);
+            // Format in which nuyen values are displayed
+            objXmlNode.TryGetStringFieldQuickly("nuyenformat", ref _strNuyenFormat);
             // Number of decimal places to round to when calculating Essence.
             objXmlNode.TryGetInt32FieldQuickly("essencedecimals", ref _intEssenceDecimals);
             // Whether or not Capacity limits should be enforced.
@@ -817,6 +838,8 @@ namespace Chummer
             objXmlNode.TryGetBoolFieldQuickly("allowhoverincrement", ref _blnAllowHoverIncrement);
             // Optional Rule: Whether searching in a selection form will limit itself to the current Category that's selected.
             objXmlNode.TryGetBoolFieldQuickly("searchincategoryonly", ref _blnSearchInCategoryOnly);
+            // House rule: Whether to compensate for the karma cost difference between raising skill ratings and skill groups when increasing the rating of the last skill in the group
+            objXmlNode.TryGetBoolFieldQuickly("compensateskillgroupkarmadifference", ref _blnCompensateSkillGroupKarmaDifference);
             // Optional Rule: Whether Life Modules should automatically create a character back story.
             objXmlNode.TryGetBoolFieldQuickly("autobackstory", ref _automaticBackstory);
             // House Rule: Whether Public Awareness should be a calculated attribute based on Street Cred and Notoriety.
@@ -868,6 +891,7 @@ namespace Chummer
                 objXmlNode.TryGetInt32FieldQuickly("karmaspirit", ref _intKarmaSpirit);
                 objXmlNode.TryGetInt32FieldQuickly("karmamaneuver", ref _intKarmaManeuver);
                 objXmlNode.TryGetInt32FieldQuickly("karmainitiation", ref _intKarmaInitiation);
+                objXmlNode.TryGetInt32FieldQuickly("karmainitiationflat", ref _intKarmaInitiationFlat);
                 objXmlNode.TryGetInt32FieldQuickly("karmametamagic", ref _intKarmaMetamagic);
                 objXmlNode.TryGetInt32FieldQuickly("karmacomplexformoption", ref _intKarmaComplexFormOption);
                 objXmlNode.TryGetInt32FieldQuickly("karmajoingroup", ref _intKarmaJoinGroup);
@@ -1049,6 +1073,7 @@ namespace Chummer
             LoadInt32FromRegistry(ref _intKarmaSpirit, "karmaspirit");
             LoadInt32FromRegistry(ref _intKarmaManeuver, "karmamaneuver");
             LoadInt32FromRegistry(ref _intKarmaInitiation, "karmainitiation");
+            LoadInt32FromRegistry(ref _intKarmaInitiationFlat, "karmainitiationflat");
             LoadInt32FromRegistry(ref _intKarmaMetamagic, "karmametamagic");
             LoadInt32FromRegistry(ref _intKarmaComplexFormOption, "karmacomplexformoption");
 
@@ -1954,6 +1979,21 @@ namespace Chummer
         }
 
         /// <summary>
+        /// If true, the karma cost of qualities is doubled after the initial 25.
+        /// </summary>
+        public bool ExceedPositiveQualitiesCostDoubled
+        {
+            get
+            {
+                return _blnExceedPositiveQualitiesCostDoubled;
+            }
+            set
+            {
+                _blnExceedPositiveQualitiesCostDoubled = value;
+            }
+        }
+
+        /// <summary>
         /// Whether or not characters can have more than 25 BP in Negative Qualities.
         /// </summary>
         public bool ExceedNegativeQualities
@@ -2044,6 +2084,21 @@ namespace Chummer
         }
 
         /// <summary>
+        /// Format in which nuyen values should be displayed (does not include nuyen symbol).
+        /// </summary>
+        public string NuyenFormat
+        {
+            get
+            {
+                return _strNuyenFormat;
+            }
+            set
+            {
+                _strNuyenFormat = value;
+            }
+        }
+
+        /// <summary>
         /// Number of decimal places to round to when calculating Essence.
         /// </summary>
         public int EssenceDecimals
@@ -2055,6 +2110,21 @@ namespace Chummer
             set
             {
                 _intEssenceDecimals = value;
+            }
+        }
+
+        /// <summary>
+        /// Only round essence when its value is displayed
+        /// </summary>
+        public bool DontRoundEssenceInternally
+        {
+            get
+            {
+                return _blnDoNotRoundEssenceInternally;
+            }
+            set
+            {
+                _blnDoNotRoundEssenceInternally = value;
             }
         }
 
@@ -2325,6 +2395,21 @@ namespace Chummer
             set
             {
                 _blnAlternateMetatypeAttributeKarma = value;
+            }
+        }
+
+        /// <summary>
+        /// House rule: Whether to compensate for the karma cost difference between raising skill ratings and skill groups when increasing the rating of the last skill in the group
+        /// </summary>
+        public bool CompensateSkillGroupKarmaDifference
+        {
+            get
+            {
+                return _blnCompensateSkillGroupKarmaDifference;
+            }
+            set
+            {
+                _blnCompensateSkillGroupKarmaDifference = value;
             }
         }
 
@@ -2729,9 +2814,7 @@ namespace Chummer
         {
             get
             {
-                // TODO: Once new options have been merged, get this implemented
-                return _intKarmaSpecialization;
-                //return _intKarmaKnoSpecialization;
+                return _intKarmaKnoSpecialization;
             }
             set
             {
@@ -3040,7 +3123,7 @@ namespace Chummer
         }
 
         /// <summary>
-        /// Karma cost for a Initiation = 10 + (New Rating x this value).
+        /// Karma cost for an Initiation = KarmaInititationFlat + (New Rating x this value).
         /// </summary>
         public int KarmaInitiation
         {
@@ -3051,6 +3134,21 @@ namespace Chummer
             set
             {
                 _intKarmaInitiation = value;
+            }
+        }
+
+        /// <summary>
+        /// Karma cost for an Initiation = this value + (New Rating x KarmaInititation).
+        /// </summary>
+        public int KarmaInititationFlat
+        {
+            get
+            {
+                return _intKarmaInitiationFlat;
+            }
+            set
+            {
+                _intKarmaInitiationFlat = value;
             }
         }
 

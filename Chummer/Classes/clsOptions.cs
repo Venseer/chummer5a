@@ -163,6 +163,7 @@ namespace Chummer
         private static bool _blnDronemods = false;
         private static bool _blnDronemodsMaximumPilot = false;
         private static bool _blnPreferNightlyUpdates = false;
+        private static bool _blnLiveUpdateCleanCharacterFiles = false;
 
         // Omae Information.
         private static bool _omaeEnabled = false;
@@ -172,9 +173,6 @@ namespace Chummer
 
         private static XmlDocument _objXmlClipboard = new XmlDocument();
         private static ClipboardContentType _objClipboardContentType = new ClipboardContentType();
-
-        public static readonly GradeList CyberwareGrades = new GradeList();
-        public static readonly GradeList BiowareGrades = new GradeList();
 
         // PDF information.
         private static string _strPDFAppPath = string.Empty;
@@ -239,6 +237,8 @@ namespace Chummer
             LoadBoolFromRegistry(ref _blnAutomaticUpdate, "autoupdate");
 
             LoadBoolFromRegistry(ref _blnLiveCustomData, "livecustomdata");
+
+            LoadBoolFromRegistry(ref _blnLiveUpdateCleanCharacterFiles, "liveupdatecleancharacterfiles");
 
             LoadBoolFromRegistry(ref _lifeModuleEnabled, "lifemodule");
 
@@ -417,9 +417,6 @@ namespace Chummer
                     _lstSourcebookInfo.Add(objSource);
                 }
             }
-
-            CyberwareGrades.LoadList(Improvement.ImprovementSource.Cyberware);
-            BiowareGrades.LoadList(Improvement.ImprovementSource.Bioware);
         }
         #endregion
 
@@ -451,6 +448,18 @@ namespace Chummer
             set
             {
                 _blnLiveCustomData = value;
+            }
+        }
+
+        public static bool LiveUpdateCleanCharacterFiles
+        {
+            get
+            {
+                return _blnLiveUpdateCleanCharacterFiles;
+            }
+            set
+            {
+                _blnLiveUpdateCleanCharacterFiles = value;
             }
         }
 
@@ -818,6 +827,9 @@ namespace Chummer
         /// <param name="strFile">Name of the file to add.</param>
         public static void AddToMRUList(string strFile, string strMRUType = "mru")
         {
+            if (string.IsNullOrEmpty(strFile))
+                return;
+
             List<string> strFiles = ReadMRUList(strMRUType);
 
             // Make sure the file doesn't exist in the sticky MRU list if we're adding to base MRU list.

@@ -215,9 +215,9 @@ namespace Chummer
                 Application.DoEvents();
                 try
                 {
-                    TreeNode objTempNode = new TreeNode();
+                    List<TreeNode> lstTempNodes = new List<TreeNode>();
                     Weapon objTemp = new Weapon(objCharacter);
-                    objTemp.Create(objXmlGear, objTempNode, null, null);
+                    objTemp.Create(objXmlGear, lstTempNodes, null, null, null);
                     try
                     {
                         decimal objValue = objTemp.TotalCost;
@@ -515,6 +515,8 @@ namespace Chummer
             pgbProgress.Value = 0;
             pgbProgress.Maximum = objXmlDocument.SelectNodes("/chummer/" + strPrefix + "s/" + strPrefix).Count;
 
+            Grade objTestGrade = CommonFunctions.GetGradeList(Improvement.ImprovementSource.Cyberware).FirstOrDefault(x => x.Name == "Standard");
+
             // Gear.
             foreach (XmlNode objXmlGear in objXmlDocument.SelectNodes("/chummer/" + strPrefix + "s/" + strPrefix))
             {
@@ -528,7 +530,7 @@ namespace Chummer
                     List<TreeNode> lstNodes = new List<TreeNode>();
                     List<Vehicle> objVehicles = new List<Vehicle>();
                     List<TreeNode> objVehicleNodes = new List<TreeNode>();
-                    objTemp.Create(objXmlGear, objCharacter, GlobalOptions.CyberwareGrades.GetGrade("Standard"), objSource, 1, objTempNode, lstWeapons, lstNodes, objVehicles, objVehicleNodes);
+                    objTemp.Create(objXmlGear, objCharacter, objTestGrade, objSource, 1, objTempNode, lstWeapons, lstNodes, objVehicles, objVehicleNodes);
                     try
                     {
                         decimal objValue = objTemp.TotalCost;
@@ -944,13 +946,11 @@ namespace Chummer
         public string ExpressionToString(string strIn, int intForce, int intOffset)
         {
             int intValue = 1;
-            XmlDocument objXmlDocument = new XmlDocument();
-            XPathNavigator nav = objXmlDocument.CreateNavigator();
-            XPathExpression xprAttribute = nav.Compile(strIn.Replace("/", " div ").Replace("F", intForce.ToString()).Replace("1D6", intForce.ToString()).Replace("2D6", intForce.ToString()));
+            string strForce = intForce.ToString();
             // This statement is wrapped in a try/catch since trying 1 div 2 results in an error with XSLT.
             try
             {
-                int.TryParse(nav.Evaluate(xprAttribute).ToString(), out intValue);
+                intValue = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strIn.Replace("/", " div ").Replace("F", strForce).Replace("1D6", strForce).Replace("2D6", strForce)));
             }
             catch (XPathException)
             {

@@ -148,7 +148,7 @@ namespace Chummer
             if (objXmlArmor["rating"] != null)
             {
                 nudRating.Maximum = Convert.ToInt32(objXmlArmor["rating"].InnerText);
-                while (nudRating.Maximum > 1 && !Backend.Shared_Methods.SelectionShared.CheckAvailRestriction(objXmlArmor, _objCharacter, chkHideOverAvailLimit.Checked, Convert.ToInt32(nudRating.Maximum)))
+                while (nudRating.Maximum > 1 && !Backend.Shared_Methods.SelectionShared.CheckAvailRestriction(objXmlArmor, _objCharacter, chkHideOverAvailLimit.Checked, decimal.ToInt32(nudRating.Maximum)))
                 {
                     nudRating.Maximum -= 1;
                 }
@@ -541,7 +541,7 @@ namespace Chummer
                 _strSelectCategory = (_objCharacter.Options.SearchInCategoryOnly || txtSearch.TextLength == 0) ? cboCategory.SelectedValue?.ToString() : objNode["category"]?.InnerText;
                 _strSelectedArmor = objNode["name"]?.InnerText;
                 _decMarkup = nudMarkup.Value;
-                _intRating = Convert.ToInt32(nudRating.Value);
+                _intRating = decimal.ToInt32(nudRating.Value);
                 _blnBlackMarketDiscount = chkBlackMarketDiscount.Checked;
 
                 DialogResult = DialogResult.OK;
@@ -587,7 +587,7 @@ namespace Chummer
                 decimal decItemCost = 0.0m;
                 if (chkFreeItem.Checked)
                 {
-                    lblCost.Text = $"{0:#,0.00¥}";
+                    lblCost.Text = 0.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                     decItemCost = 0;
                 }
                 else if (xmlCostElement.InnerText.StartsWith("Variable"))
@@ -606,26 +606,22 @@ namespace Chummer
 
                     if (decMax == decimal.MaxValue)
                     {
-                        lblCost.Text = $"{decMin:#,0.00¥+}";
+                        lblCost.Text = decMin.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + "¥+";
                     }
                     else
-                        lblCost.Text = $"{decMin:#,0.00} - {decMax:#,0.00¥}";
+                        lblCost.Text = decMin.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + " - " + decMax.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
 
                     decItemCost = decMin;
                 }
                 else if (xmlCostElement.InnerText.Contains("Rating"))
                 {
-                    XPathNavigator nav = _objXmlDocument.CreateNavigator();
-                    XPathExpression xprCost =
-                        nav.Compile(xmlCostElement.InnerText.Replace("Rating",
-                            nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)));
-                    decItemCost = (Convert.ToDecimal(nav.Evaluate(xprCost), GlobalOptions.InvariantCultureInfo));
+                    decItemCost = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(xmlCostElement.InnerText.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))), GlobalOptions.InvariantCultureInfo);
                     decItemCost *= 1 + (nudMarkup.Value / 100.0m);
                     if (chkBlackMarketDiscount.Checked)
                     {
                         decItemCost *= 0.9m;
                     }
-                    lblCost.Text = $"{decItemCost:#,0.00¥}";
+                    lblCost.Text = decItemCost.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                 }
                 else
                 {
@@ -635,7 +631,7 @@ namespace Chummer
                     {
                         decItemCost *= 0.9m;
                     }
-                    lblCost.Text = $"{decItemCost:#,0.00¥}";
+                    lblCost.Text = decItemCost.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                 }
 
                 lblCapacity.Text = objXmlArmor["armorcapacity"]?.InnerText;
