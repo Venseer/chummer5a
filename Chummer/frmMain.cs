@@ -80,7 +80,7 @@ namespace Chummer
             _workerVersionUpdateChecker.RunWorkerAsync();
 #endif
 
-            GlobalOptions.MRUChanged += PopulateMRU;
+            GlobalOptions.MRUChanged += PopulateMRUToolstripMenu;
 
             // Delete the old executable if it exists (created by the update process).
             foreach (string strLoopOldFilePath in Directory.GetFiles(Application.StartupPath, "*.old", SearchOption.AllDirectories))
@@ -90,7 +90,7 @@ namespace Chummer
             }
 
             // Populate the MRU list.
-            PopulateMRU();
+            PopulateMRUToolstripMenu();
 
             GlobalOptions.MainForm = this;
 
@@ -155,6 +155,7 @@ namespace Chummer
 
             frmCharacterRoster frmCharacter = new frmCharacterRoster();
             frmCharacter.MdiParent = this;
+            _frmCharacterRoster = frmCharacter;
 
             // Retrieve the arguments passed to the application. If more than 1 is passed, we're being given the name of a file to open.
             string[] strArgs = Environment.GetCommandLineArgs();
@@ -188,6 +189,15 @@ namespace Chummer
 
             frmCharacter.WindowState = FormWindowState.Maximized;
             frmCharacter.Show();
+        }
+
+        private frmCharacterRoster _frmCharacterRoster;
+        public frmCharacterRoster CharacterRoster
+        {
+            get
+            {
+                return _frmCharacterRoster;
+            }
         }
 
         public void CheckForUpdate(object sender, EventArgs e)
@@ -391,7 +401,7 @@ namespace Chummer
                 string strFileName = ((ToolStripMenuItem)sender).Text;
                 strFileName = strFileName.Substring(3, strFileName.Length - 3).Trim();
 
-                GlobalOptions.RemoveFromMRUList(strFileName);
+                GlobalOptions.RemoveFromMRUList(strFileName, "mru", false);
                 GlobalOptions.AddToMRUList(strFileName, "stickymru");
             }
         }
@@ -411,7 +421,7 @@ namespace Chummer
             {
                 string strFileName = ((ToolStripMenuItem)sender).Text;
 
-                GlobalOptions.RemoveFromMRUList(strFileName, "stickymru");
+                GlobalOptions.RemoveFromMRUList(strFileName, "stickymru", false);
                 GlobalOptions.AddToMRUList(strFileName);
             }
         }
@@ -430,7 +440,7 @@ namespace Chummer
                     // Add a tab page.
                     tp.Tag = ActiveMdiChild;
                     tp.Parent = tabForms;
-                    
+
                     if (ActiveMdiChild.GetType() == typeof(frmCareer))
                     {
                         tp.Text = ((frmCareer)ActiveMdiChild).CharacterName;
@@ -476,6 +486,26 @@ namespace Chummer
         {
             if (tabForms.SelectedTab != null && tabForms.SelectedTab.Tag != null)
                 (tabForms.SelectedTab.Tag as Form)?.Select();
+        }
+
+        public bool SwitchToOpenCharacter(Character objCharacter)
+        {
+            if (objCharacter != null)
+            {
+                Form objCharacterForm = OpenCharacterForms.FirstOrDefault(x => x.CharacterObject == objCharacter);
+                if (objCharacterForm != null)
+                {
+                    foreach (TabPage objTabPage in tabForms.TabPages)
+                    {
+                        if (objTabPage.Tag == objCharacterForm)
+                        {
+                            tabForms.SelectTab(objTabPage);
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
         }
 
         private void objCharacter_CharacterNameChanged(Object sender)
@@ -903,7 +933,7 @@ namespace Chummer
         /// <summary>
         /// Populate the MRU items.
         /// </summary>
-        public void PopulateMRU()
+        public void PopulateMRUToolstripMenu()
         {
             List<string> strStickyMRUList = GlobalOptions.ReadMRUList("stickymru");
             List<string> strMRUList = GlobalOptions.ReadMRUList();
@@ -1015,10 +1045,7 @@ namespace Chummer
 
         private void mnuClearUnpinnedItems_Click(object sender, EventArgs e)
         {
-            foreach (string strFile in GlobalOptions.ReadMRUList())
-            {
-                GlobalOptions.RemoveFromMRUList(strFile);
-            }
+            GlobalOptions.RemoveFromMRUList(GlobalOptions.ReadMRUList());
         }
 
         private void mnuRestart_Click(object sender, EventArgs e)

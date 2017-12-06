@@ -14,7 +14,7 @@ namespace Chummer.Backend.Equipment
     /// </summary>
     public class Vehicle : INamedItemWithGuidAndNode
     {
-        private Guid _guiID = new Guid();
+        private Guid _guiID = Guid.Empty;
         private string _strName = string.Empty;
         private string _strCategory = string.Empty;
         private int _intHandling = 0;
@@ -79,7 +79,8 @@ namespace Chummer.Backend.Equipment
         /// <param name="blnCreateChildren">Whether or not child items should be created.</param>
         public void Create(XmlNode objXmlVehicle, TreeNode objNode, ContextMenuStrip cmsVehicle, ContextMenuStrip cmsVehicleGear, ContextMenuStrip cmsVehicleWeapon, ContextMenuStrip cmsVehicleWeaponAccessory, ContextMenuStrip cmsVehicleWeaponAccessoryGear = null, ContextMenuStrip cmsVehicleWeaponMount = null, bool blnCreateChildren = true)
         {
-            objXmlVehicle.TryGetField("id", Guid.TryParse, out _sourceID);
+            if (objXmlVehicle.TryGetField("id", Guid.TryParse, out _sourceID))
+                _objCachedMyXmlNode = null;
             objXmlVehicle.TryGetStringFieldQuickly("name", ref _strName);
             objXmlVehicle.TryGetStringFieldQuickly("category", ref _strCategory);
             string strTemp = objXmlVehicle["handling"]?.InnerText;
@@ -432,6 +433,17 @@ namespace Chummer.Backend.Equipment
                     }
                 }
             }
+
+            if (WeaponMounts.Count > 0)
+            {
+                TreeNode mountsNode = new TreeNode();
+                mountsNode.Tag = "String_WeaponMounts";
+                mountsNode.Text = LanguageManager.GetString("String_WeaponMounts");
+                objNode.Nodes.Add(mountsNode);
+                // Weapon Mounts
+                foreach (WeaponMount wm in WeaponMounts)
+                    CommonFunctions.CreateWeaponMountTreeNode(wm, mountsNode, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleGear, cmsVehicleWeaponMount);
+            }
             UpdateDealerConnectionDiscount();
         }
 
@@ -545,8 +557,11 @@ namespace Chummer.Backend.Equipment
             if (!objNode.TryGetField("id", Guid.TryParse, out _sourceID))
             {
                 XmlNode sourceNode = XmlManager.Load("vehicles.xml")?.SelectSingleNode("/chummer/vehicles/vehicle[name = \"" + Name + "\"]");
-                sourceNode?.TryGetField("id", Guid.TryParse, out _sourceID);
+                if (sourceNode?.TryGetField("id", Guid.TryParse, out _sourceID) == true)
+                    _objCachedMyXmlNode = null;
             }
+            else
+                _objCachedMyXmlNode = null;
             objNode.TryGetStringFieldQuickly("category", ref _strCategory);
             string strTemp = objNode["handling"]?.InnerText;
             if (!string.IsNullOrEmpty(strTemp))
@@ -2418,13 +2433,6 @@ namespace Chummer.Backend.Equipment
                     if (intSlots > 0)
                         intProtection -= intSlots;
                 }
-                foreach (WeaponMount wm in WeaponMounts.AsParallel().Where(wm => !wm.IncludedInVehicle && wm.Installed))
-                {
-                    // Subtract the Modification's Slots from the Vehicle's base Body.
-                    int intSlots = wm.CalculatedSlots;
-                    if (intSlots > 0)
-                        intProtection -= intSlots;
-                }
                 return intProtection;
             }
         }
@@ -2451,6 +2459,13 @@ namespace Chummer.Backend.Equipment
                 {
                     // Subtract the Modification's Slots from the Vehicle's base Body.
                     int intSlots = objMod.CalculatedSlots;
+                    if (intSlots > 0)
+                        intWeaponsmod -= intSlots;
+                }
+                foreach (WeaponMount wm in WeaponMounts.AsParallel().Where(wm => !wm.IncludedInVehicle && wm.Installed))
+                {
+                    // Subtract the Modification's Slots from the Vehicle's base Body.
+                    int intSlots = wm.CalculatedSlots;
                     if (intSlots > 0)
                         intWeaponsmod -= intSlots;
                 }
@@ -2565,11 +2580,14 @@ namespace Chummer.Backend.Equipment
             }
         }
 
+        private XmlNode _objCachedMyXmlNode = null;
         public XmlNode MyXmlNode
         {
             get
             {
-                return XmlManager.Load("vehicles.xml")?.SelectSingleNode("/chummer/vehicles/vehicle[id = \"" + _sourceID.ToString() + "\"]");
+                if (_objCachedMyXmlNode == null || GlobalOptions.LiveCustomData)
+                    _objCachedMyXmlNode = XmlManager.Load("vehicles.xml")?.SelectSingleNode("/chummer/vehicles/vehicle[id = \"" + _sourceID.ToString() + "\"]");
+                return _objCachedMyXmlNode;
             }
         }
         #endregion

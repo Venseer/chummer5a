@@ -213,7 +213,11 @@ namespace Chummer
             // Prompt the user to select a save file to associate with this Contact.
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "Chummer5 Files (*.chum5)|*.chum5|All Files (*.*)|*.*";
-
+            if (!string.IsNullOrEmpty(_objSpirit.FileName) && File.Exists(_objSpirit.FileName))
+            {
+                openFileDialog.InitialDirectory = Path.GetDirectoryName(_objSpirit.FileName);
+                openFileDialog.FileName = Path.GetFileName(_objSpirit.FileName);
+            }
             if (openFileDialog.ShowDialog(this) == DialogResult.OK)
             {
                 _objSpirit.FileName = openFileDialog.FileName;
@@ -690,9 +694,8 @@ namespace Chummer
                 string strForceValue = string.Empty;
                 if (objXmlQualityItem.Attributes["select"] != null)
                     strForceValue = objXmlQualityItem.Attributes["select"].InnerText;
-                QualitySource objSource = new QualitySource();
-                objSource = QualitySource.Metatype;
-                if (objXmlQualityItem.Attributes["removable"] != null)
+                QualitySource objSource = QualitySource.Metatype;
+                if (objXmlQualityItem.Attributes["removable"]?.InnerText == bool.TrueString)
                     objSource = QualitySource.MetatypeRemovable;
                 objQuality.Create(objXmlQuality, objCharacter, objSource, objNode, objWeapons, objWeaponNodes, strForceValue);
                 objCharacter.Qualities.Add(objQuality);
@@ -711,9 +714,8 @@ namespace Chummer
                 string strForceValue = string.Empty;
                 if (objXmlQualityItem.Attributes["select"] != null)
                     strForceValue = objXmlQualityItem.Attributes["select"].InnerText;
-                QualitySource objSource = new QualitySource();
-                objSource = QualitySource.Metatype;
-                if (objXmlQualityItem.Attributes["removable"] != null)
+                QualitySource objSource = QualitySource.Metatype;
+                if (objXmlQualityItem.Attributes["removable"]?.InnerText == bool.TrueString)
                     objSource = QualitySource.MetatypeRemovable;
                 objQuality.Create(objXmlQuality, objCharacter, objSource, objNode, objWeapons, objWeaponNodes, strForceValue);
                 objCharacter.Qualities.Add(objQuality);
@@ -768,7 +770,7 @@ namespace Chummer
                 XmlNode objXmlProgram = objXmlProgramDocument.SelectSingleNode("/chummer/complexforms/complexform[name = \"" + objXmlComplexForm.InnerText + "\"]");
                 TreeNode objNode = new TreeNode();
                 ComplexForm objProgram = new ComplexForm(objCharacter);
-                objProgram.Create(objXmlProgram, objNode, strForceValue);
+                objProgram.Create(objXmlProgram, objNode, null, strForceValue);
                 objCharacter.ComplexForms.Add(objProgram);
             }
 

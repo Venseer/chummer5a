@@ -295,6 +295,11 @@ Application Changes:
 - Fixed a bug where saving a character to a new file when the character's form would be closed due to Chummer wishing to restart itself would end up with Chummer not re-opening the character when it started back up.
 - Added an option where changes to a character's savefile that happen outside of Chummer (e.g. via syncing folders in Dropbox) would make Chummer automatically reload the character's information if the character has no pending changes to be saved. Normally the user would have to watch for changes themselves and if there are any, they would have to close the character and then re-open them to load in any changes.
 - Added a houserule where increasing the rating of a skill in a skill group when all the other skills have a higher rating compensates for the karma difference between increasing a skill group rating and increasing the rating of all skills in the skill group.
+- Any and all GitHub contributors of past, present, and future are now immortalized in a list on the About screen.
+- Moved Complex Form Context Menu Strip into the treenodes for each complex form to bring it back into line with the usual standard, removed it from the button.
+- Fixed a crash when moving characters between the "Favorites" and "Recent" lists in the character roster.
+- The "Favorites" list will now be shown in the character roster even when it is empty so that characters can immediately be moved to it.
+- Double clicking a character on the character roster who is already open will now switch to the character's tab instead of attempting to open a new tab of the character. Open characters are now marked with an asterisk. If there are more than 10 characters open, open characters will still show up in the "Recent" list.
 
 Data Changes:
 
@@ -450,6 +455,10 @@ Data Changes:
 - Fixed Hobgoblin having a BOD of 1/6 instead of 3/8 and a CHA of 2/7 instead of 1/5. Fixes #2100.
 - Fixed Centaurs having a Walk multiplier of x2 instead of x1.
 - Fixed the cost of Indoor Arboretum and Railway Pass. Fixes #2104.
+- Added content from The Seattle Gauntlet Enhanced Fiction novel.
+- Added missing entries for Magecuff and Magemask from Street Grimoire.
+- Added missing damage resistance bonus to the Bear mentor spirit.
+- Added missing social limit penalty to the Move-By-Wire System.
 
 New Strings:
 - Message_Improvement_EmptySelectionList
@@ -520,12 +529,15 @@ New Strings:
 - Checkbox_Contact_Family
 - Checkbox_Options_ExceedPositiveQualitiesCostDoubled
 - Checkbox_Option_DontRoundEssenceInternally
-- Label_Options_NuyenDecimalsAlways
+- Label_Options_NuyenDecimalsMinimum
 - Label_Options_NuyenDecimalsMaximum
 - Label_Options_NewKnoSpecialization
 - Label_Options_NewRatingPlus
 - Checkbox_Options_LiveUpdateCleanCharacterFiles
 - Checkbox_Options_CompensateSkillGroupKarmaDifference
+- Button_ContactsExpansionToggle
+- String_Loading_Characters
+- String_Generating_Sheet
 
 Changed Strings:
 - Message_PositiveQualityLimit

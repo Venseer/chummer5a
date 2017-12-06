@@ -660,7 +660,7 @@ namespace Chummer
                     if (objXmlQualityItem.Attributes["select"] != null)
                         strForceValue = objXmlQualityItem.Attributes["select"].InnerText;
                     QualitySource objSource = QualitySource.Metatype;
-                    if (objXmlQualityItem.Attributes["removable"] != null)
+                    if (objXmlQualityItem.Attributes["removable"]?.InnerText == bool.TrueString)
                         objSource = QualitySource.MetatypeRemovable;
                     objQuality.Create(objXmlQuality, _objCharacter, objSource, objNode, objWeapons, objWeaponNodes, strForceValue);
                     objQuality.ContributeToLimit = false;
@@ -676,9 +676,8 @@ namespace Chummer
                     string strForceValue = string.Empty;
                     if (objXmlQualityItem.Attributes["select"] != null)
                         strForceValue = objXmlQualityItem.Attributes["select"].InnerText;
-                    QualitySource objSource = new QualitySource();
-                    objSource = QualitySource.Metatype;
-                    if (objXmlQualityItem.Attributes["removable"] != null)
+                    QualitySource objSource = QualitySource.Metatype;
+                    if (objXmlQualityItem.Attributes["removable"]?.InnerText == bool.TrueString)
                         objSource = QualitySource.MetatypeRemovable;
                     objQuality.Create(objXmlQuality, _objCharacter, objSource, objNode, objWeapons, objWeaponNodes, strForceValue);
                     objQuality.ContributeToLimit = false;
@@ -903,7 +902,7 @@ namespace Chummer
                     XmlNode objXmlProgram = objXmlProgramDocument.SelectSingleNode("/chummer/complexforms/complexform[name = \"" + objXmlComplexForm.InnerText + "\"]");
                     TreeNode objNode = new TreeNode();
                     ComplexForm objProgram = new ComplexForm(_objCharacter);
-                    objProgram.Create(objXmlProgram, objNode, strForceValue);
+                    objProgram.Create(objXmlProgram, objNode, null, strForceValue);
                     _objCharacter.ComplexForms.Add(objProgram);
                 }
 

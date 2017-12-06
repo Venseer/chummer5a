@@ -5412,6 +5412,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <key>MenuItem_CreateCritter</key>
       <text>Create Critter</text>
     </string>
+    <string>
+      <key>Button_ContactsExpansionToggle</key>
+      <text>&amp;Expand/Collapse All</text>
+    </string>
     <!-- End Region-->
     <!-- Region Omae -->
     <string>
@@ -7175,8 +7179,8 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Character Roster Watch Folder</text>
     </string>
     <string>
-      <key>Label_Options_NuyenDecimalsAlways</key>
-      <text>Number of Nuyen decimal places to always display:</text>
+      <key>Label_Options_NuyenDecimalsMinimum</key>
+      <text>Minimum number of Nuyen decimal places to display:</text>
     </string>
     <string>
       <key>Label_Options_NuyenDecimalsMaximum</key>
@@ -8232,6 +8236,14 @@ Only one attribute may be at its Maximum value during character creation.</text>
     <string>
       <key>Label_Viewer_CharacterSheet</key>
       <text>Character Sheet:</text>
+    </string>
+    <string>
+      <key>String_Loading_Characters</key>
+      <text>Loading Characters...</text>
+    </string>
+    <string>
+      <key>String_Generating_Sheet</key>
+      <text>Generating Sheet...</text>
     </string>
     <!-- End Region-->
     <!-- Region Create Improvement Window -->

@@ -87,7 +87,7 @@ namespace Chummer
         // General character info.
         private string _strName = string.Empty;
         private List<Image> _lstMugshots = new List<Image>();
-        private int _intMainMugshotIndex = 0;
+        private int _intMainMugshotIndex = -1;
         private string _strSex = string.Empty;
         private string _strAge = string.Empty;
         private string _strEyes = string.Empty;
@@ -235,8 +235,9 @@ namespace Chummer
         private List<CritterPower> _lstCritterPowers = new List<CritterPower>();
         private List<InitiationGrade> _lstInitiationGrades = new List<InitiationGrade>();
         private List<string> _lstOldQualities = new List<string>();
-        private List<string> _lstLocations = new List<string>();
-        private List<string> _lstArmorBundles = new List<string>();
+        private List<string> _lstGearLocations = new List<string>();
+        private List<string> _lstArmorLocations = new List<string>();
+        private List<string> _lstVehicleLocations = new List<string>();
         private List<string> _lstWeaponLocations = new List<string>();
         private List<string> _lstImprovementGroups = new List<string>();
         private List<CalendarWeek> _lstCalendar = new List<CalendarWeek>();
@@ -844,21 +845,30 @@ namespace Chummer
             objWriter.WriteEndElement();
 
             // <locations>
-            objWriter.WriteStartElement("locations");
-            foreach (string strLocation in _lstLocations)
+            objWriter.WriteStartElement("gearlocations");
+            foreach (string strLocation in _lstGearLocations)
             {
-                objWriter.WriteElementString("location", strLocation);
+                objWriter.WriteElementString("gearlocation", strLocation);
             }
             // </locations>
             objWriter.WriteEndElement();
 
             // <armorbundles>
-            objWriter.WriteStartElement("armorbundles");
-            foreach (string strBundle in _lstArmorBundles)
+            objWriter.WriteStartElement("armorlocations");
+            foreach (string strBundle in _lstArmorLocations)
             {
-                objWriter.WriteElementString("armorbundle", strBundle);
+                objWriter.WriteElementString("armorlocation", strBundle);
             }
             // </armorbundles>
+            objWriter.WriteEndElement();
+
+            // <vehiclelocations>
+            objWriter.WriteStartElement("vehiclelocations");
+            foreach (string strLocation in _lstVehicleLocations)
+            {
+                objWriter.WriteElementString("vehiclelocation", strLocation);
+            }
+            // </vehiclelocations>
             objWriter.WriteEndElement();
 
             // <weaponlocations>
@@ -1808,10 +1818,15 @@ namespace Chummer
             Timekeeper.Start("load_char_loc");
 
             // Locations.
-            XmlNodeList objXmlLocationList = objXmlDocument.SelectNodes("/character/locations/location");
+            XmlNodeList objXmlLocationList = objXmlDocument.SelectNodes("/character/gearlocations/gearlocation");
             foreach (XmlNode objXmlLocation in objXmlLocationList)
             {
-                _lstLocations.Add(objXmlLocation.InnerText);
+                _lstGearLocations.Add(objXmlLocation.InnerText);
+            }
+            objXmlLocationList = objXmlDocument.SelectNodes("/character/locations/location");
+            foreach (XmlNode objXmlLocation in objXmlLocationList)
+            {
+                _lstGearLocations.Add(objXmlLocation.InnerText);
             }
 
             Timekeeper.Finish("load_char_loc");
@@ -1821,10 +1836,26 @@ namespace Chummer
             XmlNodeList objXmlBundleList = objXmlDocument.SelectNodes("/character/armorbundles/armorbundle");
             foreach (XmlNode objXmlBundle in objXmlBundleList)
             {
-                _lstArmorBundles.Add(objXmlBundle.InnerText);
+                _lstArmorLocations.Add(objXmlBundle.InnerText);
+            }
+
+            objXmlBundleList = objXmlDocument.SelectNodes("/character/armorlocations/armorlocation");
+            foreach (XmlNode objXmlBundle in objXmlBundleList)
+            {
+                _lstArmorLocations.Add(objXmlBundle.InnerText);
             }
 
             Timekeeper.Finish("load_char_abundle");
+            Timekeeper.Start("load_char_vloc");
+
+            // Vehicle Locations.
+            XmlNodeList objXmlVehicleLocationList = objXmlDocument.SelectNodes("/character/vehiclelocations/vehiclelocation");
+            foreach (XmlNode objXmlLocation in objXmlVehicleLocationList)
+            {
+                _lstVehicleLocations.Add(objXmlLocation.InnerText);
+            }
+
+            Timekeeper.Finish("load_char_vloc");
             Timekeeper.Start("load_char_wloc");
 
             // Weapon Locations.
@@ -2136,31 +2167,34 @@ namespace Chummer
                 }
             }
             // <mainmugshotpath />
-            if (MainMugshot != null)
+            if (Mugshots.Count > 0)
             {
-                Image imgMainMugshot = MainMugshot;
                 string imgMugshotPath = Path.Combine(mugshotsDirectoryPath, guiImage.ToString() + ".img");
-                imgMainMugshot.Save(imgMugshotPath);
-                objWriter.WriteElementString("mainmugshotpath",
-                    "file://" + imgMugshotPath.Replace(Path.DirectorySeparatorChar, '/'));
-                // <mainmugshotbase64 />
-                objWriter.WriteElementString("mainmugshotbase64", imgMainMugshot.ToBase64String());
-                // <othermugshots>
-                objWriter.WriteElementString("hasothermugshots", Mugshots.Count > 1 ? "yes" : "no");
-                objWriter.WriteStartElement("othermugshots");
-                int i = 0;
-                foreach (Image imgMugshot in Mugshots)
+                Image imgMainMugshot = MainMugshot;
+                if (imgMainMugshot != null)
                 {
-                    if (imgMugshot == MainMugshot)
+                    imgMainMugshot.Save(imgMugshotPath);
+                    objWriter.WriteElementString("mainmugshotpath", "file://" + imgMugshotPath.Replace(Path.DirectorySeparatorChar, '/'));
+                    // <mainmugshotbase64 />
+                    objWriter.WriteElementString("mainmugshotbase64", imgMainMugshot.ToBase64String());
+                }
+                // <othermugshots>
+                objWriter.WriteElementString("hasothermugshots", imgMainMugshot == null || Mugshots.Count > 1 ? "yes" : "no");
+                objWriter.WriteStartElement("othermugshots");
+                for (int i = 0; i < Mugshots.Count; ++i)
+                {
+                    if (i == MainMugshotIndex)
                         continue;
+                    Image imgMugshot = Mugshots[i];
                     objWriter.WriteStartElement("mugshot");
+
                     objWriter.WriteElementString("stringbase64", imgMugshot.ToBase64String());
+
                     imgMugshotPath = Path.Combine(mugshotsDirectoryPath, guiImage.ToString() + i.ToString() + ".img");
                     imgMugshot.Save(imgMugshotPath);
                     objWriter.WriteElementString("temppath", "file://" + imgMugshotPath.Replace(Path.DirectorySeparatorChar, '/'));
 
                     objWriter.WriteEndElement();
-                    ++i;
                 }
                 // </mugshots>
                 objWriter.WriteEndElement();
@@ -2874,9 +2908,9 @@ namespace Chummer
             {
                 _frmPrintView.Activate();
             }
-            _frmPrintView.RefreshView();
+            _frmPrintView.RefreshCharacters();
             if (GlobalOptions.MainForm.PrintMultipleCharactersForm?.CharacterList?.Contains(this) == true)
-                GlobalOptions.MainForm.PrintMultipleCharactersForm.PrintViewForm?.RefreshView();
+                GlobalOptions.MainForm.PrintMultipleCharactersForm.PrintViewForm?.RefreshCharacters();
         }
 
         /// <summary>
@@ -3354,7 +3388,7 @@ namespace Chummer
         }
 
         /// <summary>
-        /// Index of Character's main portrait.
+        /// Index of Character's main portrait. -1 if set to none.
         /// </summary>
         public int MainMugshotIndex
         {
@@ -3365,15 +3399,8 @@ namespace Chummer
             set
             {
                 _intMainMugshotIndex = value;
-                if (_intMainMugshotIndex >= _lstMugshots.Count)
-                    _intMainMugshotIndex = 0;
-                else if (_intMainMugshotIndex < 0)
-                {
-                    if (_lstMugshots.Count > 0)
-                        _intMainMugshotIndex = _lstMugshots.Count - 1;
-                    else
-                        _intMainMugshotIndex = 0;
-                }
+                if (_intMainMugshotIndex >= _lstMugshots.Count || _intMainMugshotIndex < -1)
+                    _intMainMugshotIndex = -1;
             }
         }
 
@@ -5889,22 +5916,33 @@ namespace Chummer
         /// <summary>
         /// Locations.
         /// </summary>
-        public List<string> Locations
+        public List<string> GearLocations
         {
             get
             {
-                return _lstLocations;
+                return _lstGearLocations;
             }
         }
 
         /// <summary>
         /// Armor Bundles.
         /// </summary>
-        public List<string> ArmorBundles
+        public List<string> ArmorLocations
         {
             get
             {
-                return _lstArmorBundles;
+                return _lstArmorLocations;
+            }
+        }
+
+        /// <summary>
+        /// Vehicle Locations.
+        /// </summary>
+        public List<string> VehicleLocations
+        {
+            get
+            {
+                return _lstVehicleLocations;
             }
         }
 

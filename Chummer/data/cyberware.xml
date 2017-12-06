@@ -2690,10 +2690,12 @@
       <cost>FixedValues(40000,125000,205000)</cost>
       <source>CF</source>
       <page>84</page>
+      <!-- TODO: Allow user to deactivate the bonus/penalties -->
       <bonus>
         <initiative precedence="0">FixedValues(3,6,9)</initiative>
         <initiativepass precedence="0">FixedValues(0,1,1)</initiativepass>
         <skillwire>Rating * 2</skillwire>
+        <sociallimit>-Rating</sociallimit>
         <specificattribute>
           <name precedence="0">REA</name>
           <val>Rating</val>
@@ -7924,6 +7926,22 @@
       <page>187</page>
       <rating>12</rating>
     </cyberware>
+    <!-- End Region -->
+    <!-- Region The Seattle Gauntlet -->
+    <cyberware>
+      <id>971c1d63-9a36-4907-82a5-364f25060fa7</id>
+      <name>Busted Ware</name>
+      <category>Bodyware</category>
+      <ess>0.5</ess>
+      <capacity>0</capacity>
+      <avail>0</avail>
+      <removalcost>16000</removalcost>
+      <forcegrade>None</forcegrade>
+      <source>TSG</source>
+      <hide />
+      <page>30</page>
+      <rating>0</rating>
+    </cyberware>    
     <!-- End Region -->
   </cyberwares>
 </chummer>
