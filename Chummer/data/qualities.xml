@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <!--This file is part of Chummer5a.
 
     Chummer5a is free software: you can redistribute it and/or modify
@@ -17,7 +18,8 @@
     You can obtain the full source code for Chummer5a at
     https://github.com/chummer5a/chummer5a
 -->
-<chummer xmlns="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/XMLSchema qualities.xsd">
+<chummer xmlns="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.w3.org/2001/XMLSchema qualities.xsd">
   <version>0</version>
   <categories>
     <category>Positive</category>
@@ -912,10 +914,10 @@
           <name>technomancer</name>
         </enabletab>
         <unlockskills>Technomancer</unlockskills>
-		<addgear>
-		  <name>Living Persona</name>
-		  <category>Commlinks</category>
-		</addgear>
+        <addgear>
+          <name>Living Persona</name>
+          <category>Commlinks</category>
+        </addgear>
       </bonus>
       <forbidden>
         <oneof>
@@ -977,7 +979,7 @@
         <enableattribute>
           <name>MAG</name>
         </enableattribute>
-		<unlockskills>Aware</unlockskills>
+        <unlockskills>Aware</unlockskills>
       </bonus>
       <forbidden>
         <oneof>
@@ -1805,7 +1807,7 @@
       <doublecareer>False</doublecareer>
       <category>Positive</category>
       <bonus>
-      <focusbindingkarmacost>
+        <focusbindingkarmacost>
           <name>Qi Focus</name>
           <val>-2</val>
           <extracontains>Improved Ability (skill) (Aeronautics Mechanic)</extracontains>
@@ -2234,7 +2236,9 @@
       <karma>20</karma>
       <doublecareer>False</doublecareer>
       <category>Positive</category>
-      <bonus />
+      <bonus>
+        <magicianswaydiscount />
+      </bonus>
       <required>
         <oneof>
           <quality>Adept</quality>
@@ -4346,17 +4350,17 @@
       <source>RF</source>
       <page>105</page>
     </quality>
-	<quality>
+    <quality>
       <id>11d6fbc9-c2cf-4686-8f95-ef46a83cc0ff</id>
       <name>Centaur Body</name>
       <karma>0</karma>
       <category>Positive</category>
-	  <bonus>
-		<addlimb>
-		  <limbslot>leg</limbslot>
-		  <val>2</val>
-		</addlimb>
-	  </bonus>
+      <bonus>
+        <addlimb>
+          <limbslot>leg</limbslot>
+          <val>2</val>
+        </addlimb>
+      </bonus>
       <required>
         <allof>
           <metatype>Centaur</metatype>
@@ -4716,20 +4720,20 @@
       <karma>6</karma>
       <category>Positive</category>
       <bonus>
-		<movementreplace>
+        <movementreplace>
           <category>Ground</category>
           <speed>walk</speed>
           <val>3</val>
         </movementreplace>
-		<movementreplace>
+        <movementreplace>
           <category>Ground</category>
           <speed>run</speed>
           <val>6</val>
         </movementreplace>
-		<sprintbonus>
-		  <category>Ground</category>
-		  <val>100</val>
-		</sprintbonus>
+        <sprintbonus>
+          <category>Ground</category>
+          <val>100</val>
+        </sprintbonus>
       </bonus>
       <required>
         <oneof>
@@ -6281,11 +6285,11 @@
       <category>Positive</category>
       <limit>2</limit>
       <bonus>
-		<addlimb>
-		  <limbslot>arm</limbslot>
-		  <val>2</val>
-		</addlimb>
-	  </bonus>
+        <addlimb>
+          <limbslot>arm</limbslot>
+          <val>2</val>
+        </addlimb>
+      </bonus>
       <required>
         <oneof>
           <quality>Changeling (Class I SURGE)</quality>
@@ -6423,16 +6427,16 @@
           <speed>walk</speed>
           <val>1</val>
         </movementreplace>
-		<movementreplace>
+        <movementreplace>
           <category>Ground</category>
           <speed>run</speed>
           <val>2</val>
         </movementreplace>
-		<movementreplace>
-		  <category>Ground</category>
-		  <speed>sprint</speed>
-		  <val>50</val>
-		</movementreplace>
+        <movementreplace>
+          <category>Ground</category>
+          <speed>sprint</speed>
+          <val>50</val>
+        </movementreplace>
         <skillcategory>
           <name>Physical Active</name>
           <bonus>-1</bonus>
@@ -7280,7 +7284,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -7323,7 +7327,7 @@
           <power select="Air Pollution, Moderate">Allergy</power>
           <power select="Sunlight, Moderate">Allergy</power>
           <power select="Metahuman Flesh">Dietary Requirement</power>
-		  <power rating="1">Armor</power>
+          <power rating="1">Armor</power>
         </critterpowers>
         <enableattribute>
           <name>MAG</name>
@@ -7409,7 +7413,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -7543,7 +7547,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -7677,7 +7681,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -7811,7 +7815,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -7945,7 +7949,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -8079,7 +8083,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -8213,7 +8217,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -8341,7 +8345,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -8484,7 +8488,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -8630,7 +8634,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -8779,7 +8783,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -8931,7 +8935,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -9099,7 +9103,7 @@
           <quality>Infected: Mutaqua</quality>
           <quality>Infected: Vampire (Non-Human)</quality>
           <quality>Mystic Adept</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -9265,7 +9269,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -9402,7 +9406,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -9537,7 +9541,7 @@
           <metatypecategory>Shapeshifter</metatypecategory>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -9675,7 +9679,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -9811,7 +9815,7 @@
           <metatypecategory>Shapeshifter</metatypecategory>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -9968,7 +9972,7 @@
         <oneof>
           <quality>Magic Resistance</quality>
           <quality>Technomancer</quality>
-		  <quality>Latent Dracomorphosis</quality>
+          <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
       <naturalweapons>
@@ -9996,429 +10000,429 @@
       <source>RF</source>
       <page>140</page>
     </quality>
-	<quality>
+    <quality>
       <id>f466b913-5df0-4370-abf0-fad4ab380d19</id>
       <name>Infected Optional Power: Armor</name>
       <karma>6</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
-	  <limit>no</limit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
+      <limit>no</limit>
       <bonus>
         <critterpowers>
-			<power rating="1">Armor</power>
-		</critterpowers>
+          <power rating="1">Armor</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Dzoo-Noo-Qua</quality>
-			<quality>Infected: Fomoraig</quality>
-			<quality>Infected: Gnawer</quality>
-			<quality>Infected: Mutaqua</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Dzoo-Noo-Qua</quality>
+          <quality>Infected: Fomoraig</quality>
+          <quality>Infected: Gnawer</quality>
+          <quality>Infected: Mutaqua</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>62d59650-f889-4599-9700-60829d50887e</id>
       <name>Infected Optional Power: Compulsion</name>
       <karma>9</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power>Compulsion</power>
-		</critterpowers>
+          <power>Compulsion</power>
+        </critterpowers>
       </bonus>
-	  <forbidden>
-		<oneof>
-			<critterpower>Compulsion</critterpower>
-		</oneof>
-	  </forbidden>
-	  <required>
-		<oneof>
-			<quality>Infected: Nosferatu</quality>
-		</oneof>
-	  </required>
+      <forbidden>
+        <oneof>
+          <critterpower>Compulsion</critterpower>
+        </oneof>
+      </forbidden>
+      <required>
+        <oneof>
+          <quality>Infected: Nosferatu</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>ae0312ad-acb2-4ae8-974e-99af82e81211</id>
       <name>Infected Optional Power: Enhanced Sense (Hearing)</name>
       <karma>3</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power select="Hearing">Enhanced Senses</power>
-		</critterpowers>
+          <power select="Hearing">Enhanced Senses</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Banshee</quality>
-			<quality>Infected: Dzoo-Noo-Qua</quality>
-			<quality>Infected: Mutaqua</quality>
-			<quality>Infected: Nosferatu</quality>
-			<quality>Infected: Vampire (Human)</quality>
-			<quality>Infected: Vampire (Non-Human)</quality>
-			<quality>Infected: Sukuyan (Human)</quality>
-			<quality>Infected: Sukuyan (Non-Human)</quality>
-			<quality>Infected: Wendigo</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Banshee</quality>
+          <quality>Infected: Dzoo-Noo-Qua</quality>
+          <quality>Infected: Mutaqua</quality>
+          <quality>Infected: Nosferatu</quality>
+          <quality>Infected: Vampire (Human)</quality>
+          <quality>Infected: Vampire (Non-Human)</quality>
+          <quality>Infected: Sukuyan (Human)</quality>
+          <quality>Infected: Sukuyan (Non-Human)</quality>
+          <quality>Infected: Wendigo</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>3ec5c096-322a-4342-a4fb-4c2ffda565f7</id>
       <name>Infected Optional Power: Enhanced Sense (Low-Light Vision)</name>
       <karma>3</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power select="Low-Light Vision">Enhanced Senses</power>
-		</critterpowers>
+          <power select="Low-Light Vision">Enhanced Senses</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Mutaqua</quality>
-			<quality>Infected: Nosferatu</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Mutaqua</quality>
+          <quality>Infected: Nosferatu</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>c0e9082b-4930-4f0a-8d84-090878a28a7b</id>
       <name>Infected Optional Power: Enhanced Sense (Smell)</name>
       <karma>3</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power select="Smell">Enhanced Senses</power>
-		</critterpowers>
+          <power select="Smell">Enhanced Senses</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Banshee</quality>
-			<quality>Infected: Goblin</quality>
-			<quality>Infected: Vampire (Human)</quality>
-			<quality>Infected: Vampire (Non-Human)</quality>
-			<quality>Infected: Sukuyan (Human)</quality>
-			<quality>Infected: Sukuyan (Non-Human)</quality>
-			<quality>Infected: Wendigo</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Banshee</quality>
+          <quality>Infected: Goblin</quality>
+          <quality>Infected: Vampire (Human)</quality>
+          <quality>Infected: Vampire (Non-Human)</quality>
+          <quality>Infected: Sukuyan (Human)</quality>
+          <quality>Infected: Sukuyan (Non-Human)</quality>
+          <quality>Infected: Wendigo</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>11f49fab-be66-4679-bc23-b08cf5742cac</id>
       <name>Infected Optional Power: Enhanced Sense (Taste)</name>
       <karma>3</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power select="Taste">Enhanced Senses</power>
-		</critterpowers>
+          <power select="Taste">Enhanced Senses</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Goblin</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Goblin</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>0baaaa57-d738-448e-8f0f-cdb96357c4ef</id>
       <name>Infected Optional Power: Enhanced Sense (Thermographic Vision)</name>
       <karma>3</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power select="Thermographic Vision">Enhanced Senses</power>
-		</critterpowers>
+          <power select="Thermographic Vision">Enhanced Senses</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Nosferatu</quality>
-			<quality>Infected: Vampire (Human)</quality>
-			<quality>Infected: Vampire (Non-Human)</quality>
-			<quality>Infected: Sukuyan (Human)</quality>
-			<quality>Infected: Sukuyan (Non-Human)</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Nosferatu</quality>
+          <quality>Infected: Vampire (Human)</quality>
+          <quality>Infected: Vampire (Non-Human)</quality>
+          <quality>Infected: Sukuyan (Human)</quality>
+          <quality>Infected: Sukuyan (Non-Human)</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>28d06111-33e6-4260-a4f3-bca94d3b5afa</id>
       <name>Infected Optional Power: Enhanced Sense (Visual Acuity)</name>
       <karma>3</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power select="Visual Acuity">Enhanced Senses</power>
-		</critterpowers>
+          <power select="Visual Acuity">Enhanced Senses</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Wendigo</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Wendigo</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>d5de8180-d8b7-48ab-8a1d-878f1c2736af</id>
       <name>Infected Optional Power: Fear</name>
       <karma>9</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power>Fear</power>
-		</critterpowers>
+          <power>Fear</power>
+        </critterpowers>
       </bonus>
-	  <forbidden>
-		<oneof>
-			<critterpower>Fear</critterpower>
-		</oneof>
-	  </forbidden>
-	  <required>
-		<oneof>
-			<quality>Infected: Banshee</quality>
-			<quality>Infected: Mutaqua</quality>
-			<quality>Infected: Nosferatu</quality>
-			<quality>Infected: Wendigo</quality>
-		</oneof>
-	  </required>
+      <forbidden>
+        <oneof>
+          <critterpower>Fear</critterpower>
+        </oneof>
+      </forbidden>
+      <required>
+        <oneof>
+          <quality>Infected: Banshee</quality>
+          <quality>Infected: Mutaqua</quality>
+          <quality>Infected: Nosferatu</quality>
+          <quality>Infected: Wendigo</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>a85e0a7e-cfb5-4b51-8eb5-f2775cba303a</id>
       <name>Infected Optional Power: Immunity (Fire)</name>
       <karma>6</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power select="Fire">Immunity</power>
-		</critterpowers>
+          <power select="Fire">Immunity</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Goblin</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Goblin</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>b0460fde-7bf8-4e77-b402-6fe7143aa590</id>
       <name>Infected Optional Power: Immunity (Pathogens)</name>
       <karma>6</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power select="Pathogens">Immunity</power>
-		</critterpowers>
+          <power select="Pathogens">Immunity</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Banshee</quality>
-			<quality>Infected: Nosferatu</quality>
-			<quality>Infected: Vampire (Human)</quality>
-			<quality>Infected: Vampire (Non-Human)</quality>
-			<quality>Infected: Sukuyan (Human)</quality>
-			<quality>Infected: Sukuyan (Non-Human)</quality>
-			<quality>Infected: Wendigo</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Banshee</quality>
+          <quality>Infected: Nosferatu</quality>
+          <quality>Infected: Vampire (Human)</quality>
+          <quality>Infected: Vampire (Non-Human)</quality>
+          <quality>Infected: Sukuyan (Human)</quality>
+          <quality>Infected: Sukuyan (Non-Human)</quality>
+          <quality>Infected: Wendigo</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>ad81bcdf-2f45-4ca3-ab46-c766fd734800</id>
       <name>Infected Optional Power: Immunity (Toxins)</name>
       <karma>6</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power select="Toxins">Immunity</power>
-		</critterpowers>
+          <power select="Toxins">Immunity</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Banshee</quality>
-			<quality>Infected: Dzoo-Noo-Qua</quality>
-			<quality>Infected: Goblin</quality>
-			<quality>Infected: Mutaqua</quality>
-			<quality>Infected: Nosferatu</quality>
-			<quality>Infected: Vampire (Human)</quality>
-			<quality>Infected: Vampire (Non-Human)</quality>
-			<quality>Infected: Sukuyan (Human)</quality>
-			<quality>Infected: Sukuyan (Non-Human)</quality>
-			<quality>Infected: Wendigo</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Banshee</quality>
+          <quality>Infected: Dzoo-Noo-Qua</quality>
+          <quality>Infected: Goblin</quality>
+          <quality>Infected: Mutaqua</quality>
+          <quality>Infected: Nosferatu</quality>
+          <quality>Infected: Vampire (Human)</quality>
+          <quality>Infected: Vampire (Non-Human)</quality>
+          <quality>Infected: Sukuyan (Human)</quality>
+          <quality>Infected: Sukuyan (Non-Human)</quality>
+          <quality>Infected: Wendigo</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>e3ed1dec-9e91-4dbf-ac5c-30bd6d9900a4</id>
       <name>Infected Optional Power: Influence</name>
       <karma>9</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power>Influence</power>
-		</critterpowers>
+          <power>Influence</power>
+        </critterpowers>
       </bonus>
-	  <forbidden>
-		<oneof>
-			<critterpower>Influence</critterpower>
-		</oneof>
-	  </forbidden>
-	  <required>
-		<oneof>
-			<quality>Infected: Nosferatu</quality>
-			<quality>Infected: Wendigo</quality>
-		</oneof>
-	  </required>
+      <forbidden>
+        <oneof>
+          <critterpower>Influence</critterpower>
+        </oneof>
+      </forbidden>
+      <required>
+        <oneof>
+          <quality>Infected: Nosferatu</quality>
+          <quality>Infected: Wendigo</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>630fd84e-553d-4faf-a271-9148b717d226</id>
       <name>Infected Optional Power: Magical Guard</name>
       <karma>9</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power>Magical Guard</power>
-		</critterpowers>
+          <power>Magical Guard</power>
+        </critterpowers>
       </bonus>
-	  <forbidden>
-		<oneof>
-			<critterpower>Magical Guard</critterpower>
-		</oneof>
-	  </forbidden>
-	  <required>
-		<oneof>
-			<quality>Infected: Dzoo-Noo-Qua</quality>
-			<quality>Infected: Mutaqua</quality>
-		</oneof>
-	  </required>
+      <forbidden>
+        <oneof>
+          <critterpower>Magical Guard</critterpower>
+        </oneof>
+      </forbidden>
+      <required>
+        <oneof>
+          <quality>Infected: Dzoo-Noo-Qua</quality>
+          <quality>Infected: Mutaqua</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>7843087c-30a3-4d87-aaa2-5ebdb90cccd8</id>
       <name>Infected Optional Power: Mist Form</name>
       <karma>12</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power>Mist Form</power>
-		</critterpowers>
+          <power>Mist Form</power>
+        </critterpowers>
       </bonus>
-	  <required>
-		<oneof>
-			<quality>Infected: Banshee</quality>
-			<quality>Infected: Vampire (Human)</quality>
-			<quality>Infected: Vampire (Non-Human)</quality>
-			<quality>Infected: Sukuyan (Human)</quality>
-			<quality>Infected: Sukuyan (Non-Human)</quality>
-		</oneof>
-	  </required>
+      <required>
+        <oneof>
+          <quality>Infected: Banshee</quality>
+          <quality>Infected: Vampire (Human)</quality>
+          <quality>Infected: Vampire (Non-Human)</quality>
+          <quality>Infected: Sukuyan (Human)</quality>
+          <quality>Infected: Sukuyan (Non-Human)</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>6d9f205e-52a0-4bb2-a4c2-e49232dd8346</id>
       <name>Infected Optional Power: Paralyzing Howl</name>
       <karma>9</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power>Paralyzing Howl</power>
-		</critterpowers>
+          <power>Paralyzing Howl</power>
+        </critterpowers>
       </bonus>
-	  <forbidden>
-		<oneof>
-			<critterpower>Paralyzing Howl</critterpower>
-		</oneof>
-	  </forbidden>
-	  <required>
-		<oneof>
-			<quality>Infected: Banshee</quality>
-		</oneof>
-	  </required>
+      <forbidden>
+        <oneof>
+          <critterpower>Paralyzing Howl</critterpower>
+        </oneof>
+      </forbidden>
+      <required>
+        <oneof>
+          <quality>Infected: Banshee</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
-	<quality>
+    <quality>
       <id>311ebb96-bf65-483e-86b7-62702a43aae3</id>
       <name>Infected Optional Power: Regeneration</name>
       <karma>12</karma>
       <category>Positive</category>
-	  <doublecareer>False</doublecareer>
-	  <chargenlimit>0</chargenlimit>
+      <doublecareer>False</doublecareer>
+      <chargenlimit>0</chargenlimit>
       <bonus>
         <critterpowers>
-			<power>Regeneration</power>
-		</critterpowers>
+          <power>Regeneration</power>
+        </critterpowers>
       </bonus>
-	  <forbidden>
-		<oneof>
-			<critterpower>Regeneration</critterpower>
-		</oneof>
-	  </forbidden>
-	  <required>
-		<oneof>
-			<quality>Infected: Banshee</quality>
-			<quality>Infected: Dzoo-Noo-Qua</quality>
-			<quality>Infected: Goblin</quality>
-			<quality>Infected: Mutaqua</quality>
-			<quality>Infected: Nosferatu</quality>
-			<quality>Infected: Vampire (Human)</quality>
-			<quality>Infected: Vampire (Non-Human)</quality>
-			<quality>Infected: Sukuyan (Human)</quality>
-			<quality>Infected: Sukuyan (Non-Human)</quality>
-			<quality>Infected: Wendigo</quality>
-		</oneof>
-	  </required>
+      <forbidden>
+        <oneof>
+          <critterpower>Regeneration</critterpower>
+        </oneof>
+      </forbidden>
+      <required>
+        <oneof>
+          <quality>Infected: Banshee</quality>
+          <quality>Infected: Dzoo-Noo-Qua</quality>
+          <quality>Infected: Goblin</quality>
+          <quality>Infected: Mutaqua</quality>
+          <quality>Infected: Nosferatu</quality>
+          <quality>Infected: Vampire (Human)</quality>
+          <quality>Infected: Vampire (Non-Human)</quality>
+          <quality>Infected: Sukuyan (Human)</quality>
+          <quality>Infected: Sukuyan (Non-Human)</quality>
+          <quality>Infected: Wendigo</quality>
+        </oneof>
+      </required>
       <source>RF</source>
       <page>136</page>
     </quality>
@@ -10551,7 +10555,82 @@
       <page>46</page>
     </quality>
     <!-- End Region -->
-    <!--Region Data Trails Negative Qualities -->
+	<!-- Region Dark Terrors Negetive Qualities -->
+	<quality>
+	  <id>b0321887-df33-49d9-9d2e-e718eca9c7a0</id>
+	  <name>Wildcard Chimera</name>
+	  <karma>0</karma>
+	  <category>Positive</category>
+    <bonus>
+      <selectquality>
+        <quality contributetobp="True">Infected Optional Power: Armor</quality>
+        <quality contributetobp="True">Infected Optional Power: Compulsion</quality>
+        <quality contributetobp="True">Infected Optional Power: Enhanced Sense (Hearing)</quality>
+        <quality contributetobp="True">Infected Optional Power: Enhanced Sense (Low-Light Vision)</quality>
+        <quality contributetobp="True">Infected Optional Power: Enhanced Sense (Smell)</quality>
+        <quality contributetobp="True">Infected Optional Power: Enhanced Sense (Taste)</quality>
+        <quality contributetobp="True">Infected Optional Power: Enhanced Sense (Thermographic Vision)</quality>
+        <quality contributetobp="True">Infected Optional Power: Enhanced Sense (Visual Acuity)</quality>
+        <quality contributetobp="True">Infected Optional Power: Fear</quality>
+        <quality contributetobp="True">Infected Optional Power: Immunity (Fire)</quality>
+        <quality contributetobp="True">Infected Optional Power: Immunity (Pathogens)</quality>as
+        <quality contributetobp="True">Infected Optional Power: Immunity (Toxins)</quality>
+        <quality contributetobp="True">Infected Optional Power: Influence</quality>
+        <quality contributetobp="True">Infected Optional Power: Magical Guard</quality>
+        <quality contributetobp="True">Infected Optional Power: Mist Form</quality>
+        <quality contributetobp="True">Infected Optional Power: Paralyzing Howl</quality>
+        <quality contributetobp="True">Infected Optional Power: Regeneration</quality>
+        <discountqualities>
+          <quality discount="-1">Third Eye</quality>
+          <quality discount="-2">Scent Glands</quality>
+          <quality discount="-3">Scales</quality>
+          <quality discount="-3">Critter Spook</quality>
+          <quality discount="-3">Cold-Blooded</quality>
+          <quality discount="-3">Bioluminescence</quality>
+          <quality discount="-4">Cyclopean Eye</quality>
+          <quality discount="-4">Berserker</quality>
+          <quality discount="-8">Astral Hazing</quality>
+          <quality discount="-8">Impaired Attribute (Charisma)</quality>
+          <quality discount="-8">Impaired Attribute (Intuition)</quality>
+          <quality discount="-8">Impaired Attribute (Willpower)</quality>
+          <quality discount="-8">Impaired Attribute (Logic)</quality>
+        </discountqualities>
+      </selectquality>
+    </bonus>
+    <source>DTR</source>
+    <page>163</page>
+	</quality>
+	<quality>
+	  <id>b3373640-35cc-4a29-b2b0-6ded9acd8d4b</id>
+	  <name>It Works If You Work It</name>
+	  <karma>-5</karma>
+	  <category>Positive</category>
+	  <bonus />
+	  <source>DTR</source>
+	  <page>164</page>
+	</quality>
+	<quality>
+	  <id>254c19fc-0a5b-4f75-a6d9-614f885e3d19</id>
+	  <name>Soul Swallower</name>
+	  <karma>-7</karma>
+	  <category>Positive</category>
+	  <bonus />
+	  <source>DTR</source>
+	  <page>164</page>
+	  </quality>
+	<quality>
+	  <id>94702bfe-ec3e-4b57-ba3e-8c45f214e9f1</id>
+	  <name>Metaviral Attunement</name>
+	  <karma>-5</karma>
+	  <category>Positive</category>
+	  <bonus>
+	    <selecttext />
+	  </bonus>
+	  <source>DTR</source>
+	  <page>164</page>
+	</quality>
+	<!-- End Region -->
+    <!-- Region Data Trails Negative Qualities -->
     <quality>
       <id>233cb57f-6e4d-45dc-b7a9-9bc1e1bf940c</id>
       <name>Code of Honor: Like a Boss</name>
@@ -10868,7 +10947,7 @@
       <name>Pilot Origins</name>
       <karma>8</karma>
       <category>Positive</category>
-	  <limit>3</limit>
+      <limit>3</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11097,7 +11176,7 @@
       <category>Positive</category>
       <bonus>
         <physiologicaladdictionfirsttime>2</physiologicaladdictionfirsttime>
-		<psychologicaladdictionfirsttime>2</psychologicaladdictionfirsttime>
+        <psychologicaladdictionfirsttime>2</psychologicaladdictionfirsttime>
       </bonus>
       <source>CF</source>
       <page>54</page>
@@ -11149,14 +11228,14 @@
       <karma>12</karma>
       <category>Positive</category>
       <bonus>
-		<addesstostuncmrecovery />
-		<addesstophysicalcmrecovery />
-	  </bonus>
-	  <forbidden>
-		<oneof>
-		  <quality>Quick Healer</quality>
-		</oneof>
-	  </forbidden>
+        <addesstostuncmrecovery />
+        <addesstophysicalcmrecovery />
+      </bonus>
+      <forbidden>
+        <oneof>
+          <quality>Quick Healer</quality>
+        </oneof>
+      </forbidden>
       <source>CF</source>
       <page>56</page>
     </quality>
@@ -11165,7 +11244,7 @@
     <quality>
       <id>0d5e6819-ac41-4700-ac7d-58fa957b328c</id>
       <name>Phenotypic Variation - Genewipe</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>32</karma>
       <category>Positive</category>
       <bonus />
@@ -11175,7 +11254,7 @@
     <quality>
       <id>13edde6a-f920-4665-9e65-53a20b30c2a3</id>
       <name>Phenotypic Variation - Masque</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>23</karma>
       <category>Positive</category>
       <bonus />
@@ -11185,7 +11264,7 @@
     <quality>
       <id>eac42e74-2f7b-418d-bd38-c1cdd56ceec4</id>
       <name>Phenotypic Variation - Reprint</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>18</karma>
       <category>Positive</category>
       <bonus />
@@ -11195,7 +11274,7 @@
     <quality>
       <id>f0bd7ebc-8b59-4586-b83a-d884540a7651</id>
       <name>Phenotypic Variation - Shuffle</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>13</karma>
       <category>Positive</category>
       <bonus />
@@ -11205,179 +11284,179 @@
     <quality>
       <id>3109f474-0d10-4c75-bc07-ef22afdd92ab</id>
       <name>Phenotypic Variation - Genetic Optimization (Body)</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>27</karma>
       <category>Positive</category>
       <bonus>
-		<specificattribute>
+        <specificattribute>
           <name>BOD</name>
           <max>1</max>
         </specificattribute>
       </bonus>
-	  <forbidden>
-		<oneof>
-		  <bioware>Genetic Optimization (Body)</bioware>
-		</oneof>
-	  </forbidden>
+      <forbidden>
+        <oneof>
+          <bioware>Genetic Optimization (Body)</bioware>
+        </oneof>
+      </forbidden>
       <source>CF</source>
       <page>157</page>
     </quality>
-	<quality>
+    <quality>
       <id>c42cc305-3d7a-4c68-9ce7-32e1fc628505</id>
       <name>Phenotypic Variation - Genetic Optimization (Agility)</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>27</karma>
       <category>Positive</category>
       <bonus>
-		<specificattribute>
+        <specificattribute>
           <name>AGI</name>
           <max>1</max>
         </specificattribute>
       </bonus>
-	  <forbidden>
-		<oneof>
-		  <bioware>Genetic Optimization (Agility)</bioware>
-		</oneof>
-	  </forbidden>
+      <forbidden>
+        <oneof>
+          <bioware>Genetic Optimization (Agility)</bioware>
+        </oneof>
+      </forbidden>
       <source>CF</source>
       <page>157</page>
     </quality>
-	<quality>
+    <quality>
       <id>8c667328-eba0-4dc7-be5a-19c285997f10</id>
       <name>Phenotypic Variation - Genetic Optimization (Reaction)</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>27</karma>
       <category>Positive</category>
       <bonus>
-		<specificattribute>
+        <specificattribute>
           <name>REA</name>
           <max>1</max>
         </specificattribute>
       </bonus>
-	  <forbidden>
-		<oneof>
-		  <bioware>Genetic Optimization (Reaction)</bioware>
-		</oneof>
-	  </forbidden>
+      <forbidden>
+        <oneof>
+          <bioware>Genetic Optimization (Reaction)</bioware>
+        </oneof>
+      </forbidden>
       <source>CF</source>
       <page>157</page>
     </quality>
-	<quality>
+    <quality>
       <id>a6b946e2-7e58-4607-b9ce-7b27055c9562</id>
       <name>Phenotypic Variation - Genetic Optimization (Strength)</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>27</karma>
       <category>Positive</category>
       <bonus>
-		<specificattribute>
+        <specificattribute>
           <name>STR</name>
           <max>1</max>
         </specificattribute>
       </bonus>
-	  <forbidden>
-		<oneof>
-		  <bioware>Genetic Optimization (Strength)</bioware>
-		</oneof>
-	  </forbidden>
+      <forbidden>
+        <oneof>
+          <bioware>Genetic Optimization (Strength)</bioware>
+        </oneof>
+      </forbidden>
       <source>CF</source>
       <page>157</page>
     </quality>
-	<quality>
+    <quality>
       <id>7022143c-3d58-4ad7-9cdb-dab007f75f54</id>
       <name>Phenotypic Variation - Genetic Optimization (Charisma)</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>27</karma>
       <category>Positive</category>
       <bonus>
-		<specificattribute>
+        <specificattribute>
           <name>CHA</name>
           <max>1</max>
         </specificattribute>
       </bonus>
-	  <forbidden>
-		<oneof>
-		  <bioware>Genetic Optimization (Charisma)</bioware>
-		</oneof>
-	  </forbidden>
+      <forbidden>
+        <oneof>
+          <bioware>Genetic Optimization (Charisma)</bioware>
+        </oneof>
+      </forbidden>
       <source>CF</source>
       <page>157</page>
     </quality>
-	<quality>
+    <quality>
       <id>22a991a5-e8b1-4ca7-98b9-3181df5dbf7e</id>
       <name>Phenotypic Variation - Genetic Optimization (Intuition)</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>27</karma>
       <category>Positive</category>
       <bonus>
-		<specificattribute>
+        <specificattribute>
           <name>INT</name>
           <max>1</max>
         </specificattribute>
       </bonus>
-	  <forbidden>
-		<oneof>
-		  <bioware>Genetic Optimization (Intuition)</bioware>
-		</oneof>
-	  </forbidden>
+      <forbidden>
+        <oneof>
+          <bioware>Genetic Optimization (Intuition)</bioware>
+        </oneof>
+      </forbidden>
       <source>CF</source>
       <page>157</page>
     </quality>
-	<quality>
+    <quality>
       <id>62035d8e-c784-450e-9b03-501281a6771a</id>
       <name>Phenotypic Variation - Genetic Optimization (Logic)</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>27</karma>
       <category>Positive</category>
       <bonus>
-		<specificattribute>
+        <specificattribute>
           <name>LOG</name>
           <max>1</max>
         </specificattribute>
       </bonus>
-	  <forbidden>
-		<oneof>
-		  <bioware>Genetic Optimization (Logic)</bioware>
-		</oneof>
-	  </forbidden>
+      <forbidden>
+        <oneof>
+          <bioware>Genetic Optimization (Logic)</bioware>
+        </oneof>
+      </forbidden>
       <source>CF</source>
       <page>157</page>
     </quality>
-	<quality>
+    <quality>
       <id>96ae02da-5824-4ebd-a0c5-65bb5b43fd48</id>
       <name>Phenotypic Variation - Genetic Optimization (Willpower)</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>27</karma>
       <category>Positive</category>
       <bonus>
-		<specificattribute>
+        <specificattribute>
           <name>WIL</name>
           <max>1</max>
         </specificattribute>
       </bonus>
-	  <forbidden>
-		<oneof>
-		  <bioware>Genetic Optimization (Willpower)</bioware>
-		</oneof>
-	  </forbidden>
+      <forbidden>
+        <oneof>
+          <bioware>Genetic Optimization (Willpower)</bioware>
+        </oneof>
+      </forbidden>
       <source>CF</source>
       <page>157</page>
     </quality>
     <quality>
       <id>e89ddeca-1de4-410e-916f-205aeaee6ea2</id>
       <name>Phenotypic Variation - Cosmetic Alteration</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>21</karma>
       <category>Positive</category>
       <bonus>
-		<selecttext />
-	  </bonus>
+        <selecttext />
+      </bonus>
       <source>CF</source>
       <page>158</page>
     </quality>
     <quality>
       <id>b17b895e-6819-4609-91e6-9ce42d0446a9</id>
       <name>Phenotypic Variation - Print Removal</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>12</karma>
       <category>Positive</category>
       <bonus />
@@ -11387,12 +11466,12 @@
     <quality>
       <id>89564979-72ca-4e73-9923-0ce088da0227</id>
       <name>Phenotypic Variation - Metaposeur</name>
-	  <chargenonly />
+      <chargenonly />
       <karma>22</karma>
       <category>Positive</category>
       <bonus>
-		<selecttext />
-	  </bonus>
+        <selecttext />
+      </bonus>
       <source>CF</source>
       <page>158</page>
     </quality>
@@ -11441,22 +11520,22 @@
       <karma>-12</karma>
       <category>Negative</category>
       <bonus>
-		<disablecyberwaregrade>Standard</disablecyberwaregrade>
-		<disablecyberwaregrade>Standard (Burnout's Way)</disablecyberwaregrade>
-		<disablecyberwaregrade>Used</disablecyberwaregrade>
-		<disablecyberwaregrade>Alphaware</disablecyberwaregrade>
-		<disablecyberwaregrade>Omegaware</disablecyberwaregrade>
-		<disablecyberwaregrade>Standard (Adapsin)</disablecyberwaregrade>
-		<disablecyberwaregrade>Standard (Burnout's Way) (Adapsin)</disablecyberwaregrade>
-		<disablecyberwaregrade>Used (Adapsin)</disablecyberwaregrade>
-		<disablecyberwaregrade>Alphaware (Adapsin)</disablecyberwaregrade>
-		<disablecyberwaregrade>Omegaware (Adapsin)</disablecyberwaregrade>
-		<disablebiowaregrade>Standard</disablebiowaregrade>
-		<disablebiowaregrade>Standard (Burnout's Way)</disablebiowaregrade>
-		<disablebiowaregrade>Used</disablebiowaregrade>
-		<disablebiowaregrade>Alphaware</disablebiowaregrade>
-		<disablebiowaregrade>Omegaware</disablebiowaregrade>
-	  </bonus>
+        <disablecyberwaregrade>Standard</disablecyberwaregrade>
+        <disablecyberwaregrade>Standard (Burnout's Way)</disablecyberwaregrade>
+        <disablecyberwaregrade>Used</disablecyberwaregrade>
+        <disablecyberwaregrade>Alphaware</disablecyberwaregrade>
+        <disablecyberwaregrade>Omegaware</disablecyberwaregrade>
+        <disablecyberwaregrade>Standard (Adapsin)</disablecyberwaregrade>
+        <disablecyberwaregrade>Standard (Burnout's Way) (Adapsin)</disablecyberwaregrade>
+        <disablecyberwaregrade>Used (Adapsin)</disablecyberwaregrade>
+        <disablecyberwaregrade>Alphaware (Adapsin)</disablecyberwaregrade>
+        <disablecyberwaregrade>Omegaware (Adapsin)</disablecyberwaregrade>
+        <disablebiowaregrade>Standard</disablebiowaregrade>
+        <disablebiowaregrade>Standard (Burnout's Way)</disablebiowaregrade>
+        <disablebiowaregrade>Used</disablebiowaregrade>
+        <disablebiowaregrade>Alphaware</disablebiowaregrade>
+        <disablebiowaregrade>Omegaware</disablebiowaregrade>
+      </bonus>
       <required>
         <oneof>
           <ess grade="Betaware">1</ess>
@@ -11470,7 +11549,7 @@
       <name>Dead Emotion</name>
       <karma>-5</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11482,7 +11561,7 @@
       <name>Dry Addict (Mild)</name>
       <karma>-2</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11494,7 +11573,7 @@
       <name>Dry Addict (Moderate)</name>
       <karma>-5</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11506,7 +11585,7 @@
       <name>Dry Addict (Severe)</name>
       <karma>-10</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11518,7 +11597,7 @@
       <name>Dry Addict (Burnout)</name>
       <karma>-13</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11532,9 +11611,9 @@
       <category>Negative</category>
       <bonus>
         <physiologicaladdictionfirsttime>-2</physiologicaladdictionfirsttime>
-		<psychologicaladdictionfirsttime>-2</psychologicaladdictionfirsttime>
-		<physiologicaladdictionalreadyaddicted>-2</physiologicaladdictionalreadyaddicted>
-		<psychologicaladdictionalreadyaddicted>-2</psychologicaladdictionalreadyaddicted>
+        <psychologicaladdictionfirsttime>-2</psychologicaladdictionfirsttime>
+        <physiologicaladdictionalreadyaddicted>-2</physiologicaladdictionalreadyaddicted>
+        <psychologicaladdictionalreadyaddicted>-2</psychologicaladdictionalreadyaddicted>
       </bonus>
       <source>CF</source>
       <page>58</page>
@@ -11546,30 +11625,30 @@
       <category>Negative</category>
       <bonus>
         <physiologicaladdictionfirsttime>-2</physiologicaladdictionfirsttime>
-		<physiologicaladdictionalreadyaddicted>-2</physiologicaladdictionalreadyaddicted>
-		<toxincontactresist>-2</toxincontactresist>
-		<toxiningestionresist>-2</toxiningestionresist>
-		<toxininhalationresist>-2</toxininhalationresist>
-		<toxininjectionresist>-2</toxininjectionresist>
-		<pathogencontactresist>-2</pathogencontactresist>
-		<pathogeningestionresist>-2</pathogeningestionresist>
-		<pathogeninhalationresist>-2</pathogeninhalationresist>
-		<pathogeninjectionresist>-2</pathogeninjectionresist>
+        <physiologicaladdictionalreadyaddicted>-2</physiologicaladdictionalreadyaddicted>
+        <toxincontactresist>-2</toxincontactresist>
+        <toxiningestionresist>-2</toxiningestionresist>
+        <toxininhalationresist>-2</toxininhalationresist>
+        <toxininjectionresist>-2</toxininjectionresist>
+        <pathogencontactresist>-2</pathogencontactresist>
+        <pathogeningestionresist>-2</pathogeningestionresist>
+        <pathogeninhalationresist>-2</pathogeninhalationresist>
+        <pathogeninjectionresist>-2</pathogeninjectionresist>
       </bonus>
-	  <required>
-		<allof>
-		  <ess>-5.0001</ess>
-		</allof>
-		<oneof>
-		  <ess grade="Used">0.0001</ess>
-		  <ess grade="Standard">0.0001</ess>
-		  <ess grade="Alphaware">0.0001</ess>
-		  <ess grade="Betaware">0.0001</ess>
-		  <ess grade="Deltaware">0.0001</ess>
-		  <ess grade="Gammaware">0.0001</ess>
-		  <ess grade="Omegaware">0.0001</ess>
-		</oneof>
-	  </required>
+      <required>
+        <allof>
+          <ess>-5.0001</ess>
+        </allof>
+        <oneof>
+          <ess grade="Used">0.0001</ess>
+          <ess grade="Standard">0.0001</ess>
+          <ess grade="Alphaware">0.0001</ess>
+          <ess grade="Betaware">0.0001</ess>
+          <ess grade="Deltaware">0.0001</ess>
+          <ess grade="Gammaware">0.0001</ess>
+          <ess grade="Omegaware">0.0001</ess>
+        </oneof>
+      </required>
       <source>CF</source>
       <page>58</page>
     </quality>
@@ -11656,6 +11735,10 @@
           <bonus>1</bonus>
         </skillgroup>
         <specificskill>
+          <name>Exotic Melee Weapon</name>
+          <bonus>1</bonus>
+        </specificskill>
+        <specificskill>
           <name>Etiquette</name>
           <bonus>-2</bonus>
         </specificskill>
@@ -11704,7 +11787,7 @@
       <name>Elemental Focus</name>
       <karma>10</karma>
       <category>Positive</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11785,7 +11868,7 @@
       <karma>3</karma>
       <category>Positive</category>
       <limit>4</limit>
-	  <nolevels />
+      <nolevels />
       <bonus>
         <dealerconnection>
           <category>Drones</category>
@@ -11879,16 +11962,16 @@
       <name>Latent Dracomorphosis</name>
       <karma>5</karma>
       <category>Positive</category>
-	  <refundkarmaonremove />
-	  <forbidden>
+      <refundkarmaonremove />
+      <forbidden>
         <oneof>
           <quality>Dracoform (Eastern Drake)</quality>
           <quality>Dracoform (Western Drake)</quality>
-		  <quality>Dracoform (Feathered Drake)</quality>
-		  <quality>Dracoform (Sea Drake)</quality>
+          <quality>Dracoform (Feathered Drake)</quality>
+          <quality>Dracoform (Sea Drake)</quality>
           <quality>Changeling (Class I SURGE)</quality>
-		  <quality>Changeling (Class II SURGE)</quality>
-		  <quality>Changeling (Class III SURGE)</quality>
+          <quality>Changeling (Class II SURGE)</quality>
+          <quality>Changeling (Class III SURGE)</quality>
           <quality>Infected: Bandersnatch</quality>
           <quality>Infected: Banshee</quality>
           <quality>Infected: Dzoo-Noo-Qua</quality>
@@ -11924,11 +12007,11 @@
       <karma>75</karma>
       <stagedpurchase>True</stagedpurchase>
       <category>Positive</category>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Dracoform (Western Drake)</quality>
-		  <quality>Dracoform (Feathered Drake)</quality>
-		  <quality>Dracoform (Sea Drake)</quality>
+          <quality>Dracoform (Feathered Drake)</quality>
+          <quality>Dracoform (Sea Drake)</quality>
           <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
@@ -11989,11 +12072,11 @@
       <karma>75</karma>
       <stagedpurchase>True</stagedpurchase>
       <category>Positive</category>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Dracoform (Eastern Drake)</quality>
-		  <quality>Dracoform (Feathered Drake)</quality>
-		  <quality>Dracoform (Sea Drake)</quality>
+          <quality>Dracoform (Feathered Drake)</quality>
+          <quality>Dracoform (Sea Drake)</quality>
           <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
@@ -12050,11 +12133,11 @@
       <karma>75</karma>
       <stagedpurchase>True</stagedpurchase>
       <category>Positive</category>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Dracoform (Eastern Drake)</quality>
           <quality>Dracoform (Western Drake)</quality>
-		  <quality>Dracoform (Sea Drake)</quality>
+          <quality>Dracoform (Sea Drake)</quality>
           <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
@@ -12119,11 +12202,11 @@
       <karma>75</karma>
       <stagedpurchase>True</stagedpurchase>
       <category>Positive</category>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Dracoform (Eastern Drake)</quality>
           <quality>Dracoform (Western Drake)</quality>
-		  <quality>Dracoform (Feathered Drake)</quality>
+          <quality>Dracoform (Feathered Drake)</quality>
           <quality>Latent Dracomorphosis</quality>
         </oneof>
       </forbidden>
@@ -12247,8 +12330,8 @@
       <karma>5</karma>
       <category>Positive</category>
       <bonus>
-		<judgeintentionsdefense>2</judgeintentionsdefense>
-	  </bonus>
+        <judgeintentionsdefense>2</judgeintentionsdefense>
+      </bonus>
       <source>CA</source>
       <page>151</page>
     </quality>
@@ -12359,7 +12442,7 @@
       <name>Favored (Common Target, Biased)</name>
       <karma>-5</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12371,7 +12454,7 @@
       <name>Favored (Common Target, Outspoken)</name>
       <karma>-7</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12383,7 +12466,7 @@
       <name>Favored (Common Target, Fanatic)</name>
       <karma>-10</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12395,7 +12478,7 @@
       <name>Favored (Specific Target, Biased)</name>
       <karma>-3</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12407,7 +12490,7 @@
       <name>Favored (Specific Target, Outspoken)</name>
       <karma>-5</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12419,7 +12502,7 @@
       <name>Favored (Specific Target, Fanatic)</name>
       <karma>-8</karma>
       <category>Negative</category>
-	  <limit>no</limit>
+      <limit>no</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12463,7 +12546,7 @@
         <specificattribute>
           <name>CHA</name>
           <max>-1</max>
-          <val>-1</val>
+          <min>-1</min>
         </specificattribute>
       </bonus>
       <source>CA</source>
@@ -12477,7 +12560,7 @@
       <id>dcba5a01-849b-412c-83ba-f0ac5aa46e71</id>
       <name>Adept Healer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
@@ -12485,12 +12568,12 @@
         <oneof>
           <power>Empathic Healing</power>
         </oneof>
-		<allof>
-			<attribute>
-				<name>MAG</name>
-				<total>1</total>
-			</attribute>
-		</allof>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
       <source>FA</source>
       <page>31</page>
@@ -12499,7 +12582,7 @@
       <id>e508350b-f61d-4878-bd6d-98f8c9e3588b</id>
       <name>Alchemical Armorer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus>
@@ -12516,10 +12599,10 @@
             <name>Armorer</name>
             <val>4</val>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <source>FA</source>
@@ -12529,17 +12612,17 @@
       <id>73bbf3ca-44c0-4b91-a511-9f1229b4efd3</id>
       <name>Alchemical Bomb Maker</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
           <metamagic>Advanced Alchemy</metamagic>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -12560,16 +12643,16 @@
       <id>3e9881c4-6556-4df1-8e9c-bc839ba683b2</id>
       <name>Animal Familiar</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -12585,7 +12668,7 @@
       <id>79c1be77-1da7-405e-8b2b-99a06abc4327</id>
       <name>Apt Pupil</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
@@ -12595,10 +12678,10 @@
             <name>Arcana</name>
             <val>6</val>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -12625,7 +12708,7 @@
       <id>9f02d7f6-6fe3-4a9c-8c0e-83ae788f1985</id>
       <name>Arcane Bodyguard</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>20</karma>
       <category>Positive</category>
       <bonus />
@@ -12635,10 +12718,10 @@
             <name>Counterspelling</name>
             <val>4</val>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <source>FA</source>
@@ -12648,7 +12731,7 @@
       <id>ec302d7a-1955-43bb-9c1f-2c32da7ca8c0</id>
       <name>Arcane Improviser</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
@@ -12674,10 +12757,10 @@
             <name>Manipulation</name>
             <count>4</count>
           </spellcategory>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -12749,7 +12832,7 @@
       <id>f65a7108-0b57-4f82-950d-9896be68aae9</id>
       <name>Archivist</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
@@ -12759,10 +12842,10 @@
             <name>Arcana</name>
             <val>5</val>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <source>FA</source>
@@ -12772,16 +12855,16 @@
       <id>f5e31754-4270-43a0-8dbf-528dd7274afb</id>
       <name>Astral Bouncer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -12802,17 +12885,17 @@
       <id>0591e06b-4465-47fe-875a-89d4b52d4f61</id>
       <name>Astral Infiltrator</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
           <initiategrade>1</initiategrade>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -12833,15 +12916,15 @@
       <id>742caf46-a10b-4aa1-a6bc-a53feb99748c</id>
       <name>Barehanded Adept</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -12850,36 +12933,36 @@
               <val>4</val>
             </skill>
             <tradition>Buddhism</tradition>
-			<quality>Adept</quality>
+            <quality>Adept</quality>
           </group>
-		  <group>
+          <group>
             <skill>
               <name>Unarmed Combat</name>
               <val>4</val>
             </skill>
             <tradition>Buddhism</tradition>
-			<quality>Mystic Adept</quality>
+            <quality>Mystic Adept</quality>
           </group>
-		  <group>
+          <group>
             <skill>
               <name>Unarmed Combat</name>
               <val>6</val>
             </skill>
-			<quality>Adept</quality>
+            <quality>Adept</quality>
           </group>
-		  <group>
+          <group>
             <skill>
               <name>Unarmed Combat</name>
               <val>6</val>
             </skill>
-			<quality>Mystic Adept</quality>
+            <quality>Mystic Adept</quality>
           </group>
         </oneof>
       </required>
       <!-- TODO: Source code for this is super hacky, so it definitely needs cleaning up at the next opportunity -->
-	  <bonus>
-		<freespells attribute="MAG" limit="half,touchonly" />
-	  </bonus>
+      <bonus>
+        <freespells attribute="MAG" limit="half,touchonly" />
+      </bonus>
       <source>FA</source>
       <page>33</page>
     </quality>
@@ -12887,17 +12970,17 @@
       <id>3fa061b9-c3bd-40bb-a292-eb35a8f8f5f8</id>
       <name>Blood Necromancer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
           <metamagicart>Blood Magic</metamagicart>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -12918,15 +13001,15 @@
       <id>8c49fcfb-54fa-43ce-b2af-51780dabf40f</id>
       <name>Chain Breaker</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <costdiscount>
@@ -12945,16 +13028,16 @@
       <id>56d00933-379d-4442-8878-6db5b08fd20c</id>
       <name>Chakra Interrupter</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -13029,7 +13112,7 @@
       <id>6d6356ab-3a88-441a-8368-05a8fb8307a7</id>
       <name>Charlatan</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
@@ -13039,10 +13122,10 @@
             <name>Assensing</name>
             <val>5</val>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13072,16 +13155,16 @@
       <id>578e1220-09f9-41eb-9616-cae4b7c96e56</id>
       <name>Chosen Follower</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <quality>Mentor Spirit</quality>
@@ -13097,16 +13180,16 @@
       <karma>5</karma>
       <category>Positive</category>
       <limit>3</limit>
-	  <nolevels />
+      <nolevels />
       <bonus>
-		<selecttext />
-	  </bonus>
+        <selecttext />
+      </bonus>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <metamagic>Spell Shaping</metamagic>
@@ -13123,16 +13206,16 @@
       <id>39384189-d15a-4f2e-97a9-7f9a0b85ef64</id>
       <name>Dark Ally</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13152,20 +13235,28 @@
       <id>36e76b70-bf6a-4e66-8dac-13cd529b9274</id>
       <name>Death Dealer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <limit>3</limit>
-      <bonus />
+      <bonus>
+        <spellcategorydamage>
+          <category>Combat</category>
+          <val>Rating</val>
+        </spellcategorydamage>
+        <spellcategorydrain>
+          <category>Combat</category>
+          <val>Rating</val>
+        </spellcategorydrain>
+      </bonus>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
-          <power>Critical Strike</power>
           <skill>
             <name>Spellcasting</name>
             <val>6</val>
@@ -13177,29 +13268,43 @@
           </skill>
         </oneof>
       </required>
-	  <forbidden>
-		<oneof>
-		  <quality>Adept</quality>
-		</oneof>
-	  </forbidden>
+      <forbidden>
+        <oneof>
+          <quality>Adept</quality>
+        </oneof>
+      </forbidden>
       <source>FA</source>
       <page>35</page>
     </quality>
-	<quality>
+    <quality>
       <id>cfc637e9-0071-4313-a25b-b411793f2321</id>
       <name>Death Dealer (Adept)</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
-      <bonus />
+      <bonus>
+        <spellcategorydamage>
+          <category>Combat</category>
+          <val>1</val>
+        </spellcategorydamage>
+        <spellcategorydrain>
+          <category>Combat</category>
+          <val>1</val>
+        </spellcategorydrain>
+        <weaponcategorydv>
+          <selectskill skillcategory="Combat Active">
+          </selectskill>
+          <bonus>1</bonus>
+        </weaponcategorydv>
+      </bonus>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		  <quality>Adept</quality>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+          <quality>Adept</quality>
         </allof>
         <oneof>
           <power>Critical Strike</power>
@@ -13212,7 +13317,7 @@
       <id>2a599984-62e4-4110-9784-dc1922df395d</id>
       <name>Dedicated Conjurer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <costdiscount>
@@ -13225,11 +13330,11 @@
       </costdiscount>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13245,7 +13350,7 @@
       <id>bbc6879e-b50d-4862-b85c-a86c5b9e5d67</id>
       <name>Dedicated Spellslinger</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <costdiscount>
@@ -13261,11 +13366,11 @@
         <newspellkarmacost>-1</newspellkarmacost>
       </bonus>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13281,16 +13386,16 @@
       <id>b618c943-41f7-46ae-80e7-69e543bc0ec6</id>
       <name>Dual-Natured Defender</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <critterpower>Dual Natured</critterpower>
@@ -13307,16 +13412,16 @@
       <id>ef1e36f8-6c4c-4908-9155-ecef6c376c6e</id>
       <name>Durable Preparations</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13332,16 +13437,16 @@
       <id>05089559-972e-463c-a276-641e358a9201</id>
       <name>Elemental Master</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>20</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -13420,7 +13525,7 @@
       <id>39c97163-ffab-4705-91e1-82aef058cc86</id>
       <name>Flesh Sculpter</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <limit>3</limit>
@@ -13432,42 +13537,42 @@
             <val>5</val>
             <type>Knowledge</type>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <spell>Shapechange</spell>
           <spell>[Critter] Form</spell>
-		  <group>
+          <group>
             <skill>
               <name>Spellcasting</name>
               <val>4</val>
               <spec>Manipulation</spec>
-			</skill>
+            </skill>
             <spell>Shapechange</spell>
           </group>
-		  <group>
+          <group>
             <skill>
               <name>Spellcasting</name>
               <val>4</val>
               <spec>Manipulation</spec>
-			</skill>
+            </skill>
             <spell>[Critter] Form</spell>
           </group>
-		  <group>
+          <group>
             <skill>
               <name>Spellcasting</name>
               <val>6</val>
-			</skill>
+            </skill>
             <spell>Shapechange</spell>
           </group>
-		  <group>
+          <group>
             <skill>
               <name>Spellcasting</name>
               <val>6</val>
-			</skill>
+            </skill>
             <spell>[Critter] Form</spell>
           </group>
         </oneof>
@@ -13479,7 +13584,7 @@
       <id>e12f7c66-d0a0-4e93-9454-69024b945220</id>
       <name>Healer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
@@ -13489,10 +13594,10 @@
             <name>First Aid</name>
             <val>3</val>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13513,19 +13618,19 @@
       <id>a8a3d83d-034c-4729-ae3e-435fa52b4c4b</id>
       <name>Illusionist</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <limit>3</limit>
       <bonus>
-		<selecttext />
-	  </bonus>
+        <selecttext />
+      </bonus>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13542,16 +13647,16 @@
       <id>8f18e68a-fbaf-46b6-bf00-c99910292c20</id>
       <name>Items of Power</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>25</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13567,16 +13672,16 @@
       <id>c6ceed11-802c-4ff6-a636-4213663fcf21</id>
       <name>Mage Hunter I</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13597,17 +13702,17 @@
       <id>79ed28ba-fab7-4fc3-b4c1-5c177a92f9a6</id>
       <name>Mage Hunter II</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
           <quality>Mage Hunter I</quality>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13628,17 +13733,17 @@
       <id>1126c856-7e2e-43de-91ce-8ff70f2368a4</id>
       <name>Mage Hunter III</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
           <quality>Mage Hunter II</quality>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13659,7 +13764,7 @@
       <id>1510e2fd-4821-4e4c-bcd3-eacb0eed5f20</id>
       <name>Missile Deflector</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
@@ -13667,10 +13772,10 @@
         <allof>
           <power>Missile Parry</power>
           <power>Counterstrike</power>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <source>FA</source>
@@ -13680,7 +13785,7 @@
       <id>39b19ecb-f3a8-488e-a413-f399a1991b55</id>
       <name>Mystic Foreman</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
@@ -13694,10 +13799,10 @@
             <name>Chemistry</name>
             <val>4</val>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13718,17 +13823,17 @@
       <id>f6e65194-8055-484e-8db1-30ef63ec8eef</id>
       <name>Mystic Pitcher</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
           <spell>Fling</spell>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13749,17 +13854,17 @@
       <id>727e5ca7-0b64-462f-a3dc-254c451db3a1</id>
       <name>Pacifist Adept</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
           <power>Cool Resolve</power>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <quality>Pacifist I</quality>
@@ -13773,7 +13878,7 @@
       <id>9ce70b7b-b0cd-4ec8-87f6-42c3b74faf2a</id>
       <name>Potion Maker</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus />
@@ -13787,10 +13892,10 @@
             <name>Alchemy</name>
             <val>4</val>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <source>FA</source>
@@ -13800,16 +13905,16 @@
       <id>bed784d2-33dc-448e-acf6-a682bb286954</id>
       <name>Practiced Alchemist</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -13832,17 +13937,17 @@
       <id>b9808fa8-744f-46e2-b769-bed5ce0b3ad1</id>
       <name>Puppet Master</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <limit>3</limit>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -13902,17 +14007,17 @@
       <id>b15bbc5a-626c-4f04-b08e-203cb24c6b1a</id>
       <name>Reckless Spell Master</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <limit>6</limit>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -13928,16 +14033,16 @@
       <id>baa0cfd8-3c53-48ba-b3b7-61de0bc48695</id>
       <name>Renaissance Ritualist</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>8</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -13980,16 +14085,16 @@
       <id>cd712655-a83b-4905-923d-be07ced1677b</id>
       <name>Revenant Adept</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <power>Rapid Healing</power>
@@ -13999,35 +14104,35 @@
       <page>40</page>
     </quality>
     <quality>
-        <id>820ec42b-5255-4c73-93af-e8caa5b6abbf</id>
-        <name>Shock Mage</name>
-        <doublecareer>False</doublecareer>
-		<canbuywithspellpoints>True</canbuywithspellpoints>
-        <karma>15</karma>
-        <category>Positive</category>
-        <bonus />
-        <required>
-		  <allof>
-			<attribute>
-			  <name>MAG</name>
-			  <total>1</total>
-			</attribute>
-		  </allof>
-          <oneof>
-            <skill>
-              <name>Spellcasting</name>
-              <val>6</val>
-            </skill>
-          </oneof>
-        </required>
-        <source>FA</source>
-        <page>40</page>
+      <id>820ec42b-5255-4c73-93af-e8caa5b6abbf</id>
+      <name>Shock Mage</name>
+      <doublecareer>False</doublecareer>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
+      <karma>15</karma>
+      <category>Positive</category>
+      <bonus />
+      <required>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
+        <oneof>
+          <skill>
+            <name>Spellcasting</name>
+            <val>6</val>
+          </skill>
+        </oneof>
+      </required>
+      <source>FA</source>
+      <page>40</page>
     </quality>
     <quality>
       <id>16cb1300-bdf4-42d0-9556-3b681ef517fc</id>
       <name>Skinwalker</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <limit>3</limit>
@@ -14035,10 +14140,10 @@
       <required>
         <allof>
           <spell>[Critter] Form</spell>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -14052,7 +14157,7 @@
               <type>Knowledge</type>
             </skill>
           </group>
-		  <group>
+          <group>
             <skill>
               <name>Spellcasting</name>
               <val>4</val>
@@ -14062,7 +14167,7 @@
               <val>2</val>
               <type>Knowledge</type>
             </skill>
-			<tradition>Sioux</tradition>
+            <tradition>Sioux</tradition>
           </group>
           <group>
             <skill>
@@ -14093,16 +14198,16 @@
       <id>25f5745d-8e1d-463f-9b96-c047bc99a587</id>
       <name>Spectral Warden</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus />
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <source>FA</source>
@@ -14112,16 +14217,16 @@
       <id>632aebb2-e6f2-4b38-81c7-be494964c614</id>
       <name>Spell Jammer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>20</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -14137,16 +14242,16 @@
       <id>7bd24b5c-9ad4-4083-b58b-5dcc420d1950</id>
       <name>Spirit Hunter I</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>20</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <power>Killing Hands</power>
@@ -14172,17 +14277,17 @@
       <id>3ef898e6-b57d-4254-88d8-b8e37491e186</id>
       <name>Spirit Hunter II</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>20</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
           <quality>Spirit Hunter I</quality>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <power>Killing Hands</power>
@@ -14208,17 +14313,17 @@
       <id>80b557bc-c7fd-413f-8b8a-4571c8f3fa56</id>
       <name>Spirit Hunter III</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>20</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
           <quality>Spirit Hunter II</quality>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <power>Killing Hands</power>
@@ -14244,7 +14349,7 @@
       <id>268ea4c4-15af-4b16-8960-a3b34963fe01</id>
       <name>Spiritual Lodge</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
@@ -14258,10 +14363,10 @@
             <name>Artisan</name>
             <val>3</val>
           </skill>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <source>FA</source>
@@ -14271,16 +14376,16 @@
       <id>d815700b-9e8a-410b-8795-83196629a5ad</id>
       <name>Spiritual Pilgrim</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -14361,16 +14466,16 @@
       <id>c1145d3c-a9e2-4e91-8f1f-49f69a1f219e</id>
       <name>Sprawl Tamer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>10</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -14386,7 +14491,7 @@
       <id>c9ea31d0-eef7-4489-bc11-04a2e41a4932</id>
       <name>Stalwart Ally</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus />
@@ -14397,10 +14502,10 @@
             <val>4</val>
           </skill>
           <spell>Create Ally Spirit</spell>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <source>FA</source>
@@ -14410,16 +14515,16 @@
       <id>fcde8bed-ed62-4378-b995-80f96ff423af</id>
       <name>Taboo Transformer</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>15</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <group>
@@ -14535,16 +14640,16 @@
       <id>4db55b27-c211-48f2-b9a0-446bd9d32db6</id>
       <name>Vexcraft</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>7</karma>
       <category>Positive</category>
       <bonus />
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
         <oneof>
           <skill>
@@ -14560,16 +14665,16 @@
       <id>665d2f01-636b-4bde-b91f-47b388a0a57a</id>
       <name>Worship Leader</name>
       <doublecareer>False</doublecareer>
-	  <canbuywithspellpoints>True</canbuywithspellpoints>
+      <canbuywithspellpoints>True</canbuywithspellpoints>
       <karma>5</karma>
       <category>Positive</category>
       <bonus />
       <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
           <skill>
             <name>Leadership</name>
             <val>4</val>
@@ -14590,24 +14695,24 @@
       <doublecareer>False</doublecareer>
       <karma>5</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
       <bonus>
-	    <fatigueresist>1</fatigueresist>
-		<toxininhalationresist>2</toxininhalationresist>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-	  </bonus>
+        <fatigueresist>1</fatigueresist>
+        <toxininhalationresist>2</toxininhalationresist>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+      </bonus>
       <source>FA</source>
       <page>132</page>
     </quality>
@@ -14619,54 +14724,54 @@
       <karma>10</karma>
       <category>Positive</category>
       <limit>no</limit>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+      </bonus>
       <source>FA</source>
       <page>132</page>
     </quality>
-	<quality>
+    <quality>
       <id>6b669cf8-ef03-49c1-8e42-b16e0daea0bc</id>
       <name>Crystal Eye (Two Eyes)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>10</karma>
       <category>Positive</category>
-	  <limit>no</limit>
-	  <forbidden>
+      <limit>no</limit>
+      <forbidden>
         <oneof>
           <quality>Cyclopean Eye</quality>
         </oneof>
       </forbidden>
-	  <required>
-		<allof>
-			<attribute>
-				<name>MAG</name>
-				<total>1</total>
-			</attribute>
-		</allof>
-	  </required>
+      <required>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
+      </required>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+      </bonus>
       <source>FA</source>
       <page>132</page>
     </quality>
@@ -14677,645 +14782,645 @@
       <doublecareer>False</doublecareer>
       <karma>5</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-50</essencepenaltyt100>
-		<essencepenaltymagonlyt100>50</essencepenaltymagonlyt100>
-		<fatigueresist>1</fatigueresist>
-		<toxiningestionresist>2</toxiningestionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-50</essencepenaltyt100>
+        <essencepenaltymagonlyt100>50</essencepenaltymagonlyt100>
+        <fatigueresist>1</fatigueresist>
+        <toxiningestionresist>2</toxiningestionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>40f0ec08-0948-41dc-b0a2-2804ae913936</id>
       <name>Crystal Gut (Kidneys)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>5</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-50</essencepenaltyt100>
-		<essencepenaltymagonlyt100>50</essencepenaltymagonlyt100>
-		<fatigueresist>1</fatigueresist>
-		<toxininjectionresist>2</toxininjectionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-50</essencepenaltyt100>
+        <essencepenaltymagonlyt100>50</essencepenaltymagonlyt100>
+        <fatigueresist>1</fatigueresist>
+        <toxininjectionresist>2</toxininjectionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>1ca531dc-8d76-42aa-a667-874c94166f0e</id>
       <name>Crystal Gut (Stomach)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>5</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver, Stomach)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-50</essencepenaltyt100>
-		<essencepenaltymagonlyt100>50</essencepenaltymagonlyt100>
-		<fatigueresist>1</fatigueresist>
-		<lifestylecost>-10</lifestylecost>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-50</essencepenaltyt100>
+        <essencepenaltymagonlyt100>50</essencepenaltymagonlyt100>
+        <fatigueresist>1</fatigueresist>
+        <lifestylecost>-10</lifestylecost>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>c3c759fd-4b38-46d9-bccc-64ceb1e0247b</id>
       <name>Crystal Gut (Intestines)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>5</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-50</essencepenaltyt100>
-		<essencepenaltymagonlyt100>50</essencepenaltymagonlyt100>
-		<fatigueresist>1</fatigueresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-50</essencepenaltyt100>
+        <essencepenaltymagonlyt100>50</essencepenaltymagonlyt100>
+        <fatigueresist>1</fatigueresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>35e38f80-6054-4f2d-9da7-13dc8e95e923</id>
       <name>Crystal Gut (Liver, Kidneys)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>10</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver)</quality>
-		  <quality>Crystal Gut (Kidneys)</quality>
+          <quality>Crystal Gut (Kidneys)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-		<fatigueresist>2</fatigueresist>
-		<toxiningestionresist>2</toxiningestionresist>
-		<toxininjectionresist>2</toxininjectionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+        <fatigueresist>2</fatigueresist>
+        <toxiningestionresist>2</toxiningestionresist>
+        <toxininjectionresist>2</toxininjectionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>3f17850d-5d1c-4dc3-8bb2-09614dd15862</id>
       <name>Crystal Gut (Liver, Stomach)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>10</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver)</quality>
-		  <quality>Crystal Gut (Stomach)</quality>
+          <quality>Crystal Gut (Stomach)</quality>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-		<lifestylecost>-10</lifestylecost>
-		<fatigueresist>2</fatigueresist>
-		<toxiningestionresist>2</toxiningestionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+        <lifestylecost>-10</lifestylecost>
+        <fatigueresist>2</fatigueresist>
+        <toxiningestionresist>2</toxiningestionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>aafc734a-91f9-4b40-af9b-5f771e5dcf37</id>
       <name>Crystal Gut (Liver, Intestines)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>10</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver)</quality>
-		  <quality>Crystal Gut (Intestines)</quality>
+          <quality>Crystal Gut (Intestines)</quality>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-		<fatigueresist>2</fatigueresist>
-		<toxiningestionresist>2</toxiningestionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+        <fatigueresist>2</fatigueresist>
+        <toxiningestionresist>2</toxiningestionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>5d155e0a-b7fa-4047-8a50-43e9616cb354</id>
       <name>Crystal Gut (Kidneys, Stomach)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>10</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
-		  <quality>Crystal Gut (Kidneys)</quality>
-		  <quality>Crystal Gut (Stomach)</quality>
+          <quality>Crystal Gut (Kidneys)</quality>
+          <quality>Crystal Gut (Stomach)</quality>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-		<lifestylecost>-10</lifestylecost>
-		<fatigueresist>2</fatigueresist>
-		<toxininjectionresist>2</toxininjectionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+        <lifestylecost>-10</lifestylecost>
+        <fatigueresist>2</fatigueresist>
+        <toxininjectionresist>2</toxininjectionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>e3613a3d-31c9-40db-a54c-154130ddafe2</id>
       <name>Crystal Gut (Kidneys, Intestines)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>10</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
-		  <quality>Crystal Gut (Kidneys)</quality>
-		  <quality>Crystal Gut (Intestines)</quality>
+          <quality>Crystal Gut (Kidneys)</quality>
+          <quality>Crystal Gut (Intestines)</quality>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-		<fatigueresist>2</fatigueresist>
-		<toxininjectionresist>2</toxininjectionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+        <fatigueresist>2</fatigueresist>
+        <toxininjectionresist>2</toxininjectionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>84e80b32-52b7-4fc0-a990-5a74fb5d497c</id>
       <name>Crystal Gut (Stomach, Intestines)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>10</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
-		  <quality>Crystal Gut (Stomach)</quality>
-		  <quality>Crystal Gut (Intestines)</quality>
+          <quality>Crystal Gut (Stomach)</quality>
+          <quality>Crystal Gut (Intestines)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-		<lifestylecost>-10</lifestylecost>
-		<fatigueresist>2</fatigueresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+        <lifestylecost>-10</lifestylecost>
+        <fatigueresist>2</fatigueresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>d635f134-3b02-45eb-96d2-e42e100b47cc</id>
       <name>Crystal Gut (Liver, Kidneys, Stomach)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>15</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver)</quality>
-		  <quality>Crystal Gut (Kidneys)</quality>
-		  <quality>Crystal Gut (Stomach)</quality>
+          <quality>Crystal Gut (Kidneys)</quality>
+          <quality>Crystal Gut (Stomach)</quality>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-150</essencepenaltyt100>
-		<essencepenaltymagonlyt100>150</essencepenaltymagonlyt100>
-		<lifestylecost>-10</lifestylecost>
-		<fatigueresist>3</fatigueresist>
-		<toxiningestionresist>2</toxiningestionresist>
-		<toxininjectionresist>2</toxininjectionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-150</essencepenaltyt100>
+        <essencepenaltymagonlyt100>150</essencepenaltymagonlyt100>
+        <lifestylecost>-10</lifestylecost>
+        <fatigueresist>3</fatigueresist>
+        <toxiningestionresist>2</toxiningestionresist>
+        <toxininjectionresist>2</toxininjectionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>5093e803-da71-4d8c-acb0-22e9ecae3112</id>
       <name>Crystal Gut (Liver, Kidneys, Intestines)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>15</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver)</quality>
-		  <quality>Crystal Gut (Kidneys)</quality>
-		  <quality>Crystal Gut (Intestines)</quality>
+          <quality>Crystal Gut (Kidneys)</quality>
+          <quality>Crystal Gut (Intestines)</quality>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-150</essencepenaltyt100>
-		<essencepenaltymagonlyt100>150</essencepenaltymagonlyt100>
-		<fatigueresist>3</fatigueresist>
-		<toxiningestionresist>2</toxiningestionresist>
-		<toxininjectionresist>2</toxininjectionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-150</essencepenaltyt100>
+        <essencepenaltymagonlyt100>150</essencepenaltymagonlyt100>
+        <fatigueresist>3</fatigueresist>
+        <toxiningestionresist>2</toxiningestionresist>
+        <toxininjectionresist>2</toxininjectionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>9e390ad1-a8cb-4fbd-a0bb-cf2f3b56dfc1</id>
       <name>Crystal Gut (Liver, Stomach, Intestines)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>15</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver)</quality>
-		  <quality>Crystal Gut (Stomach)</quality>
-		  <quality>Crystal Gut (Intestines)</quality>
+          <quality>Crystal Gut (Stomach)</quality>
+          <quality>Crystal Gut (Intestines)</quality>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-150</essencepenaltyt100>
-		<essencepenaltymagonlyt100>150</essencepenaltymagonlyt100>
-		<lifestylecost>-10</lifestylecost>
-		<fatigueresist>3</fatigueresist>
-		<toxiningestionresist>2</toxiningestionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-150</essencepenaltyt100>
+        <essencepenaltymagonlyt100>150</essencepenaltymagonlyt100>
+        <lifestylecost>-10</lifestylecost>
+        <fatigueresist>3</fatigueresist>
+        <toxiningestionresist>2</toxiningestionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>d62eadf5-071e-4270-86c7-d4fb299ff440</id>
       <name>Crystal Gut (Kidneys, Stomach, Intestines)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>15</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Kidneys)</quality>
-		  <quality>Crystal Gut (Stomach)</quality>
-		  <quality>Crystal Gut (Intestines)</quality>
+          <quality>Crystal Gut (Stomach)</quality>
+          <quality>Crystal Gut (Intestines)</quality>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-150</essencepenaltyt100>
-		<essencepenaltymagonlyt100>150</essencepenaltymagonlyt100>
-		<lifestylecost>-10</lifestylecost>
-		<fatigueresist>3</fatigueresist>
-		<toxininjectionresist>2</toxininjectionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-150</essencepenaltyt100>
+        <essencepenaltymagonlyt100>150</essencepenaltymagonlyt100>
+        <lifestylecost>-10</lifestylecost>
+        <fatigueresist>3</fatigueresist>
+        <toxininjectionresist>2</toxininjectionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
-	<quality>
+    <quality>
       <id>9c8e4825-507f-4683-a477-bf7d895b75b1</id>
       <name>Crystal Gut (Liver, Kidneys, Stomach, Intestines)</name>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
       <karma>20</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <forbidden>
+      <forbidden>
         <oneof>
           <quality>Crystal Gut (Liver)</quality>
           <quality>Crystal Gut (Kidneys)</quality>
-		  <quality>Crystal Gut (Stomach)</quality>
-		  <quality>Crystal Gut (Intestines)</quality>
+          <quality>Crystal Gut (Stomach)</quality>
+          <quality>Crystal Gut (Intestines)</quality>
           <quality>Crystal Gut (Liver, Kidneys)</quality>
           <quality>Crystal Gut (Liver, Stomach)</quality>
           <quality>Crystal Gut (Liver, Intestines)</quality>
           <quality>Crystal Gut (Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
-		  <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
-		  <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
-		  <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Stomach)</quality>
+          <quality>Crystal Gut (Liver, Kidneys, Intestines)</quality>
+          <quality>Crystal Gut (Liver, Stomach, Intestines)</quality>
+          <quality>Crystal Gut (Kidneys, Stomach, Intestines)</quality>
         </oneof>
       </forbidden>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-200</essencepenaltyt100>
-		<essencepenaltymagonlyt100>200</essencepenaltymagonlyt100>
-		<lifestylecost>-10</lifestylecost>
-		<fatigueresist>4</fatigueresist>
-		<toxiningestionresist>2</toxiningestionresist>
-		<toxininjectionresist>2</toxininjectionresist>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-200</essencepenaltyt100>
+        <essencepenaltymagonlyt100>200</essencepenaltymagonlyt100>
+        <lifestylecost>-10</lifestylecost>
+        <fatigueresist>4</fatigueresist>
+        <toxiningestionresist>2</toxiningestionresist>
+        <toxininjectionresist>2</toxininjectionresist>
+      </bonus>
       <source>FA</source>
       <page>133</page>
     </quality>
@@ -15326,22 +15431,22 @@
       <doublecareer>False</doublecareer>
       <karma>10</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
-	  </bonus>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+      </bonus>
       <naturalweapons>
         <naturalweapon>
           <name>Crystal Jaw</name>
@@ -15365,21 +15470,21 @@
       <karma>10</karma>
       <category>Positive</category>
       <limit>no</limit>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
         <armor>1</armor>
         <selectside />
       </bonus>
@@ -15394,21 +15499,21 @@
       <karma>10</karma>
       <category>Positive</category>
       <limit>no</limit>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
         <armor>1</armor>
         <selectside />
       </bonus>
@@ -15422,21 +15527,21 @@
       <doublecareer>False</doublecareer>
       <karma>10</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
       <bonus>
-		<conditionmonitor>
-			<physical>-1</physical>
-			<stun>-1</stun>
-		</conditionmonitor>
-		<essencepenaltyt100>-100</essencepenaltyt100>
-		<essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
+        <conditionmonitor>
+          <physical>-1</physical>
+          <stun>-1</stun>
+        </conditionmonitor>
+        <essencepenaltyt100>-100</essencepenaltyt100>
+        <essencepenaltymagonlyt100>100</essencepenaltymagonlyt100>
         <armor>1</armor>
         <initiative precedence="0">2</initiative>
       </bonus>
@@ -15454,10 +15559,10 @@
         <allof>
           <quality>Crystal Limb (Arm)</quality>
           <quality>Crystalline Claws</quality>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
         </allof>
       </required>
       <naturalweapons>
@@ -15482,26 +15587,26 @@
       <doublecareer>False</doublecareer>
       <karma>5</karma>
       <category>Positive</category>
-	  <required>
+      <required>
         <allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-        <naturalweapons>
-          <naturalweapon>
-            <name>Crystal Claw</name>
-            <reach>0</reach>
-            <damage>(STR+1)P</damage>
-            <ap>-1</ap>
-            <useskill>Unarmed Combat</useskill>
-            <accuracy>Physical</accuracy>
-            <source>FA</source>
-            <page>133</page>
-          </naturalweapon>
-        </naturalweapons>
+      <naturalweapons>
+        <naturalweapon>
+          <name>Crystal Claw</name>
+          <reach>0</reach>
+          <damage>(STR+1)P</damage>
+          <ap>-1</ap>
+          <useskill>Unarmed Combat</useskill>
+          <accuracy>Physical</accuracy>
+          <source>FA</source>
+          <page>133</page>
+        </naturalweapon>
+      </naturalweapons>
       <source>FA</source>
       <page>133</page>
     </quality>
@@ -15513,12 +15618,12 @@
       <karma>10</karma>
       <category>Positive</category>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
         <oneof>
           <quality>Crystal Breath</quality>
         </oneof>
@@ -15534,12 +15639,12 @@
       <karma>10</karma>
       <category>Positive</category>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
         <oneof>
           <quality>Crystal Limb (Leg)</quality>
         </oneof>
@@ -15554,17 +15659,17 @@
       <doublecareer>False</doublecareer>
       <karma>15</karma>
       <category>Positive</category>
-	  <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+      <required>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
       </required>
-	  <bonus>
-		<dodge>2</dodge>
-	  </bonus>
+      <bonus>
+        <dodge>2</dodge>
+      </bonus>
       <source>FA</source>
       <page>134</page>
     </quality>
@@ -15576,12 +15681,12 @@
       <karma>10</karma>
       <category>Positive</category>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
         <oneof>
           <quality>Crystal Limb (Arm)</quality>
         </oneof>
@@ -15612,16 +15717,16 @@
         <unlockskills name="Assensing">Name</unlockskills>
       </bonus>
       <required>
-		<allof>
-		  <attribute>
-			<name>MAG</name>
-			<total>1</total>
-		  </attribute>
-		</allof>
+        <allof>
+          <attribute>
+            <name>MAG</name>
+            <total>1</total>
+          </attribute>
+        </allof>
         <oneof>
           <quality>Crystal Eye (One Eye)</quality>
-		  <quality>Crystal Eye (Two Eyes)</quality>
-		  <quality>Crystal Eye (Three Eyes)</quality>
+          <quality>Crystal Eye (Two Eyes)</quality>
+          <quality>Crystal Eye (Three Eyes)</quality>
         </oneof>
       </required>
       <source>FA</source>
@@ -15635,7 +15740,7 @@
       <contributetolimit>False</contributetolimit>
       <karma>15</karma>
       <category>Positive</category>
-	  <onlyprioritygiven />
+      <onlyprioritygiven />
       <bonus>
         <enableattribute>
           <name>MAG</name>
@@ -15646,14 +15751,14 @@
         <unlockskills>Sorcery</unlockskills>
         <unlockskills>Conjuring</unlockskills>
         <limitspellcategory />
-		<limitspiritcategory />
+        <limitspiritcategory />
       </bonus>
       <forbidden>
         <oneof>
           <quality>Aware</quality>
           <quality>Aspected Magician</quality>
-		  <quality>Enchanter</quality>
-		  <quality>Explorer</quality>
+          <quality>Enchanter</quality>
+          <quality>Explorer</quality>
           <quality>Magician</quality>
           <quality>Mystic Adept</quality>
           <quality>Adept</quality>
@@ -15663,13 +15768,13 @@
       <source>FA</source>
       <page>47</page>
     </quality>
-	<quality>
+    <quality>
       <id>a2484390-c4ea-4013-b007-4dc5d3a5c85b</id>
       <name>Enchanter</name>
       <contributetolimit>False</contributetolimit>
       <karma>15</karma>
       <category>Positive</category>
-	  <onlyprioritygiven />
+      <onlyprioritygiven />
       <bonus>
         <enableattribute>
           <name>MAG</name>
@@ -15683,8 +15788,8 @@
         <oneof>
           <quality>Aware</quality>
           <quality>Aspected Magician</quality>
-		  <quality>Apprentice</quality>
-		  <quality>Explorer</quality>
+          <quality>Apprentice</quality>
+          <quality>Explorer</quality>
           <quality>Magician</quality>
           <quality>Mystic Adept</quality>
           <quality>Adept</quality>
@@ -15694,25 +15799,25 @@
       <source>FA</source>
       <page>47</page>
     </quality>
-	<quality>
+    <quality>
       <id>2f20c108-d724-4684-a642-d40ffe7c51e1</id>
       <name>Explorer</name>
       <contributetolimit>False</contributetolimit>
       <karma>15</karma>
       <category>Positive</category>
-	  <onlyprioritygiven />
+      <onlyprioritygiven />
       <bonus>
         <enableattribute>
           <name>MAG</name>
         </enableattribute>
-		<unlockskills>Explorer</unlockskills>
+        <unlockskills>Explorer</unlockskills>
       </bonus>
       <forbidden>
         <oneof>
           <quality>Aware</quality>
           <quality>Aspected Magician</quality>
-		  <quality>Enchanter</quality>
-		  <quality>Apprentice</quality>
+          <quality>Enchanter</quality>
+          <quality>Apprentice</quality>
           <quality>Magician</quality>
           <quality>Mystic Adept</quality>
           <quality>Adept</quality>
@@ -15727,7 +15832,7 @@
     <!-- Region SotA ADL Negative Qualities-->
     <quality>
       <id>2c1fece2-e950-41c0-a020-2671334e1610</id>
-      <name>Arcology Tantrum</name>            
+      <name>Arcology Tantrum</name>
       <karma>-10</karma>
       <category>Negative</category>
       <source>SAG</source>
@@ -15735,7 +15840,7 @@
     </quality>
     <quality>
       <id>97615a7e-33aa-4013-b146-98175ac0f6c9</id>
-      <name>People's SIN</name>            
+      <name>People's SIN</name>
       <karma>-3</karma>
       <category>Negative</category>
       <forbidden>
@@ -15752,7 +15857,7 @@
     </quality>
     <quality>
       <id>3e2eac9a-e256-4755-a66a-ffbaac751cfa</id>
-      <name>People's SIN (Criminal)</name>            
+      <name>People's SIN (Criminal)</name>
       <karma>-10</karma>
       <category>Negative</category>
       <forbidden>
@@ -15769,171 +15874,171 @@
     </quality>
     <!-- End Region -->
     <!-- Region The Complete Trog -->
-      <quality>
-          <id>f9b746ae-9112-4b84-ba8d-e0a852678a20</id>
-          <name>Black Forest Native</name>
-          <karma>22</karma>
-          <category>Positive</category>
-          <bonus>
-              <addqualities>
-                <addquality select="Black Forest: You Know a Guy">Home Ground</addquality>
-                <addquality select="Black Forest: Street Politics">Home Ground</addquality>
-              </addqualities>
-              <selecttext />
-          </bonus>
-          <source>TCT</source>
-          <page>188</page>
-      </quality>
-      <quality>
-          <id>397eee55-11eb-4ede-bede-a8a13befa21c</id>
-          <name>Community Connection</name>
-          <karma>5</karma>
-          <category>Positive</category>
-          <bonus>
-              <!--TODO: Implement flat cost reduction for specific lifestyle types. Scream internally at improvement naming conventions. -->
-          </bonus>
-          <required>
-              <oneof>
-                  <metatype>Troll</metatype>
-                  <metatype>Ork</metatype>
-              </oneof>
-          </required>
-          <source>TCT</source>
-          <page>188</page>
-      </quality>
-      <quality>
-          <id>fd5468e4-a671-4c84-a9ec-590b94ae6ae3</id>
-          <name>Delicate Fingers</name>
-          <karma>5</karma>
-          <category>Positive</category>
-          <required>
-              <oneof>
-                  <metatype>Troll</metatype>
-              </oneof>
-          </required>
-          <source>TCT</source>
-          <page>188</page>
-      </quality>
-      <quality>
-          <id>9ad4e8e7-80d7-4941-96d5-9a1aaa1bd4c9</id>
-          <name>Human Lifespan</name>
-          <karma>10</karma>
-          <category>Positive</category>
-          <source>TCT</source>
-          <page>188</page>
-      </quality>
-      <quality>
-          <id>3a5b909e-7b37-471d-a24a-3fda7c18d837</id>
-          <name>Nasty Trog</name>
-          <karma>5</karma>
-          <category>Positive</category>
-          <bonus>
-              <!-- TODO: Conditionals for skill bonuses? -->
-              <specificskill>
-                  <name>Intimidation</name>
-                  <bonus>3</bonus>
-              </specificskill>
-          </bonus>
-          <source>TCT</source>
-          <page>188</page>
-      </quality>
-      <quality>
-          <id>8d8dee2e-868b-4eda-87b5-959dd55304e0</id>
-          <name>Trog Artisan</name>
-          <karma>8</karma>
-          <category>Positive</category>
-          <source>TCT</source>
-          <page>188</page>
-      </quality>
-      <quality>
-          <id>94d14ec2-7bcf-4728-8ff6-ef315da4c80c</id>
-          <name>Trog Historian</name>
-          <karma>4</karma>
-          <category>Positive</category>
-          <source>TCT</source>
-          <page>188</page>
-      </quality>
-      <quality>
-          <id>ac24ddb3-5e35-486c-a899-5b1bd11e9d86</id>
-          <name>Trog Leader</name>
-          <karma>7</karma>
-          <category>Positive</category>
-          <bonus>
-              <!-- TODO: Conditionals for skill bonuses? -->
-              <specificskill>
-                  <name>Leadership</name>
-                  <bonus>3</bonus>
-              </specificskill>
-          </bonus>
-          <required>
-              <oneof>
-                  <metatype>Troll</metatype>
-                  <metatype>Ork</metatype>
-              </oneof>
-          </required>
-          <source>TCT</source>
-          <page>188</page>
-      </quality>
-      <quality>
-          <id>14b5b9c0-5180-47ec-8bf9-f422d3196744</id>
-          <name>Trog Networker</name>
-          <karma>12</karma>
-          <category>Positive</category>
-          <required>
-            <oneof>
-              <metatype>Troll</metatype>
-              <metatype>Ork</metatype>
-            </oneof>
-          </required>
-          <source>TCT</source>
-          <page>189</page>
-      </quality>
-      <quality>
-          <id>e4bceac5-8f1d-4090-90fc-ad5e94bca8d7</id>
-          <name>Bad Credit</name>
-          <karma>-8</karma>
-          <category>Negative</category>
-          <bonus>
-              <basiclifestylecost>10</basiclifestylecost>
-              <lifestylecost>10</lifestylecost>
-          </bonus>
-          <source>TCT</source>
-          <page>189</page>
-      </quality>
-      <quality>
-          <id>0b28f554-8929-4b8b-b8c6-4203ca856b33</id>
-          <name>Elevated Stress</name>
-          <karma>-8</karma>
-          <category>Negative</category>
-          <bonus>
-			<physiologicaladdictionfirsttime>-1</physiologicaladdictionfirsttime>
-			<psychologicaladdictionfirsttime>-1</psychologicaladdictionfirsttime>
-			<physiologicaladdictionalreadyaddicted>-1</physiologicaladdictionalreadyaddicted>
-			<psychologicaladdictionalreadyaddicted>-1</psychologicaladdictionalreadyaddicted>
-			<toxincontactresist>-1</toxincontactresist>
-			<toxiningestionresist>-1</toxiningestionresist>
-			<toxininhalationresist>-1</toxininhalationresist>
-			<toxininjectionresist>-1</toxininjectionresist>
-		  </bonus>
-          <source>TCT</source>
-          <page>189</page>
-      </quality>
-      <quality>
-          <id>13379299-27a2-4b5d-8938-6a54f49dc861</id>
-          <name>Force of Chaos</name>
-          <karma>-4</karma>
-          <category>Negative</category>
-          <source>TCT</source>
-          <page>189</page>
-      </quality>
-      <quality>
-          <id>ca4459b7-ea68-4b6c-9754-8bdcf3f4aef7</id>
-          <name>Trog Traitor</name>
-          <karma>-5</karma>
-          <category>Negative</category>
-          <source>TCT</source>
-          <page>189</page>
-      </quality>      
+    <quality>
+      <id>f9b746ae-9112-4b84-ba8d-e0a852678a20</id>
+      <name>Black Forest Native</name>
+      <karma>22</karma>
+      <category>Positive</category>
+      <bonus>
+        <addqualities>
+          <addquality select="Black Forest: You Know a Guy">Home Ground</addquality>
+          <addquality select="Black Forest: Street Politics">Home Ground</addquality>
+        </addqualities>
+        <selecttext />
+      </bonus>
+      <source>TCT</source>
+      <page>188</page>
+    </quality>
+    <quality>
+      <id>397eee55-11eb-4ede-bede-a8a13befa21c</id>
+      <name>Community Connection</name>
+      <karma>5</karma>
+      <category>Positive</category>
+      <bonus>
+        <!--TODO: Implement flat cost reduction for specific lifestyle types. Scream internally at improvement naming conventions. -->
+      </bonus>
+      <required>
+        <oneof>
+          <metatype>Troll</metatype>
+          <metatype>Ork</metatype>
+        </oneof>
+      </required>
+      <source>TCT</source>
+      <page>188</page>
+    </quality>
+    <quality>
+      <id>fd5468e4-a671-4c84-a9ec-590b94ae6ae3</id>
+      <name>Delicate Fingers</name>
+      <karma>5</karma>
+      <category>Positive</category>
+      <required>
+        <oneof>
+          <metatype>Troll</metatype>
+        </oneof>
+      </required>
+      <source>TCT</source>
+      <page>188</page>
+    </quality>
+    <quality>
+      <id>9ad4e8e7-80d7-4941-96d5-9a1aaa1bd4c9</id>
+      <name>Human Lifespan</name>
+      <karma>10</karma>
+      <category>Positive</category>
+      <source>TCT</source>
+      <page>188</page>
+    </quality>
+    <quality>
+      <id>3a5b909e-7b37-471d-a24a-3fda7c18d837</id>
+      <name>Nasty Trog</name>
+      <karma>5</karma>
+      <category>Positive</category>
+      <bonus>
+        <!-- TODO: Conditionals for skill bonuses? -->
+        <specificskill>
+          <name>Intimidation</name>
+          <bonus>3</bonus>
+        </specificskill>
+      </bonus>
+      <source>TCT</source>
+      <page>188</page>
+    </quality>
+    <quality>
+      <id>8d8dee2e-868b-4eda-87b5-959dd55304e0</id>
+      <name>Trog Artisan</name>
+      <karma>8</karma>
+      <category>Positive</category>
+      <source>TCT</source>
+      <page>188</page>
+    </quality>
+    <quality>
+      <id>94d14ec2-7bcf-4728-8ff6-ef315da4c80c</id>
+      <name>Trog Historian</name>
+      <karma>4</karma>
+      <category>Positive</category>
+      <source>TCT</source>
+      <page>188</page>
+    </quality>
+    <quality>
+      <id>ac24ddb3-5e35-486c-a899-5b1bd11e9d86</id>
+      <name>Trog Leader</name>
+      <karma>7</karma>
+      <category>Positive</category>
+      <bonus>
+        <!-- TODO: Conditionals for skill bonuses? -->
+        <specificskill>
+          <name>Leadership</name>
+          <bonus>3</bonus>
+        </specificskill>
+      </bonus>
+      <required>
+        <oneof>
+          <metatype>Troll</metatype>
+          <metatype>Ork</metatype>
+        </oneof>
+      </required>
+      <source>TCT</source>
+      <page>188</page>
+    </quality>
+    <quality>
+      <id>14b5b9c0-5180-47ec-8bf9-f422d3196744</id>
+      <name>Trog Networker</name>
+      <karma>12</karma>
+      <category>Positive</category>
+      <required>
+        <oneof>
+          <metatype>Troll</metatype>
+          <metatype>Ork</metatype>
+        </oneof>
+      </required>
+      <source>TCT</source>
+      <page>189</page>
+    </quality>
+    <quality>
+      <id>e4bceac5-8f1d-4090-90fc-ad5e94bca8d7</id>
+      <name>Bad Credit</name>
+      <karma>-8</karma>
+      <category>Negative</category>
+      <bonus>
+        <basiclifestylecost>10</basiclifestylecost>
+        <lifestylecost>10</lifestylecost>
+      </bonus>
+      <source>TCT</source>
+      <page>189</page>
+    </quality>
+    <quality>
+      <id>0b28f554-8929-4b8b-b8c6-4203ca856b33</id>
+      <name>Elevated Stress</name>
+      <karma>-8</karma>
+      <category>Negative</category>
+      <bonus>
+        <physiologicaladdictionfirsttime>-1</physiologicaladdictionfirsttime>
+        <psychologicaladdictionfirsttime>-1</psychologicaladdictionfirsttime>
+        <physiologicaladdictionalreadyaddicted>-1</physiologicaladdictionalreadyaddicted>
+        <psychologicaladdictionalreadyaddicted>-1</psychologicaladdictionalreadyaddicted>
+        <toxincontactresist>-1</toxincontactresist>
+        <toxiningestionresist>-1</toxiningestionresist>
+        <toxininhalationresist>-1</toxininhalationresist>
+        <toxininjectionresist>-1</toxininjectionresist>
+      </bonus>
+      <source>TCT</source>
+      <page>189</page>
+    </quality>
+    <quality>
+      <id>13379299-27a2-4b5d-8938-6a54f49dc861</id>
+      <name>Force of Chaos</name>
+      <karma>-4</karma>
+      <category>Negative</category>
+      <source>TCT</source>
+      <page>189</page>
+    </quality>
+    <quality>
+      <id>ca4459b7-ea68-4b6c-9754-8bdcf3f4aef7</id>
+      <name>Trog Traitor</name>
+      <karma>-5</karma>
+      <category>Negative</category>
+      <source>TCT</source>
+      <page>189</page>
+    </quality>
     <!-- End Region -->
     <!-- Region The Seattle Gauntlet-->
     <quality>

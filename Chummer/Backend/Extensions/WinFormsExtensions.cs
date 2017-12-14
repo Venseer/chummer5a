@@ -50,6 +50,16 @@ namespace Chummer
         }
         #endregion
 
+        #region TreeNode Extensions
+        public static TreeNode GetTopParent(this TreeNode objThis)
+        {
+            TreeNode objReturn = objThis;
+            while (objReturn.Parent != null)
+                objReturn = objReturn.Parent;
+            return objReturn;
+        }
+        #endregion
+
         #region TreeView Extensions
         public static void Add(this TreeView treView, LimitModifier input, ContextMenuStrip strip)
         {
@@ -111,19 +121,23 @@ namespace Chummer
             TreeNode objTargetNode = treView.Nodes[input.IsQuality ? 1 : 0];
             if (objTargetNode != null)
             {
-                TreeNode newNode = new TreeNode();
-                newNode.Text = input.DisplayName;
-                newNode.Tag = input.InternalId;
-                newNode.ContextMenuStrip = strip;
+                TreeNode newNode = new TreeNode
+                {
+                    Text = input.DisplayName,
+                    Tag = input.InternalId,
+                    ContextMenuStrip = strip
+                };
                 if (!string.IsNullOrEmpty(input.Notes))
                     newNode.ForeColor = Color.SaddleBrown;
                 newNode.ToolTipText = CommonFunctions.WordWrap(input.Notes, 100);
 
                 foreach (MartialArtAdvantage objAdvantage in input.Advantages)
                 {
-                    TreeNode objAdvantageNode = new TreeNode();
-                    objAdvantageNode.Text = objAdvantage.DisplayName;
-                    objAdvantageNode.Tag = objAdvantage.InternalId;
+                    TreeNode objAdvantageNode = new TreeNode
+                    {
+                        Text = objAdvantage.DisplayName,
+                        Tag = objAdvantage.InternalId
+                    };
                     newNode.Nodes.Add(objAdvantageNode);
                     newNode.Expand();
                 }
@@ -140,10 +154,12 @@ namespace Chummer
             string strName = input.DisplayName;
             if (!nodeToAddTo.Nodes.ContainsKey(strName))
             {
-                TreeNode newNode = new TreeNode();
-                newNode.Text = strName;
-                newNode.Tag = input.InternalId;
-                newNode.ContextMenuStrip = strip;
+                TreeNode newNode = new TreeNode
+                {
+                    Text = strName,
+                    Tag = input.InternalId,
+                    ContextMenuStrip = strip
+                };
 
                 if (!string.IsNullOrEmpty(input.Notes))
                     newNode.ForeColor = Color.SaddleBrown;
@@ -161,10 +177,12 @@ namespace Chummer
         {
             if (treView == null)
                 return;
-            TreeNode objNode = new TreeNode();
-            objNode.Text = input.DisplayName;
-            objNode.Tag = input.InternalId;
-            objNode.ContextMenuStrip = strip;
+            TreeNode objNode = new TreeNode
+            {
+                Text = input.DisplayName,
+                Tag = input.InternalId,
+                ContextMenuStrip = strip
+            };
             if (!string.IsNullOrEmpty(input.Notes))
                 objNode.ForeColor = Color.SaddleBrown;
             objNode.ToolTipText = CommonFunctions.WordWrap(input.Notes, 100);

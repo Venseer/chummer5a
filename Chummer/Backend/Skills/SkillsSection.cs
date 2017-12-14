@@ -40,7 +40,14 @@ namespace Chummer.Skills
         {
             var list = GetSkillList(_character, skills, strName);
 
-            Skills.MergeInto(list, CompareSkills);
+            Skills.MergeInto(list, CompareSkills, (objExistSkill, objNewSkill) =>
+            {
+                if (objNewSkill.Base > objExistSkill.Base)
+                    objExistSkill.Base = objNewSkill.Base;
+                if (objNewSkill.Karma > objExistSkill.Karma)
+                    objExistSkill.Karma = objNewSkill.Karma;
+                objExistSkill.Specializations.MergeInto(objNewSkill.Specializations, (x, y) => x.Free == y.Free ? String.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal) : (x.Free ? 1 : -1));
+            });
             foreach (Skill objSkill in list)
             {
                 string strKey = objSkill.IsExoticSkill ? objSkill.Name + " (" + objSkill.DisplaySpecialization + ")" : objSkill.Name;
@@ -108,7 +115,14 @@ namespace Chummer.Skills
                             Karma = skill.Karma
                         };
                         kno.Specializations.AddRange(skill.Specializations);
-                        KnowledgeSkills.Add(kno);
+                        KnowledgeSkills.MergeInto(kno, (x, y) => String.Compare(x.Type, y.Type, StringComparison.Ordinal) == 0 ? CompareSkills(x, y) : (String.Compare(x.Type, y.Type, StringComparison.Ordinal) == -1 ? -1 : 1), (objExistSkill, objNewSkill) =>
+                        {
+                            if (objNewSkill.Base > objExistSkill.Base)
+                                objExistSkill.Base = objNewSkill.Base;
+                            if (objNewSkill.Karma > objExistSkill.Karma)
+                                objExistSkill.Karma = objNewSkill.Karma;
+                            objExistSkill.Specializations.MergeInto(objNewSkill.Specializations, (x, y) => x.Free == y.Free ? String.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal) : (x.Free ? 1 : -1));
+                        });
                     }
                 }
             }
@@ -171,8 +185,7 @@ namespace Chummer.Skills
                 Timekeeper.Start("load_char_skills_kno");
                 foreach (XmlNode node in skillNode.SelectNodes("knoskills/skill"))
                 {
-                    KnowledgeSkill skill = Skill.Load(_character, node) as KnowledgeSkill;
-                    if (skill != null)
+                    if (Skill.Load(_character, node) is KnowledgeSkill skill)
                         KnowledgeSkills.Add(skill);
                 }
                 Timekeeper.Finish("load_char_skills_kno");
@@ -202,7 +215,7 @@ namespace Chummer.Skills
                     List<Skill> unsoredSkills = new List<Skill>();
 
                     //Variable/Anon method as to not clutter anywhere else. Not sure if clever or stupid
-                    Predicate<Skill> oldSkillFilter = skill =>
+                    bool oldSkillFilter(Skill skill)
                     {
                         if (skill.Rating > 0) return true;
 
@@ -211,19 +224,18 @@ namespace Chummer.Skills
                             return false;
                         }
 
-                    //This could be more fine grained, but frankly i don't care
-                    if (skill.SkillCategory == "Magical Active" && !_character.MAGEnabled)
+                        //This could be more fine grained, but frankly i don't care
+                        if (skill.SkillCategory == "Magical Active" && !_character.MAGEnabled)
                         {
                             return false;
                         }
 
                         return true;
-                    };
+                    }
 
                     foreach (Skill skill in tempSkillList)
                     {
-                        KnowledgeSkill knoSkill = skill as KnowledgeSkill;
-                        if (knoSkill != null)
+                        if (skill is KnowledgeSkill knoSkill)
                         {
                             KnowledgeSkills.Add(knoSkill);
                         }
@@ -331,10 +343,9 @@ namespace Chummer.Skills
             XmlNodeList nodesToChange = doc.SelectNodes(xpath);
             if (nodesToChange != null)
             {
-                Guid guidLoop;
                 for (var i = 0; i < nodesToChange.Count; i++)
                 {
-                    if (map.TryGetValue(nodesToChange[i].InnerText, out guidLoop))
+                    if (map.TryGetValue(nodesToChange[i].InnerText, out Guid guidLoop))
                     {
                         nodesToChange[i].InnerText = guidLoop.ToString();
                     }
@@ -439,8 +450,7 @@ namespace Chummer.Skills
         /// <returns></returns>
         public Skill GetActiveSkill(string strSkillName)
         {
-            Skill objReturn = null;
-            _dicSkills.TryGetValue(strSkillName, out objReturn);
+            _dicSkills.TryGetValue(strSkillName, out Skill objReturn);
             return objReturn;
         }
 
@@ -563,9 +573,8 @@ namespace Chummer.Skills
 
         public static int CompareSkills(Skill rhs, Skill lhs)
         {
-            ExoticSkill rhsExoticSkill = (rhs.IsExoticSkill ? rhs : null) as ExoticSkill;
             ExoticSkill lhsExoticSkill = (lhs.IsExoticSkill ? lhs : null) as ExoticSkill;
-            if (rhsExoticSkill != null)
+            if ((rhs.IsExoticSkill ? rhs : null) is ExoticSkill rhsExoticSkill)
             {
                 if (lhsExoticSkill != null)
                 {
@@ -599,8 +608,10 @@ namespace Chummer.Skills
             List<ListItem> lstSkillOrder = new List<ListItem>();
             foreach (XmlNode objXmlSkill in objXmlSkillList)
             {
-                ListItem objSkillItem = new ListItem();
-                objSkillItem.Value = objXmlSkill["name"]?.InnerText;
+                ListItem objSkillItem = new ListItem
+                {
+                    Value = objXmlSkill["name"]?.InnerText
+                };
                 objSkillItem.Name = objXmlSkill["translate"]?.InnerText ?? objSkillItem.Value;
                 lstSkillOrder.Add(objSkillItem);
                 //TODO: read from backup

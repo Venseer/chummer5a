@@ -237,7 +237,8 @@ namespace Chummer.Skills
 
             SkillGroup newGroup = new SkillGroup(skill.CharacterObject, skill.SkillGroup);
             newGroup.Add(skill);
-            skill.CharacterObject.SkillsSection.SkillGroups.MergeInto(newGroup, (l, r) => String.Compare(l.DisplayName, r.DisplayName, StringComparison.Ordinal));
+            skill.CharacterObject.SkillsSection.SkillGroups.MergeInto(newGroup, (l, r) => String.Compare(l.DisplayName, r.DisplayName, StringComparison.Ordinal),
+                (l, r) => { foreach (Skill x in r.SkillList.Where(y => !l.SkillList.Contains(y))) l.SkillList.Add(x); });
 
             return newGroup;
         }
@@ -280,8 +281,7 @@ namespace Chummer.Skills
         {
             if (saved == null)
                 return null;
-            Guid g;
-            saved.TryGetField("id", Guid.TryParse, out g);
+            saved.TryGetField("id", Guid.TryParse, out Guid g);
             SkillGroup group = new SkillGroup(character, saved["name"]?.InnerText, g);
 
             saved.TryGetInt32FieldQuickly("karma", ref group._skillFromKarma);

@@ -76,6 +76,7 @@ namespace Chummer
         private bool _blnNoSingleArmorEncumbrance;
         private bool _blnPrintArcanaAlternates;
         private bool _blnPrintExpenses;
+        private bool _blnPrintFreeExpenses = true;
         private bool _blnPrintLeadershipAlternates;
         private bool _blnPrintNotes;
         private bool _blnPrintSkillsWithZeroRating = true;
@@ -112,7 +113,7 @@ namespace Chummer
         private bool _blnHhideItemsOverAvailLimit = true;
         private bool _blnAllowHoverIncrement;
         private bool _blnSearchInCategoryOnly = true;
-        private string _strNuyenFormat = "#,0.00";
+        private string _strNuyenFormat = "#,0.##";
         private bool _blnCompensateSkillGroupKarmaDifference = false;
 
         private readonly XmlDocument _objBookDoc = null;
@@ -238,10 +239,12 @@ namespace Chummer
         {
             string strFilePath = Path.Combine(Application.StartupPath, "settings", _strFileName);
             FileStream objStream = new FileStream(strFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            XmlTextWriter objWriter = new XmlTextWriter(objStream, Encoding.Unicode);
-            objWriter.Formatting = Formatting.Indented;
-            objWriter.Indentation = 1;
-            objWriter.IndentChar = '\t';
+            XmlTextWriter objWriter = new XmlTextWriter(objStream, Encoding.Unicode)
+            {
+                Formatting = Formatting.Indented,
+                Indentation = 1,
+                IndentChar = '\t'
+            };
             objWriter.WriteStartDocument();
 
             // <settings>
@@ -274,6 +277,8 @@ namespace Chummer
             objWriter.WriteElementString("capskillrating", _blnCapSkillRating.ToString());
             // <printexpenses />
             objWriter.WriteElementString("printexpenses", _blnPrintExpenses.ToString());
+            // <printfreeexpenses />
+            objWriter.WriteElementString("printfreeexpenses", _blnPrintFreeExpenses.ToString());
             // <nuyenperbp />
             objWriter.WriteElementString("nuyenperbp", _decNuyenPerBP.ToString(GlobalOptions.InvariantCultureInfo));
             // <hideitemsoveravaillimit />
@@ -642,6 +647,7 @@ namespace Chummer
                 else
                 {
                     _strFileName = "default.xml";
+                    strFilePath = Path.Combine(Application.StartupPath, "settings", _strFileName);
                     objXmlDocument.Load(strFilePath);
                 }
             }
@@ -671,6 +677,8 @@ namespace Chummer
             objXmlNode.TryGetBoolFieldQuickly("capskillrating", ref _blnCapSkillRating);
             // Print Expenses.
             objXmlNode.TryGetBoolFieldQuickly("printexpenses", ref _blnPrintExpenses);
+            // Print Free Expenses.
+            objXmlNode.TryGetBoolFieldQuickly("printfreeexpenses", ref _blnPrintFreeExpenses);
             // Nuyen per Build Point
             objXmlNode.TryGetDecFieldQuickly("nuyenperbp", ref _decNuyenPerBP);
             // Hide Items Over Avail Limit in Create Mode
@@ -951,8 +959,7 @@ namespace Chummer
             object objRegistryResult = _objBaseChummerKey.GetValue(strBoolName);
             if (objRegistryResult != null)
             {
-                bool blnTemp;
-                if (bool.TryParse(objRegistryResult.ToString(), out blnTemp))
+                if (bool.TryParse(objRegistryResult.ToString(), out bool blnTemp))
                     blnStorage = blnTemp;
                 _objBaseChummerKey.DeleteValue(strBoolName);
             }
@@ -966,8 +973,7 @@ namespace Chummer
             object objRegistryResult = _objBaseChummerKey.GetValue(strIntName);
             if (objRegistryResult != null)
             {
-                int intTemp;
-                if (int.TryParse(objRegistryResult.ToString(), out intTemp))
+                if (int.TryParse(objRegistryResult.ToString(), out int intTemp))
                     intStorage = intTemp;
                 _objBaseChummerKey.DeleteValue(strIntName);
             }
@@ -981,8 +987,7 @@ namespace Chummer
             object objRegistryResult = _objBaseChummerKey.GetValue(strDecName);
             if (objRegistryResult != null)
             {
-                decimal decTemp;
-                if (decimal.TryParse(objRegistryResult.ToString(), out decTemp))
+                if (decimal.TryParse(objRegistryResult.ToString(), out decimal decTemp))
                     decStorage = decTemp;
                 _objBaseChummerKey.DeleteValue(strDecName);
             }
@@ -1021,6 +1026,9 @@ namespace Chummer
 
             // Print Expenses.
             LoadBoolFromRegistry(ref _blnPrintExpenses, "printexpenses");
+
+            // Print Free Expenses.
+            LoadBoolFromRegistry(ref _blnPrintFreeExpenses, "printfreeexpenses");
 
             // Nuyen per Build Point
             LoadDecFromRegistry(ref _decNuyenPerBP, "nuyenperbp");
@@ -1342,7 +1350,7 @@ namespace Chummer
         }
 
         /// <summary>
-        /// Whether or not the Karma and Nueyn Expenses should be printed on the character sheet.
+        /// Whether or not the Karma and Nuyen Expenses should be printed on the character sheet.
         /// </summary>
         public bool PrintExpenses
         {
@@ -1353,6 +1361,21 @@ namespace Chummer
             set
             {
                 _blnPrintExpenses = value;
+            }
+        }
+
+        /// <summary>
+        /// Whether or not the Karma and Nuyen Expenses that have a cost of 0 should be printed on the character sheet.
+        /// </summary>
+        public bool PrintFreeExpenses
+        {
+            get
+            {
+                return _blnPrintFreeExpenses;
+            }
+            set
+            {
+                _blnPrintFreeExpenses = value;
             }
         }
 
@@ -3618,7 +3641,7 @@ namespace Chummer
             internal set { _blnSearchInCategoryOnly = value; }
         }
 
-        public helpers.NumericUpDownEx.InterceptMouseWheelMode InterceptMode => AllowHoverIncrement ? helpers.NumericUpDownEx.InterceptMouseWheelMode.WhenMouseOver : helpers.NumericUpDownEx.InterceptMouseWheelMode.WhenFocus;
+        public NumericUpDownEx.InterceptMouseWheelMode InterceptMode => AllowHoverIncrement ? NumericUpDownEx.InterceptMouseWheelMode.WhenMouseOver : NumericUpDownEx.InterceptMouseWheelMode.WhenFocus;
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

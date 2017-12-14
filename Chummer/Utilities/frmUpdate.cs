@@ -149,8 +149,7 @@ namespace Chummer
                     File.Move(_strTempUpdatePath, _strTempUpdatePath + ".old");
                 }
                 string strURL = "https://raw.githubusercontent.com/chummer5a/chummer5a/" + LatestVersion + "/Chummer/changelog.txt";
-                Uri uriConnectionAddress;
-                if (Uri.TryCreate(strURL, UriKind.Absolute, out uriConnectionAddress))
+                if (Uri.TryCreate(strURL, UriKind.Absolute, out Uri uriConnectionAddress))
                 {
                     try
                     {
@@ -323,8 +322,7 @@ namespace Chummer
                 cmdUpdate.Enabled = false;
                 return;
             }
-            Version objLatestVersion = null;
-            Version.TryParse(strLatestVersion, out objLatestVersion);
+            Version.TryParse(strLatestVersion, out Version objLatestVersion);
             int intResult = objLatestVersion?.CompareTo(_objCurrentVersion) ?? 0;
 
             if (intResult > 0)
@@ -336,11 +334,10 @@ namespace Chummer
                 lblUpdaterStatus.Text = LanguageManager.GetString("String_Up_To_Date").Replace("{0}", _strCurrentVersion).Replace("{1}", LanguageManager.GetString(_blnPreferNightly ? "String_Nightly" : "String_Stable")).Replace("{2}", strLatestVersion);
                 if (intResult < 0)
                 {
-                    cmdUpdate.Text = LanguageManager.GetString("Button_Up_To_Date");
-                    cmdUpdate.Enabled = false;
+                    cmdRestart.Text = LanguageManager.GetString("Button_Up_To_Date");
+                    cmdRestart.Enabled = false;
                 }
-                else
-                    cmdUpdate.Text = LanguageManager.GetString("Button_Redownload");
+                cmdUpdate.Text = LanguageManager.GetString("Button_Redownload");
             }
             if (_blnPreferNightly)
                 lblUpdaterStatus.Text += " " + LanguageManager.GetString("String_Nightly_Changelog_Warning");
@@ -361,43 +358,13 @@ namespace Chummer
                 Cursor = Cursors.WaitCursor;
                 cmdUpdate.Enabled = false;
                 cmdRestart.Enabled = false;
-                //Create a backup file in the temp directory. 
-                string strBackupZipPath = Path.Combine(Path.GetTempPath(), "chummer" + CurrentVersion + ".zip");
-                Log.Info("Creating archive from application path: ", _strAppPath);
-                try
+                cmdCleanReinstall.Enabled = false;
+                if (!CreateBackupZipAndRenameExes())
                 {
-                    if (!File.Exists(strBackupZipPath))
-                    {
-                        ZipFile.CreateFromDirectory(_strAppPath, strBackupZipPath, CompressionLevel.Fastest, true);
-                    }
-                    // Delete the old Chummer5 executables, libraries, and other files whose current versions are in use, then rename the current versions.
-                    foreach (string strLoopExeName in Directory.GetFiles(_strAppPath, "*.exe", SearchOption.AllDirectories))
-                    {
-                        if (File.Exists(strLoopExeName + ".old"))
-                            File.Delete(strLoopExeName + ".old");
-                        File.Move(strLoopExeName, strLoopExeName + ".old");
-                    }
-                    foreach (string strLoopDllName in Directory.GetFiles(_strAppPath, "*.dll", SearchOption.AllDirectories))
-                    {
-                        if (File.Exists(strLoopDllName + ".old"))
-                            File.Delete(strLoopDllName + ".old");
-                        File.Move(strLoopDllName, strLoopDllName + ".old");
-                    }
-                    foreach (string strLoopPdbName in Directory.GetFiles(_strAppPath, "*.pdb", SearchOption.AllDirectories))
-                    {
-                        if (File.Exists(strLoopPdbName + ".old"))
-                            File.Delete(strLoopPdbName + ".old");
-                        File.Move(strLoopPdbName, strLoopPdbName + ".old");
-                    }
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    MessageBox.Show(LanguageManager.GetString("Message_Insufficient_Permissions_Warning"));
                     Cursor = Cursors.Default;
                     return;
                 }
 
-                bool blnDoRestart = true;
                 HashSet<string> lstFilesToDelete = new HashSet<string>(Directory.GetFiles(_strAppPath, "*", SearchOption.AllDirectories));
                 HashSet<string> lstFilesToNotDelete = new HashSet<string>();
                 foreach (string strFileToDelete in lstFilesToDelete)
@@ -419,50 +386,147 @@ namespace Chummer
                 }
                 lstFilesToDelete.RemoveWhere(x => lstFilesToNotDelete.Contains(x));
 
-                // Copy over the archive from the temp directory.
-                Log.Info("Extracting downloaded archive into application path: ", _strTempPath);
-                using (ZipArchive archive = ZipFile.Open(_strTempPath, ZipArchiveMode.Read, Encoding.GetEncoding(850)))
+                InstallUpdateFromZip(_strTempPath, lstFilesToDelete);
+            }
+        }
+
+        private void cmdCleanReinstall_Click(object sender, EventArgs e)
+        {
+            Log.Info("cmdCleanReinstall_Click");
+            if (MessageBox.Show(LanguageManager.GetString("Message_Updater_CleanReinstallPrompt"),
+                LanguageManager.GetString("MessageTitle_Updater_CleanReinstallPrompt"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+            if (Directory.Exists(_strAppPath) && File.Exists(_strTempPath))
+            {
+                Cursor = Cursors.WaitCursor;
+                cmdUpdate.Enabled = false;
+                cmdRestart.Enabled = false;
+                cmdCleanReinstall.Enabled = false;
+                if (!CreateBackupZipAndRenameExes())
                 {
-                    foreach (ZipArchiveEntry entry in archive.Entries)
+                    Cursor = Cursors.Default;
+                    return;
+                }
+
+                HashSet<string> lstFilesToDelete = new HashSet<string>(Directory.GetFiles(_strAppPath, "*", SearchOption.AllDirectories));
+                HashSet<string> lstFilesToNotDelete = new HashSet<string>();
+                foreach (string strFileToDelete in lstFilesToDelete)
+                {
+                    string strFileName = Path.GetFileName(strFileToDelete);
+                    string strFilePath = Path.GetDirectoryName(strFileToDelete).TrimStart(_strAppPath);
+                    int intSeparatorIndex = strFilePath.LastIndexOf(Path.DirectorySeparatorChar);
+                    string strTopLevelFolder = intSeparatorIndex != -1 ? strFilePath.Substring(intSeparatorIndex + 1) : string.Empty;
+                    if (strFileName.EndsWith(".old") || strFilePath.Contains("saves"))
+                        lstFilesToNotDelete.Add(strFileToDelete);
+                }
+                lstFilesToDelete.RemoveWhere(x => lstFilesToNotDelete.Contains(x));
+
+                InstallUpdateFromZip(_strTempPath, lstFilesToDelete);
+            }
+        }
+
+        private bool CreateBackupZipAndRenameExes()
+        {
+            //Create a backup file in the temp directory. 
+            string strBackupZipPath = Path.Combine(Path.GetTempPath(), "chummer" + CurrentVersion + ".zip");
+            Log.Info("Creating archive from application path: ", _strAppPath);
+            try
+            {
+                if (!File.Exists(strBackupZipPath))
+                {
+                    ZipFile.CreateFromDirectory(_strAppPath, strBackupZipPath, CompressionLevel.Fastest, true);
+                }
+                // Delete the old Chummer5 executables, libraries, and other files whose current versions are in use, then rename the current versions.
+                foreach (string strLoopExeName in Directory.GetFiles(_strAppPath, "*.exe", SearchOption.AllDirectories))
+                {
+                    if (File.Exists(strLoopExeName + ".old"))
+                        File.Delete(strLoopExeName + ".old");
+                    File.Move(strLoopExeName, strLoopExeName + ".old");
+                }
+                foreach (string strLoopDllName in Directory.GetFiles(_strAppPath, "*.dll", SearchOption.AllDirectories))
+                {
+                    if (File.Exists(strLoopDllName + ".old"))
+                        File.Delete(strLoopDllName + ".old");
+                    File.Move(strLoopDllName, strLoopDllName + ".old");
+                }
+                foreach (string strLoopPdbName in Directory.GetFiles(_strAppPath, "*.pdb", SearchOption.AllDirectories))
+                {
+                    if (File.Exists(strLoopPdbName + ".old"))
+                        File.Delete(strLoopPdbName + ".old");
+                    File.Move(strLoopPdbName, strLoopPdbName + ".old");
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                MessageBox.Show(LanguageManager.GetString("Message_Insufficient_Permissions_Warning"));
+                return false;
+            }
+            return true;
+        }
+
+        private void InstallUpdateFromZip(string strZipPath, HashSet<string> lstFilesToDelete)
+        {
+            bool blnDoRestart = true;
+            // Copy over the archive from the temp directory.
+            Log.Info("Extracting downloaded archive into application path: ", strZipPath);
+            using (ZipArchive archive = ZipFile.Open(strZipPath, ZipArchiveMode.Read, Encoding.GetEncoding(850)))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    // Skip directories because they already get handled with Directory.CreateDirectory
+                    if (entry.FullName.Length > 0 && entry.FullName[entry.FullName.Length - 1] == '/')
+                        continue;
+                    string strLoopPath = Path.Combine(_strAppPath, entry.FullName);
+                    try
                     {
-                        // Skip directories because they already get handled with Directory.CreateDirectory
-                        if (entry.FullName.Length > 0 && entry.FullName[entry.FullName.Length - 1] == '/')
-                            continue;
-                        string strLoopPath = Path.Combine(_strAppPath, entry.FullName);
+                        Directory.CreateDirectory(Path.GetDirectoryName(strLoopPath));
+                        entry.ExtractToFile(strLoopPath, true);
+                    }
+                    catch (IOException)
+                    {
                         try
                         {
+                            if (File.Exists(strLoopPath + ".old"))
+                                File.Delete(strLoopPath + ".old");
+                            File.Move(strLoopPath, strLoopPath + ".old");
                             Directory.CreateDirectory(Path.GetDirectoryName(strLoopPath));
                             entry.ExtractToFile(strLoopPath, true);
-                            lstFilesToDelete.Remove(strLoopPath.Replace('/', Path.DirectorySeparatorChar));
                         }
-                        catch (UnauthorizedAccessException)
+                        catch (IOException)
                         {
-                            MessageBox.Show(LanguageManager.GetString("Message_Insufficient_Permissions_Warning"));
+                            MessageBox.Show(LanguageManager.GetString("Message_File_Cannot_Be_Accessed") + "\n\n" + Path.GetFileName(strLoopPath));
                             blnDoRestart = false;
                             break;
                         }
                     }
-                }
-                if (blnDoRestart)
-                {
-                    foreach (string strFileToDelete in lstFilesToDelete)
+                    catch (UnauthorizedAccessException)
                     {
-                        if (File.Exists(strFileToDelete))
-                            File.Delete(strFileToDelete);
+                        MessageBox.Show(LanguageManager.GetString("Message_Insufficient_Permissions_Warning"));
+                        blnDoRestart = false;
+                        break;
                     }
-                    Utils.RestartApplication(string.Empty);
+                    lstFilesToDelete.Remove(strLoopPath.Replace('/', Path.DirectorySeparatorChar));
                 }
+            }
+            if (blnDoRestart)
+            {
+                foreach (string strFileToDelete in lstFilesToDelete)
+                {
+                    if (File.Exists(strFileToDelete))
+                        File.Delete(strFileToDelete);
+                }
+                Utils.RestartApplication(string.Empty);
             }
         }
 
         private void DownloadUpdates()
         {
-            Uri uriDownloadFileAddress;
-            if (!Uri.TryCreate(_strDownloadFile, UriKind.Absolute, out uriDownloadFileAddress))
+            if (!Uri.TryCreate(_strDownloadFile, UriKind.Absolute, out Uri uriDownloadFileAddress))
                 return;
             Log.Enter("DownloadUpdates");
             cmdUpdate.Enabled = false;
             cmdRestart.Enabled = false;
+            cmdCleanReinstall.Enabled = false;
             if (File.Exists(_strTempPath))
                 File.Delete(_strTempPath);
             try
@@ -483,8 +547,7 @@ namespace Chummer
         /// </summary>
         private void wc_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
-            int intTmp;
-            if (int.TryParse((e.BytesReceived * 100 / e.TotalBytesToReceive).ToString(), out intTmp))
+            if (int.TryParse((e.BytesReceived * 100 / e.TotalBytesToReceive).ToString(), out int intTmp))
                 pgbOverallProgress.Value = intTmp;
         }
 
@@ -497,7 +560,9 @@ namespace Chummer
             Log.Info("wc_DownloadExeFileCompleted");
             cmdUpdate.Text = LanguageManager.GetString("Button_Redownload");
             cmdUpdate.Enabled = true;
-            cmdRestart.Enabled = true;
+            if (cmdRestart.Text != LanguageManager.GetString("Button_Up_To_Date"))
+                cmdRestart.Enabled = true;
+            cmdCleanReinstall.Enabled = true;
             Log.Exit("wc_DownloadExeFileCompleted");
             if (_blnSilentMode)
             {

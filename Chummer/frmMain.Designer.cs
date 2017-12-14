@@ -69,6 +69,8 @@
             this.mnuToolsUpdate = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuRestart = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuToolsOmae = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
+            this.mnuToolsTranslator = new System.Windows.Forms.ToolStripMenuItem();
             this.windowsMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.newWindowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.closeAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -448,7 +450,9 @@
             this.optionsToolStripMenuItem,
             this.mnuToolsUpdate,
             this.mnuRestart,
-            this.mnuToolsOmae});
+            this.mnuToolsOmae,
+            this.toolStripSeparator6,
+            this.mnuToolsTranslator});
             this.toolsMenu.Name = "toolsMenu";
             this.toolsMenu.Size = new System.Drawing.Size(47, 20);
             this.toolsMenu.Tag = "Menu_Main_Tools";
@@ -504,6 +508,20 @@
             this.mnuToolsOmae.Text = "Omae";
             this.mnuToolsOmae.Click += new System.EventHandler(this.mnuToolsOmae_Click);
             // 
+            // toolStripSeparator6
+            // 
+            this.toolStripSeparator6.Name = "toolStripSeparator6";
+            this.toolStripSeparator6.Size = new System.Drawing.Size(168, 6);
+            // 
+            // mnuToolsTranslator
+            // 
+            this.mnuToolsTranslator.Image = global::Chummer.Properties.Resources.page_white_world;
+            this.mnuToolsTranslator.Name = "mnuToolsTranslator";
+            this.mnuToolsTranslator.Size = new System.Drawing.Size(171, 22);
+            this.mnuToolsTranslator.Tag = "Menu_Main_Translator";
+            this.mnuToolsTranslator.Text = "Translator";
+            this.mnuToolsTranslator.Click += new System.EventHandler(this.mnuToolsTranslator_Click);
+            // 
             // windowsMenu
             // 
             this.windowsMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -517,6 +535,7 @@
             // 
             // newWindowToolStripMenuItem
             // 
+            this.newWindowToolStripMenuItem.Image = global::Chummer.Properties.Resources.application_add;
             this.newWindowToolStripMenuItem.Name = "newWindowToolStripMenuItem";
             this.newWindowToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
             this.newWindowToolStripMenuItem.Tag = "Menu_Main_NewWindow";
@@ -525,6 +544,7 @@
             // 
             // closeAllToolStripMenuItem
             // 
+            this.closeAllToolStripMenuItem.Image = global::Chummer.Properties.Resources.application_delete;
             this.closeAllToolStripMenuItem.Name = "closeAllToolStripMenuItem";
             this.closeAllToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
             this.closeAllToolStripMenuItem.Tag = "Menu_Main_CloseAll";
@@ -792,6 +812,8 @@
         private System.Windows.Forms.ToolStripMenuItem mnuHelpDumpshock;
         private System.Windows.Forms.ToolStripMenuItem mnuClearUnpinnedItems;
         private System.Windows.Forms.ToolStripMenuItem mnuRestart;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
+        private System.Windows.Forms.ToolStripMenuItem mnuToolsTranslator;
     }
 }
 

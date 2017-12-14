@@ -105,8 +105,7 @@ namespace Chummer
         /// <param name="strValue">String value to convert.</param>
         public KarmaExpenseType ConvertToKarmaExpenseType(string strValue)
         {
-            KarmaExpenseType result;
-            return Enum.TryParse(strValue, out result) ? result : KarmaExpenseType.ManualAdd;
+            return Enum.TryParse(strValue, out KarmaExpenseType result) ? result : KarmaExpenseType.ManualAdd;
         }
 
         /// <summary>
@@ -115,8 +114,7 @@ namespace Chummer
         /// <param name="strValue">String value to convert.</param>
         public NuyenExpenseType ConvertToNuyenExpenseType(string strValue)
         {
-            NuyenExpenseType result;
-            return Enum.TryParse(strValue, out result) ? result : NuyenExpenseType.ManualAdd;
+            return Enum.TryParse(strValue, out NuyenExpenseType result) ? result : NuyenExpenseType.ManualAdd;
         }
         #endregion
 
@@ -390,13 +388,16 @@ namespace Chummer
         /// <param name="objWriter">XmlTextWriter to write with.</param>
         public void Print(XmlTextWriter objWriter, CultureInfo objCulture)
         {
-            objWriter.WriteStartElement("expense");
-            objWriter.WriteElementString("date", _datDate.ToString(objCulture));
-            objWriter.WriteElementString("amount", _decAmount.ToString(Type == ExpenseType.Nuyen ? _objCharacter.Options.NuyenFormat : "#,0.##", objCulture));
-            objWriter.WriteElementString("reason", _strReason);
-            objWriter.WriteElementString("type", _objExpenseType.ToString());
-            objWriter.WriteElementString("refund", _blnRefund.ToString());
-            objWriter.WriteEndElement();
+            if (Amount != 0 || _objCharacter.Options.PrintFreeExpenses)
+            {
+                objWriter.WriteStartElement("expense");
+                objWriter.WriteElementString("date", Date.ToString(objCulture));
+                objWriter.WriteElementString("amount", Amount.ToString(Type == ExpenseType.Nuyen ? _objCharacter.Options.NuyenFormat : "#,0.##", objCulture));
+                objWriter.WriteElementString("reason", Reason);
+                objWriter.WriteElementString("type", Type.ToString());
+                objWriter.WriteElementString("refund", Refund.ToString());
+                objWriter.WriteEndElement();
+            }
         }
         #endregion
 

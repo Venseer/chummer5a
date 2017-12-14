@@ -80,6 +80,7 @@ namespace Chummer.Backend.Equipment
             objXmlLifestyle.TryGetDecFieldQuickly("multiplier", ref _decMultiplier);
             objXmlLifestyle.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlLifestyle.TryGetStringFieldQuickly("page", ref _strPage);
+            objXmlLifestyle.TryGetStringFieldQuickly("notes", ref _strNotes);
             if (!objXmlLifestyle.TryGetField("id", Guid.TryParse, out _sourceID))
             {
                 Log.Warning(new object[] { "Missing id field for lifestyle xmlnode", objXmlLifestyle});
@@ -149,8 +150,7 @@ namespace Chummer.Backend.Equipment
         public void Load(XmlNode objNode, bool blnCopy = false)
         {
             //Can't out property and no backing field
-            Guid source;
-            if (objNode.TryGetField("sourceid", Guid.TryParse, out source))
+            if (objNode.TryGetField("sourceid", Guid.TryParse, out Guid source))
             {
                 SourceID = source;
             }

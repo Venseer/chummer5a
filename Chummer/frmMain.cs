@@ -53,6 +53,7 @@ namespace Chummer
         private readonly BackgroundWorker _workerVersionUpdateChecker = new BackgroundWorker();
         private readonly Version _objCurrentVersion = Assembly.GetExecutingAssembly().GetName().Version;
         private readonly string _strCurrentVersion = string.Empty;
+
         #region Control Events
         public frmMain()
         {
@@ -153,8 +154,10 @@ namespace Chummer
             );
             Timekeeper.Finish("cache_load");
 
-            frmCharacterRoster frmCharacter = new frmCharacterRoster();
-            frmCharacter.MdiParent = this;
+            frmCharacterRoster frmCharacter = new frmCharacterRoster
+            {
+                MdiParent = this
+            };
             _frmCharacterRoster = frmCharacter;
 
             // Retrieve the arguments passed to the application. If more than 1 is passed, we're being given the name of a file to open.
@@ -256,8 +259,10 @@ namespace Chummer
 
         private void optionsToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            Cursor = Cursors.WaitCursor;
             frmOptions frmOptions = new frmOptions();
             frmOptions.ShowDialog(this);
+            Cursor = Cursors.Default;
         }
 
         private void mnuToolsUpdate_Click(object sender, EventArgs e)
@@ -335,8 +340,10 @@ namespace Chummer
 
             if (settingsFiles.Length > 1)
             {
+                Cursor = Cursors.WaitCursor;
                 frmSelectSetting frmPickSetting = new frmSelectSetting();
                 frmPickSetting.ShowDialog(this);
+                Cursor = Cursors.Default;
 
                 if (frmPickSetting.DialogResult == DialogResult.Cancel)
                     return;
@@ -349,6 +356,8 @@ namespace Chummer
                 objCharacter.SettingsFile = Path.GetFileName(strSettingsFile);
             }
 
+            Cursor = Cursors.WaitCursor;
+
             // Override the defaults for the setting.
             objCharacter.IgnoreRules = true;
             objCharacter.IsCritter = true;
@@ -357,9 +366,12 @@ namespace Chummer
             objCharacter.BuildPoints = 0;
 
             // Show the Metatype selection window.
-            frmKarmaMetatype frmSelectMetatype = new frmKarmaMetatype(objCharacter);
-            frmSelectMetatype.XmlFile = "critters.xml";
+            frmKarmaMetatype frmSelectMetatype = new frmKarmaMetatype(objCharacter)
+            {
+                XmlFile = "critters.xml"
+            };
             frmSelectMetatype.ShowDialog();
+            Cursor = Cursors.Default;
 
             if (frmSelectMetatype.DialogResult == DialogResult.Cancel)
                 return;
@@ -375,9 +387,11 @@ namespace Chummer
                 objCharacter.Weapons.Add(objWeapon);
             }
 
-            frmCareer frmNewCharacter = new frmCareer(objCharacter);
-            frmNewCharacter.MdiParent = this;
-            frmNewCharacter.WindowState = FormWindowState.Maximized;
+            frmCareer frmNewCharacter = new frmCareer(objCharacter)
+            {
+                MdiParent = this,
+                WindowState = FormWindowState.Maximized
+            };
             frmNewCharacter.Show();
 
             objCharacter.CharacterNameChanged += objCharacter_CharacterNameChanged;
@@ -436,18 +450,20 @@ namespace Chummer
                 // If this is a new child form and does not have a tab page, create one.
                 if (ActiveMdiChild.Tag == null)
                 {
-                    TabPage tp = new TabPage();
-                    // Add a tab page.
-                    tp.Tag = ActiveMdiChild;
-                    tp.Parent = tabForms;
+                    TabPage tp = new TabPage
+                    {
+                        // Add a tab page.
+                        Tag = ActiveMdiChild,
+                        Parent = tabForms
+                    };
 
                     if (ActiveMdiChild.GetType() == typeof(frmCareer))
                     {
-                        tp.Text = ((frmCareer)ActiveMdiChild).CharacterName;
+                        tp.Text = ((frmCareer)ActiveMdiChild).CharacterObject.CharacterName;
                     }
                     else if (ActiveMdiChild.GetType() == typeof(frmCreate))
                     {
-                        tp.Text = ((frmCreate)ActiveMdiChild).CharacterName;
+                        tp.Text = ((frmCreate)ActiveMdiChild).CharacterObject.CharacterName;
                     }
                     else if (ActiveMdiChild.GetType() == typeof(frmCharacterRoster))
                     {
@@ -469,8 +485,7 @@ namespace Chummer
 
         private void ActiveMdiChild_FormClosed(object sender, FormClosedEventArgs e)
         {
-            Form objForm = sender as Form;
-            if (objForm != null)
+            if (sender is Form objForm)
             {
                 objForm.FormClosed -= ActiveMdiChild_FormClosed;
                 objForm.Dispose();
@@ -488,7 +503,7 @@ namespace Chummer
                 (tabForms.SelectedTab.Tag as Form)?.Select();
         }
 
-        public bool SwitchToOpenCharacter(Character objCharacter)
+        public bool SwitchToOpenCharacter(Character objCharacter, bool blnIncludeInMRU)
         {
             if (objCharacter != null)
             {
@@ -504,6 +519,11 @@ namespace Chummer
                         }
                     }
                 }
+                if (OpenCharacters.Contains(objCharacter))
+                {
+                    OpenCharacter(objCharacter, blnIncludeInMRU);
+                    return true;
+                }
             }
             return false;
         }
@@ -513,18 +533,9 @@ namespace Chummer
             // Change the TabPage's text to match the character's name (or "Unnamed Character" if they are currently unnamed).
             if (tabForms.TabCount > 0 && tabForms.SelectedTab != null)
             {
-                Character objCharacter = sender as Character;
-                if (objCharacter != null)
+                if (sender is Character objCharacter)
                 {
-                    string strTitle = objCharacter.Name;
-                    if (!string.IsNullOrWhiteSpace(objCharacter.Alias))
-                    {
-                        strTitle = objCharacter.Alias.Trim();
-                    }
-                    else if (string.IsNullOrWhiteSpace(strTitle))
-                    {
-                        strTitle = LanguageManager.GetString("String_UnnamedCharacter");
-                    }
+                    string strTitle = objCharacter.CharacterName.Trim();
 
                     tabForms.SelectedTab.Text = strTitle;
                 }
@@ -684,6 +695,12 @@ namespace Chummer
                 MessageBox.Show(objImpersonation.Rating.ToString());
         }
 
+        private void mnuToolsTranslator_Click(object sender, EventArgs e)
+        {
+            string strTranslator = Path.Combine(Application.StartupPath, "Translator.exe");
+            if (File.Exists(strTranslator))
+                System.Diagnostics.Process.Start(strTranslator);
+        }
         #endregion
 
         #region Methods
@@ -697,10 +714,13 @@ namespace Chummer
             {
                 if (MessageBox.Show(LanguageManager.GetString("Message_CharacterOptions_OpenOptions"), LanguageManager.GetString("MessageTitle_CharacterOptions_OpenOptions"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
+                    Cursor = Cursors.WaitCursor;
                     frmOptions frmOptions = new frmOptions();
                     frmOptions.ShowDialog();
+                    Cursor = Cursors.Default;
                 }
             }
+            Cursor = Cursors.WaitCursor;
             Character objCharacter = new Character();
             string settingsPath = Path.Combine(Application.StartupPath, "settings");
             string[] settingsFiles = Directory.GetFiles(settingsPath, "*.xml");
@@ -724,13 +744,16 @@ namespace Chummer
             // Show the BP selection window.
             frmSelectBuildMethod frmBP = new frmSelectBuildMethod(objCharacter);
             frmBP.ShowDialog();
+            Cursor = Cursors.Default;
 
             if (frmBP.DialogResult == DialogResult.Cancel)
                 return;
             if (objCharacter.BuildMethod == CharacterBuildMethod.Karma || objCharacter.BuildMethod == CharacterBuildMethod.LifeModule)
             {
+                Cursor = Cursors.WaitCursor;
                 frmKarmaMetatype frmSelectMetatype = new frmKarmaMetatype(objCharacter);
                 frmSelectMetatype.ShowDialog();
+                Cursor = Cursors.Default;
 
                 if (frmSelectMetatype.DialogResult == DialogResult.Cancel)
                 { return; }
@@ -738,8 +761,10 @@ namespace Chummer
             // Show the Metatype selection window.
             else if (objCharacter.BuildMethod == CharacterBuildMethod.Priority || objCharacter.BuildMethod == CharacterBuildMethod.SumtoTen)
             {
+                Cursor = Cursors.WaitCursor;
                 frmPriorityMetatype frmSelectMetatype = new frmPriorityMetatype(objCharacter);
                 frmSelectMetatype.ShowDialog();
+                Cursor = Cursors.Default;
 
                 if (frmSelectMetatype.DialogResult == DialogResult.Cancel)
                 { return; }
@@ -756,9 +781,11 @@ namespace Chummer
                 objCharacter.Weapons.Add(objWeapon);
             }
 
-            frmCreate frmNewCharacter = new frmCreate(objCharacter);
-            frmNewCharacter.MdiParent = this;
-            frmNewCharacter.WindowState = FormWindowState.Maximized;
+            frmCreate frmNewCharacter = new frmCreate(objCharacter)
+            {
+                MdiParent = this,
+                WindowState = FormWindowState.Maximized
+            };
             frmNewCharacter.Show();
 
             objCharacter.CharacterNameChanged += objCharacter_CharacterNameChanged;
@@ -770,9 +797,11 @@ namespace Chummer
         /// </summary>
         private void OpenFile(object sender, EventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Chummer5 Files (*.chum5)|*.chum5|All Files (*.*)|*.*";
-            openFileDialog.Multiselect = true;
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "Chummer5 Files (*.chum5)|*.chum5|All Files (*.*)|*.*",
+                Multiselect = true
+            };
 
             if (openFileDialog.ShowDialog(this) == DialogResult.OK)
             {
@@ -861,15 +890,17 @@ namespace Chummer
         /// <param name="blnIncludeInMRU">Whether or not the file should appear in the MRU list.</param>
         /// <param name="strNewName">New name for the character.</param>
         /// <param name="blnClearFileName">Whether or not the name of the save file should be cleared.</param>
-        public static Character LoadCharacter(string strFileName, string strNewName = "", bool blnClearFileName = false)
+        public static Character LoadCharacter(string strFileName, string strNewName = "", bool blnClearFileName = false, bool blnShowErrors = true)
         {
             Character objCharacter = null;
             if (File.Exists(strFileName) && strFileName.EndsWith("chum5"))
             {
                 Timekeeper.Start("loading");
                 bool blnLoaded = false;
-                objCharacter = new Character();
-                objCharacter.FileName = strFileName;
+                objCharacter = new Character
+                {
+                    FileName = strFileName
+                };
 
                 XmlDocument objXmlDocument = new XmlDocument();
                 //StreamReader is used to prevent encoding errors
@@ -881,22 +912,21 @@ namespace Chummer
                     }
                     catch (XmlException ex)
                     {
-                        MessageBox.Show(LanguageManager.GetString("Message_FailedLoad").Replace("{0}", ex.Message), LanguageManager.GetString("MessageTitle_FailedLoad"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        if (blnShowErrors)
+                            MessageBox.Show(LanguageManager.GetString("Message_FailedLoad").Replace("{0}", ex.Message), LanguageManager.GetString("MessageTitle_FailedLoad"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return null;
                     }
                 }
                 XmlNode objXmlCharacter = objXmlDocument.SelectSingleNode("/character");
                 if (!string.IsNullOrEmpty(objXmlCharacter?["appversion"]?.InnerText))
                 {
-                    Version verSavedVersion;
-                    Version verCorrectedVersion;
                     string strVersion = objXmlCharacter["appversion"].InnerText;
                     if (strVersion.StartsWith("0."))
                     {
                         strVersion = strVersion.Substring(2);
                     }
-                    Version.TryParse(strVersion, out verSavedVersion);
-                    Version.TryParse("5.188.34", out verCorrectedVersion);
+                    Version.TryParse(strVersion, out Version verSavedVersion);
+                    Version.TryParse("5.188.34", out Version verCorrectedVersion);
                     if (verCorrectedVersion != null && verSavedVersion != null)
                     {
                         int intResult = verSavedVersion.CompareTo(verCorrectedVersion);
@@ -908,11 +938,14 @@ namespace Chummer
                     }
                 }
 
+                GlobalOptions.MainForm.OpenCharacters.Add(objCharacter);
                 Timekeeper.Start("load_file");
                 blnLoaded = objCharacter.Load();
                 Timekeeper.Finish("load_file");
                 if (!blnLoaded)
                 {
+                    objCharacter.Dispose();
+                    GlobalOptions.MainForm.OpenCharacters.Remove(objCharacter);
                     return null;
                 }
 
@@ -923,7 +956,7 @@ namespace Chummer
                 if (blnClearFileName)
                     objCharacter.FileName = string.Empty;
             }
-            else
+            else if (blnShowErrors)
             {
                 MessageBox.Show(LanguageManager.GetString("Message_FileNotFound").Replace("{0}", strFileName), LanguageManager.GetString("MessageTitle_FileNotFound"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }

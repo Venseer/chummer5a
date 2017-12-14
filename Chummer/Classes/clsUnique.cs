@@ -27,6 +27,9 @@ using System.Xml.XPath;
  using Chummer.Backend.Equipment;
  using Chummer.Skills;
 using System.Text;
+using System.Threading.Tasks;
+using System.IO;
+using System.ComponentModel;
 
 namespace Chummer
 {
@@ -155,7 +158,7 @@ namespace Chummer
             _guiID = Guid.NewGuid();
             _objCharacter = objCharacter;
         }
-        public void setGUID(Guid guidExisting)
+        public void SetGUID(Guid guidExisting)
         {
             _guiID = guidExisting;
         }
@@ -175,6 +178,7 @@ namespace Chummer
             _strSourceName = strSourceName;
             objXmlQuality.TryGetStringFieldQuickly("name", ref _strName);
             objXmlQuality.TryGetStringFieldQuickly("metagenetic", ref _strMetagenetic);
+            objXmlQuality.TryGetStringFieldQuickly("notes", ref _strNotes);
             // Check for a Variable Cost.
             XmlNode objKarmaNode = objXmlQuality["karma"];
             if (objKarmaNode != null)
@@ -481,10 +485,8 @@ namespace Chummer
                 string strQualityType = _objQualityType.ToString();
                 if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
-                    XmlDocument objXmlDocument = XmlManager.Load("qualities.xml");
-
-                    XmlNode objNode = objXmlDocument?.SelectSingleNode("/chummer/categories/category[. = \"" + strQualityType + "\"]");
-                        strQualityType = objNode?.Attributes?["translate"]?.InnerText ?? strQualityType;
+                    XmlNode objNode = XmlManager.Load("qualities.xml")?.SelectSingleNode("/chummer/categories/category[. = \"" + strQualityType + "\"]");
+                    strQualityType = objNode?.Attributes?["translate"]?.InnerText ?? strQualityType;
                 }
                 objWriter.WriteElementString("qualitytype", strQualityType);
                 objWriter.WriteElementString("qualitytype_english", _objQualityType.ToString());
@@ -798,9 +800,7 @@ namespace Chummer
         /// <returns>Is the Quality valid on said Character</returns>
         public static bool IsValid(Character objCharacter, XmlNode objXmlQuality)
         {
-            QualityFailureReason q;
-            List<Quality> q2;
-            return IsValid(objCharacter, objXmlQuality, out q, out q2);
+            return IsValid(objCharacter, objXmlQuality, out QualityFailureReason q, out List<Quality> q2);
         }
 
         /// <summary>
@@ -931,9 +931,7 @@ namespace Chummer
         /// <returns>A XmlNode containing the id and all nodes of its parrents</returns>
         public static XmlNode GetNodeOverrideable(string id)
         {
-            XmlDocument xmlDocument = XmlManager.Load("lifemodules.xml");
-            XmlNode node = xmlDocument.SelectSingleNode("//*[id = \"" + id + "\"]");
-            return GetNodeOverrideable(node);
+            return GetNodeOverrideable(XmlManager.Load("lifemodules.xml").SelectSingleNode("//*[id = \"" + id + "\"]"));
         }
 
         private static XmlNode GetNodeOverrideable(XmlNode n)
@@ -983,7 +981,7 @@ namespace Chummer
     /// <summary>
     /// A Magician's Spirit or Technomancer's Sprite.
     /// </summary>
-    public class Spirit : INamedItemWithGuidAndNode
+    public class Spirit : INamedItemWithGuidAndNode, IHasMugshots, INotifyPropertyChanged
     {
         private Guid _guiId;
         private string _strName = string.Empty;
@@ -996,6 +994,10 @@ namespace Chummer
         private string _strRelativeName = string.Empty;
         private string _strNotes = string.Empty;
         private readonly Character _objCharacter;
+        private Character _objLinkedCharacter;
+
+        private List<Image> _lstMugshots = new List<Image>();
+        private int _intMainMugshotIndex = -1;
 
         #region Helper Methods
         /// <summary>
@@ -1038,7 +1040,13 @@ namespace Chummer
             objWriter.WriteElementString("file", _strFileName);
             objWriter.WriteElementString("relative", _strRelativeName);
             objWriter.WriteElementString("notes", _strNotes);
+            SaveMugshots(objWriter);
             objWriter.WriteEndElement();
+
+            /* Disabled for now because we cannot change any properties in the linked character anyway
+            if (LinkedCharacter?.IsSaving == false && !GlobalOptions.MainForm.OpenCharacterForms.Any(x => x.CharacterObject == LinkedCharacter))
+                LinkedCharacter.Save();
+                */
         }
 
         /// <summary>
@@ -1061,6 +1069,10 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("file", ref _strFileName);
             objNode.TryGetStringFieldQuickly("relative", ref _strRelativeName);
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
+
+            RefreshLinkedCharacter(false);
+
+            LoadMugshots(objNode);
         }
 
         /// <summary>
@@ -1148,8 +1160,7 @@ namespace Chummer
                     foreach (XmlNode objXmlSkillNode in objXmlCritterNode["skills"].ChildNodes)
                     {
                         string attrName = objXmlSkillNode.Attributes?["attr"]?.Value;
-                        int attr;
-                        if (!attributes.TryGetValue(attrName, out attr))
+                        if (!attributes.TryGetValue(attrName, out int attr))
                             attr = _intForce;
                         int dicepool = attr + _intForce;
 
@@ -1182,6 +1193,7 @@ namespace Chummer
 
             if (_objCharacter.Options.PrintNotes)
                 objWriter.WriteElementString("notes", _strNotes);
+            PrintMugshots(objWriter);
             objWriter.WriteEndElement();
         }
 
@@ -1233,7 +1245,12 @@ namespace Chummer
         /// </summary>
         public string CritterName
         {
-            get => _strCritterName;
+            get
+            {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.CharacterName;
+                return _strCritterName;
+            }
             set => _strCritterName = value;
         }
 
@@ -1286,7 +1303,14 @@ namespace Chummer
         public string FileName
         {
             get => _strFileName;
-            set => _strFileName = value;
+            set
+            {
+                if (_strFileName != value)
+                {
+                    _strFileName = value;
+                    RefreshLinkedCharacter(!string.IsNullOrEmpty(value));
+                }
+            }
         }
 
         /// <summary>
@@ -1295,7 +1319,14 @@ namespace Chummer
         public string RelativeFileName
         {
             get => _strRelativeName;
-            set => _strRelativeName = value;
+            set
+            {
+                if (_strRelativeName != value)
+                {
+                    _strRelativeName = value;
+                    RefreshLinkedCharacter(!string.IsNullOrEmpty(value));
+                }
+            }
         }
 
         /// <summary>
@@ -1316,6 +1347,9 @@ namespace Chummer
         }
 
         private XmlNode _objCachedMyXmlNode = null;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
         public XmlNode MyXmlNode
         {
             get
@@ -1323,6 +1357,261 @@ namespace Chummer
                 if (_objCachedMyXmlNode == null || GlobalOptions.LiveCustomData)
                     _objCachedMyXmlNode = XmlManager.Load(_objEntityType == SpiritType.Spirit ? "traditions.xml" : "streams.xml")?.SelectSingleNode("/chummer/spirits/spirit[name = \"" + Name + "\"]");
                 return _objCachedMyXmlNode;
+            }
+        }
+
+        public Character LinkedCharacter
+        {
+            get => _objLinkedCharacter;
+        }
+
+        public bool NoLinkedCharacter
+        {
+            get => _objLinkedCharacter == null;
+        }
+
+        public void RefreshLinkedCharacter(bool blnShowError)
+        {
+            Character _objOldLinkedCharacter = _objLinkedCharacter;
+            _objCharacter.LinkedCharacters.Remove(_objLinkedCharacter);
+            _objLinkedCharacter = null;
+            bool blnError = false;
+            bool blnUseRelative = false;
+
+            // Make sure the file still exists before attempting to load it.
+            if (!File.Exists(FileName))
+            {
+                // If the file doesn't exist, use the relative path if one is available.
+                if (string.IsNullOrEmpty(RelativeFileName))
+                    blnError = true;
+                else if (!File.Exists(Path.GetFullPath(RelativeFileName)))
+                    blnError = true;
+                else
+                    blnUseRelative = true;
+
+                if (blnError && blnShowError)
+                {
+                    MessageBox.Show(LanguageManager.GetString("Message_FileNotFound").Replace("{0}", FileName), LanguageManager.GetString("MessageTitle_FileNotFound"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            if (!blnError)
+            {
+                string strFile = blnUseRelative ? Path.GetFullPath(RelativeFileName) : FileName;
+                if (strFile.EndsWith(".chum5"))
+                {
+                    Character objOpenCharacter = GlobalOptions.MainForm.OpenCharacters.FirstOrDefault(x => x.FileName == strFile);
+                    if (objOpenCharacter != null)
+                        _objLinkedCharacter = objOpenCharacter;
+                    else
+                        _objLinkedCharacter = frmMain.LoadCharacter(strFile, string.Empty, false, false);
+                    if (_objLinkedCharacter != null)
+                        _objCharacter.LinkedCharacters.Add(_objLinkedCharacter);
+                }
+            }
+            if (_objLinkedCharacter != _objOldLinkedCharacter)
+            {
+                if (_objOldLinkedCharacter != null)
+                {
+                    if (!GlobalOptions.MainForm.OpenCharacters.Any(x => x.LinkedCharacters.Contains(_objOldLinkedCharacter) && x != _objOldLinkedCharacter))
+                    {
+                        GlobalOptions.MainForm.OpenCharacters.Remove(_objOldLinkedCharacter);
+                        _objOldLinkedCharacter.Dispose();
+                    }
+                }
+                if (_objLinkedCharacter != null)
+                {
+                    if (string.IsNullOrEmpty(_strCritterName) && CritterName != LanguageManager.GetString("String_UnnamedCharacter"))
+                        _strCritterName = CritterName;
+                }
+                if (PropertyChanged != null)
+                {
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(CritterName)));
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(NoLinkedCharacter)));
+                }
+            }
+        }
+        #endregion
+
+        #region IHasMugshots
+        /// <summary>
+		/// Character's portraits encoded using Base64.
+		/// </summary>
+		public List<Image> Mugshots
+        {
+            get
+            {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.Mugshots;
+                else
+                    return _lstMugshots;
+            }
+            set
+            {
+                if (LinkedCharacter != null)
+                    LinkedCharacter.Mugshots = value;
+                else
+                    _lstMugshots = value;
+            }
+        }
+
+        /// <summary>
+        /// Character's main portrait encoded using Base64.
+        /// </summary>
+        public Image MainMugshot
+        {
+            get
+            {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.MainMugshot;
+                else if (MainMugshotIndex >= Mugshots.Count || MainMugshotIndex < 0)
+                    return null;
+                else
+                    return Mugshots[MainMugshotIndex];
+            }
+            set
+            {
+                if (LinkedCharacter != null)
+                    LinkedCharacter.MainMugshot = value;
+                else
+                {
+                    if (value == null)
+                    {
+                        MainMugshotIndex = -1;
+                        return;
+                    }
+                    int intNewMainMugshotIndex = Mugshots.IndexOf(value);
+                    if (intNewMainMugshotIndex != -1)
+                    {
+                        MainMugshotIndex = intNewMainMugshotIndex;
+                    }
+                    else
+                    {
+                        Mugshots.Add(value);
+                        MainMugshotIndex = Mugshots.Count - 1;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Index of Character's main portrait. -1 if set to none.
+        /// </summary>
+        public int MainMugshotIndex
+        {
+            get
+            {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.MainMugshotIndex;
+                else
+                    return _intMainMugshotIndex;
+            }
+            set
+            {
+                if (LinkedCharacter != null)
+                    LinkedCharacter.MainMugshotIndex = value;
+                else if (value >= _lstMugshots.Count || value < -1)
+                    _intMainMugshotIndex = -1;
+                else
+                    _intMainMugshotIndex = value;
+            }
+        }
+
+        public void SaveMugshots(XmlTextWriter objWriter)
+        {
+            objWriter.WriteElementString("mainmugshotindex", MainMugshotIndex.ToString());
+            // <mugshot>
+            objWriter.WriteStartElement("mugshots");
+            foreach (Image imgMugshot in Mugshots)
+            {
+                objWriter.WriteElementString("mugshot", imgMugshot.ToBase64String());
+            }
+            // </mugshot>
+            objWriter.WriteEndElement();
+        }
+
+        public void LoadMugshots(XmlNode xmlSavedNode)
+        {
+            xmlSavedNode.TryGetInt32FieldQuickly("mainmugshotindex", ref _intMainMugshotIndex);
+            XmlNodeList objXmlMugshotsList = xmlSavedNode.SelectNodes("mugshots/mugshot");
+            if (objXmlMugshotsList != null)
+            {
+                List<string> lstMugshotsBase64 = new List<string>(objXmlMugshotsList.Count);
+                foreach (XmlNode objXmlMugshot in objXmlMugshotsList)
+                {
+                    string strMugshot = objXmlMugshot.InnerText;
+                    if (!string.IsNullOrWhiteSpace(strMugshot))
+                    {
+                        lstMugshotsBase64.Add(strMugshot);
+                    }
+                }
+                if (lstMugshotsBase64.Count > 1)
+                {
+                    Image[] objMugshotImages = new Image[lstMugshotsBase64.Count];
+                    Parallel.For(0, lstMugshotsBase64.Count, i =>
+                    {
+                        objMugshotImages[i] = lstMugshotsBase64[i].ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                    });
+                    _lstMugshots.AddRange(objMugshotImages);
+                }
+                else if (lstMugshotsBase64.Count == 1)
+                {
+                    _lstMugshots.Add(lstMugshotsBase64[0].ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb));
+                }
+            }
+        }
+
+        public void PrintMugshots(XmlTextWriter objWriter)
+        {
+            if (LinkedCharacter != null)
+                LinkedCharacter.PrintMugshots(objWriter);
+            else if (Mugshots.Count > 0)
+            {
+                // Since IE is retarded and can't handle base64 images before IE9, we need to dump the image to a temporary directory and re-write the information.
+                // If you give it an extension of jpg, gif, or png, it expects the file to be in that format and won't render the image unless it was originally that type.
+                // But if you give it the extension img, it will render whatever you give it (which doesn't make any damn sense, but that's IE for you).
+                string strMugshotsDirectoryPath = Path.Combine(Application.StartupPath, "mugshots");
+                if (!Directory.Exists(strMugshotsDirectoryPath))
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(strMugshotsDirectoryPath);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        MessageBox.Show(LanguageManager.GetString("Message_Insufficient_Permissions_Warning"));
+                    }
+                }
+                Guid guiImage = Guid.NewGuid();
+                string imgMugshotPath = Path.Combine(strMugshotsDirectoryPath, guiImage.ToString() + ".img");
+                Image imgMainMugshot = MainMugshot;
+                if (imgMainMugshot != null)
+                {
+                    imgMainMugshot.Save(imgMugshotPath);
+                    // <mainmugshotpath />
+                    objWriter.WriteElementString("mainmugshotpath", "file://" + imgMugshotPath.Replace(Path.DirectorySeparatorChar, '/'));
+                    // <mainmugshotbase64 />
+                    objWriter.WriteElementString("mainmugshotbase64", imgMainMugshot.ToBase64String());
+                }
+                // <othermugshots>
+                objWriter.WriteElementString("hasothermugshots", imgMainMugshot == null || Mugshots.Count > 1 ? "yes" : "no");
+                objWriter.WriteStartElement("othermugshots");
+                for (int i = 0; i < Mugshots.Count; ++i)
+                {
+                    if (i == MainMugshotIndex)
+                        continue;
+                    Image imgMugshot = Mugshots[i];
+                    objWriter.WriteStartElement("mugshot");
+
+                    objWriter.WriteElementString("stringbase64", imgMugshot.ToBase64String());
+
+                    imgMugshotPath = Path.Combine(strMugshotsDirectoryPath, guiImage.ToString() + i.ToString() + ".img");
+                    imgMugshot.Save(imgMugshotPath);
+                    objWriter.WriteElementString("temppath", "file://" + imgMugshotPath.Replace(Path.DirectorySeparatorChar, '/'));
+
+                    objWriter.WriteEndElement();
+                }
+                // </mugshots>
+                objWriter.WriteEndElement();
             }
         }
         #endregion
@@ -1403,7 +1692,7 @@ namespace Chummer
                     _strExtra = ImprovementManager.SelectedValue;
                 }
             }
-
+            objXmlSpellNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objXmlSpellNode.TryGetStringFieldQuickly("descriptor", ref _strDescriptors);
             objXmlSpellNode.TryGetStringFieldQuickly("category", ref _strCategory);
             objXmlSpellNode.TryGetStringFieldQuickly("type", ref _strType);
@@ -1426,8 +1715,7 @@ namespace Chummer
                     intPos = strDV.IndexOf('-') + 1;
                     string strAfter = strDV.Substring(intPos, strDV.Length - intPos);
                     strDV = strDV.Substring(0, intPos);
-                    int intAfter;
-                    int.TryParse(strAfter, out intAfter);
+                    int.TryParse(strAfter, out int intAfter);
                     intAfter += 2;
                     strDV += intAfter.ToString();
                 }
@@ -1436,8 +1724,7 @@ namespace Chummer
                     intPos = strDV.IndexOf('+');
                     string strAfter = strDV.Substring(intPos, strDV.Length - intPos);
                     strDV = strDV.Substring(0, intPos);
-                    int intAfter;
-                    int.TryParse(strAfter, out intAfter);
+                    int.TryParse(strAfter, out int intAfter);
                     intAfter -= 2;
                     if (intAfter > 0)
                         strDV += "+" + intAfter.ToString();
@@ -1795,27 +2082,6 @@ namespace Chummer
                 strReturn = strReturn.CheapReplace("Disease DV", () => LanguageManager.GetString("String_SpellDiseaseDV"));
                 strReturn = strReturn.CheapReplace("Radiation Power", () => LanguageManager.GetString("String_SpellRadiationPower"));
 
-                //if (_blnExtended)
-                //{
-                //    // Add +2 to the DV value if Extended is selected.
-                //    int intPos = strReturn.IndexOf(')') + 1;
-                //    string strAfter = strReturn.Substring(intPos, strReturn.Length - intPos);
-                //    strReturn = strReturn.Remove(intPos, strReturn.Length - intPos);
-                //    if (string.IsNullOrEmpty(strAfter))
-                //        strAfter = "+2";
-                //    else
-                //    {
-                //        int intValue = Convert.ToInt32(strAfter) + 2;
-                //        if (intValue == 0)
-                //            strAfter = string.Empty;
-                //        else if (intValue > 0)
-                //            strAfter = "+" + intValue.ToString();
-                //        else
-                //            strAfter = intValue.ToString();
-                //    }
-                //    strReturn += strAfter;
-                //}
-
                 return strReturn;
             }
         }
@@ -1828,7 +2094,7 @@ namespace Chummer
             get
             {
                 string strTip = LanguageManager.GetString("Tip_SpellDrainBase");
-                int intMAG = 0;
+                int intMAG = _objCharacter.MAG.TotalValue;
 
                 if (_objCharacter.AdeptEnabled && _objCharacter.MagicianEnabled)
                 {
@@ -1863,12 +2129,12 @@ namespace Chummer
                         break;
                     }
                 }
-                if (_objCharacter.Improvements.Any(o => o.ImproveType == Improvement.ImprovementType.DrainValue && (o.UniqueName == string.Empty || o.UniqueName == Category)))
+                if (_objCharacter.Improvements.Any(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (o.ImprovedName == string.Empty || o.ImprovedName == Category)))
                 {
                     strTip += $"\n {LanguageManager.GetString("Label_Bonus")}";
                     strTip = _objCharacter.Improvements
-                        .Where(o => o.ImproveType == Improvement.ImprovementType.DrainValue && (o.UniqueName == string.Empty || o.UniqueName == Category))
-                        .Aggregate(strTip, (current, imp) => current + $"\n {imp.ImprovedName} ({imp.Value:+0;-0;0})");
+                        .Where(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (o.ImprovedName == string.Empty || o.ImprovedName == Category))
+                        .Aggregate(strTip, (current, imp) => current + $"\n {_objCharacter.GetObjectName(imp)} ({imp.Value:0;-0;0})");
                 }
 
                 return strTip;
@@ -1982,7 +2248,7 @@ namespace Chummer
             {
                 string strReturn = _strDV;
                 bool force = _strDV.StartsWith('F');
-                if (_objCharacter.Improvements.Any(i => i.ImproveType == Improvement.ImprovementType.DrainValue))
+                if (_objCharacter.Improvements.Any(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (o.ImprovedName == string.Empty || o.ImprovedName == Category)))
                 {
                     string dv = strReturn.TrimStart('F');
                     //Navigator can't do math on a single value, so inject a mathable value.
@@ -2002,10 +2268,10 @@ namespace Chummer
                         Improvement imp in
                         _objCharacter.Improvements.Where(
                             i =>
-                                i.ImproveType == Improvement.ImprovementType.DrainValue &&
-                                (i.UniqueName == string.Empty || i.UniqueName == Category) && i.Enabled))
+                                (i.ImproveType == Improvement.ImprovementType.DrainValue || i.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) &&
+                                (i.ImprovedName == string.Empty || i.ImprovedName == Category) && i.Enabled))
                     {
-                        dv += $" + {imp.Value:+0;-0;0}";
+                        dv += $" + {imp.Value:0;-0;0}";
                     }
 
                     object xprResult = CommonFunctions.EvaluateInvariantXPath(dv.TrimStart('+'));
@@ -2584,7 +2850,8 @@ namespace Chummer
             objXmlMetamagicNode.TryGetStringFieldQuickly("page", ref _strPage);
             _objImprovementSource = objSource;
             objXmlMetamagicNode.TryGetInt32FieldQuickly("grade", ref _intGrade);
-                _nodBonus = objXmlMetamagicNode["bonus"];
+            objXmlMetamagicNode.TryGetStringFieldQuickly("notes", ref _strNotes);
+            _nodBonus = objXmlMetamagicNode["bonus"];
             if (_nodBonus != null)
             {
                 int intRating = 1;
@@ -2865,6 +3132,7 @@ namespace Chummer
             objXmlArtNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlArtNode.TryGetStringFieldQuickly("page", ref _strPage);
             _objImprovementSource = objSource;
+            objXmlArtNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objXmlArtNode.TryGetInt32FieldQuickly("grade", ref _intGrade);
                 _nodBonus = objXmlArtNode["bonus"];
             if (_nodBonus != null)
@@ -3106,6 +3374,7 @@ namespace Chummer
             objXmlArtNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlArtNode.TryGetStringFieldQuickly("page", ref _strPage);
             _objImprovementSource = objSource;
+            objXmlArtNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objXmlArtNode.TryGetInt32FieldQuickly("grade", ref _intGrade);
                 _nodBonus = objXmlArtNode["bonus"];
             if (_nodBonus != null)
@@ -3361,6 +3630,7 @@ namespace Chummer
             objXmlComplexFormNode.TryGetStringFieldQuickly("page", ref _strPage);
             objXmlComplexFormNode.TryGetStringFieldQuickly("duration", ref _strDuration);
             objXmlComplexFormNode.TryGetStringFieldQuickly("fv", ref _strFV);
+            objXmlComplexFormNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             _strExtra = strExtra;
             if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
             {
@@ -3621,6 +3891,7 @@ namespace Chummer
             objXmlProgramNode.TryGetStringFieldQuickly("require", ref _strRequiresProgram);
             objXmlProgramNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlProgramNode.TryGetStringFieldQuickly("page", ref _strPage);
+            objXmlProgramNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             _strExtra = strExtra;
             _boolIsAdvancedProgram = boolIsAdvancedProgram;
 
@@ -3871,6 +4142,7 @@ namespace Chummer
         private string _strName = string.Empty;
         private string _strSource = string.Empty;
         private string _strPage = string.Empty;
+        private int _intKarmaCost = 7;
         private int _intRating = 1;
         private Guid _guiID;
         private List<MartialArtAdvantage> _lstAdvantages = new List<MartialArtAdvantage>();
@@ -3894,6 +4166,8 @@ namespace Chummer
                 _objCachedMyXmlNode = null;
             objXmlArtNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlArtNode.TryGetStringFieldQuickly("page", ref _strPage);
+            objXmlArtNode.TryGetInt32FieldQuickly("cost", ref _intKarmaCost);
+            objXmlArtNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             _blnIsQuality = objXmlArtNode["isquality"]?.InnerText == System.Boolean.TrueString;
 
             if (objXmlArtNode["bonus"] != null)
@@ -3918,6 +4192,7 @@ namespace Chummer
             objWriter.WriteElementString("source", _strSource);
             objWriter.WriteElementString("page", _strPage);
             objWriter.WriteElementString("rating", _intRating.ToString(CultureInfo.InvariantCulture));
+            objWriter.WriteElementString("cost", _intKarmaCost.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("isquality", _blnIsQuality.ToString());
             objWriter.WriteStartElement("martialartadvantages");
             foreach (MartialArtAdvantage objAdvantage in _lstAdvantages)
@@ -3943,6 +4218,7 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("source", ref _strSource);
             objNode.TryGetStringFieldQuickly("page", ref _strPage);
             objNode.TryGetInt32FieldQuickly("rating", ref _intRating);
+            objNode.TryGetInt32FieldQuickly("cost", ref _intKarmaCost);
             objNode.TryGetBoolFieldQuickly("isquality", ref _blnIsQuality);
 
             if (objNode.InnerXml.Contains("martialartadvantages"))
@@ -3971,6 +4247,7 @@ namespace Chummer
             objWriter.WriteElementString("source", _objCharacter.Options.LanguageBookShort(_strSource));
             objWriter.WriteElementString("page", Page);
             objWriter.WriteElementString("rating", _intRating.ToString(objCulture));
+            objWriter.WriteElementString("cost", _intKarmaCost.ToString(objCulture));
             objWriter.WriteStartElement("martialartadvantages");
             foreach (MartialArtAdvantage objAdvantage in _lstAdvantages)
             {
@@ -4070,6 +4347,15 @@ namespace Chummer
         }
 
         /// <summary>
+        /// Karma Cost (usually 7).
+        /// </summary>
+        public int Cost
+        {
+            get => _intKarmaCost;
+            set => _intKarmaCost = value;
+        }
+
+        /// <summary>
         /// Is from a quality.
         /// </summary>
         public bool IsQuality
@@ -4134,6 +4420,7 @@ namespace Chummer
         {
             if (objXmlAdvantageNode.TryGetStringFieldQuickly("name", ref _strName))
                 _objCachedMyXmlNode = null;
+            objXmlAdvantageNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objXmlAdvantageNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlAdvantageNode.TryGetStringFieldQuickly("page", ref _strPage);
 
@@ -4301,7 +4588,7 @@ namespace Chummer
                 _objCachedMyXmlNode = null;
             objXmlManeuverNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlManeuverNode.TryGetStringFieldQuickly("page", ref _strPage);
-
+            objXmlManeuverNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objNode.Text = DisplayName;
             objNode.Tag = _guiID.ToString();
         }
@@ -4510,7 +4797,7 @@ namespace Chummer
                     return;
                 }
             }
-
+            objXmlLimitModifierNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objNode.Text = DisplayName;
             objNode.Tag = _guiID.ToString();
         }
@@ -4685,7 +4972,7 @@ namespace Chummer
     /// <summary>
     /// A Contact or Enemy.
     /// </summary>
-    public class Contact
+    public class Contact : INotifyPropertyChanged, INamedItem, IHasMugshots
     {
         private string _strName = string.Empty;
         private string _strRole = string.Empty;
@@ -4706,6 +4993,7 @@ namespace Chummer
         private ContactType _objContactType = ContactType.Contact;
         private string _strFileName = string.Empty;
         private string _strRelativeName = string.Empty;
+        private Character _objLinkedCharacter;
         private string _strNotes = string.Empty;
         private Color _objColour;
         private bool _blnFree;
@@ -4716,6 +5004,11 @@ namespace Chummer
         private bool _blnFamily;
         private bool _readonly;
         private bool _blnForceLoyalty;
+
+        private List<Image> _lstMugshots = new List<Image>();
+        private int _intMainMugshotIndex = -1;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         #region Helper Methods
         /// <summary>
@@ -4779,6 +5072,14 @@ namespace Chummer
             {
                 objWriter.WriteElementString("guid", _strUnique);
             }
+
+            SaveMugshots(objWriter);
+
+            /* Disabled for now because we cannot change any properties in the linked character anyway
+            if (LinkedCharacter?.IsSaving == false && !GlobalOptions.MainForm.OpenCharacterForms.Any(x => x.CharacterObject == LinkedCharacter))
+                LinkedCharacter.Save();
+                */
+
             objWriter.WriteEndElement();
         }
 
@@ -4826,7 +5127,11 @@ namespace Chummer
             {
                 objNode.TryGetBoolFieldQuickly("mademan", ref _blnForceLoyalty);
             }
-                
+
+            RefreshLinkedCharacter(false);
+
+            // Mugshots
+            LoadMugshots(objNode);
         }
 
         /// <summary>
@@ -4836,27 +5141,30 @@ namespace Chummer
         public void Print(XmlTextWriter objWriter, CultureInfo objCulture)
         {
             objWriter.WriteStartElement("contact");
-            objWriter.WriteElementString("name", _strName);
-            objWriter.WriteElementString("role", _strRole);
-            objWriter.WriteElementString("location", _strLocation);
+            objWriter.WriteElementString("name", Name);
+            objWriter.WriteElementString("role", Role);
+            objWriter.WriteElementString("location", Location);
             if (IsGroup == false)
-                objWriter.WriteElementString("connection", _intConnection.ToString(objCulture));
+                objWriter.WriteElementString("connection", Connection.ToString(objCulture));
             else
-                objWriter.WriteElementString("connection", "Group(" + _intConnection.ToString(objCulture) + ")");
-            objWriter.WriteElementString("loyalty", _intLoyalty.ToString(objCulture));
-            objWriter.WriteElementString("metatype", _strMetatype);
-            objWriter.WriteElementString("sex", _strSex);
-            objWriter.WriteElementString("age", _strAge);
-            objWriter.WriteElementString("contacttype", _strType);
-            objWriter.WriteElementString("preferredpayment", _strPreferredPayment);
-            objWriter.WriteElementString("hobbiesvice", _strHobbiesVice);
-            objWriter.WriteElementString("personallife", _strPersonalLife);
-            objWriter.WriteElementString("type", LanguageManager.GetString("String_" + _objContactType.ToString()));
-            objWriter.WriteElementString("forceloyalty", _blnForceLoyalty.ToString());
-            objWriter.WriteElementString("blackmail", _blnBlackmail.ToString());
-            objWriter.WriteElementString("family", _blnFamily.ToString());
+                objWriter.WriteElementString("connection", "Group(" + Connection.ToString(objCulture) + ")");
+            objWriter.WriteElementString("loyalty", Loyalty.ToString(objCulture));
+            objWriter.WriteElementString("metatype", Metatype);
+            objWriter.WriteElementString("sex", Sex);
+            objWriter.WriteElementString("age", Age);
+            objWriter.WriteElementString("contacttype", Type);
+            objWriter.WriteElementString("preferredpayment", PreferredPayment);
+            objWriter.WriteElementString("hobbiesvice", HobbiesVice);
+            objWriter.WriteElementString("personallife", PersonalLife);
+            objWriter.WriteElementString("type", LanguageManager.GetString("String_" + EntityType.ToString()));
+            objWriter.WriteElementString("forceloyalty", ForceLoyalty.ToString());
+            objWriter.WriteElementString("blackmail", Blackmail.ToString());
+            objWriter.WriteElementString("family", Family.ToString());
             if (_objCharacter.Options.PrintNotes)
-                objWriter.WriteElementString("notes", _strNotes);
+                objWriter.WriteElementString("notes", Notes);
+
+            PrintMugshots(objWriter);
+
             objWriter.WriteEndElement();
         }
         #endregion
@@ -4891,7 +5199,12 @@ namespace Chummer
         /// </summary>
         public string Name
         {
-            get => _strName;
+            get
+            {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.CharacterName;
+                return _strName;
+            }
             set => _strName = value;
         }
 
@@ -4938,6 +5251,29 @@ namespace Chummer
         {
             get
             {
+                if (LinkedCharacter != null)
+                {
+                    // Update character information fields.
+                    XmlDocument objMetatypeDoc = XmlManager.Load("metatypes.xml");
+                    XmlNode objMetatypeNode = objMetatypeDoc.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + LinkedCharacter.Metatype + "\"]");
+                    if (objMetatypeNode == null)
+                    {
+                        objMetatypeDoc = XmlManager.Load("critters.xml");
+                        objMetatypeNode = objMetatypeDoc.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + LinkedCharacter.Metatype + "\"]");
+                    }
+
+                    string strMetatype = objMetatypeNode["translate"]?.InnerText ?? LinkedCharacter.Metatype;
+
+                    if (!string.IsNullOrEmpty(LinkedCharacter.Metavariant))
+                    {
+                        objMetatypeNode = objMetatypeNode.SelectSingleNode("metavariants/metavariant[name = \"" + LinkedCharacter.Metavariant + "\"]");
+
+                        strMetatype += objMetatypeNode["translate"] != null
+                            ? " (" + objMetatypeNode["translate"].InnerText + ")"
+                            : " (" + LinkedCharacter.Metavariant + ")";
+                    }
+                    return strMetatype;
+                }
                 return _strMetatype;
             }
             set
@@ -4953,6 +5289,8 @@ namespace Chummer
         {
             get
             {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.Sex;
                 return _strSex;
             }
             set
@@ -4968,6 +5306,8 @@ namespace Chummer
         {
             get
             {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.Age;
                 return _strAge;
             }
             set
@@ -5053,6 +5393,8 @@ namespace Chummer
             }
         }
 
+        public bool IsGroupOrMadeMan => IsGroup || MadeMan;
+
         public bool LoyaltyEnabled => !IsGroup && !ForceLoyalty;
 
         public int ConnectionMaximum => !_objCharacter.Created ? (_objCharacter.FriendsInHighPlaces ? 12 : 6) : 12;
@@ -5074,7 +5416,14 @@ namespace Chummer
         public string FileName
         {
             get => _strFileName;
-            set => _strFileName = value;
+            set
+            {
+                if (_strFileName != value)
+                {
+                    _strFileName = value;
+                    RefreshLinkedCharacter(!string.IsNullOrEmpty(value));
+                }
+            }
         }
 
         /// <summary>
@@ -5083,7 +5432,14 @@ namespace Chummer
         public string RelativeFileName
         {
             get => _strRelativeName;
-            set => _strRelativeName = value;
+            set
+            {
+                if (_strRelativeName != value)
+                {
+                    _strRelativeName = value;
+                    RefreshLinkedCharacter(!string.IsNullOrEmpty(value));
+                }
+            }
         }
 
         /// <summary>
@@ -5171,6 +5527,274 @@ namespace Chummer
             set => _blnForceLoyalty = value;
         }
 
+        public Character CharacterObject
+        {
+            get => _objCharacter;
+        }
+
+        public Character LinkedCharacter
+        {
+            get => _objLinkedCharacter;
+        }
+
+        public bool NoLinkedCharacter
+        {
+            get => _objLinkedCharacter == null;
+        }
+
+        public void RefreshLinkedCharacter(bool blnShowError)
+        {
+            Character _objOldLinkedCharacter = _objLinkedCharacter;
+            _objCharacter.LinkedCharacters.Remove(_objLinkedCharacter);
+            _objLinkedCharacter = null;
+            bool blnError = false;
+            bool blnUseRelative = false;
+
+            // Make sure the file still exists before attempting to load it.
+            if (!File.Exists(FileName))
+            {
+                // If the file doesn't exist, use the relative path if one is available.
+                if (string.IsNullOrEmpty(RelativeFileName))
+                    blnError = true;
+                else if (!File.Exists(Path.GetFullPath(RelativeFileName)))
+                    blnError = true;
+                else
+                    blnUseRelative = true;
+
+                if (blnError && blnShowError)
+                {
+                    MessageBox.Show(LanguageManager.GetString("Message_FileNotFound").Replace("{0}", FileName), LanguageManager.GetString("MessageTitle_FileNotFound"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            if (!blnError)
+            {
+                string strFile = blnUseRelative ? Path.GetFullPath(RelativeFileName) : FileName;
+                if (strFile.EndsWith(".chum5"))
+                {
+                    Character objOpenCharacter = GlobalOptions.MainForm.OpenCharacters.FirstOrDefault(x => x.FileName == strFile);
+                    if (objOpenCharacter != null)
+                        _objLinkedCharacter = objOpenCharacter;
+                    else
+                        _objLinkedCharacter = frmMain.LoadCharacter(strFile, string.Empty, false, false);
+                    if (_objLinkedCharacter != null)
+                        _objCharacter.LinkedCharacters.Add(_objLinkedCharacter);
+                }
+            }
+            if (_objLinkedCharacter != _objOldLinkedCharacter)
+            {
+                if (_objOldLinkedCharacter != null)
+                {
+                    if (!GlobalOptions.MainForm.OpenCharacters.Any(x => x.LinkedCharacters.Contains(_objOldLinkedCharacter) && x != _objOldLinkedCharacter))
+                    {
+                        GlobalOptions.MainForm.OpenCharacters.Remove(_objOldLinkedCharacter);
+                        _objOldLinkedCharacter.Dispose();
+                    }
+                }
+                if (_objLinkedCharacter != null)
+                {
+                    if (string.IsNullOrEmpty(_strName) && Name != LanguageManager.GetString("String_UnnamedCharacter"))
+                        _strName = Name;
+                    if (string.IsNullOrEmpty(_strAge) && !string.IsNullOrEmpty(Age))
+                        _strAge = Age;
+                    if (string.IsNullOrEmpty(_strSex) && !string.IsNullOrEmpty(Sex))
+                        _strSex = Sex;
+                    if (string.IsNullOrEmpty(_strMetatype) && !string.IsNullOrEmpty(Metatype))
+                        _strMetatype = Metatype;
+                }
+                if (PropertyChanged != null)
+                {
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Age)));
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Sex)));
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Metatype)));
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(NoLinkedCharacter)));
+                }
+            }
+        }
+        #endregion
+
+        #region IHasMugshots
+        /// <summary>
+		/// Character's portraits encoded using Base64.
+		/// </summary>
+		public List<Image> Mugshots
+        {
+            get
+            {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.Mugshots;
+                else
+                    return _lstMugshots;
+            }
+            set
+            {
+                if (LinkedCharacter != null)
+                    LinkedCharacter.Mugshots = value;
+                else
+                    _lstMugshots = value;
+            }
+        }
+
+        /// <summary>
+        /// Character's main portrait encoded using Base64.
+        /// </summary>
+        public Image MainMugshot
+        {
+            get
+            {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.MainMugshot;
+                else if (MainMugshotIndex >= Mugshots.Count || MainMugshotIndex < 0)
+                    return null;
+                else
+                    return Mugshots[MainMugshotIndex];
+            }
+            set
+            {
+                if (LinkedCharacter != null)
+                    LinkedCharacter.MainMugshot = value;
+                else
+                {
+                    if (value == null)
+                    {
+                        MainMugshotIndex = -1;
+                        return;
+                    }
+                    int intNewMainMugshotIndex = Mugshots.IndexOf(value);
+                    if (intNewMainMugshotIndex != -1)
+                    {
+                        MainMugshotIndex = intNewMainMugshotIndex;
+                    }
+                    else
+                    {
+                        Mugshots.Add(value);
+                        MainMugshotIndex = Mugshots.Count - 1;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Index of Character's main portrait. -1 if set to none.
+        /// </summary>
+        public int MainMugshotIndex
+        {
+            get
+            {
+                if (LinkedCharacter != null)
+                    return LinkedCharacter.MainMugshotIndex;
+                else
+                    return _intMainMugshotIndex;
+            }
+            set
+            {
+                if (LinkedCharacter != null)
+                    LinkedCharacter.MainMugshotIndex = value;
+                else if(value >= _lstMugshots.Count || value < -1)
+                    _intMainMugshotIndex = -1;
+                else
+                    _intMainMugshotIndex = value;
+            }
+        }
+
+        public void SaveMugshots(XmlTextWriter objWriter)
+        {
+            objWriter.WriteElementString("mainmugshotindex", MainMugshotIndex.ToString());
+            // <mugshot>
+            objWriter.WriteStartElement("mugshots");
+            foreach (Image imgMugshot in Mugshots)
+            {
+                objWriter.WriteElementString("mugshot", imgMugshot.ToBase64String());
+            }
+            // </mugshot>
+            objWriter.WriteEndElement();
+        }
+
+        public void LoadMugshots(XmlNode xmlSavedNode)
+        {
+            xmlSavedNode.TryGetInt32FieldQuickly("mainmugshotindex", ref _intMainMugshotIndex);
+            XmlNodeList objXmlMugshotsList = xmlSavedNode.SelectNodes("mugshots/mugshot");
+            if (objXmlMugshotsList != null)
+            {
+                List<string> lstMugshotsBase64 = new List<string>(objXmlMugshotsList.Count);
+                foreach (XmlNode objXmlMugshot in objXmlMugshotsList)
+                {
+                    string strMugshot = objXmlMugshot.InnerText;
+                    if (!string.IsNullOrWhiteSpace(strMugshot))
+                    {
+                        lstMugshotsBase64.Add(strMugshot);
+                    }
+                }
+                if (lstMugshotsBase64.Count > 1)
+                {
+                    Image[] objMugshotImages = new Image[lstMugshotsBase64.Count];
+                    Parallel.For(0, lstMugshotsBase64.Count, i =>
+                    {
+                        objMugshotImages[i] = lstMugshotsBase64[i].ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                    });
+                    _lstMugshots.AddRange(objMugshotImages);
+                }
+                else if (lstMugshotsBase64.Count == 1)
+                {
+                    _lstMugshots.Add(lstMugshotsBase64[0].ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb));
+                }
+            }
+        }
+
+        public void PrintMugshots(XmlTextWriter objWriter)
+        {
+            if (LinkedCharacter != null)
+                LinkedCharacter.PrintMugshots(objWriter);
+            else if (Mugshots.Count > 0)
+            {
+                // Since IE is retarded and can't handle base64 images before IE9, we need to dump the image to a temporary directory and re-write the information.
+                // If you give it an extension of jpg, gif, or png, it expects the file to be in that format and won't render the image unless it was originally that type.
+                // But if you give it the extension img, it will render whatever you give it (which doesn't make any damn sense, but that's IE for you).
+                string strMugshotsDirectoryPath = Path.Combine(Application.StartupPath, "mugshots");
+                if (!Directory.Exists(strMugshotsDirectoryPath))
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(strMugshotsDirectoryPath);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        MessageBox.Show(LanguageManager.GetString("Message_Insufficient_Permissions_Warning"));
+                    }
+                }
+                Guid guiImage = Guid.NewGuid();
+                string imgMugshotPath = Path.Combine(strMugshotsDirectoryPath, guiImage.ToString() + ".img");
+                Image imgMainMugshot = MainMugshot;
+                if (imgMainMugshot != null)
+                {
+                    imgMainMugshot.Save(imgMugshotPath);
+                    // <mainmugshotpath />
+                    objWriter.WriteElementString("mainmugshotpath", "file://" + imgMugshotPath.Replace(Path.DirectorySeparatorChar, '/'));
+                    // <mainmugshotbase64 />
+                    objWriter.WriteElementString("mainmugshotbase64", imgMainMugshot.ToBase64String());
+                }
+                // <othermugshots>
+                objWriter.WriteElementString("hasothermugshots", imgMainMugshot == null || Mugshots.Count > 1 ? "yes" : "no");
+                objWriter.WriteStartElement("othermugshots");
+                for (int i = 0; i < Mugshots.Count; ++i)
+                {
+                    if (i == MainMugshotIndex)
+                        continue;
+                    Image imgMugshot = Mugshots[i];
+                    objWriter.WriteStartElement("mugshot");
+
+                    objWriter.WriteElementString("stringbase64", imgMugshot.ToBase64String());
+
+                    imgMugshotPath = Path.Combine(strMugshotsDirectoryPath, guiImage.ToString() + i.ToString() + ".img");
+                    imgMugshot.Save(imgMugshotPath);
+                    objWriter.WriteElementString("temppath", "file://" + imgMugshotPath.Replace(Path.DirectorySeparatorChar, '/'));
+
+                    objWriter.WriteEndElement();
+                }
+                // </mugshots>
+                objWriter.WriteEndElement();
+            }
+        }
         #endregion
     }
 
@@ -5216,6 +5840,7 @@ namespace Chummer
                 _objCachedMyXmlNode = null;
             _intRating = intRating;
             _nodBonus = objXmlPowerNode["bonus"];
+            objXmlPowerNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             // If the piece grants a bonus, pass the information to the Improvement Manager.
             if (_nodBonus != null)
             {
@@ -6187,7 +6812,7 @@ namespace Chummer
             objXmlMentor.TryGetStringFieldQuickly("name", ref _strName);
             objXmlMentor.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlMentor.TryGetStringFieldQuickly("page", ref _strPage);
-
+            objXmlMentor.TryGetStringFieldQuickly("notes", ref _strNotes);
             if (objXmlMentor["id"] != null)
                 _sourceID = Guid.Parse(objXmlMentor["id"].InnerText);
 

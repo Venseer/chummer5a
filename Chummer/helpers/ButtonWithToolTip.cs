@@ -25,25 +25,32 @@ namespace Chummer
             }
         }
 
-        public ButtonWithToolTip(ToolTip objToolTip = null) : base()
+        public ButtonWithToolTip() : this(null) { }
+
+        public ButtonWithToolTip(ToolTip objToolTip) : base()
         {
             _tt = objToolTip;
             if (_tt == null)
-                _tt = new ToolTip();
-            _tt.AutoPopDelay = 1500;
-            _tt.InitialDelay = 400;
-            _tt.UseAnimation = true;
-            _tt.UseFading = true;
-            _tt.Active = true;
-            this.MouseEnter += this.Label_MouseEnter;
-            this.MouseLeave += this.Label_MouseLeave;
+            {
+                _tt = new ToolTip
+                {
+                    AutoPopDelay = 1500,
+                    InitialDelay = 400,
+                    UseAnimation = true,
+                    UseFading = true,
+                    Active = true
+                };
+            }
+
+            MouseEnter += Label_MouseEnter;
+            MouseLeave += Label_MouseLeave;
         }
 
         private void Label_MouseEnter(object sender, EventArgs ea)
         {
-            if (!string.IsNullOrEmpty(this.TooltipText))
+            if (!string.IsNullOrEmpty(TooltipText))
             {
-                _tt.Show(this.TooltipText, this.Parent);
+                _tt.Show(TooltipText, Parent);
             }
         }
         private void Label_MouseLeave(object sender, EventArgs ea)

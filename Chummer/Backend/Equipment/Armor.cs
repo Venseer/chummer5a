@@ -20,7 +20,7 @@ namespace Chummer.Backend.Equipment
         private string _strName = string.Empty;
         private string _strCategory = string.Empty;
         private string _strA = "0";
-        private string _strO = "0";
+        private string _strO = string.Empty;
         private string _strArmorCapacity = "0";
         private string _strAvail = string.Empty;
         private string _strCost = string.Empty;
@@ -76,6 +76,7 @@ namespace Chummer.Backend.Equipment
             objXmlArmorNode.TryGetStringFieldQuickly("avail", ref _strAvail);
             objXmlArmorNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlArmorNode.TryGetStringFieldQuickly("page", ref _strPage);
+            objXmlArmorNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             _nodBonus = objXmlArmorNode["bonus"];
             _nodWirelessBonus = objXmlArmorNode["wirelessbonus"];
             _blnWirelessOn = _nodWirelessBonus != null;
@@ -168,9 +169,11 @@ namespace Chummer.Backend.Equipment
                 // More than one Weapon can be added, so loop through all occurrences.
                 foreach (XmlNode objXmlCategoryNode in objXmlArmorNode["selectmodsfromcategory"])
                 {
-                    frmSelectArmorMod frmPickArmorMod = new frmSelectArmorMod(_objCharacter);
-                    frmPickArmorMod.AllowedCategories = objXmlCategoryNode.InnerText;
-                    frmPickArmorMod.ExcludeGeneralCategory = true;
+                    frmSelectArmorMod frmPickArmorMod = new frmSelectArmorMod(_objCharacter)
+                    {
+                        AllowedCategories = objXmlCategoryNode.InnerText,
+                        ExcludeGeneralCategory = true
+                    };
                     frmPickArmorMod.ShowDialog();
 
                     if (frmPickArmorMod.DialogResult == DialogResult.Cancel)
@@ -309,14 +312,8 @@ namespace Chummer.Backend.Equipment
                     List<Weapon> lstWeapons = new List<Weapon>();
                     List<TreeNode> lstWeaponNodes = new List<TreeNode>();
 
-                    if (!string.IsNullOrEmpty(objXmlGear["devicerating"]?.InnerText))
-                    {
-                        Commlink objCommlink = new Commlink(_objCharacter);
-                        objCommlink.Create(objXmlGear, objGearNode, intRating, lstWeapons, lstWeaponNodes, strForceValue, false, false, !blnSkipCost && !blnSkipSelectForms);
-                        objGear = objCommlink;
-                    }
-                    else
-                        objGear.Create(objXmlGear, objGearNode, intRating, lstWeapons, lstWeaponNodes, strForceValue, false, false, !blnSkipCost && !blnSkipSelectForms);
+                    objGear.Create(objXmlGear, objGearNode, intRating, lstWeapons, lstWeaponNodes, strForceValue, false, false, !blnSkipCost && !blnSkipSelectForms);
+
                     objGear.Capacity = "[0]";
                     objGear.ArmorCapacity = "[0]";
                     objGear.Cost = "0";
@@ -392,16 +389,7 @@ namespace Chummer.Backend.Equipment
                 objWriter.WriteStartElement("gears");
                 foreach (Gear objGear in _lstGear)
                 {
-                    // Use the Gear's SubClass if applicable.
-                    if (objGear.GetType() == typeof(Commlink))
-                    {
-                        Commlink objCommlink = objGear as Commlink;
-                        objCommlink?.Save(objWriter);
-                    }
-                    else
-                    {
-                        objGear.Save(objWriter);
-                    }
+                    objGear.Save(objWriter);
                 }
                 objWriter.WriteEndElement();
             }
@@ -490,19 +478,9 @@ namespace Chummer.Backend.Equipment
                 XmlNodeList nodGears = objNode.SelectNodes("gears/gear");
                 foreach (XmlNode nodGear in nodGears)
                 {
-                    if (nodGear["iscommlink"]?.InnerText == System.Boolean.TrueString || (nodGear["category"].InnerText == "Commlinks" ||
-                        nodGear["category"].InnerText == "Commlink Accessories" || nodGear["category"].InnerText == "Cyberdecks" || nodGear["category"].InnerText == "Rigger Command Consoles"))
-                    {
-                        Gear objCommlink = new Commlink(_objCharacter);
-                        objCommlink.Load(nodGear, blnCopy);
-                        _lstGear.Add(objCommlink);
-                    }
-                    else
-                    {
-                        Gear objGear = new Gear(_objCharacter);
-                        objGear.Load(nodGear, blnCopy);
-                        _lstGear.Add(objGear);
-                    }
+                    Gear objGear = new Gear(_objCharacter);
+                    objGear.Load(nodGear, blnCopy);
+                    _lstGear.Add(objGear);
                 }
             }
 
@@ -532,7 +510,7 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteElementString("name_english", _strName);
             objWriter.WriteElementString("category", DisplayCategory);
             objWriter.WriteElementString("category_english", _strCategory);
-            objWriter.WriteElementString("armor", TotalArmor.ToString(objCulture));
+            objWriter.WriteElementString("armor", DisplayArmorValue);
             objWriter.WriteElementString("avail", TotalAvail);
             objWriter.WriteElementString("cost", TotalCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
             objWriter.WriteElementString("owncost", OwnCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
@@ -550,16 +528,7 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteStartElement("gears");
             foreach (Gear objGear in _lstGear)
             {
-                // Use the Gear's SubClass if applicable.
-                Commlink objCommlink = objGear as Commlink;
-                if (objCommlink != null)
-                {
-                    objCommlink.Print(objWriter, objCulture);
-                }
-                else
-                {
-                    objGear.Print(objWriter, objCulture);
-                }
+                objGear.Print(objWriter, objCulture);
             }
             objWriter.WriteEndElement();
             objWriter.WriteElementString("extra", LanguageManager.TranslateExtra(_strExtra));
@@ -695,6 +664,10 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
+                if (_strO == "0")
+                {
+                    _strO = string.Empty;
+                }
                 return _strO;
             }
             set
@@ -786,8 +759,7 @@ namespace Chummer.Backend.Equipment
                 }
                 else
                 {
-                    decimal decReturn;
-                    if (decimal.TryParse(_strArmorCapacity, out decReturn))
+                    if (decimal.TryParse(_strArmorCapacity, out decimal decReturn))
                         return decReturn.ToString("0.##", GlobalOptions.CultureInfo);
                     return _strArmorCapacity;
                 }
@@ -926,56 +898,26 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
-                bool blnUseBase = false;
-                bool blnCustomFitted = false;
-                bool blnHighest = true;
-                int intOverride = 0;
-
-                foreach (Armor a in _objCharacter.Armor.Where(a => a.Equipped))
-                {
-                    if (a.ArmorValue.Substring(0, 1) != "+")
-                        blnUseBase = true;
-                    if (Convert.ToInt32(a.ArmorOverrideValue) > 0)
-                        intOverride += 1;
-                    if (a.Name != _strName)
-                    {
-                        if (Convert.ToInt32(a.ArmorOverrideValue) > Convert.ToInt32(_strO))
-                            blnHighest = false;
-                    }
-                    if (a.Name == _strName)
-                    {
-                        //Check for Custom Fitted armour
-                        if (a.ArmorMods.Any(objMod => objMod.Name == "Custom Fit (Stack)" && objMod.Extra.Length > 0 && _objCharacter.Armor.Any(objArmor => objArmor.Equipped && objMod.Extra == objArmor.Name)))
-                        {
-                            blnCustomFitted = true;
-                        }
-                    }
-                }
-
-                if (!blnHighest || Convert.ToInt32(_strO) == 0)
-                    blnUseBase = true;
-
-                int intTotalArmor;
-                int.TryParse(_strA.Replace("Rating", _intRating.ToString()), out intTotalArmor);
-                // if there's zero or usebase is true, we're all done. Calculate as normal.
-                if (blnCustomFitted || (!blnUseBase && intOverride > 1 && !blnHighest))
-                {
-                    int.TryParse(_strO, out intTotalArmor);
-                }
-
+                int.TryParse(_strA.Replace("Rating", _intRating.ToString()), out var intTotalArmor);
                 // Go through all of the Mods for this piece of Armor and add the Armor value.
-                foreach (ArmorMod objMod in _lstArmorMods)
-                {
-                    if (objMod.Equipped)
-                        intTotalArmor += objMod.Armor;
-                }
-
+                intTotalArmor += _lstArmorMods.Where(o => o.Equipped).Sum(o => o.Armor);
                 intTotalArmor -= _intDamage;
 
                 return intTotalArmor;
             }
         }
 
+        public string DisplayArmorValue
+        {
+            get
+            {
+                return _strA.Substring(0, 1) == "+" || _strA.Substring(0, 1) == "-" || (!string.IsNullOrWhiteSpace(_strO))
+                    ? (string.IsNullOrWhiteSpace(_strO)
+                        ? $"{TotalArmor:+0;-0;0}"
+                        : $"{TotalArmor}/{ArmorOverrideValue}")
+                    : TotalArmor.ToString();
+            }
+        }
         /// <summary>
         /// The Armor's total Cost including Modifications.
         /// </summary>
@@ -1237,8 +1179,7 @@ namespace Chummer.Backend.Equipment
                 }
                 else
                 {
-                    decimal decReturn;
-                    if (decimal.TryParse(_strArmorCapacity, out decReturn))
+                    if (decimal.TryParse(_strArmorCapacity, out decimal decReturn))
                         strReturn = decReturn.ToString("#,0.##", GlobalOptions.CultureInfo);
                     else
                         strReturn = _strArmorCapacity;

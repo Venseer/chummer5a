@@ -1,4 +1,4 @@
-﻿namespace Chummer
+namespace Chummer
 {
     partial class SpiritControl
     {
@@ -137,13 +137,13 @@
             // 
             // cboSpiritName
             // 
+            this.cboSpiritName.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboSpiritName.FormattingEnabled = true;
             this.cboSpiritName.Location = new System.Drawing.Point(0, 0);
             this.cboSpiritName.Name = "cboSpiritName";
             this.cboSpiritName.Size = new System.Drawing.Size(148, 21);
             this.cboSpiritName.TabIndex = 7;
             this.cboSpiritName.SelectedIndexChanged += new System.EventHandler(this.cboSpiritName_SelectedIndexChanged);
-            this.cboSpiritName.TextChanged += new System.EventHandler(this.cboSpiritName_TextChanged);
             // 
             // imgLink
             // 

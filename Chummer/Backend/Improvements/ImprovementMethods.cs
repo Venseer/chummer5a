@@ -385,6 +385,10 @@ namespace Chummer
                     return objImprovementAdder.freespells;
                 case "SPELLCATEGORY":
                     return objImprovementAdder.spellcategory;
+                case "SPELLCATEGORYDAMAGE":
+                    return objImprovementAdder.spellcategorydamage;
+                case "SPELLCATEGORYDRAIN":
+                    return objImprovementAdder.spellcategorydrain;
                 case "THROWRANGE":
                     return objImprovementAdder.throwrange;
                 case "THROWSTR":
@@ -531,6 +535,8 @@ namespace Chummer
                     return objImprovementAdder.burnoutsway;
                 case "ADDWARE":
                     return objImprovementAdder.addware;
+                case "WEAPONACCURACY":
+                    return objImprovementAdder.weaponaccuracy;
                 // No method matches, return a null pointer
                 default:
                     return null;

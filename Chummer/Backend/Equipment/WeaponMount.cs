@@ -53,8 +53,7 @@ namespace Chummer.Backend.Equipment
         /// <param name="decMarkup">Discount or markup that applies to the base cost of the mod.</param>
         public void Create(XmlNode objXmlMod, TreeNode objNode, Vehicle objParent, decimal decMarkup = 0)
         {
-            if (objParent == null) throw new ArgumentNullException(nameof(objParent));
-            Parent = objParent;
+            Parent = objParent ?? throw new ArgumentNullException(nameof(objParent));
             if (objXmlMod == null) Utils.BreakIfDebug();
             objXmlMod.TryGetStringFieldQuickly("name", ref _strName);
             objXmlMod.TryGetStringFieldQuickly("category", ref _strCategory);
@@ -62,7 +61,7 @@ namespace Chummer.Backend.Equipment
             objXmlMod.TryGetInt32FieldQuickly("slots", ref _intSlots);
             objXmlMod.TryGetStringFieldQuickly("weaponcategories", ref _strWeaponMountCategories);
             objXmlMod.TryGetStringFieldQuickly("avail", ref _strAvail);
-
+            objXmlMod.TryGetStringFieldQuickly("notes", ref _strNotes);
             // Check for a Variable Cost.
             if (objXmlMod["cost"] != null)
             {
@@ -652,6 +651,10 @@ namespace Chummer.Backend.Equipment
 		{
 			get
 			{
+			    if (IncludedInVehicle)
+			    {
+			        return 0;
+			    }
 				return OwnCost + Weapons.Sum(w => w.TotalCost) + WeaponMountOptions.Sum(w => w.Cost);
 			}
 		}
@@ -716,7 +719,8 @@ namespace Chummer.Backend.Equipment
                 return XmlManager.Load("vehicles.xml")?.SelectSingleNode("/chummer/weaponmounts/weaponmount[id = \"" + _guiID.ToString() + "\"]");
             }
         }
-        #endregion
+
+	    #endregion
     }
 
     public class WeaponMountOption

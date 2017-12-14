@@ -17,7 +17,7 @@ using System.Windows.Input;
 using KeyEventArgs = System.Windows.Forms.KeyEventArgs;
 using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 
-namespace Chummer.helpers
+namespace Chummer
 {
     public class NumericUpDownEx : NumericUpDown
     {
@@ -381,8 +381,7 @@ namespace Chummer.helpers
 
         protected override void OnMouseWheel(MouseEventArgs e)
         {
-            HandledMouseEventArgs hme = e as HandledMouseEventArgs;
-            if (hme != null)
+            if (e is HandledMouseEventArgs hme)
                 hme.Handled = true;
 
             if (e.Delta > 0)

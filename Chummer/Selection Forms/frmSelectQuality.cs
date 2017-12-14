@@ -26,6 +26,7 @@ using Chummer.Backend.Shared_Methods;
 using Chummer.Backend.Equipment;
 using Chummer.Skills;
 using Chummer.Backend.Attributes;
+using System.Text;
 
 namespace Chummer
 {
@@ -68,17 +69,21 @@ namespace Chummer
             XmlNodeList objXmlCategoryList = _objXmlDocument.SelectNodes("/chummer/categories/category");
             foreach (XmlNode objXmlCategory in objXmlCategoryList)
             {
-                ListItem objItem = new ListItem();
-                objItem.Value = objXmlCategory.InnerText;
-                objItem.Name = objXmlCategory.Attributes?["translate"]?.InnerText ?? objXmlCategory.InnerText;
+                ListItem objItem = new ListItem
+                {
+                    Value = objXmlCategory.InnerText,
+                    Name = objXmlCategory.Attributes?["translate"]?.InnerText ?? objXmlCategory.InnerText
+                };
                 _lstCategory.Add(objItem);
             }
 
             if (_lstCategory.Count > 0)
             {
-                ListItem objItem = new ListItem();
-                objItem.Value = "Show All";
-                objItem.Name = LanguageManager.GetString("String_ShowAll");
+                ListItem objItem = new ListItem
+                {
+                    Value = "Show All",
+                    Name = LanguageManager.GetString("String_ShowAll")
+                };
                 _lstCategory.Insert(0, objItem);
             }
 
@@ -313,48 +318,59 @@ namespace Chummer
         /// </summary>
         private void BuildQualityList()
         {
-            if (_blnLoading) return;
-            List<ListItem> lstQuality = new List<ListItem>();
-            XmlDocument objXmlMetatypeDocument = XmlManager.Load("metatypes.xml");
-            XmlDocument objXmlCrittersDocument = XmlManager.Load("critters.xml");
-            string strSelectedCategory = cboCategory.SelectedValue.ToString();
-            string strXPath = "/chummer/qualities/quality[(" + _objCharacter.Options.BookXPath() + ")";
+            if (_blnLoading)
+                return;
+
+            string strCategory = cboCategory.SelectedValue?.ToString();
+            string strFilter = "(" + _objCharacter.Options.BookXPath() + ")";
+            if (!string.IsNullOrEmpty(strCategory) && strCategory != "Show All" && (_objCharacter.Options.SearchInCategoryOnly || txtSearch.TextLength == 0))
+                strFilter += " and category = \"" + strCategory + "\"";
+            else
+            {
+                StringBuilder objCategoryFilter = new StringBuilder();
+                foreach (string strItem in _lstCategory.Select(x => x.Value))
+                {
+                    if (!string.IsNullOrEmpty(strItem))
+                        objCategoryFilter.Append("category = \"" + strItem + "\" or ");
+                }
+                if (objCategoryFilter.Length > 0)
+                {
+                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ")";
+                }
+            }
             if (!string.IsNullOrWhiteSpace(txtSearch.Text))
             {
                 // Treat everything as being uppercase so the search is case-insensitive.
                 string strSearchText = txtSearch.Text.ToUpper();
-                strXPath += " and ((contains(translate(name,'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýß','ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝß'), \"" + strSearchText + "\") and not(translate)) or contains(translate(translate,'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýß','ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝß'), \"" + strSearchText + "\"))";
-            }
-            if (strSelectedCategory != "Show All")
-            {
-                strXPath += " and category = \"" + strSelectedCategory + "\"";
+                strFilter += " and ((contains(translate(name,'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýß','ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝß'), \"" + strSearchText + "\") and not(translate)) or contains(translate(translate,'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýß','ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝß'), \"" + strSearchText + "\"))";
             }
             if (chkMetagenetic.Checked)
             {
-                strXPath += " and (metagenetic = 'yes' or required/oneof[contains(., 'Changeling')])";
+                strFilter += " and (metagenetic = 'yes' or required/oneof[contains(., 'Changeling')])";
             }
             else if (chkNotMetagenetic.Checked)
             {
-                strXPath += " and not(metagenetic = 'yes') and not(required/oneof[contains(., 'Changeling')])";
+                strFilter += " and not(metagenetic = 'yes') and not(required/oneof[contains(., 'Changeling')])";
             }
             if (nudValueBP.Value != 0)
             {
-                strXPath += "and karma = " + nudValueBP.Value;
+                strFilter += "and karma = " + nudValueBP.Value;
             }
             else
             {
                 if (nudMinimumBP.Value != 0)
                 {
-                    strXPath += "and karma >= " + nudMinimumBP.Value;
+                    strFilter += "and karma >= " + nudMinimumBP.Value;
                 }
 
                 if (nudMaximumBP.Value != 0)
                 {
-                    strXPath += "and karma <= " + nudMaximumBP.Value;
+                    strFilter += "and karma <= " + nudMaximumBP.Value;
                 }
             }
-            strXPath += "]";
 
+            XmlDocument objXmlMetatypeDocument = XmlManager.Load("metatypes.xml");
+            XmlDocument objXmlCrittersDocument = XmlManager.Load("critters.xml");
             bool blnNeedQualityWhitelist = false;
             XmlNode objXmlMetatype = objXmlMetatypeDocument.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + _objCharacter.Metatype + "\"]");
             if (objXmlMetatype?.SelectSingleNode("qualityrestriction") != null)
@@ -366,15 +382,16 @@ namespace Chummer
                     blnNeedQualityWhitelist = true;
             }
 
-            XmlNodeList objXmlQualityList = _objXmlDocument.SelectNodes(strXPath);
+            XmlNodeList objXmlQualityList = _objXmlDocument.SelectNodes("/chummer/qualities/quality[" + strFilter + "]");
 
+            List <ListItem> lstQuality = new List<ListItem>();
             foreach (XmlNode objXmlQuality in objXmlQualityList)
             {
                 if (objXmlQuality["name"] == null)
                     continue;
                 if (blnNeedQualityWhitelist)
                 {
-                    if (strSelectedCategory == "Show All")
+                    if (strCategory == "Show All")
                     {
                         bool blnAllowed = false;
                         foreach (ListItem objCategory in _lstCategory)
@@ -388,16 +405,19 @@ namespace Chummer
                         if (!blnAllowed)
                             continue;
                     }
-                    else if (objXmlMetatype.SelectSingleNode("qualityrestriction/" + strSelectedCategory.ToLower() + "/quality[. = \"" + objXmlQuality["name"].InnerText + "\"]") == null)
+                    else if (objXmlMetatype.SelectSingleNode("qualityrestriction/" + strCategory.ToLower() + "/quality[. = \"" + objXmlQuality["name"].InnerText + "\"]") == null)
                     {
                         continue;
                     }
                 }
                 if (!chkLimitList.Checked || SelectionShared.RequirementsMet(objXmlQuality, false, _objCharacter, objXmlMetatypeDocument, objXmlCrittersDocument, _objXmlDocument, IgnoreQuality))
                 {
-                    ListItem objItem = new ListItem();
-                    objItem.Value = objXmlQuality["name"].InnerText;
-                    objItem.Name = objXmlQuality["translate"]?.InnerText ?? objItem.Value;
+                    string strName = objXmlQuality["name"].InnerText;
+                    ListItem objItem = new ListItem
+                    {
+                        Value = strName,
+                        Name = objXmlQuality["translate"]?.InnerText ?? strName
+                    };
 
                     lstQuality.Add(objItem);
                 }

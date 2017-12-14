@@ -211,8 +211,6 @@ namespace Chummer
             switch (_objMode)
             {
                 case Mode.Art:
-                    objXmlMetamagicList = _objXmlDocument.SelectNodes("/chummer/" + _strRoot + "/" + _strNode + "[" + _objCharacter.Options.BookXPath() + "]");
-                    break;
                 case Mode.Enhancement:
                     objXmlMetamagicList = _objXmlDocument.SelectNodes("/chummer/" + _strRoot + "/" + _strNode + "[" + _objCharacter.Options.BookXPath() + "]");
                     break;
@@ -229,9 +227,11 @@ namespace Chummer
                                     _objCharacter, null,
                                     null, _objQualityDocument, string.Empty, _strLocalName)));
                 if (!add) continue;
-                ListItem objItem = new ListItem();
-                objItem.Value = objXmlMetamagic["name"].InnerText;
-                objItem.Name = objXmlMetamagic["translate"]?.InnerText ?? objXmlMetamagic["name"].InnerText;
+                ListItem objItem = new ListItem
+                {
+                    Value = objXmlMetamagic["name"].InnerText,
+                    Name = objXmlMetamagic["translate"]?.InnerText ?? objXmlMetamagic["name"].InnerText
+                };
                 lstArts.Add(objItem);
             }
             SortListItem objSort = new SortListItem();

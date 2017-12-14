@@ -108,6 +108,7 @@ namespace Chummer.Backend.Equipment
                 _blnPrint = false;
             if (objXmlLifestyleQuality["contributetolimit"]?.InnerText == "no")
                 _blnContributeToLimit = false;
+            objXmlLifestyleQuality.TryGetStringFieldQuickly("notes", ref _strNotes);
             objXmlLifestyleQuality.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlLifestyleQuality.TryGetStringFieldQuickly("page", ref _strPage);
             string strAllowedFreeLifestyles = string.Empty;
@@ -591,8 +592,7 @@ namespace Chummer.Backend.Equipment
             {
                 if (Free || FreeByLifestyle)
                     return 0;
-                decimal decReturn = 0.0m;
-                if (!decimal.TryParse(_strCost, out decReturn))
+                if (!decimal.TryParse(_strCost, out decimal decReturn))
                 {
                     try
                     {

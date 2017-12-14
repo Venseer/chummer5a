@@ -119,6 +119,7 @@ namespace Chummer.Backend.Equipment
                 }
                 _strWeaponSlots = strMounts;
             }
+            objXmlWeapon.TryGetStringFieldQuickly("notes", ref _strNotes);
             objXmlWeapon.TryGetStringFieldQuickly("ammocategory", ref _strAmmoCategory);
             objXmlWeapon.TryGetStringFieldQuickly("rc", ref _strRC);
             objXmlWeapon.TryGetInt32FieldQuickly("conceal", ref _intConceal);
@@ -208,9 +209,11 @@ namespace Chummer.Backend.Equipment
             TreeNode objNode = null;
             if (lstNodes != null)
             {
-                objNode = new TreeNode();
-                objNode.Text = DisplayName;
-                objNode.Tag = _guiID.ToString();
+                objNode = new TreeNode
+                {
+                    Text = DisplayName,
+                    Tag = _guiID.ToString()
+                };
                 lstNodes.Add(objNode);
             }
 
@@ -314,14 +317,8 @@ namespace Chummer.Backend.Equipment
                             List<Weapon> lstWeapons = new List<Weapon>();
                             List<TreeNode> lstWeaponNodes = new List<TreeNode>();
 
-                            if (!string.IsNullOrEmpty(objXmlGear["devicerating"]?.InnerText))
-                            {
-                                Commlink objCommlink = new Commlink(_objCharacter);
-                                objCommlink.Create(objXmlGear, objGearNode, intGearRating, lstWeapons, lstWeaponNodes, strChildForceValue, false, false, blnAddChildImprovements, blnChildCreateChildren);
-                                objGear = objCommlink;
-                            }
-                            else
-                                objGear.Create(objXmlGear, objGearNode, intGearRating, lstWeapons, lstWeaponNodes, strChildForceValue, false, false, blnAddChildImprovements, blnChildCreateChildren);
+                            objGear.Create(objXmlGear, objGearNode, intGearRating, lstWeapons, lstWeaponNodes, strChildForceValue, false, false, blnAddChildImprovements, blnChildCreateChildren);
+
                             objGear.Quantity = decGearQty;
                             objGear.Cost = "0";
                             objGear.MinRating = intGearRating;
@@ -506,20 +503,14 @@ namespace Chummer.Backend.Equipment
 
             objNode.TryGetStringFieldQuickly("name", ref _strName);
             XmlDocument objXmlDocument = XmlManager.Load("weapons.xml");
-            if (objNode["sourceid"] == null)
+            if (!objNode.TryGetField("sourceid", Guid.TryParse, out _sourceID) || _sourceID.Equals(Guid.Empty))
             {
                 XmlNode objWeaponNode = objXmlDocument.SelectSingleNode("/chummer/weapons/weapon[name = \"" + _strName + "\"]");
-                if (objWeaponNode != null)
-                {
-                    _sourceID = Guid.Parse(objWeaponNode["id"].InnerText);
+                if (objWeaponNode?.TryGetField("id", Guid.TryParse, out _sourceID) == true)
                     _objCachedMyXmlNode = null;
-                }
             }
             else
-            {
-                _sourceID = Guid.Parse(objNode["sourceid"].InnerText);
                 _objCachedMyXmlNode = null;
-            }
             objNode.TryGetStringFieldQuickly("category", ref _strCategory);
             if (_strCategory == "Hold-Outs")
                 _strCategory = "Holdouts";
@@ -538,7 +529,7 @@ namespace Chummer.Backend.Equipment
                 if (objNewOsmiumMaceNode != null)
                 {
                     objNewOsmiumMaceNode.TryGetStringFieldQuickly("name", ref _strName);
-                    _sourceID = Guid.Parse(objNewOsmiumMaceNode["id"].InnerText);
+                    Guid.TryParse(objNewOsmiumMaceNode["id"].InnerText, out _sourceID);
                     _objCachedMyXmlNode = objNewOsmiumMaceNode;
                     objNewOsmiumMaceNode.TryGetStringFieldQuickly("accuracy", ref _strAccuracy);
                     objNewOsmiumMaceNode.TryGetStringFieldQuickly("damage", ref _strDamage);
@@ -2587,6 +2578,10 @@ namespace Chummer.Backend.Equipment
                     else
                         intAccuracy += wa.Accuracy;
                 }
+                string s = Name.ToLower();
+                intAccuracy += _objCharacter.Improvements
+                    .Where(i => i.ImproveType == Improvement.ImprovementType.WeaponAccuracy && (i.ImprovedName == string.Empty || i.ImprovedName == Name || i.ImprovedName.Contains("[contains]") && s.Contains(i.ImprovedName.Replace("[contains]",string.Empty).ToLower())))
+                    .Sum(objImprovement => objImprovement.Value);
 
                 // Look for Powers that increase accuracy
                 foreach (Power objPower in _objCharacter.Powers)
@@ -3263,10 +3258,18 @@ namespace Chummer.Backend.Equipment
                         if (strAccAvail.StartsWith('+') || strAccAvail.StartsWith('-'))
                         {
                             strAccAvail = objAccessory.TotalAvail;
-                            if (strAccAvail.EndsWith('F'))
+                            if (strAccAvail.EndsWith(LanguageManager.GetString("String_AvailForbidden")))
+                            {
                                 strAvail = "F";
-                            if (strAccAvail.EndsWith('F') || strAccAvail.EndsWith('R'))
                                 strAccAvail = strAccAvail.Substring(0, strAccAvail.Length - 1);
+                            }
+                            else if (strAccAvail.EndsWith(LanguageManager.GetString("String_AvailRestricted")))
+                            {
+                                if (string.IsNullOrEmpty(strAvail))
+                                    strAvail = "R";
+                                strAccAvail = strAccAvail.Substring(0, strAccAvail.Length - 1);
+                            }
+                                    
                             intAccAvail = Convert.ToInt32(strAccAvail);
                             intAvail += intAccAvail;
                         }

@@ -119,7 +119,7 @@ namespace Chummer
                     intNameIndex = cboXSLT.FindStringExact(GlobalOptions.DefaultCharacterSheet.Substring(GlobalOptions.DefaultLanguage.LastIndexOf(Path.DirectorySeparatorChar) + 1));
                 if (intNameIndex != -1)
                     cboXSLT.SelectedIndex = intNameIndex;
-                else
+                else if (cboXSLT.Items.Count > 0)
                 {
                     if (string.IsNullOrEmpty(strLanguage) || strLanguage == GlobalOptions.DefaultLanguage)
                         _strSelectedSheet = GlobalOptions.DefaultCharacterSheetDefaultValue;
@@ -390,6 +390,9 @@ namespace Chummer
             cmdPrint.AutoSize = false;
             cmdPrint.Width = intWidth + 20;
             cmdSaveHTML.Left = cmdPrint.Right + 6;
+
+            lblCharacterSheet.Left = cboLanguage.Left - lblCharacterSheet.Width - 6;
+            MinimumSize = new System.Drawing.Size(2 * cmdPrint.Left + cmdPrint.Width + cmdSaveHTML.Width + lblCharacterSheet.Width + cboLanguage.Width + cboXSLT.Width + 24, 73);
         }
 
         private void tsSaveAsPdf_Click(object sender, EventArgs e)
@@ -428,15 +431,17 @@ namespace Chummer
                 }
             }
 
-            Dictionary<string, string> dicParams = new Dictionary<string, string>();
-            dicParams.Add("encoding", "UTF-8");
-            dicParams.Add("dpi", "300");
-            dicParams.Add("margin-top", "13");
-            dicParams.Add("margin-bottom", "19");
-            dicParams.Add("margin-left", "13");
-            dicParams.Add("margin-right", "13");
-            dicParams.Add("image-quality", "100");
-            dicParams.Add("print-media-type", "");
+            Dictionary<string, string> dicParams = new Dictionary<string, string>
+            {
+                { "encoding", "UTF-8" },
+                { "dpi", "300" },
+                { "margin-top", "13" },
+                { "margin-bottom", "19" },
+                { "margin-left", "13" },
+                { "margin-right", "13" },
+                { "image-quality", "100" },
+                { "print-media-type", "" }
+            };
             PdfConvert.ConvertHtmlToPdf(new PdfDocument
             {
                 Html = webBrowser1.DocumentText,
@@ -471,14 +476,15 @@ namespace Chummer
             List<ListItem> lstSheets = new List<ListItem>();
 
             // Populate the XSL list with all of the manifested XSL files found in the sheets\[language] directory.
-            XmlDocument objLanguageDocument = LanguageManager.XmlDoc;
             XmlDocument manifest = XmlManager.Load("sheets.xml");
             XmlNodeList sheets = manifest.SelectNodes($"/chummer/sheets[@lang='{strLanguage}']/sheet[not(hide)]");
             foreach (XmlNode sheet in sheets)
             {
-                ListItem objItem = new ListItem();
-                objItem.Value = strLanguage != GlobalOptions.DefaultLanguage ? Path.Combine(strLanguage, sheet["filename"].InnerText) : sheet["filename"].InnerText;
-                objItem.Name = sheet["name"].InnerText;
+                ListItem objItem = new ListItem
+                {
+                    Value = strLanguage != GlobalOptions.DefaultLanguage ? Path.Combine(strLanguage, sheet["filename"].InnerText) : sheet["filename"].InnerText,
+                    Name = sheet["name"].InnerText
+                };
 
                 lstSheets.Add(objItem);
             }
@@ -500,9 +506,11 @@ namespace Chummer
 
             foreach (string fileName in fileNames)
             {
-                ListItem objItem = new ListItem();
-                objItem.Value = Path.Combine("omae", fileName);
-                objItem.Name = menuMainOmae + ": " + fileName;
+                ListItem objItem = new ListItem
+                {
+                    Value = Path.Combine("omae", fileName),
+                    Name = menuMainOmae + ": " + fileName
+                };
 
                 items.Add(objItem);
             }
@@ -515,9 +523,7 @@ namespace Chummer
 
             if (Directory.Exists(path))
             {
-                names = Directory.GetFiles(path)
-                    .Where(s => s.EndsWith(".xsl"))
-                    .Select(Path.GetFileNameWithoutExtension).ToList();
+                names = Directory.GetFiles(path, "*.xsl", SearchOption.AllDirectories).Select(Path.GetFileNameWithoutExtension).ToList();
             }
 
             return names;
@@ -525,9 +531,7 @@ namespace Chummer
 
         private void PopulateXsltList()
         {
-            List<ListItem> lstFiles = new List<ListItem>();
-
-            lstFiles.AddRange(GetXslFilesFromLocalDirectory(cboLanguage.SelectedValue.ToString()));
+            List<ListItem> lstFiles = GetXslFilesFromLocalDirectory(cboLanguage.SelectedValue?.ToString() ?? GlobalOptions.DefaultLanguage);
             if (GlobalOptions.OmaeEnabled)
             {
                 lstFiles.AddRange(GetXslFilesFromOmaeDirectory());
@@ -564,13 +568,14 @@ namespace Chummer
                 if (node == null)
                     continue;
 
-                string languageName = node.InnerText;
-
-                if (GetXslFilesFromLocalDirectory(Path.GetFileNameWithoutExtension(filePath)).Count > 0)
+                string strLanguageCode = Path.GetFileNameWithoutExtension(filePath);
+                if (GetXslFilesFromLocalDirectory(strLanguageCode).Count > 0)
                 {
-                    ListItem objItem = new ListItem();
-                    objItem.Value = Path.GetFileNameWithoutExtension(filePath);
-                    objItem.Name = languageName;
+                    ListItem objItem = new ListItem
+                    {
+                        Value = strLanguageCode,
+                        Name = node.InnerText
+                    };
 
                     lstLanguages.Add(objItem);
                 }
@@ -681,7 +686,7 @@ namespace Chummer
                     intNameIndex = cboXSLT.FindStringExact(GlobalOptions.DefaultCharacterSheet.Substring(GlobalOptions.DefaultLanguage.LastIndexOf(Path.DirectorySeparatorChar) + 1));
                 if (intNameIndex != -1)
                     cboXSLT.SelectedIndex = intNameIndex;
-                else
+                else if (cboXSLT.Items.Count > 0)
                 {
                     if (string.IsNullOrEmpty(strNewLanguage) || strNewLanguage == GlobalOptions.DefaultLanguage)
                         _strSelectedSheet = GlobalOptions.DefaultCharacterSheetDefaultValue;

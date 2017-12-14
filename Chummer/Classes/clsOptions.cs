@@ -32,15 +32,14 @@ namespace Chummer
     public enum ClipboardContentType
     {
         None = 0,
-        Gear = 1,
-        Commlink = 2,
-        OperatingSystem = 3,
-        Cyberware = 4,
-        Bioware = 5,
-        Armor = 6,
-        Weapon = 7,
-        Vehicle = 8,
-        Lifestyle = 9,
+        Gear,
+        OperatingSystem,
+        Cyberware,
+        Bioware,
+        Armor,
+        Weapon,
+        Vehicle,
+        Lifestyle,
     }
 
     public class SourcebookInfo
@@ -193,8 +192,7 @@ namespace Chummer
             object objRegistryResult = !string.IsNullOrWhiteSpace(strSubKey) ? _objBaseChummerKey.GetValue(strBoolName) : _objBaseChummerKey.GetValue(strBoolName);
             if (objRegistryResult != null)
             {
-                bool blnTemp;
-                if (bool.TryParse(objRegistryResult.ToString(), out blnTemp))
+                if (bool.TryParse(objRegistryResult.ToString(), out bool blnTemp))
                     blnStorage = blnTemp;
             }
         }
@@ -324,22 +322,22 @@ namespace Chummer
                     string strPath = string.Empty;
                     object objRegistryResult = objLoopKey.GetValue("Path");
                     if (objRegistryResult != null)
-                        strPath = objRegistryResult.ToString();
+                        strPath = objRegistryResult.ToString().Replace("$CHUMMER", Application.StartupPath);
                     if (!string.IsNullOrEmpty(strPath) && Directory.Exists(strPath))
                     {
-                        CustomDataDirectoryInfo objCustomDataDirectory = new CustomDataDirectoryInfo();
-                        objCustomDataDirectory.Name = astrCustomDataDirectoryNames[i];
-                        objCustomDataDirectory.Path = strPath;
+                        CustomDataDirectoryInfo objCustomDataDirectory = new CustomDataDirectoryInfo
+                        {
+                            Name = astrCustomDataDirectoryNames[i],
+                            Path = strPath
+                        };
                         objRegistryResult = objLoopKey.GetValue("Enabled");
                         if (objRegistryResult != null)
                         {
-                            bool blnTemp;
-                            if (bool.TryParse(objRegistryResult.ToString(), out blnTemp))
+                            if (bool.TryParse(objRegistryResult.ToString(), out bool blnTemp))
                                 objCustomDataDirectory.Enabled = blnTemp;
                         }
-                        int intLoadOrder = 0;
                         objRegistryResult = objLoopKey.GetValue("LoadOrder");
-                        if (objRegistryResult != null && int.TryParse(objRegistryResult.ToString(), out intLoadOrder))
+                        if (objRegistryResult != null && int.TryParse(objRegistryResult.ToString(), out int intLoadOrder))
                         {
                             // First load the infos alongside their load orders into a list whose order we don't care about
                             intMaxLoadOrderValue = Math.Max(intMaxLoadOrderValue, intLoadOrder);
@@ -372,9 +370,11 @@ namespace Chummer
                     // Only add directories for which we don't already have entries loaded from registry
                     if (!_lstCustomDataDirectoryInfo.Any(x => x.Path == strLoopDirectoryPath))
                     {
-                        CustomDataDirectoryInfo objCustomDataDirectory = new CustomDataDirectoryInfo();
-                        objCustomDataDirectory.Name = Path.GetFileName(strLoopDirectoryPath);
-                        objCustomDataDirectory.Path = strLoopDirectoryPath;
+                        CustomDataDirectoryInfo objCustomDataDirectory = new CustomDataDirectoryInfo
+                        {
+                            Name = Path.GetFileName(strLoopDirectoryPath),
+                            Path = strLoopDirectoryPath
+                        };
                         _lstCustomDataDirectoryInfo.Add(objCustomDataDirectory);
                     }
                 }
@@ -386,8 +386,10 @@ namespace Chummer
             {
                 if (objXmlBook["code"] != null && objXmlBook["hide"] == null)
                 {
-                    SourcebookInfo objSource = new SourcebookInfo();
-                    objSource.Code = objXmlBook["code"].InnerText;
+                    SourcebookInfo objSource = new SourcebookInfo
+                    {
+                        Code = objXmlBook["code"].InnerText
+                    };
                     string strTemp = string.Empty;
 
                     try
@@ -400,8 +402,7 @@ namespace Chummer
                             objSource.Path = strParts[0];
                             if (strParts.Length > 1)
                             {
-                                int intTmp;
-                                if (int.TryParse(strParts[1], out intTmp))
+                                if (int.TryParse(strParts[1], out int intTmp))
                                     objSource.Offset = intTmp;
                             }
                         }

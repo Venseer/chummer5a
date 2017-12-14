@@ -154,7 +154,6 @@
     <Compile Include="Backend\Debugging\ExceptionHeatMap.cs" />
     <Compile Include="Backend\Equipment\Armor.cs" />
     <Compile Include="Backend\Equipment\CapacityStyle.cs" />
-    <Compile Include="Backend\Equipment\Commlink.cs" />
     <Compile Include="Backend\Equipment\Cyberware.cs" />
     <Compile Include="Backend\Equipment\Equipment.cs" />
     <Compile Include="Backend\Equipment\Gear.cs" />
@@ -226,6 +225,9 @@
     <Compile Include="frmCreateWeaponMount.Designer.cs">
       <DependentUpon>frmCreateWeaponMount.cs</DependentUpon>
     </Compile>
+    <Compile Include="helpers\ElasticComboBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="helpers\ButtonWithToolTip.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -235,6 +237,8 @@
     <Compile Include="helpers\NumericUpDownEx.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Interfaces\IHasMatrixAttributes.cs" />
+    <Compile Include="Interfaces\IHasMugshots.cs" />
     <Compile Include="Interfaces\INamedItemWithGuid.cs" />
     <Compile Include="lang\language.cs">
       <DependentUpon>language.xsd</DependentUpon>
@@ -1600,6 +1604,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="customdata\Education Qualities Apply Karma Discount in Create Mode\amend_qualities.xml" />
+    <Content Include="customdata\German Data Changes - Heightened Concentration has Levels\amend_heightenedconcentration_powers.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="customdata\ShadowNET Rules\amend_armor.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -2678,7 +2685,7 @@
     <Content Include="sheets\de-de\Formatted Text-Only.xsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="sheets\de-de\Calender.xsl">
+    <Content Include="sheets\de-de\Calendar.xsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="sheets\de-de\Commlinks.xsl">
@@ -2785,7 +2792,7 @@
     <Content Include="sheets\fr-fr\Formatted Text-Only.xsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="sheets\fr-fr\Remarques.xsl">
+    <Content Include="sheets\fr-fr\Notes.xsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="sheets\fr-fr\Game Master Summary.xsl">

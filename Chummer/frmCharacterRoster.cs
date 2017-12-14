@@ -29,6 +29,24 @@ namespace Chummer
             treCharacterList.DragOver += treCharacterList_DragOver;
             LoadCharacters();
             MoveControls();
+            ContextMenuStrip[] lstCMSToTranslate = new ContextMenuStrip[]
+            {
+                cmsRoster
+            };
+
+            foreach (ContextMenuStrip objCMS in lstCMSToTranslate)
+            {
+                if (objCMS != null)
+                {
+                    foreach (ToolStripMenuItem objItem in objCMS.Items.OfType<ToolStripMenuItem>())
+                    {
+                        if (objItem.Tag != null)
+                        {
+                            objItem.Text = LanguageManager.GetString(objItem.Tag.ToString());
+                        }
+                    }
+                }
+            }
         }
 
         public void PopulateCharacterList()
@@ -79,9 +97,9 @@ namespace Chummer
             }
 
             // Add any characters that are open to the displayed list so we can have more than 10 characters listed
-            foreach (Character objCharacter in GlobalOptions.MainForm.OpenCharacters)
+            foreach (CharacterShared objCharacterForm in GlobalOptions.MainForm.OpenCharacterForms)
             {
-                string strFile = objCharacter.FileName;
+                string strFile = objCharacterForm.CharacterObject.FileName;
                 // Make sure we're not loading a character that was already loaded by the MRU list.
                 if (lstFavorites.Contains(strFile) || lstRecents.Contains(strFile) || lstWatch.Contains(strFile))
                     continue;
@@ -241,10 +259,13 @@ namespace Chummer
             }
             objCache.FilePath = strFile;
             objCache.FileName = strFile.Substring(strFile.LastIndexOf(Path.DirectorySeparatorChar) + 1);
-            TreeNode objNode = new TreeNode();
+            TreeNode objNode = new TreeNode
+            {
+                ContextMenuStrip = cmsRoster,
+                Text = CalculatedName(objCache),
+                ToolTipText = objCache.FilePath.CheapReplace(Application.StartupPath, () => "<" + Application.ProductName + ">")
+            };
 
-            objNode.Text = CalculatedName(objCache);
-            objNode.ToolTipText = objCache.FilePath;
             lock (_lstCharacterCacheLock)
             {
                 _lstCharacterCache.Add(objCache);
@@ -272,7 +293,7 @@ namespace Chummer
                 strBuildMethod = "Unknown build method";
             string strCreated = LanguageManager.GetString(objCache.Created ? "Title_CareerMode" : "Title_CreateMode");
             string strReturn = $"{strName} ({strBuildMethod} - {strCreated})";
-            if (GlobalOptions.MainForm.OpenCharacters.Any(x => x.FileName == objCache.FilePath))
+            if (GlobalOptions.MainForm.OpenCharacterForms.Any(x => x.CharacterObject.FileName == objCache.FilePath))
                 strReturn = "* " + strReturn;
             return strReturn;
         }
@@ -297,7 +318,7 @@ namespace Chummer
                 lblCharacterAlias.Text = objCache.CharacterAlias;
                 lblEssence.Text = objCache.Essence;
                 lblFilePath.Text = objCache.FileName;
-                tipTooltip.SetToolTip(lblFilePath, objCache.FilePath);
+                tipTooltip.SetToolTip(lblFilePath, objCache.FilePath.CheapReplace(Application.StartupPath, () => "<" + Application.ProductName + ">"));
                 picMugshot.Image = objCache.Mugshot;
             }
             else
@@ -407,15 +428,15 @@ namespace Chummer
                     string strFile = _lstCharacterCache[intIndex]?.FilePath;
                     if (!string.IsNullOrEmpty(strFile))
                     {
-                        Character objOpenCharacters = GlobalOptions.MainForm.OpenCharacters.FirstOrDefault(x => x.FileName == strFile);
-                        if (objOpenCharacters == null || !GlobalOptions.MainForm.SwitchToOpenCharacter(objOpenCharacters))
+                        Character objOpenCharacter = GlobalOptions.MainForm.OpenCharacters.FirstOrDefault(x => x.FileName == strFile);
+                        Cursor = Cursors.WaitCursor;
+                        if (objOpenCharacter == null || !GlobalOptions.MainForm.SwitchToOpenCharacter(objOpenCharacter, true))
                         {
-                            Cursor = Cursors.WaitCursor;
-                            objSelectedNode.Text = "* " + objSelectedNode.Text;
-                            Character objOpenCharacter = frmMain.LoadCharacter(strFile);
-                            Cursor = Cursors.Default;
+                            objOpenCharacter = frmMain.LoadCharacter(strFile);
                             GlobalOptions.MainForm.OpenCharacter(objOpenCharacter);
+                            objSelectedNode.Text = CalculatedName(_lstCharacterCache[intIndex]);
                         }
+                        Cursor = Cursors.Default;
                     }
                 }
             }
@@ -480,8 +501,7 @@ namespace Chummer
 
                     if (nodNewNode.Level == 0 || nodNewNode.Parent == nodDestinationNode)
                         return;
-                    int intCharacterIndex;
-                    if (int.TryParse(nodNewNode.Tag.ToString(), out intCharacterIndex) && intCharacterIndex >= 0 && intCharacterIndex < _lstCharacterCache.Count)
+                    if (int.TryParse(nodNewNode.Tag.ToString(), out int intCharacterIndex) && intCharacterIndex >= 0 && intCharacterIndex < _lstCharacterCache.Count)
                     {
                         CharacterCache objCache = _lstCharacterCache[intCharacterIndex];
 
@@ -558,5 +578,96 @@ namespace Chummer
             internal bool Created { get; set; }
         }
         #endregion
+
+        private void tsDelete_Click(object sender, EventArgs e)
+        {
+            TreeNode objSelectedNode = treCharacterList.SelectedNode;
+            if (objSelectedNode != null && objSelectedNode.Level > 0)
+            {
+                RemoveSelected(objSelectedNode);
+            }
+        }
+
+        private void tsSort_Click(object sender, EventArgs e)
+        {
+            //treCharacterList.SortCustom();
+            //TODO: Need to sort them permanently, above sort method just sorts the treenodes.
+        }
+
+        private void tsToggleFav_Click(object sender, EventArgs e)
+        {
+            TreeNode t = treCharacterList.SelectedNode;
+
+            if (t == null) return;
+            if (int.TryParse(t.Tag.ToString(), out var intCharacterIndex) && intCharacterIndex >= 0 && intCharacterIndex < _lstCharacterCache.Count)
+            {
+                CharacterCache objCache = _lstCharacterCache[intCharacterIndex];
+
+                if (objCache == null)
+                    return;
+                switch (t.Parent.Tag.ToString())
+                {
+                    case "Recent":
+                        GlobalOptions.RemoveFromMRUList(objCache.FilePath, "mru", false);
+                        GlobalOptions.AddToMRUList(objCache.FilePath, "stickymru");
+                        break;
+                    case "Favourite":
+                        GlobalOptions.RemoveFromMRUList(objCache.FilePath, "stickymru", false);
+                        GlobalOptions.AddToMRUList(objCache.FilePath);
+                        break;
+                    case "Watch":
+                        GlobalOptions.AddToMRUList(objCache.FilePath, "stickymru");
+                        break;
+                }
+                treCharacterList.SelectedNode = t;
+            }
+        }
+
+        private void TreeView_MouseDown(object sender, MouseEventArgs e)
+        {
+            // Generic event for all TreeViews to allow right-clicking to select a TreeNode so the proper ContextMenu is shown.
+            //if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            //{
+            TreeView objTree = (TreeView)sender;
+            objTree.SelectedNode = objTree.HitTest(e.X, e.Y).Node;
+            //}
+            if (ModifierKeys == Keys.Control)
+            {
+                if (!objTree.SelectedNode.IsExpanded)
+                {
+                    foreach (TreeNode objNode in objTree.SelectedNode.Nodes)
+                    {
+                        objNode.ExpandAll();
+                    }
+                }
+                else
+                {
+                    foreach (TreeNode objNode in objTree.SelectedNode.Nodes)
+                    {
+                        objNode.Collapse();
+                    }
+                }
+            }
+        }
+
+        private void tsCloseOpenCharacter_Click(object sender, EventArgs e)
+        {
+            var objSelectedNode = treCharacterList.SelectedNode;
+            if (objSelectedNode == null || objSelectedNode.Level <= 0) return;
+            var intIndex = Convert.ToInt32(objSelectedNode.Tag);
+            if (intIndex < 0 || intIndex >= _lstCharacterCache.Count) return;
+            var strFile = _lstCharacterCache[intIndex]?.FilePath;
+            if (string.IsNullOrEmpty(strFile)) return;
+            var objOpenCharacter = GlobalOptions.MainForm.OpenCharacters.FirstOrDefault(x => x.FileName == strFile);
+            Cursor = Cursors.WaitCursor;
+            if (objOpenCharacter != null)
+            {
+                GlobalOptions.MainForm.OpenCharacters.Remove(objOpenCharacter);
+                GlobalOptions.MainForm.OpenCharacterForms.FirstOrDefault(x => x.CharacterObject == objOpenCharacter)?.Close();
+                GlobalOptions.MainForm.CharacterRoster.PopulateCharacterList();
+                objOpenCharacter.Dispose();
+            }
+            Cursor = Cursors.Default;
+        }
     }
 }
