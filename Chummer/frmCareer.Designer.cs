@@ -3340,6 +3340,7 @@ namespace Chummer
             this.tabInfo.SelectedIndex = 0;
             this.tabInfo.Size = new System.Drawing.Size(193, 637);
             this.tabInfo.TabIndex = 50;
+            this.tabInfo.MouseWheel += new MouseEventHandler(this.tabControl_MouseWheel);
             // 
             // tabOtherInfo
             // 
@@ -4627,6 +4628,7 @@ namespace Chummer
             this.tabCharacterTabs.TabIndex = 33;
             this.tabCharacterTabs.Tag = "";
             this.tabCharacterTabs.SelectedIndexChanged += new System.EventHandler(this.tabCharacterTabs_SelectedIndexChanged);
+            this.tabCharacterTabs.MouseWheel += new MouseEventHandler(this.tabControl_MouseWheel);
             // 
             // tabCommon
             // 
@@ -7679,16 +7681,17 @@ namespace Chummer
             this.tabStreetGearTabs.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.tabStreetGearTabs.Controls.Add(this.tabLifestyle);
+            this.tabStreetGearTabs.Controls.Add(this.tabGear);
             this.tabStreetGearTabs.Controls.Add(this.tabArmor);
             this.tabStreetGearTabs.Controls.Add(this.tabWeapons);
-            this.tabStreetGearTabs.Controls.Add(this.tabGear);
+            this.tabStreetGearTabs.Controls.Add(this.tabLifestyle);
             this.tabStreetGearTabs.Location = new System.Drawing.Point(3, 3);
             this.tabStreetGearTabs.Name = "tabStreetGearTabs";
             this.tabStreetGearTabs.SelectedIndex = 0;
             this.tabStreetGearTabs.Size = new System.Drawing.Size(859, 605);
             this.tabStreetGearTabs.TabIndex = 87;
             this.tabStreetGearTabs.SelectedIndexChanged += new System.EventHandler(this.tabStreetGearTabs_SelectedIndexChanged);
+            this.tabStreetGearTabs.MouseWheel += new MouseEventHandler(this.tabControl_MouseWheel);
             // 
             // tabLifestyle
             // 
@@ -13064,6 +13067,7 @@ namespace Chummer
             this.tabPeople.SelectedIndex = 0;
             this.tabPeople.Size = new System.Drawing.Size(855, 605);
             this.tabPeople.TabIndex = 94;
+            this.tabPeople.MouseWheel += new MouseEventHandler(this.tabControl_MouseWheel);
             // 
             // tabContacts
             // 

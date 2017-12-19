@@ -95,6 +95,7 @@ namespace Chummer
         private QualitySource _objQualitySource = QualitySource.Selected;
         private string _strSourceName = string.Empty;
         private XmlNode _nodBonus;
+        private XmlNode _nodFirstLevelBonus;
         private XmlNode _nodDiscounts;
         private readonly Character _objCharacter;
         private string _strAltName = string.Empty;
@@ -173,7 +174,7 @@ namespace Chummer
         /// <param name="objWeapons">List of Weapons that should be added to the Character.</param>
         /// <param name="objWeaponNodes">List of TreeNodes to represent the Weapons added.</param>
         /// <param name="strForceValue">Force a value to be selected for the Quality.</param>
-        public virtual void Create(XmlNode objXmlQuality, Character objCharacter, QualitySource objQualitySource, TreeNode objNode, List<Weapon> objWeapons, List<TreeNode> objWeaponNodes, string strForceValue = "", string strSourceName = "")
+        public void Create(XmlNode objXmlQuality, Character objCharacter, QualitySource objQualitySource, TreeNode objNode, List<Weapon> objWeapons, List<TreeNode> objWeaponNodes, string strForceValue = "", string strSourceName = "")
         {
             _strSourceName = strSourceName;
             objXmlQuality.TryGetStringFieldQuickly("name", ref _strName);
@@ -324,7 +325,8 @@ namespace Chummer
                 _nodDiscounts = objXmlQuality["costdiscount"];
             }
             // If the item grants a bonus, pass the information to the Improvement Manager.
-            if (objXmlQuality["bonus"]?.ChildNodes.Count > 0)
+            _nodBonus = objXmlQuality["bonus"];
+            if (_nodBonus?.ChildNodes.Count > 0)
             {
                 ImprovementManager.ForcedValue = strForceValue;
                 if (!ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.Quality, _guiID.ToString(), objXmlQuality["bonus"], false, 1, DisplayNameShort))
@@ -341,7 +343,8 @@ namespace Chummer
             {
                 _strExtra = strForceValue;
             }
-            if (Levels == 0 && objXmlQuality["firstlevelbonus"]?.ChildNodes.Count > 0)
+            _nodFirstLevelBonus = objXmlQuality["firstlevelbonus"];
+            if (Levels == 0 && _nodFirstLevelBonus?.ChildNodes.Count > 0)
             {
                 ImprovementManager.ForcedValue = strForceValue;
                 if (!ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.Quality, _guiID.ToString(), objXmlQuality["firstlevelbonus"], false, 1, DisplayNameShort))
@@ -363,7 +366,7 @@ namespace Chummer
         /// Save the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public virtual void Save(XmlTextWriter objWriter)
+        public void Save(XmlTextWriter objWriter)
         {
             objWriter.WriteStartElement("quality");
             objWriter.WriteElementString("guid", _guiID.ToString());
@@ -390,6 +393,10 @@ namespace Chummer
                 objWriter.WriteRaw("<bonus>" + _nodBonus.InnerXml + "</bonus>");
             else
                 objWriter.WriteElementString("bonus", string.Empty);
+            if (_nodFirstLevelBonus != null)
+                objWriter.WriteRaw("<firstlevelbonus>" + _nodFirstLevelBonus.InnerXml + "</firstlevelbonus>");
+            else
+                objWriter.WriteElementString("firstlevelbonus", string.Empty);
             if (_guiWeaponID != Guid.Empty)
                 objWriter.WriteElementString("weaponguid", _guiWeaponID.ToString());
             if (_nodDiscounts != null)
@@ -413,7 +420,7 @@ namespace Chummer
         /// Load the CharacterAttribute from the XmlNode.
         /// </summary>
         /// <param name="objNode">XmlNode to load.</param>
-        public virtual void Load(XmlNode objNode)
+        public void Load(XmlNode objNode)
         {
             objNode.TryGetField("guid", Guid.TryParse, out _guiID);
             objNode.TryGetStringFieldQuickly("name", ref _strName);
@@ -434,6 +441,9 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("page", ref _strPage);
             objNode.TryGetStringFieldQuickly("sourcename", ref _strSourceName);
             _nodBonus = objNode["bonus"];
+            _nodFirstLevelBonus = objNode["firstlevelbonus"];
+            if (_nodFirstLevelBonus == null)
+                _nodFirstLevelBonus = MyXmlNode?["firstlevelbonus"];
             _nodDiscounts = objNode["costdiscount"];
             objNode.TryGetField("weaponguid", Guid.TryParse, out _guiWeaponID);
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
@@ -585,6 +595,15 @@ namespace Chummer
         {
             get => _nodBonus;
             set => _nodBonus = value;
+        }
+
+        /// <summary>
+        /// Bonus node from the XML file only awarded for the first instance the character has the quality.
+        /// </summary>
+        public XmlNode FirstLevelBonus
+        {
+            get => _nodFirstLevelBonus;
+            set => _nodFirstLevelBonus = value;
         }
 
         /// <summary>
@@ -1208,6 +1227,7 @@ namespace Chummer
             {
                 objXmlPowerNode.TryGetStringFieldQuickly("source", ref strSource);
                 objXmlPowerNode.TryGetStringFieldQuickly("page", ref strPage);
+                objXmlPowerNode.TryGetStringFieldQuickly("translate", ref strPowerName);
             }
 
             objWriter.WriteStartElement("power");
@@ -1347,7 +1367,7 @@ namespace Chummer
         }
 
         private XmlNode _objCachedMyXmlNode = null;
-
+        
         public event PropertyChangedEventHandler PropertyChanged;
 
         public XmlNode MyXmlNode
@@ -1423,10 +1443,11 @@ namespace Chummer
                     if (string.IsNullOrEmpty(_strCritterName) && CritterName != LanguageManager.GetString("String_UnnamedCharacter"))
                         _strCritterName = CritterName;
                 }
-                if (PropertyChanged != null)
+                PropertyChangedEventHandler objPropertyChanged = PropertyChanged;
+                if (objPropertyChanged != null)
                 {
-                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(CritterName)));
-                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(NoLinkedCharacter)));
+                    objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(CritterName)));
+                    objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(NoLinkedCharacter)));
                 }
             }
         }
@@ -5007,7 +5028,7 @@ namespace Chummer
 
         private List<Image> _lstMugshots = new List<Image>();
         private int _intMainMugshotIndex = -1;
-
+        
         public event PropertyChangedEventHandler PropertyChanged;
 
         #region Helper Methods
@@ -5601,13 +5622,14 @@ namespace Chummer
                     if (string.IsNullOrEmpty(_strMetatype) && !string.IsNullOrEmpty(Metatype))
                         _strMetatype = Metatype;
                 }
-                if (PropertyChanged != null)
+                PropertyChangedEventHandler objPropertyChanged = PropertyChanged;
+                if (objPropertyChanged != null)
                 {
-                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
-                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Age)));
-                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Sex)));
-                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Metatype)));
-                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(NoLinkedCharacter)));
+                    objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+                    objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Age)));
+                    objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Sex)));
+                    objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Metatype)));
+                    objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(NoLinkedCharacter)));
                 }
             }
         }
@@ -6804,7 +6826,7 @@ namespace Chummer
         /// <param name="strForceValueChoice2">Name/Text for Choice 2.</param>
         /// <param name="strForceValue">Force a value to be selected for the Mentor Spirit.</param>
         /// <param name="blnMentorMask">Whether the Mentor's Mask is enabled.</param>
-        public virtual void Create(XmlNode objXmlMentor, Improvement.ImprovementType eMentorType, XmlNode objXmlChoice1, XmlNode objXmlChoice2, string strForceValue = "", string strForceValueChoice1 = "", string strForceValueChoice2 = "", bool blnMentorMask = false)
+        public void Create(XmlNode objXmlMentor, Improvement.ImprovementType eMentorType, XmlNode objXmlChoice1, XmlNode objXmlChoice2, string strForceValue = "", string strForceValueChoice1 = "", string strForceValueChoice2 = "", bool blnMentorMask = false)
         {
             _blnMentorMask = blnMentorMask;
             _eMentorType = eMentorType;
@@ -6910,7 +6932,7 @@ namespace Chummer
         /// Save the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public virtual void Save(XmlTextWriter objWriter)
+        public void Save(XmlTextWriter objWriter)
         {
             objWriter.WriteStartElement("mentorspirit");
             objWriter.WriteElementString("guid", _guiID.ToString());
@@ -6946,10 +6968,10 @@ namespace Chummer
         }
 
         /// <summary>
-        /// Load the CharacterAttribute from the XmlNode.
+        /// Load the Mentor Spirit from the XmlNode.
         /// </summary>
         /// <param name="objNode">XmlNode to load.</param>
-        public virtual void Load(XmlNode objNode)
+        public void Load(XmlNode objNode)
         {
             objNode.TryGetField("guid", Guid.TryParse, out _guiID);
             if (objNode.TryGetStringFieldQuickly("name", ref _strName))
@@ -7020,8 +7042,10 @@ namespace Chummer
             set
             {
                 if (_strName != value)
+                {
                     _objCachedMyXmlNode = null;
-                _strName = value;
+                    _strName = value;
+                }
             }
         }
 

@@ -37,7 +37,7 @@ namespace Chummer
         private XmlDocument _objCharacterXML = new XmlDocument();
         private string _strSelectedSheet = GlobalOptions.DefaultCharacterSheet;
         private bool _blnLoading = false;
-        private CultureInfo objPrintCulture = GlobalOptions.CultureInfo;
+        private CultureInfo _objPrintCulture = GlobalOptions.CultureInfo;
         private BackgroundWorker _workerRefresher = new BackgroundWorker();
         private BackgroundWorker _workerOutputGenerator = new BackgroundWorker();
 
@@ -249,7 +249,7 @@ namespace Chummer
                 _workerRefresher.CancelAsync();
             if (_workerOutputGenerator.IsBusy)
                 _workerOutputGenerator.CancelAsync();
-            Cursor = Cursors.WaitCursor;
+            Cursor = Cursors.AppStarting;
             _workerRefresher.RunWorkerAsync();
         }
 
@@ -258,17 +258,17 @@ namespace Chummer
         /// </summary>
         public void RefreshSheet()
         {
+            Cursor = Cursors.AppStarting;
+            SetDocumentText(LanguageManager.GetString("String_Generating_Sheet"));
             if (_workerOutputGenerator.IsBusy)
                 _workerOutputGenerator.CancelAsync();
-            Cursor = Cursors.WaitCursor;
-            SetDocumentText(LanguageManager.GetString("String_Generating_Sheet"));
             _workerOutputGenerator.RunWorkerAsync();
         }
 
         /// <summary>
         /// Update the internal XML of the Viewer window.
         /// </summary>
-        private void AsyncRefresh(object sender, EventArgs e)
+        private void AsyncRefresh(object sender, DoWorkEventArgs e)
         {
             // Write the Character information to a MemoryStream so we don't need to create any files.
             MemoryStream objStream = new MemoryStream();
@@ -281,14 +281,28 @@ namespace Chummer
             objWriter.WriteStartElement("characters");
 
             foreach (Character objCharacter in _lstCharacters)
+            {
+                if (_workerRefresher.CancellationPending)
+                {
+                    e.Cancel = true;
+                    objWriter.Close();
+                    return;
+                }
 #if DEBUG
-                objCharacter.PrintToStream(objStream, objWriter, objPrintCulture);
+                objCharacter.PrintToStream(objStream, objWriter, _objPrintCulture);
 #else
                 objCharacter.PrintToStream(objWriter, GlobalOptions.CultureInfo);
 #endif
+            }
 
             // </characters>
             objWriter.WriteEndElement();
+            if (_workerRefresher.CancellationPending)
+            {
+                e.Cancel = true;
+                objWriter.Close();
+                return;
+            }
 
             // Finish the document and flush the Writer and Stream.
             objWriter.WriteEndDocument();
@@ -301,23 +315,35 @@ namespace Chummer
 
             // Put the stream into an XmlDocument and send it off to the Viewer.
             string strXML = objReader.ReadToEnd();
+            if (_workerRefresher.CancellationPending)
+            {
+                e.Cancel = true;
+                objWriter.Close();
+                return;
+            }
             objCharacterXML.LoadXml(strXML);
 
             objWriter.Close();
 
-            _objCharacterXML = objCharacterXML;
+            if (_workerRefresher.CancellationPending)
+                e.Cancel = true;
+            else
+                _objCharacterXML = objCharacterXML;
         }
 
-        private void FinishRefresh(object sender, EventArgs e)
+        private void FinishRefresh(object sender, RunWorkerCompletedEventArgs e)
         {
-            tsSaveAsXml.Enabled = _objCharacterXML != null;
-            RefreshSheet();
+            if (!e.Cancelled)
+            {
+                tsSaveAsXml.Enabled = _objCharacterXML != null;
+                RefreshSheet();
+            }
         }
 
         /// <summary>
         /// Run the generated XML file through the XSL transformation engine to create the file output.
         /// </summary>
-        private void AsyncGenerateOutput(object sender, EventArgs e)
+        private void AsyncGenerateOutput(object sender, DoWorkEventArgs e)
         {
             string strXslPath = Path.Combine(Application.StartupPath, "sheets", _strSelectedSheet + ".xsl");
             if (!File.Exists(strXslPath))
@@ -346,10 +372,21 @@ namespace Chummer
                 return;
             }
 
+            if (_workerOutputGenerator.CancellationPending)
+            {
+                e.Cancel = true;
+                return;
+            }
+
             MemoryStream objStream = new MemoryStream();
             XmlTextWriter objWriter = new XmlTextWriter(objStream, Encoding.UTF8);
 
             objXSLTransform.Transform(_objCharacterXML, objWriter);
+            if (_workerOutputGenerator.CancellationPending)
+            {
+                e.Cancel = true;
+                return;
+            }
             objStream.Position = 0;
 
             // This reads from a static file, outputs to an HTML file, then has the browser read from that file. For debugging purposes.
@@ -375,12 +412,15 @@ namespace Chummer
             }
         }
 
-        private void FinishGenerateOutput(object sender, EventArgs e)
+        private void FinishGenerateOutput(object sender, RunWorkerCompletedEventArgs e)
         {
-            cmdPrint.Enabled = true;
-            tsPrintPreview.Enabled = true;
-            cmdSaveHTML.Enabled = true;
-            tsSaveAsPdf.Enabled = true;
+            if (!e.Cancelled)
+            {
+                cmdPrint.Enabled = true;
+                tsPrintPreview.Enabled = true;
+                cmdSaveHTML.Enabled = true;
+                tsSaveAsPdf.Enabled = true;
+            }
             Cursor = Cursors.Default;
         }
 
@@ -657,7 +697,7 @@ namespace Chummer
         {
             try
             {
-                objPrintCulture = CultureInfo.GetCultureInfo(cboLanguage.SelectedValue.ToString());
+                _objPrintCulture = CultureInfo.GetCultureInfo(cboLanguage.SelectedValue.ToString());
             }
             catch (CultureNotFoundException)
             {

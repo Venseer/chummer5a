@@ -710,7 +710,7 @@ namespace Chummer
                     int intMAG = CharacterObject.MAG.TotalValue;
                     if (CharacterObject.Options.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept)
                         intMAG = CharacterObject.MAGAdept.TotalValue;
-                    intReturn = Math.Max(intReturn, intMAG);
+                    intReturn = Math.Min(intReturn, intMAG);
                 }
                 return intReturn;
             }
@@ -764,7 +764,7 @@ namespace Chummer
         public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
-        public virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        public void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             // If the Bonus contains "Rating", remove the existing Improvements and create new ones.
