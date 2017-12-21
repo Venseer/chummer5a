@@ -50,6 +50,12 @@ Application Changes:
 - The amend system for custom data now supports the use of custom XPath filters. This means that a single amending node can now modify multiple nodes based on whatever XPath filters are defined in its xpathfilter attribute. The "Cyberlimbs Cannot Add Headware" custom ruleset in the customdata folder has been updated to use this system, and it now also serves as an example for how to use custom XPath filters for amends.
 - Tabs can now be scrolled through with the mousewheel.
 - Ghetto workaround to allow exotic ranged weapons to buy their own ammunition again in career mode. Super fragile, may break at the drop of a hat.
+- Added "Active Commlink" and "Home Node" checkboxes to the Cyberware tab, and added an "Active Commlink" checkbox to the Vehicles tab.
+- Fixed a bug where player names would not show up in the character roster. Fixes #2195.
+- Weapons on vehicles/drones that use STR, Physical Limit, and/or AGI for their stats will now properly use attributes based on that vehicle/drone.
+- Fixed issues regarding undoing expenses involving weapon mounts, armor, and/or armor mods.
+- Fixed issues with refunding lifestyle expenses if a character has two or more lifestyles of the same type/level.
+- Added support to use attributes and XPath expressions in a weapon's AP field.
 
 Data Changes:
 
@@ -62,6 +68,8 @@ Data Changes:
 - Fixed a crash caused by a typo in Thundercloud Morgan's weapon mounts. Fixes #2183.
 - Fixed being able to change the spirit category of Summoning, Binding, and Banishing foci.
 - The Spiritual Way now allows discounting the following powers that were previously missed: Heightened Concentration, Spirit Ram, Nimble Fingers, Metabolic Control, Magic Sense, Kinesics Mastery, Traceless Walk, Pain Resistance, Improved Physical Attribute.
+- The Ultimax Carbine has been converted back to using its actual stats from Gun H(e)aven 3, as no official errata has ever been released for it. An amend entry has been added to the SR Missions 1.4 Rules customdata folder, and a separate entry has been added for users that want to treat Missions as official errata for it. Characters that already have this weapon should not be affected, but I'd recommend enabling the rule if you intend to reapply improvements or purchase a new one at some point.
+
 New Strings:
 
 - Menu_Main_Translator

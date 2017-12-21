@@ -5,13 +5,13 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using Chummer.Skills;
+using Chummer.Backend.Skills;
 using Chummer.Backend.Attributes;
 
 namespace Chummer.UI.Skills
 {
     [DebuggerDisplay("{_skill.Name} {Visible} {btnAddSpec.Visible}")]
-    public partial class SkillControl2 : UserControl
+    public sealed partial class SkillControl2 : UserControl
     {
         private readonly Skill _skill;
         private readonly Font _normal;
@@ -270,7 +270,8 @@ namespace Chummer.UI.Skills
             List<ListItem> lstAttributeItems = new List<ListItem>();
 		    foreach (string strLoopAttribute in AttributeSection.AttributeStrings)
 		    {
-                lstAttributeItems.Add(new ListItem(strLoopAttribute, LanguageManager.GetString($"String_Attribute{strLoopAttribute}Short")));
+                if (strLoopAttribute != "MAGAdept")
+                    lstAttributeItems.Add(new ListItem (strLoopAttribute, LanguageManager.GetString($"String_Attribute{strLoopAttribute}Short")));
             }
 
             cboSelectAttribute.BeginUpdate();

@@ -26,7 +26,7 @@ using System.Xml;
 
 namespace Chummer
 {
-    class StoryBuilder
+    public sealed class StoryBuilder
     {
         private Dictionary<String, String> persistenceDictionary = new Dictionary<String, String>(); 
         private Character _objCharacter;
@@ -90,7 +90,7 @@ namespace Chummer
                 {
                     XmlNode objStoryModule = modules[i];
                     StringBuilder objModuleString = new StringBuilder();
-                    Write(objModuleString, objStoryModule.InnerText, 5);
+                    Write(objModuleString, objStoryModule["story"].InnerText, 5);
                     lock (storyLock)
                         story[i] = objModuleString.ToString();
                 });

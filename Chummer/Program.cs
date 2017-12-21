@@ -34,14 +34,14 @@ namespace Chummer
     static class Program
     {
         private const string strChummerGuid = "eb0759c1-3599-495e-8bc5-57c8b3e1b31c";
-        private static Mutex _objGlobalMutex;
+        private static Mutex s_MutexGlobal;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
         static void Main()
         {
-            using (_objGlobalMutex = new Mutex(false, @"Global\" + strChummerGuid))
+            using (s_MutexGlobal = new Mutex(false, @"Global\" + strChummerGuid))
             {
                 ProfileOptimization.SetProfileRoot(Application.StartupPath);
                 ProfileOptimization.StartProfile("chummerprofile");
@@ -63,7 +63,7 @@ namespace Chummer
                 sw.TaskEnd("fixcwd");
                 //Log exceptions that is caught. Wanting to know about this cause of performance
                 AppDomain.CurrentDomain.FirstChanceException += Log.FirstChanceException;
-                AppDomain.CurrentDomain.FirstChanceException += heatmap.OnException;
+                AppDomain.CurrentDomain.FirstChanceException += s_Heatmap.OnException;
 
                 sw.TaskEnd("appdomain 2");
 
@@ -82,34 +82,44 @@ namespace Chummer
                 // Make sure the default language has been loaded before attempting to open the Main Form.
 
 #if !DEBUG
-        AppDomain.CurrentDomain.UnhandledException += (o, e) =>
-        {
-            if (e.ExceptionObject is Exception ex)
-                CrashHandler.WebMiniDumpHandler(ex);
+                AppDomain.CurrentDomain.UnhandledException += (o, e) =>
+                {
+                    if (e.ExceptionObject is Exception ex)
+                        CrashHandler.WebMiniDumpHandler(ex);
 
-            //main.Hide();
-            //main.ShowInTaskbar = false;
-        };
+                    //main.Hide();
+                    //main.ShowInTaskbar = false;
+                };
 #endif
 
                 sw.TaskEnd("Startup");
-                if (LanguageManager.Loaded)
-                {
-                    Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
 
-                    frmMain main = new frmMain();
-                    Application.Run(main);
-                }
-                else
-                {
-                    Application.Exit();
-                }
+                Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
 
-                Log.Info(heatmap.GenerateInfo());
+                s_FrmMainForm = new frmChummerMain();
+                Application.Run(s_FrmMainForm);
+
+                Log.Info(s_Heatmap.GenerateInfo());
             }
         }
 
-        static readonly ExceptionHeatMap heatmap = new ExceptionHeatMap();
+        private static frmChummerMain s_FrmMainForm;
+        /// <summary>
+        /// Main application form.
+        /// </summary>
+        public static frmChummerMain MainForm
+        {
+            get
+            {
+                return s_FrmMainForm;
+            }
+            set
+            {
+                s_FrmMainForm = value;
+            }
+        }
+
+        static readonly ExceptionHeatMap s_Heatmap = new ExceptionHeatMap();
 
         static void FixCwd()
         {
@@ -130,7 +140,7 @@ namespace Chummer
 
         public static Mutex GlobalChummerMutex
         {
-            get { return _objGlobalMutex; }
+            get { return s_MutexGlobal; }
         }
     }
 }

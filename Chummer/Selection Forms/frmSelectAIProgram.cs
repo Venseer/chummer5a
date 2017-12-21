@@ -31,10 +31,10 @@ namespace Chummer
         private string _strSelectedCategory = string.Empty;
 
         private bool _blnAddAgain = false;
-        private bool _blnAdvancedProgramAllowed = true;
-        private bool _blnInherentProgram = false;
+        private readonly bool _blnAdvancedProgramAllowed = true;
+        private readonly bool _blnInherentProgram = false;
         private readonly Character _objCharacter;
-        private List<ListItem> _lstCategory = new List<ListItem>();
+        private readonly List<ListItem> _lstCategory = new List<ListItem>();
 
         private readonly XmlDocument _objXmlDocument = null;
 
@@ -63,41 +63,22 @@ namespace Chummer
             XmlNodeList objXmlNodeList = _objXmlDocument.SelectNodes("/chummer/categories/category");
             foreach (XmlNode objXmlCategory in objXmlNodeList)
             {
-                if (_blnInherentProgram && objXmlCategory.InnerText != "Common Programs" && objXmlCategory.InnerText != "Hacking Programs")
+                string strInnerText = objXmlCategory.InnerText;
+                if (_blnInherentProgram && strInnerText != "Common Programs" && strInnerText != "Hacking Programs")
                     continue;
-                if (!_blnAdvancedProgramAllowed && objXmlCategory.InnerText == "Advanced Programs")
+                if (!_blnAdvancedProgramAllowed && strInnerText == "Advanced Programs")
                     continue;
-                bool blnAddItem = true;
                 // Make sure it is not already in the Category list.
-                foreach (ListItem objItem in _lstCategory)
+                if (!_lstCategory.Any(objItem => objItem.Value == strInnerText))
                 {
-                    if (objItem.Value == objXmlCategory.InnerText)
-                    {
-                        blnAddItem = false;
-                        break;
-                    }
-                }
-                if (blnAddItem)
-                {
-                    ListItem objItem = new ListItem
-                    {
-                        Value = objXmlCategory.InnerText,
-                        Name = objXmlCategory.Attributes?["translate"]?.InnerText ?? objXmlCategory.InnerText
-                    };
-                    _lstCategory.Add(objItem);
+                    _lstCategory.Add(new ListItem(strInnerText, objXmlCategory.Attributes?["translate"]?.InnerText ?? strInnerText));
                 }
             }
-            SortListItem objSort = new SortListItem();
-            _lstCategory.Sort(objSort.Compare);
+            _lstCategory.Sort(CompareListItems.CompareNames);
 
             if (_lstCategory.Count > 0)
             {
-                ListItem objItem = new ListItem
-                {
-                    Value = "Show All",
-                    Name = LanguageManager.GetString("String_ShowAll")
-                };
-                _lstCategory.Insert(0, objItem);
+                _lstCategory.Insert(0, new ListItem("Show All", LanguageManager.GetString("String_ShowAll")));
             }
 
             cboCategory.BeginUpdate();
@@ -331,24 +312,23 @@ namespace Chummer
                     if (!blnAdd)
                         continue;
                 }
-                ListItem objItem = new ListItem
+                string strDisplayName = objXmlProgram["translate"]?.InnerText ?? objXmlProgram["name"].InnerText;
+                if (!_objCharacter.Options.SearchInCategoryOnly && txtSearch.TextLength != 0)
                 {
-                    Value = objXmlProgram["id"].InnerText,
-                    Name = objXmlProgram["translate"]?.InnerText ?? objXmlProgram["name"].InnerText
-                };
-                if (!_objCharacter.Options.SearchInCategoryOnly && txtSearch.TextLength != 0 && objXmlProgram["category"] != null)
-                {
-                    ListItem objFoundItem = _lstCategory.Find(objFind => objFind.Value == objXmlProgram["category"].InnerText);
-                    if (objFoundItem != null)
+                    string strCategory = objXmlProgram["category"]?.InnerText;
+                    if (!string.IsNullOrEmpty(strCategory))
                     {
-                        objItem.Name += " [" + objFoundItem.Name + "]";
+                        ListItem objFoundItem = _lstCategory.Find(objFind => objFind.Value == strCategory);
+                        if (!string.IsNullOrEmpty(objFoundItem.Name))
+                        {
+                            strDisplayName += " [" + objFoundItem.Name + "]";
+                        }
                     }
                 }
-                lstPrograms.Add(objItem);
+                lstPrograms.Add(new ListItem(objXmlProgram["id"].InnerText, strDisplayName));
             }
-
-            SortListItem objSort = new SortListItem();
-            lstPrograms.Sort(objSort.Compare);
+            
+            lstPrograms.Sort(CompareListItems.CompareNames);
             lstAIPrograms.BeginUpdate();
             lstAIPrograms.DataSource = null;
             lstAIPrograms.ValueMember = "Value";

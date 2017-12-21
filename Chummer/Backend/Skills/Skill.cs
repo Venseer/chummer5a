@@ -10,12 +10,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Chummer.Annotations;
-using Chummer.Backend;
 using Chummer.Backend.Equipment;
 using Chummer.Datastructures;
 using Chummer.Backend.Attributes;
 
-namespace Chummer.Skills
+namespace Chummer.Backend.Skills
 {
     [DebuggerDisplay("{_name} {_base} {_karma}")]
     public partial class Skill : INotifyPropertyChanged
@@ -30,13 +29,13 @@ namespace Chummer.Skills
 
         public CharacterAttrib AttributeObject { get; protected set; } //Attribute this skill primarily depends on
         private readonly Character _character; //The Character (parent) to this skill
-        protected readonly string Category; //Name of the skill category it belongs to
-        private readonly string _group; //Name of the skill group this skill belongs to (remove?)
-        private string _name = string.Empty; //English name of this skill
-        private string _strNotes; //Text of any notes that were entered by the user
-        protected List<ListItem> SuggestedSpecializations; //List of suggested specializations for this skill
-        private readonly string _translatedName = null;
-        private string _translatedCategory = null;
+        private readonly string _strCategory = string.Empty; //Name of the skill category it belongs to
+        private readonly string _strGroup = string.Empty; //Name of the skill group this skill belongs to (remove?)
+        private string _strName = string.Empty; //English name of this skill
+        private string _strNotes = string.Empty; //Text of any notes that were entered by the user
+        public List<ListItem> SuggestedSpecializations { get; } = new List<ListItem>(); //List of suggested specializations for this skill
+        private readonly string _strTranslatedName = null;
+        private string _strTranslatedCategory = null;
         private bool _blnDefault;
 
         public void WriteTo(XmlTextWriter writer)
@@ -364,9 +363,9 @@ namespace Chummer.Skills
         {
             if (n == null)
                 return;
-            _name = n["name"]?.InnerText; //No need to catch errors (for now), if missing we are fsked anyway
+            _strName = n["name"]?.InnerText; //No need to catch errors (for now), if missing we are fsked anyway
             AttributeObject = CharacterObject.GetAttribute(n["attribute"]?.InnerText);
-            Category = n["category"]?.InnerText;
+            _strCategory = n["category"]?.InnerText ?? string.Empty;
             Default = n["default"]?.InnerText.ToLower() == "yes";
             Source = n["source"]?.InnerText;
             Page = n["page"]?.InnerText;
@@ -377,18 +376,18 @@ namespace Chummer.Skills
             if (n["guid"] != null)
                 Id = Guid.Parse(n["guid"].InnerText);
 
-            _translatedName = n["translate"]?.InnerText;
+            _strTranslatedName = n["translate"]?.InnerText;
 
             AttributeObject.PropertyChanged += OnLinkedAttributeChanged;
-
-            SuggestedSpecializations = new List<ListItem>();
+            
             XmlNodeList lstSuggestedSpecializationsXml = n["specs"]?.ChildNodes;
             if (lstSuggestedSpecializationsXml != null)
             {
                 SuggestedSpecializations.Capacity = lstSuggestedSpecializationsXml.Count;
                 foreach (XmlNode node in lstSuggestedSpecializationsXml)
                 {
-                    SuggestedSpecializations.Add(ListItem.AutoXml(node.InnerText, node));
+                    string strInnerText = node.InnerText;
+                    SuggestedSpecializations.Add(new ListItem(strInnerText, node.Attributes?["translate"]?.InnerText ?? strInnerText));
                 }
             }
 
@@ -396,7 +395,7 @@ namespace Chummer.Skills
 
             if (!string.IsNullOrEmpty(strGroup))
             {
-                _group = strGroup;
+                _strGroup = strGroup;
                 SkillGroupObject = Skills.SkillGroup.Get(this);
                 if (SkillGroupObject != null)
                 {
@@ -516,7 +515,7 @@ namespace Chummer.Skills
         {
             get
             {
-                return _blnDefault && RelevantImprovements(objImprovement => objImprovement.ImproveType == Improvement.ImprovementType.BlockSkillDefault)?.Count == 0;
+                return _blnDefault && RelevantImprovements(objImprovement => objImprovement.ImproveType == Improvement.ImprovementType.BlockSkillDefault).Count == 0;
             }
             set
             {
@@ -536,8 +535,8 @@ namespace Chummer.Skills
 
         public string Name
         {
-            get { return _name; }
-            set { _name = value; }
+            get { return _strName; }
+            set { _strName = value; }
         } //I
 
         //TODO RENAME DESCRIPTIVE
@@ -555,12 +554,12 @@ namespace Chummer.Skills
 
         public string SkillGroup
         {
-            get { return _group; }
+            get { return _strGroup; }
         }
 
         public virtual string SkillCategory
         {
-            get { return Category; }
+            get { return _strCategory; }
         }
 
         public IReadOnlyList<ListItem> CGLSpecializations
@@ -638,7 +637,7 @@ namespace Chummer.Skills
                     //TODO translate (could not find it in lang file, did not check old source)
                 }
 
-                List<Improvement> lstRelevantImprovements = RelevantImprovements() ?? new List<Improvement>();
+                IList<Improvement> lstRelevantImprovements = RelevantImprovements();
 
                 StringBuilder s;
                 if (CyberwareRating() > TotalBaseRating)
@@ -832,10 +831,9 @@ namespace Chummer.Skills
                 {
                     middle = $"{SkillGroup} {LanguageManager.GetString("String_ExpenseSkillGroup")}\n";
                 }
-                if (!String.IsNullOrEmpty(_strNotes))
+                if (!string.IsNullOrEmpty(_strNotes))
                 {
-                    _strNotes = CommonFunctions.WordWrap(_strNotes, 100);
-                    strReturn = LanguageManager.GetString("Label_Notes") + " " + _strNotes + "\n\n";
+                    strReturn = LanguageManager.GetString("Label_Notes") + " " + CommonFunctions.WordWrap(_strNotes, 100) + "\n\n";
                 }
 
                 strReturn += $"{this.GetDisplayCategory()}\n{middle}{CharacterObject.Options.LanguageBookLong(Source)} {LanguageManager.GetString("String_Page")} {Page}";
@@ -875,13 +873,13 @@ namespace Chummer.Skills
         //TODO: Add translation support
         public string DisplayName
         {
-            get { return _translatedName ?? Name; }
+            get { return _strTranslatedName ?? Name; }
         }
 
         public string DisplayCategory
         {
-            get { return _translatedCategory ?? Category; }
-            set { _translatedCategory = value; }
+            get { return _strTranslatedCategory ?? _strCategory; }
+            set { _strTranslatedCategory = value; }
         }
         public virtual string DisplayPool
         {
@@ -1072,7 +1070,7 @@ namespace Chummer.Skills
         }
 
         [Obsolete("Refactor this method away once improvementmanager gets outbound events")]
-        private void OnImprovementEvent(List<Improvement> improvements)
+        private void OnImprovementEvent(ICollection<Improvement> improvements)
         {
             _cachedFreeBase = int.MinValue;
             _cachedFreeKarma = int.MinValue;

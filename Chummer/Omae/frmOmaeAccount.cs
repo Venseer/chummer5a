@@ -24,8 +24,7 @@ namespace Chummer
 {
     public partial class frmOmaeAccount : Form
     {
-        private string _strUserName = string.Empty;
-        private readonly OmaeHelper _objOmaeHelper = new OmaeHelper();
+        private readonly string _strUserName = string.Empty;
 
         #region Control Events
         public frmOmaeAccount(string strUserName)
@@ -38,7 +37,7 @@ namespace Chummer
 
         private void frmOmaeAccount_Load(object sender, EventArgs e)
         {
-            omaeSoapClient objService = _objOmaeHelper.GetOmaeService();
+            omaeSoapClient objService = OmaeHelper.GetOmaeService();
             txtEmail.Text = objService.GetEmailAddress(_strUserName);
         }
 
@@ -49,7 +48,7 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
-            omaeSoapClient objService = _objOmaeHelper.GetOmaeService();
+            omaeSoapClient objService = OmaeHelper.GetOmaeService();
             objService.SetEmailAddress(_strUserName, txtEmail.Text);
             DialogResult = DialogResult.OK;
         }

@@ -8,7 +8,6 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
 using Chummer.Backend.Skills;
-using Chummer.Skills;
 using Chummer.UI.Shared;
 using Chummer.Backend.Attributes;
 
@@ -88,13 +87,13 @@ namespace Chummer.UI.Skills
                 UpdateKnoSkillRemaining();
             }
 
-            _dropDownList = GenerateDropdownFilter();
-            _dropDownKnowledgeList = GenerateKnowledgeDropdownFilter();
+            _dropDownList = (List<Tuple<string, Predicate<Skill>>>)GenerateDropdownFilter();
+            _dropDownKnowledgeList = (List<Tuple<string, Predicate<KnowledgeSkill>>>)GenerateKnowledgeDropdownFilter();
 
             parts.TaskEnd("GenerateDropDown()");
 
-            _sortList = GenerateSortList();
-            _sortKnowledgeList = GenerateKnowledgeSortList();
+            _sortList = (List<Tuple<string, IComparer<Skill>>>)GenerateSortList();
+            _sortKnowledgeList = (List<Tuple<string, IComparer<KnowledgeSkill>>>)GenerateKnowledgeSortList();
 
             parts.TaskEnd("GenerateSortList()");
 
@@ -183,7 +182,7 @@ namespace Chummer.UI.Skills
             Debug.WriteLine("RealLoad() in {0} ms", sw.Elapsed.TotalMilliseconds);
         }
 
-        private List<Tuple<string, IComparer<Skill>>> GenerateSortList()
+        private static IList<Tuple<string, IComparer<Skill>>> GenerateSortList()
         {
             List<Tuple<string, IComparer<Skill>>> ret = new List<Tuple<string, IComparer<Skill>>>()
             {
@@ -200,7 +199,21 @@ namespace Chummer.UI.Skills
                 new Tuple<string, IComparer<Skill>>(LanguageManager.GetString("Skill_SortAttributeName"),
                     new SkillSorter((x, y) => string.Compare(x.Attribute, y.Attribute, StringComparison.Ordinal))),
                 new Tuple<string, IComparer<Skill>>(LanguageManager.GetString("Skill_SortGroupName"),
-                    new SkillSorter((x, y) => string.Compare(y.SkillGroup, x.SkillGroup, StringComparison.Ordinal))),
+                    new SkillSorter((x, y) =>
+                    {
+                        string strXGroup = x.SkillGroup;
+                        string strYGroup = y.SkillGroup;
+                        if (string.IsNullOrEmpty(strXGroup))
+                        {
+                            if (string.IsNullOrEmpty(strYGroup))
+                                return 0;
+                            else
+                                return -1;
+                        }
+                        else if (string.IsNullOrEmpty(strYGroup))
+                            return 1;
+                        return string.Compare(x.SkillGroup, y.SkillGroup, StringComparison.Ordinal);
+                    })),
                 new Tuple<string, IComparer<Skill>>(LanguageManager.GetString("Skill_SortGroupRating"),
                     new SkillSortBySkillGroup()),
                 new Tuple<string, IComparer<Skill>>(LanguageManager.GetString("Skill_SortCategory"),
@@ -210,7 +223,7 @@ namespace Chummer.UI.Skills
             return ret;
         }
 
-        private List<Tuple<string, Predicate<Skill>>> GenerateDropdownFilter()
+        private IList<Tuple<string, Predicate<Skill>>> GenerateDropdownFilter()
         {
             List<Tuple<string, Predicate<Skill>>> ret = new List<Tuple<string, Predicate<Skill>>>
             {
@@ -257,7 +270,7 @@ namespace Chummer.UI.Skills
             return ret;
         }
 
-        private List<Tuple<string, IComparer<KnowledgeSkill>>> GenerateKnowledgeSortList()
+        private static IList<Tuple<string, IComparer<KnowledgeSkill>>> GenerateKnowledgeSortList()
         {
             List<Tuple<string, IComparer<KnowledgeSkill>>> ret = new List<Tuple<string, IComparer<KnowledgeSkill>>>()
             {
@@ -280,7 +293,7 @@ namespace Chummer.UI.Skills
             return ret;
         }
 
-        private List<Tuple<string, Predicate<KnowledgeSkill>>> GenerateKnowledgeDropdownFilter()
+        private static IList<Tuple<string, Predicate<KnowledgeSkill>>> GenerateKnowledgeDropdownFilter()
         {
             List<Tuple<string, Predicate<KnowledgeSkill>>> ret = new List<Tuple<string, Predicate<KnowledgeSkill>>>
             {

@@ -9,7 +9,7 @@ namespace Chummer.Backend.Equipment
     /// <summary>
     /// Lifestyle.
     /// </summary>
-    public class Lifestyle : INamedItemWithGuidAndNode
+    public class Lifestyle : IItemWithGuid, INamedItem, IItemWithNode
     {
         // ReSharper disable once InconsistentNaming
         private Guid _guiID;
@@ -45,7 +45,7 @@ namespace Chummer.Backend.Equipment
         /// Convert a string to a LifestyleType.
         /// </summary>
         /// <param name="strValue">String value to convert.</param>
-        public LifestyleType ConverToLifestyleType(string strValue)
+        public static LifestyleType ConverToLifestyleType(string strValue)
         {
             switch (strValue)
             {
@@ -301,7 +301,7 @@ namespace Chummer.Backend.Equipment
         /// </summary>
         public string InternalId => _guiID.ToString();
 
-        public List<LifestyleQuality> FreeGrids { get; set; } = new List<LifestyleQuality>();
+        public IList<LifestyleQuality> FreeGrids { get; } = new List<LifestyleQuality>();
 
         // ReSharper disable once InconsistentNaming
         public Guid SourceID
@@ -601,7 +601,7 @@ namespace Chummer.Backend.Equipment
         /// <summary>
         /// Advanced Lifestyle Qualities.
         /// </summary>
-        public List<LifestyleQuality> LifestyleQualities => _lstLifestyleQualities;
+        public IList<LifestyleQuality> LifestyleQualities => _lstLifestyleQualities;
 
         /// <summary>
         /// Notes.

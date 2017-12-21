@@ -1,6 +1,6 @@
-﻿namespace Chummer
+namespace Chummer
 {
-    partial class frmMain
+    public sealed partial class frmChummerMain
     {
         /// <summary>
         /// Required designer variable.
@@ -27,7 +27,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmMain));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmChummerMain));
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.newToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -735,11 +735,11 @@
             this.Name = "frmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Chummer5";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_Closing);
-            this.Load += new System.EventHandler(this.frmMain_Load);
-            this.MdiChildActivate += new System.EventHandler(this.frmMain_MdiChildActivate);
-            this.DragDrop += new System.Windows.Forms.DragEventHandler(this.frmMain_DragDrop);
-            this.DragEnter += new System.Windows.Forms.DragEventHandler(this.frmMain_DragEnter);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmChummerMain_Closing);
+            this.Load += new System.EventHandler(this.frmChummerMain_Load);
+            this.MdiChildActivate += new System.EventHandler(this.frmChummerMain_MdiChildActivate);
+            this.DragDrop += new System.Windows.Forms.DragEventHandler(this.frmChummerMain_DragDrop);
+            this.DragEnter += new System.Windows.Forms.DragEventHandler(this.frmChummerMain_DragEnter);
             this.menuStrip.ResumeLayout(false);
             this.menuStrip.PerformLayout();
             this.toolStrip.ResumeLayout(false);

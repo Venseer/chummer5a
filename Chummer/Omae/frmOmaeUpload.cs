@@ -25,23 +25,22 @@ using Chummer.OmaeService;
 
 namespace Chummer
 {
-    public partial class frmOmaeUpload : Form
+    public sealed partial class frmOmaeUpload : Form
     {
-        private readonly OmaeHelper _objOmaeHelper = new OmaeHelper();
         private readonly Character _objCharacter = new Character();
-        private List<ListItem> _lstCharacterTypes = new List<ListItem>();
+        private readonly List<ListItem> _lstCharacterTypes = new List<ListItem>();
 
         // Error message constants.
         private readonly string NO_CONNECTION_MESSAGE = string.Empty;
         private readonly string NO_CONNECTION_TITLE = string.Empty;
 
-        private string _strUserName;
+        private readonly string _strUserName;
         private string _strCharacterName = string.Empty;
         private string _strMetatype = string.Empty;
         private string _strMetavariant = string.Empty;
         private string _strQualities = string.Empty;
-        private int _intCharacterID = 0;
-        private int _intCharacterType = 0;
+        private readonly int _intCharacterID = 0;
+        private readonly int _intCharacterType = 0;
         private int _intCreated = 0;
 
         #region Control Events
@@ -199,7 +198,7 @@ namespace Chummer
             }
 
             // Read the contents of the file into a byte array, the compress it.
-            byte[] bytFile = _objOmaeHelper.Compress(File.ReadAllBytes(txtFilePath.Text));
+            byte[] bytFile = OmaeHelper.Compress(File.ReadAllBytes(txtFilePath.Text));
 
             // Make sure the file doesn't exceed 500K in size (512,000 bytes).
             if (bytFile.Length > 512000)
@@ -208,7 +207,7 @@ namespace Chummer
                 return;
             }
 
-            omaeSoapClient objService = _objOmaeHelper.GetOmaeService();
+            omaeSoapClient objService = OmaeHelper.GetOmaeService();
             try
             {
                 cmdUpload.Enabled = false;

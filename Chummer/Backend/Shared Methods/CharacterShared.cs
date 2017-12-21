@@ -27,7 +27,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Chummer.Backend.Equipment;
-using Chummer.Skills;
+using Chummer.Backend.Skills;
 using System.Xml;
 using System.Xml.XPath;
 using Chummer.Backend.Attributes;
@@ -64,22 +64,32 @@ namespace Chummer
         /// <summary>
         /// Wrapper for relocating contact forms. 
         /// </summary>
-        public class TransportWrapper
+        protected struct TransportWrapper
         {
-            private readonly Control _control;
+            public Control Control { get; }
 
-            public TransportWrapper(Control control)
+            public TransportWrapper(Control objControl)
             {
-                _control = control;
+                Control = objControl;
             }
 
-            public Control Control
+            public override bool Equals(object obj)
             {
-                get { return _control; }
+                return Control.Equals(obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return Control.GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return Control.ToString();
             }
         }
 
-        public Stopwatch Autosave_StopWatch = Stopwatch.StartNew();
+        public Stopwatch Autosave_StopWatch { get; } = Stopwatch.StartNew();
         /// <summary>
         /// Automatically Save the character to a backup folder.
         /// </summary>
@@ -637,28 +647,28 @@ namespace Chummer
             }
         }
 
-        private void objCharacter_CharacterNameChanged(Object sender)
+        private void objCharacter_CharacterNameChanged(object sender)
         {
             UpdateWindowTitle(false);
         }
 
-        /// <summary>
-        /// Update the Window title to show the Character's name and unsaved changes status.
-        /// </summary>
-        public virtual void UpdateWindowTitle(bool blnCanSkip)
+        public virtual string FormMode
         {
-            UpdateWindowTitle(string.Empty, blnCanSkip);
+            get
+            {
+                return string.Empty;
+            }
         }
 
         /// <summary>
         /// Update the Window title to show the Character's name and unsaved changes status.
         /// </summary>
-        public void UpdateWindowTitle(string strMode, bool blnCanSkip = true)
+        public void UpdateWindowTitle(bool blnCanSkip)
         {
             if (Text.EndsWith('*') == _blnIsDirty && blnCanSkip)
                 return;
             
-            string strTitle = _objCharacter.CharacterName + " - " + strMode + " (" + _objCharacter.Options.Name + ")";
+            string strTitle = _objCharacter.CharacterName + " - " + FormMode + " (" + _objCharacter.Options.Name + ")";
             if (_blnIsDirty)
                 strTitle += '*';
             this.DoThreadSafe(() => Text = strTitle);

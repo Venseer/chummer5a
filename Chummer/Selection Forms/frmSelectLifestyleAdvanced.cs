@@ -79,12 +79,7 @@ namespace Chummer
                     !strLifestyleName.Contains("Hospitalized") &&
                     _objCharacter.Options.Books.Contains(objXmlLifestyle["source"]?.InnerText))
                 {
-                    ListItem objItem = new ListItem
-                    {
-                        Value = strLifestyleName,
-                        Name = objXmlLifestyle["translate"]?.InnerText ?? strLifestyleName
-                    };
-                    lstLifestyles.Add(objItem);
+                    lstLifestyles.Add(new ListItem(strLifestyleName, objXmlLifestyle["translate"]?.InnerText ?? strLifestyleName));
                 }
             }
             //Populate the Qualities list.
@@ -696,7 +691,7 @@ namespace Chummer
         /// Sort the contents of a TreeView alphabetically.
         /// </summary>
         /// <param name="treTree">TreeView to sort.</param>
-        private void SortTree(TreeView treTree)
+        private static void SortTree(TreeView treTree)
         {
             List<TreeNode> lstNodes = new List<TreeNode>();
             foreach (TreeNode objNode in treTree.Nodes)
@@ -704,8 +699,7 @@ namespace Chummer
             treTree.Nodes.Clear();
             try
             {
-                SortByName objSort = new SortByName();
-                lstNodes.Sort(objSort.Compare);
+                lstNodes.Sort(CompareTreeNodes.CompareText);
             }
             catch (ArgumentException)
             {

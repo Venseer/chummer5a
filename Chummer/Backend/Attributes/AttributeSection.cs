@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
@@ -13,11 +14,17 @@ namespace Chummer.Backend.Attributes
 	public class AttributeSection : INotifyPropertyChanged
 	{
 		public event PropertyChangedEventHandler PropertyChanged;
-		public static string[] AttributeStrings = { "BOD", "AGI", "REA", "STR", "CHA", "INT", "LOG", "WIL", "EDG", "MAG", "MAGAdept", "RES", "ESS", "DEP" };
-	    private Dictionary<string, BindingSource> _bindings = new Dictionary<string, BindingSource>(AttributeStrings.Length);
+
+		private static readonly string[] s_LstAttributeStrings = { "BOD", "AGI", "REA", "STR", "CHA", "INT", "LOG", "WIL", "EDG", "MAG", "MAGAdept", "RES", "ESS", "DEP" };
+        public static ReadOnlyCollection<string> AttributeStrings { get { return Array.AsReadOnly(s_LstAttributeStrings); } }
+
+        private static readonly string[] s_LstPhysicalAttributes = { "BOD", "AGI", "REA", "STR" };
+        public static ReadOnlyCollection<string> PhysicalAttributes { get { return Array.AsReadOnly(s_LstPhysicalAttributes); } }
+
+        private Dictionary<string, BindingSource> _bindings = new Dictionary<string, BindingSource>(AttributeStrings.Count);
 		private readonly Character _character;
 		private CharacterAttrib.AttributeCategory _attributeCategory = CharacterAttrib.AttributeCategory.Standard;
-	    public Action<object> AttributeCategoryChanged;
+	    public Action<object> AttributeCategoryChanged { get; set; }
 
         #region Constructor, Save, Load, Print Methods
         public AttributeSection(Character character)
@@ -68,7 +75,7 @@ namespace Chummer.Backend.Attributes
                 {
                     CharacterAttrib att = new CharacterAttrib(_character, s);
                     att = RemakeAttribute(att, objCharNode);
-                    switch (att.ConvertToAttributeCategory(att.Abbrev))
+                    switch (CharacterAttrib.ConvertToAttributeCategory(att.Abbrev))
                     {
                         case CharacterAttrib.AttributeCategory.Special:
                             SpecialAttributeList.Add(att);
@@ -81,7 +88,7 @@ namespace Chummer.Backend.Attributes
                     {
                         att = new CharacterAttrib(_character, s, CharacterAttrib.AttributeCategory.Shapeshifter);
                         att = RemakeAttribute(att, objCharNodeAnimalForm);
-                        switch (att.ConvertToAttributeCategory(att.Abbrev))
+                        switch (CharacterAttrib.ConvertToAttributeCategory(att.Abbrev))
                         {
                             case CharacterAttrib.AttributeCategory.Special:
                                 SpecialAttributeList.Add(att);
@@ -98,7 +105,7 @@ namespace Chummer.Backend.Attributes
                     {
                         CharacterAttrib att = new CharacterAttrib(_character, s);
                         att.Load(attNode);
-                        switch (att.ConvertToAttributeCategory(att.Abbrev))
+                        switch (CharacterAttrib.ConvertToAttributeCategory(att.Abbrev))
                         {
                             case CharacterAttrib.AttributeCategory.Special:
                                 SpecialAttributeList.Add(att);
@@ -190,7 +197,7 @@ namespace Chummer.Backend.Attributes
 			}
 		}
 
-		public void CopyAttribute(CharacterAttrib source, CharacterAttrib target, string mv, XmlDocument xmlDoc)
+		public static void CopyAttribute(CharacterAttrib source, CharacterAttrib target, string mv, XmlDocument xmlDoc)
 		{
             string strSourceAbbrev = source.Abbrev.ToLower();
             if (strSourceAbbrev == "magadept")
@@ -210,7 +217,7 @@ namespace Chummer.Backend.Attributes
 			foreach (string strAttribute in AttributeStrings)
 			{
 				CharacterAttrib att = new CharacterAttrib(_character, strAttribute);
-				switch (att.ConvertToAttributeCategory(att.Abbrev))
+				switch (CharacterAttrib.ConvertToAttributeCategory(att.Abbrev))
 				{
 					case CharacterAttrib.AttributeCategory.Special:
 						SpecialAttributeList.Add(att);
@@ -223,7 +230,7 @@ namespace Chummer.Backend.Attributes
 			BuildBindingList();
 		}
 
-		public CharacterAttrib.AttributeCategory ConvertAttributeCategory(string s)
+		public static CharacterAttrib.AttributeCategory ConvertAttributeCategory(string s)
 		{
 			switch (s)
 			{
@@ -255,12 +262,12 @@ namespace Chummer.Backend.Attributes
 		/// <summary>
 		/// Character's Attributes.
 		/// </summary>
-		public List<CharacterAttrib> AttributeList { get; set; } = new List<CharacterAttrib>();
+		public IList<CharacterAttrib> AttributeList { get; } = new List<CharacterAttrib>();
 
 	    /// <summary>
 		/// Character's Attributes.
 		/// </summary>
-		public List<CharacterAttrib> SpecialAttributeList { get; set; } = new List<CharacterAttrib>();
+		public IList<CharacterAttrib> SpecialAttributeList { get; } = new List<CharacterAttrib>();
 
 	    public CharacterAttrib.AttributeCategory AttributeCategory
 	    {

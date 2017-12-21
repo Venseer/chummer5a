@@ -58,15 +58,9 @@ namespace Chummer
             foreach (XmlNode objXmlManeuver in objManeuverList)
             {
                 string strName = objXmlManeuver["name"].InnerText;
-                ListItem objItem = new ListItem
-                {
-                    Value = strName,
-                    Name = objXmlManeuver["translate"]?.InnerText ?? strName
-                };
-                lstManeuver.Add(objItem);
+                lstManeuver.Add(new ListItem(strName, objXmlManeuver["translate"]?.InnerText ?? strName));
             }
-            SortListItem objSort = new SortListItem();
-            lstManeuver.Sort(objSort.Compare);
+            lstManeuver.Sort(CompareListItems.CompareNames);
             lstManeuvers.BeginUpdate();
             lstManeuvers.DataSource = null;
             lstManeuvers.ValueMember = "Value";

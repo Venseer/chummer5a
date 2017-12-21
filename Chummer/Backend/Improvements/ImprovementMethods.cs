@@ -22,7 +22,7 @@ using Chummer.Classes;
 
 namespace Chummer
 {
-    public class ImprovementMethods
+    public static class ImprovementMethods
     {
         /// <summary>
         /// Gets an AddImprovementCollection function based on its name.
@@ -385,10 +385,10 @@ namespace Chummer
                     return objImprovementAdder.freespells;
                 case "SPELLCATEGORY":
                     return objImprovementAdder.spellcategory;
-                case "SPELLCATEGORYDAMAGE":
-                    return objImprovementAdder.spellcategorydamage;
                 case "SPELLCATEGORYDRAIN":
                     return objImprovementAdder.spellcategorydrain;
+                case "SPELLCATEGORYDAMAGE":
+                    return objImprovementAdder.spellcategorydamage;
                 case "THROWRANGE":
                     return objImprovementAdder.throwrange;
                 case "THROWSTR":

@@ -14,29 +14,27 @@ using System.Security;
 
 namespace Chummer.Backend.Debugging
 {
-
-
-    internal class CrashHandler
+    public static class CrashHandler
     {
         [SuppressUnmanagedCodeSecurity]
-        internal static class SafeNativeMethods
+        private static class SafeNativeMethods
         {
             [DllImport("kernel32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
             internal static extern uint GetCurrentThreadId();
         }
 
-        private class DumpData
+        private sealed class DumpData
         {
             public DumpData()
             {
                 AddDefaultInfo();
             }
 
-            public List<string> capturefiles = new List<string>();
-            public Dictionary<string, string> pretendfiles = new Dictionary<string, string>();
-            public Dictionary<string, string> attributes = new Dictionary<string, string>();
-            public int processid = Process.GetCurrentProcess().Id;
-            public uint threadId = SafeNativeMethods.GetCurrentThreadId();
+            private List<string> capturefiles = new List<string>();
+            private Dictionary<string, string> pretendfiles = new Dictionary<string, string>();
+            private Dictionary<string, string> attributes = new Dictionary<string, string>();
+            private int processid = Process.GetCurrentProcess().Id;
+            private uint threadId = SafeNativeMethods.GetCurrentThreadId();
 
             void AddDefaultInfo()
             {

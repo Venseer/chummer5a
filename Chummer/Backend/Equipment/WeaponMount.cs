@@ -11,8 +11,8 @@ namespace Chummer.Backend.Equipment
 	/// <summary>
 	/// Vehicle Modification.
 	/// </summary>
-	public class WeaponMount : INamedItemWithGuid
-	{
+	public class WeaponMount : IItemWithGuid, INamedItem
+    {
 		private Guid _guiID;
 		private decimal _decMarkup;
 		private string _strAvail = string.Empty;
@@ -96,7 +96,7 @@ namespace Chummer.Backend.Equipment
                         frmPickNumber.Description = LanguageManager.GetString("String_SelectVariableCost").Replace("{0}", DisplayNameShort);
                         frmPickNumber.AllowCancel = false;
                         frmPickNumber.ShowDialog();
-                        _strCost = frmPickNumber.SelectedValue.ToString();
+                        _strCost = frmPickNumber.SelectedValue.ToString(GlobalOptions.InvariantCultureInfo);
                     }
                 }
             }
@@ -239,8 +239,8 @@ namespace Chummer.Backend.Equipment
 			objWriter.WriteElementString("limit", _strLimit);
 			objWriter.WriteElementString("slots", _intSlots.ToString());
 			objWriter.WriteElementString("avail", TotalAvail);
-			objWriter.WriteElementString("cost", TotalCost.ToString());
-			objWriter.WriteElementString("owncost", OwnCost.ToString());
+			objWriter.WriteElementString("cost", TotalCost.ToString(_character.Options.NuyenFormat, objCulture));
+			objWriter.WriteElementString("owncost", OwnCost.ToString(_character.Options.NuyenFormat, objCulture));
 			objWriter.WriteElementString("source", _character.Options.LanguageBookShort(_strSource));
 			objWriter.WriteElementString("page", Page);
 			objWriter.WriteElementString("included", _blnIncludeInVehicle.ToString());
@@ -283,7 +283,7 @@ namespace Chummer.Backend.Equipment
         /// <summary>
         /// Weapons.
         /// </summary>
-        public List<Weapon> Weapons
+        public IList<Weapon> Weapons
 		{
 			get
 			{
@@ -552,7 +552,7 @@ namespace Chummer.Backend.Equipment
         /// <summary>
         /// 
         /// </summary>
-        public List<WeaponMountOption> WeaponMountOptions { get; set; } = new List<WeaponMountOption>();
+        public IList<WeaponMountOption> WeaponMountOptions { get; } = new List<WeaponMountOption>();
         #endregion
 
         #region Complex Properties
@@ -725,11 +725,6 @@ namespace Chummer.Backend.Equipment
 
     public class WeaponMountOption
     {
-        /// <summary>
-        /// Category of the weapon mount.
-        /// </summary>
-        public string Category;
-
         private readonly Character _objCharacter;
         private string _strAvail;
         private string _strName;
@@ -753,7 +748,7 @@ namespace Chummer.Backend.Equipment
         /// </summary>
         /// <param name="id">String guid of the object.</param>
         /// <param name="list">List to add the object to. Called inside the Create method in case the mount itself is null.</param>
-        public void Create(string id, List<WeaponMountOption> list)
+        public void Create(string id, ICollection<WeaponMountOption> list)
         {
             XmlDocument xmlDoc = XmlManager.Load("vehicles.xml");
             XmlNode objXmlMod = xmlDoc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[id = \"{id}\"]");
@@ -800,7 +795,7 @@ namespace Chummer.Backend.Equipment
                         frmPickNumber.Description = LanguageManager.GetString("String_SelectVariableCost").Replace("{0}", DisplayName);
                         frmPickNumber.AllowCancel = false;
                         frmPickNumber.ShowDialog();
-                        _strCost = frmPickNumber.SelectedValue.ToString();
+                        _strCost = frmPickNumber.SelectedValue.ToString(GlobalOptions.InvariantCultureInfo);
                     }
                 }
                 else
@@ -888,6 +883,11 @@ namespace Chummer.Backend.Equipment
         /// Availability string of the Mount.
         /// </summary>
         public string Avail => _strAvail;
+
+        /// <summary>
+        /// Category of the weapon mount.
+        /// </summary>
+        public string Category => _strCategory;
         #endregion
 
         #region Complex Properties
