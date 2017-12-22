@@ -56,6 +56,13 @@ Application Changes:
 - Fixed issues regarding undoing expenses involving weapon mounts, armor, and/or armor mods.
 - Fixed issues with refunding lifestyle expenses if a character has two or more lifestyles of the same type/level.
 - Added support to use attributes and XPath expressions in a weapon's AP field.
+- Added a label in Create mode that becomes visible when a character has Prototype Transhuman. This label tracks the current amount of essence used up by 'ware marked as Prototype Transhuman. Fixes #1764.
+- Fixed being able to mark 'ware children as Prototype Transhuman independently from the main 'ware itself.
+- Fixed being able to mark Cyberware as Prototype Transhuman.
+- Fixed Essence usage displays in the 'ware tab not properly reflecting the setting for Essence decimals to which to round.
+- Fixed a bug where player names would not show up in the character roster.
+- Cyberware, Gear, Armor and Armor Mod Ratings are now properly bound by their Min and Max Ratings. May cause issues in career mode if you suddenly become Aged with cyberware or something, but eh. Baby steps.
+- Fixed a crash when adding multiple armor mods a given piece of armor in career mode.
 
 Data Changes:
 
@@ -69,10 +76,11 @@ Data Changes:
 - Fixed being able to change the spirit category of Summoning, Binding, and Banishing foci.
 - The Spiritual Way now allows discounting the following powers that were previously missed: Heightened Concentration, Spirit Ram, Nimble Fingers, Metabolic Control, Magic Sense, Kinesics Mastery, Traceless Walk, Pain Resistance, Improved Physical Attribute.
 - The Ultimax Carbine has been converted back to using its actual stats from Gun H(e)aven 3, as no official errata has ever been released for it. An amend entry has been added to the SR Missions 1.4 Rules customdata folder, and a separate entry has been added for users that want to treat Missions as official errata for it. Characters that already have this weapon should not be affected, but I'd recommend enabling the rule if you intend to reapply improvements or purchase a new one at some point.
-
+- Fixed Karma values for qualities from Dark Terrors.
 New Strings:
 
 - Menu_Main_Translator
+- Label_PrototypeTranshuman
 
 Build 196
 

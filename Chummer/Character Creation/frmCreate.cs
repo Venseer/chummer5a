@@ -10434,23 +10434,19 @@ namespace Chummer
             if (!_blnSkipRefresh)
             {
                 // Locate the selected piece of Cyberware.
-                bool blnFound = false;
                 Cyberware objCyberware = CommonFunctions.DeepFindById(treCyberware.SelectedNode.Tag.ToString(), CharacterObject.Cyberware);
                 if (objCyberware != null)
-                    blnFound = true;
-
-                if (blnFound)
                 {
                     // Update the selected Cyberware Rating.
                     objCyberware.PrototypeTranshuman = chkPrototypeTranshuman.Checked;
+                    RefreshSelectedCyberware();
+                    ScheduleCharacterUpdate();
+
+                    IsDirty = true;
                 }
-
-                RefreshSelectedCyberware();
-                ScheduleCharacterUpdate();
-
-                IsDirty = true;
             }
         }
+
         private void nudCyberwareRating_ValueChanged(object sender, EventArgs e)
         {
             if (!_blnSkipRefresh)
@@ -13804,23 +13800,54 @@ namespace Chummer
 
             lblNuyenTotal.Text = "= " + decNuyen.ToString(CharacterObject.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
 
+            int intESSDecimals = CharacterObject.Options.EssenceDecimals;
+            StringBuilder objESSFormat = new StringBuilder("#,0");
+            if (intESSDecimals > 0)
+            {
+                objESSFormat.Append('.');
+                for (int i = 0; i < intESSDecimals; ++i)
+                    objESSFormat.Append('0');
+            }
+            string strESSFormat = objESSFormat.ToString();
+
             decimal decESS = CharacterObject.Essence;
-            decimal decRoundedESS = decimal.Round(decESS, CharacterObject.Options.EssenceDecimals, MidpointRounding.AwayFromZero);
+            decimal decRoundedESS = decimal.Round(decESS, intESSDecimals, MidpointRounding.AwayFromZero);
             if (!CharacterObject.Options.DontRoundEssenceInternally)
                 decESS = decRoundedESS;
-            lblESSMax.Text = decRoundedESS.ToString(GlobalOptions.CultureInfo);
+            lblESSMax.Text = decRoundedESS.ToString(strESSFormat, GlobalOptions.CultureInfo);
             tssEssence.Text = lblESSMax.Text;
 
-            lblCyberwareESS.Text = decimal.Round(CharacterObject.CyberwareEssence, CharacterObject.Options.EssenceDecimals, MidpointRounding.AwayFromZero).ToString(GlobalOptions.CultureInfo);
-            lblBiowareESS.Text = decimal.Round(CharacterObject.BiowareEssence, CharacterObject.Options.EssenceDecimals, MidpointRounding.AwayFromZero).ToString(GlobalOptions.CultureInfo);
-            lblEssenceHoleESS.Text = decimal.Round(CharacterObject.EssenceHole, CharacterObject.Options.EssenceDecimals, MidpointRounding.AwayFromZero).ToString(GlobalOptions.CultureInfo);
+            lblCyberwareESS.Text = decimal.Round(CharacterObject.CyberwareEssence, intESSDecimals, MidpointRounding.AwayFromZero).ToString(strESSFormat, GlobalOptions.CultureInfo);
+            lblBiowareESS.Text = decimal.Round(CharacterObject.BiowareEssence, intESSDecimals, MidpointRounding.AwayFromZero).ToString(strESSFormat, GlobalOptions.CultureInfo);
+            lblEssenceHoleESS.Text = decimal.Round(CharacterObject.EssenceHole, intESSDecimals, MidpointRounding.AwayFromZero).ToString(strESSFormat, GlobalOptions.CultureInfo);
+
+            if (CharacterObject.PrototypeTranshuman > 0)
+            {
+                chkPrototypeTranshuman.Visible = true;
+                lblPrototypeTranshumanESSLabel.Visible = true;
+                lblPrototypeTranshumanESS.Visible = true;
+
+                decimal decPrototypeTranshumanESSUsed = 0.0m;
+                foreach (Cyberware objCyberware in CharacterObject.Cyberware.Where(x => x.PrototypeTranshuman))
+                {
+                    decPrototypeTranshumanESSUsed += objCyberware.CalculatedESS(false);
+                }
+
+                lblPrototypeTranshumanESS.Text = decimal.Round(decPrototypeTranshumanESSUsed, intESSDecimals, MidpointRounding.AwayFromZero).ToString(strESSFormat, GlobalOptions.CultureInfo) + " / " + decimal.Round(CharacterObject.PrototypeTranshuman, intESSDecimals, MidpointRounding.AwayFromZero).ToString(strESSFormat, GlobalOptions.CultureInfo);
+            }
+            else
+            {
+                chkPrototypeTranshuman.Visible = false;
+                lblPrototypeTranshumanESSLabel.Visible = false;
+                lblPrototypeTranshumanESS.Visible = false;
+            }
 
             // Reduce a character's MAG and RES from Essence Loss.
             int intMetatypeMaximumESS = CharacterObject.ESS.MetatypeMaximum;
             int intReduction = intMetatypeMaximumESS - decimal.ToInt32(decimal.Floor(decESS));
             decimal decESSMag = CharacterObject.Essence + CharacterObject.EssencePenalty - CharacterObject.EssencePenaltyMAG;
             if (!CharacterObject.Options.DontRoundEssenceInternally)
-                decESSMag = decimal.Round(decESSMag, CharacterObject.Options.EssenceDecimals, MidpointRounding.AwayFromZero);
+                decESSMag = decimal.Round(decESSMag, intESSDecimals, MidpointRounding.AwayFromZero);
             int intMagReduction = intMetatypeMaximumESS - decimal.ToInt32(decimal.Floor(decESSMag));
 
             // Remove any Improvements from MAG and RES from Essence Loss.
@@ -14180,7 +14207,7 @@ namespace Chummer
             lblCyberSleazeLabel.Visible = false;
             lblCyberDataProcessingLabel.Visible = false;
             lblCyberFirewallLabel.Visible = false;
-            chkPrototypeTranshuman.Visible = false;
+            chkPrototypeTranshuman.Enabled = false;
             cmdDeleteCyberware.Enabled = treCyberware.SelectedNode != null;
             cmdCyberwareChangeMount.Visible = false;
 
@@ -14300,8 +14327,9 @@ namespace Chummer
                     lblCyberDataProcessingLabel.Visible = true;
                     lblCyberFirewallLabel.Visible = true;
                 }
+                else
+                    chkPrototypeTranshuman.Enabled = objCyberware.Parent == null;
 
-                chkPrototypeTranshuman.Visible = CharacterObject.PrototypeTranshuman > 0;
                 chkPrototypeTranshuman.Checked = objCyberware.PrototypeTranshuman;
 
                 lblCyberwareAvail.Text = objCyberware.TotalAvail;
@@ -14311,6 +14339,7 @@ namespace Chummer
                 lblCyberwareEssence.Text = objCyberware.CalculatedESS().ToString(GlobalOptions.CultureInfo);
                 if (objCyberware.AddToParentESS)
                     lblCyberwareEssence.Text = "+" + lblCyberwareEssence.Text;
+                treCyberware.SelectedNode.Text = objCyberware.DisplayName;
             }
             else
             {
@@ -14385,6 +14414,7 @@ namespace Chummer
                         nudCyberwareRating.Maximum = 0;
                         nudCyberwareRating.Enabled = false;
                     }
+                    treCyberware.SelectedNode.Text = objGear.DisplayName;
                 }
             }
             _blnSkipRefresh = false;
@@ -14573,7 +14603,7 @@ namespace Chummer
                 // Show the Weapon Ranges.
                 lblWeaponRangeMain.Text = objWeapon.Range;
                 lblWeaponRangeAlternate.Text = objWeapon.AlternateRange;
-                Dictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
+                IDictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
                 lblWeaponRangeShort.Text = dictionaryRanges["short"];
                 lblWeaponRangeMedium.Text = dictionaryRanges["medium"];
                 lblWeaponRangeLong.Text = dictionaryRanges["long"];
@@ -14631,7 +14661,7 @@ namespace Chummer
                     // Show the Weapon Ranges.
                     lblWeaponRangeMain.Text = objWeapon.Range;
                     lblWeaponRangeAlternate.Text = objWeapon.AlternateRange;
-                    Dictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
+                    IDictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
                     lblWeaponRangeShort.Text = dictionaryRanges["short"];
                     lblWeaponRangeMedium.Text = dictionaryRanges["medium"];
                     lblWeaponRangeLong.Text = dictionaryRanges["long"];
@@ -14777,7 +14807,7 @@ namespace Chummer
                         // Show the Weapon Ranges.
                         lblWeaponRangeMain.Text = objSelectedWeapon.Range;
                         lblWeaponRangeAlternate.Text = objSelectedWeapon.AlternateRange;
-                        Dictionary<string, string> dictionaryRanges = objSelectedWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
+                        IDictionary<string, string> dictionaryRanges = objSelectedWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
                         lblWeaponRangeShort.Text = dictionaryRanges["short"];
                         lblWeaponRangeMedium.Text = dictionaryRanges["medium"];
                         lblWeaponRangeLong.Text = dictionaryRanges["long"];
@@ -16525,7 +16555,7 @@ namespace Chummer
 
                         lblVehicleWeaponRangeMain.Text = objWeapon.Range;
                         lblVehicleWeaponRangeAlternate.Text = objWeapon.AlternateRange;
-                        Dictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
+                        IDictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
                         lblVehicleWeaponRangeShort.Text = dictionaryRanges["short"];
                         lblVehicleWeaponRangeMedium.Text = dictionaryRanges["medium"];
                         lblVehicleWeaponRangeLong.Text = dictionaryRanges["long"];
@@ -16639,7 +16669,7 @@ namespace Chummer
 
                         lblVehicleWeaponRangeMain.Text = objWeapon.Range;
                         lblVehicleWeaponRangeAlternate.Text = objWeapon.AlternateRange;
-                        Dictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
+                        IDictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
                         lblVehicleWeaponRangeShort.Text = dictionaryRanges["short"];
                         lblVehicleWeaponRangeMedium.Text = dictionaryRanges["medium"];
                         lblVehicleWeaponRangeLong.Text = dictionaryRanges["long"];
@@ -16941,7 +16971,7 @@ namespace Chummer
 
                         lblVehicleWeaponRangeMain.Text = objWeapon.Range;
                         lblVehicleWeaponRangeAlternate.Text = objWeapon.AlternateRange;
-                        Dictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
+                        IDictionary<string, string> dictionaryRanges = objWeapon.GetRangeStrings(GlobalOptions.CultureInfo);
                         lblVehicleWeaponRangeShort.Text = dictionaryRanges["short"];
                         lblVehicleWeaponRangeMedium.Text = dictionaryRanges["medium"];
                         lblVehicleWeaponRangeLong.Text = dictionaryRanges["long"];
@@ -18708,11 +18738,11 @@ namespace Chummer
                         objLifestyle.Source = "SR5";
                         objLifestyle.Page = "373";
                         objLifestyle.Comforts = Convert.ToInt32(objXmlLifestyle["comforts"].InnerText);
-                        objLifestyle.ComfortsEntertainment = Convert.ToInt32(objXmlLifestyle["comfortsentertainment"].InnerText);
                         objLifestyle.Security = Convert.ToInt32(objXmlLifestyle["security"].InnerText);
-                        objLifestyle.SecurityEntertainment = Convert.ToInt32(objXmlLifestyle["securityentertainment"].InnerText);
                         objLifestyle.Area = Convert.ToInt32(objXmlLifestyle["area"].InnerText);
-                        objLifestyle.AreaEntertainment = Convert.ToInt32(objXmlLifestyle["areaentertainment"].InnerText);
+                        objLifestyle.BaseComforts = Convert.ToInt32(objXmlLifestyle["comfortsminimum"].InnerText);
+                        objLifestyle.BaseSecurity = Convert.ToInt32(objXmlLifestyle["securityminimum"].InnerText);
+                        objLifestyle.BaseArea = Convert.ToInt32(objXmlLifestyle["areaminimum"].InnerText);
 
                         foreach (LifestyleQuality objXmlQuality in objXmlLifestyle.SelectNodes("lifestylequalities/lifestylequality"))
                             objLifestyle.LifestyleQualities.Add(objXmlQuality);
@@ -19952,10 +19982,13 @@ namespace Chummer
             lblCyberwareAvail.Left = lblCyberwareAvailLabel.Left + intWidth + 6;
             lblCyberwareSource.Left = lblCyberwareSourceLabel.Left + intWidth + 6;
 
-            intWidth = lblEssenceHoleESSLabel.Width;
-            lblCyberwareESS.Left = lblEssenceHoleESSLabel.Left + intWidth + 6;
-            lblBiowareESS.Left = lblEssenceHoleESSLabel.Left + intWidth + 6;
+            intWidth = Math.Max(lblCyberwareESSLabel.Width, lblEssenceHoleESSLabel.Width);
+            intWidth = Math.Max(intWidth, lblBiowareESSLabel.Width);
+            intWidth = Math.Max(intWidth, lblPrototypeTranshumanESSLabel.Width);
+            lblCyberwareESS.Left = lblCyberwareESSLabel.Left + intWidth + 6;
+            lblBiowareESS.Left = lblBiowareESSLabel.Left + intWidth + 6;
             lblEssenceHoleESS.Left = lblEssenceHoleESSLabel.Left + intWidth + 6;
+            lblPrototypeTranshumanESS.Left = lblPrototypeTranshumanESSLabel.Left + intWidth + 6;
 
             intWidth = Math.Max(lblCyberwareRatingLabel.Width, lblCyberwareCapacityLabel.Width);
             intWidth = Math.Max(intWidth, lblCyberwareCostLabel.Width);
@@ -19971,6 +20004,7 @@ namespace Chummer
             lblCyberFirewall.Left = lblCyberFirewallLabel.Left + lblCyberFirewallLabel.Width + 6;
 
             lblCyberwareRatingLabel.Left = cboCyberwareGrade.Left + cboCyberwareGrade.Width + 16;
+            chkPrototypeTranshuman.Left = lblCyberwareRatingLabel.Left;
             nudCyberwareRating.Left = lblCyberwareRatingLabel.Left + intWidth + 6;
             lblCyberlimbAGILabel.Left = lblCyberwareRatingLabel.Left;
             lblCyberlimbSTRLabel.Left = lblCyberwareRatingLabel.Left;
