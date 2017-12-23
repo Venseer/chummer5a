@@ -24,7 +24,6 @@ namespace Chummer.Backend.Equipment
         private int _intMonths = 1;
         private int _intRoommates;
         private decimal _decPercentage = 100.0m;
-        private string _strLifestyleName = string.Empty;
         private bool _blnPurchased;
         private int _intEntertainment;
         private int _intComforts;
@@ -81,7 +80,7 @@ namespace Chummer.Backend.Equipment
         /// <param name="objNode">TreeNode to populate a TreeView.</param>
         public void Create(XmlNode objXmlLifestyle, TreeNode objNode)
         {
-            objXmlLifestyle.TryGetStringFieldQuickly("name", ref _strName);
+            objXmlLifestyle.TryGetStringFieldQuickly("name", ref _strBaseLifestyle);
             objXmlLifestyle.TryGetDecFieldQuickly("cost", ref _decCost);
             objXmlLifestyle.TryGetInt32FieldQuickly("dice", ref _intDice);
             objXmlLifestyle.TryGetDecFieldQuickly("multiplier", ref _decMultiplier);
@@ -118,7 +117,6 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteElementString("months", _intMonths.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("roommates", _intRoommates.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("percentage", _decPercentage.ToString(CultureInfo.InvariantCulture));
-            objWriter.WriteElementString("lifestylename", _strLifestyleName);
             objWriter.WriteElementString("purchased", _blnPurchased.ToString());
             objWriter.WriteElementString("area", _intArea.ToString(CultureInfo.InvariantCulture));
             objWriter.WriteElementString("comforts", _intComforts.ToString(CultureInfo.InvariantCulture));
@@ -193,15 +191,33 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetInt32FieldQuickly("costforsecurity", ref _costForSecurity);
             objNode.TryGetInt32FieldQuickly("roommates", ref _intRoommates);
             objNode.TryGetDecFieldQuickly("percentage", ref _decPercentage);
-            objNode.TryGetStringFieldQuickly("lifestylename", ref _strLifestyleName);
             objNode.TryGetBoolFieldQuickly("purchased", ref _blnPurchased);
-
-            if (objNode.TryGetStringFieldQuickly("baselifestyle", ref _strBaseLifestyle))
+            objNode.TryGetStringFieldQuickly("baselifestyle", ref _strBaseLifestyle);
+            if (string.IsNullOrWhiteSpace(_strBaseLifestyle))
             {
-                if (_strBaseLifestyle == "Middle")
-                    _strBaseLifestyle = "Medium";
+                objNode.TryGetStringFieldQuickly("lifestylename", ref _strBaseLifestyle);
+                if (string.IsNullOrWhiteSpace(_strBaseLifestyle))
+                {
+                    XmlDocument objXmlDocument = XmlManager.Load("lifestyles.xml");
+                    var lstQualities = new List<ListItem>();
+                    foreach (XmlNode n in objXmlDocument.SelectNodes("/chummer/lifestyles/lifestyle"))
+                    {
+                        string strName = n["name"].InnerText;
+                        lstQualities.Add(new ListItem(strName, n["translate"]?.InnerText ?? strName));
+                    }
+                    var frmSelect = new frmSelectItem
+                    {
+                        GeneralItems = lstQualities,
+                        Description = LanguageManager.GetString("String_CannotFindLifestyle", GlobalOptions.Language).Replace("{0}", _strName)
+                    };
+                    frmSelect.ShowDialog();
+                    if (frmSelect.DialogResult == DialogResult.Cancel)
+                        return;
+                    _strBaseLifestyle = frmSelect.SelectedItem;
+                }
             }
-
+            if (_strBaseLifestyle == "Middle")
+                _strBaseLifestyle = "Medium";
             objNode.TryGetStringFieldQuickly("source", ref _strSource);
             objNode.TryGetBoolFieldQuickly("trustfund", ref _blnTrustFund);
             if (objNode["primarytenant"] == null)
@@ -302,7 +318,7 @@ namespace Chummer.Backend.Equipment
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
         /// <param name="objCulture">Culture info that is used for conversion of decimals.</param>
-        public void Print(XmlTextWriter objWriter, CultureInfo objCulture)
+        public void Print(XmlTextWriter objWriter, CultureInfo objCulture, string strLanguageToPrint)
         {
             objWriter.WriteStartElement("lifestyle");
             objWriter.WriteElementString("name", Name);
@@ -341,7 +357,7 @@ namespace Chummer.Backend.Equipment
             {
                 foreach (var objQuality in _lstLifestyleQualities)
                 {
-                    objQuality.Print(objWriter, objCulture);
+                    objQuality.Print(objWriter, objCulture, strLanguageToPrint);
                 }
             }
             // Retrieve the free Grids for the Advanced Lifestyle if applicable.
@@ -349,7 +365,7 @@ namespace Chummer.Backend.Equipment
             {
                 foreach (var objQuality in FreeGrids)
                 {
-                    var strThisQuality = objQuality.DisplayName;
+                    var strThisQuality = objQuality.DisplayName(strLanguageToPrint);
                     objWriter.WriteElementString("quality", strThisQuality);
                 }
             }
@@ -386,7 +402,7 @@ namespace Chummer.Backend.Equipment
         }
 
         /// <summary>
-        /// Custom Name entered by the user.
+        /// A custom name for the Lifestyle assigned by the player.
         /// </summary>
         public string Name
         {
@@ -579,15 +595,6 @@ namespace Chummer.Backend.Equipment
         {
             get => _strNotes;
             set => _strNotes = value;
-        }
-
-        /// <summary>
-        /// A custom name for the Lifestyle assigned by the player.
-        /// </summary>
-        public string LifestyleName
-        {
-            get => _strLifestyleName;
-            set => _strLifestyleName = value;
         }
 
         /// <summary>
