@@ -45,7 +45,7 @@ namespace Chummer
         public frmSelectArmorMod(Character objCharacter)
         {
             InitializeComponent();
-            LanguageManager.Translate(GlobalOptions.Language, this);
+            LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
             lblMarkupLabel.Visible = objCharacter.Created;
             nudMarkup.Visible = objCharacter.Created;
             lblMarkupPercentLabel.Visible = objCharacter.Created;
@@ -362,13 +362,13 @@ namespace Chummer
                     lblCapacity.Text = "[0]";
             }
 
-            string strBook = _objCharacter.Options.LanguageBookShort(objXmlMod["source"].InnerText);
+            string strBook = _objCharacter.Options.LanguageBookShort(objXmlMod["source"].InnerText, GlobalOptions.Language);
             string strPage = objXmlMod["page"].InnerText;
             if (objXmlMod["altpage"] != null)
                 strPage = objXmlMod["altpage"].InnerText;
             lblSource.Text = strBook + " " + strPage;
 
-            tipTooltip.SetToolTip(lblSource, _objCharacter.Options.LanguageBookLong(objXmlMod["source"].InnerText) + " " + LanguageManager.GetString("String_Page", GlobalOptions.Language) + " " + strPage);
+            tipTooltip.SetToolTip(lblSource, _objCharacter.Options.LanguageBookLong(objXmlMod["source"].InnerText, GlobalOptions.Language) + " " + LanguageManager.GetString("String_Page", GlobalOptions.Language) + " " + strPage);
         }
 
         /// <summary>

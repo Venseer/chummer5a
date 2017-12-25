@@ -31,7 +31,7 @@ namespace Chummer
         public frmSelectExoticSkill(Character objCharacter)
         {
             InitializeComponent();
-            LanguageManager.Translate(GlobalOptions.Language, this);
+            LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
             _objCharacter = objCharacter;
         }
 
@@ -99,7 +99,7 @@ namespace Chummer
             {
                 if (cboSkillSpecialisations.SelectedValue == null)
                 {
-                    return cboSkillSpecialisations.Text;
+                    return LanguageManager.ReverseTranslateExtra(cboSkillSpecialisations.Text, GlobalOptions.Language);
                 }
                 else
                 {

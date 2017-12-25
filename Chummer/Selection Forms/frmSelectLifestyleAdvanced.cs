@@ -43,7 +43,7 @@ namespace Chummer
         public frmSelectLifestyleAdvanced(Lifestyle objLifestyle, Character objCharacter)
         {
             InitializeComponent();
-            LanguageManager.Translate(GlobalOptions.Language, this);
+            LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
             _objCharacter = objCharacter;
             _objLifestyle = objLifestyle;
             MoveControls();
@@ -461,7 +461,7 @@ namespace Chummer
                             _objLifestyle.FreeGrids);
             lblQualityLp.Text = objQuality.LP.ToString();
             lblQualityCost.Text = objQuality.Cost.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
-            lblQualitySource.Text = $@"{objQuality.Source} {objQuality.Page}";
+            lblQualitySource.Text = $@"{objQuality.Source} {objQuality.Page(GlobalOptions.Language)}";
             tipTooltip.SetToolTip(lblQualitySource, objQuality.SourceTooltip);
             cmdDeleteQuality.Enabled = !(objQuality.Free || objQuality.OriginSource == QualitySource.BuiltIn);
         }

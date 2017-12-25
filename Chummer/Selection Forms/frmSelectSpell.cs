@@ -46,7 +46,7 @@ namespace Chummer
         public frmSelectSpell(Character objCharacter)
         {
             InitializeComponent();
-            LanguageManager.Translate(GlobalOptions.Language, this);
+            LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
             _objCharacter = objCharacter;
 
             tipTooltip.SetToolTip(chkLimited, LanguageManager.GetString("Tip_SelectSpell_LimitedSpell", GlobalOptions.Language));
@@ -735,14 +735,14 @@ namespace Chummer
                 chkFreeBonus.Enabled = true;
             }
 
-            string strBook = _objCharacter.Options.LanguageBookShort(objXmlSpell["source"].InnerText);
+            string strBook = _objCharacter.Options.LanguageBookShort(objXmlSpell["source"].InnerText, GlobalOptions.Language);
             string strPage = objXmlSpell["page"].InnerText;
             if (objXmlSpell["altpage"] != null)
                 strPage = objXmlSpell["altpage"].InnerText;
             lblSource.Text = strBook + " " + strPage;
 
             tipTooltip.SetToolTip(lblSource,
-                _objCharacter.Options.LanguageBookLong(objXmlSpell["source"].InnerText) + " " +
+                _objCharacter.Options.LanguageBookLong(objXmlSpell["source"].InnerText, GlobalOptions.Language) + " " +
                 LanguageManager.GetString("String_Page", GlobalOptions.Language) + " " + strPage);
         }
         #endregion

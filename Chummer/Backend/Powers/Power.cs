@@ -15,7 +15,7 @@ namespace Chummer
     /// <summary>
     /// An Adept Power.
     /// </summary>
-    public class Power : INotifyPropertyChanged, IItemWithGuid, INamedItem, IItemWithNode
+    public class Power : INotifyPropertyChanged, IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
         private Guid _sourceID = Guid.Empty;
@@ -209,7 +209,7 @@ namespace Chummer
             {
                 if (objNode["adeptwayrequires"] == null)
                 {
-                    XmlNode objXmlPower = MyXmlNode;
+                    XmlNode objXmlPower = GetNode();
                     if (objXmlPower != null)
                         _nodAdeptWayRequirements = objXmlPower["adeptwayrequires"];
                 }
@@ -260,8 +260,8 @@ namespace Chummer
             objWriter.WriteElementString("rating", LevelsEnabled ? TotalRating.ToString(objCulture) : "0");
             objWriter.WriteElementString("totalpoints", PowerPoints.ToString(objCulture));
             objWriter.WriteElementString("action", DisplayActionMethod(strLanguageToPrint));
-            objWriter.WriteElementString("source", CharacterObject.Options.LanguageBookShort(_strSource));
-            objWriter.WriteElementString("page", Page);
+            objWriter.WriteElementString("source", CharacterObject.Options.LanguageBookShort(Source, strLanguageToPrint));
+            objWriter.WriteElementString("page", Page(strLanguageToPrint));
             if (CharacterObject.Options.PrintNotes)
                 objWriter.WriteElementString("notes", _strNotes);
             objWriter.WriteStartElement("enhancements");
@@ -309,7 +309,7 @@ namespace Chummer
 
             if (strLanguage != GlobalOptions.DefaultLanguage)
             {
-                strReturn = MyXmlNode?["translate"]?.InnerText ?? Name;
+                strReturn = GetNode(strLanguage)?["translate"]?.InnerText ?? Name;
             }
 
             return strReturn;
@@ -536,19 +536,13 @@ namespace Chummer
         /// <summary>
         /// Page Number.
         /// </summary>
-        public string Page
+        public string Page(string strLanguage)
         {
-            get
-            {
-                // Get the translated name if applicable.
-                if (GlobalOptions.Language == GlobalOptions.DefaultLanguage)
-                    return _strPage;
-                return MyXmlNode?["altpage"]?.InnerText ?? _strPage;
-            }
-            set
-            {
-                _strPage = value;
-            }
+            // Get the translated name if applicable.
+            if (strLanguage == GlobalOptions.DefaultLanguage)
+                return _strPage;
+
+            return GetNode(strLanguage)?["altpage"]?.InnerText ?? _strPage;
         }
 
         /// <summary>
@@ -789,14 +783,21 @@ namespace Chummer
         public string Category { get; set; }
 
         private XmlNode _objCachedMyXmlNode = null;
-        public XmlNode MyXmlNode
+        private string _strCachedXmlNodeLanguage = string.Empty;
+
+        public XmlNode GetNode()
         {
-            get
+            return GetNode(GlobalOptions.Language);
+        }
+
+        public XmlNode GetNode(string strLanguage)
+        {
+            if (_objCachedMyXmlNode == null || strLanguage != _strCachedXmlNodeLanguage || GlobalOptions.LiveCustomData)
             {
-                if (_objCachedMyXmlNode == null || GlobalOptions.LiveCustomData)
-                    _objCachedMyXmlNode = XmlManager.Load("powers.xml")?.SelectSingleNode("/chummer/powers/power[id = \"" + _sourceID.ToString() + "\"]");
-                return _objCachedMyXmlNode;
+                _objCachedMyXmlNode = XmlManager.Load("powers.xml", strLanguage)?.SelectSingleNode("/chummer/powers/power[id = \"" + _sourceID.ToString() + "\"]");
+                _strCachedXmlNodeLanguage = strLanguage;
             }
+            return _objCachedMyXmlNode;
         }
 
         /// <summary>

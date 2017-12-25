@@ -34,7 +34,7 @@ namespace Chummer
         {
             PowerObject = objPower;
             InitializeComponent();
-            LanguageManager.Translate(GlobalOptions.Language, this);
+            LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
             nudRating.DataBindings.Add("Enabled", PowerObject, nameof(PowerObject.LevelsEnabled), false, 
                 DataSourceUpdateMode.OnPropertyChanged);
             nudRating.DataBindings.Add("Minimum", PowerObject, nameof(PowerObject.FreeLevels), false,
@@ -194,7 +194,7 @@ namespace Chummer
         #region Methods
         private void lblPowerName_Click(object sender, EventArgs e)
         {
-            string strBook = _objPower.Source + " " + _objPower.Page;
+            string strBook = _objPower.Source + " " + _objPower.Page(GlobalOptions.Language);
             CommonFunctions.OpenPDF(strBook, _objPower.CharacterObject);
         }
 

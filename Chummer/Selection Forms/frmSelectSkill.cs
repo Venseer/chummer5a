@@ -50,7 +50,7 @@ namespace Chummer
         #region Control Events
         public frmSelectSkill(Character objCharacter, string strSource = "")
         {
-            LanguageManager.Translate(GlobalOptions.Language, this);
+            LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
             _objCharacter = objCharacter;
             _strSourceName = strSource;
             InitializeComponent();
@@ -188,7 +188,7 @@ namespace Chummer
                             // Use the translated Exotic Skill name if available.
                             XmlNode objXmlSkill = _objXmlDocument.SelectSingleNode("/chummer/skills/skill[exotic = \"Yes\" and name = \"" + objExoticSkill.Name + "\"]");
                             lstSkills.Add(new ListItem(objExoticSkill.Name + " (" + objExoticSkill.Specific + ")",
-                                (objXmlSkill["translate"]?.InnerText ?? objExoticSkill.Name) + " (" + objExoticSkill.DisplaySpecialization + ")"));
+                                (objXmlSkill["translate"]?.InnerText ?? objExoticSkill.Name) + " (" + objExoticSkill.DisplaySpecializationMethod(GlobalOptions.Language) + ")"));
                         }
                     }
                 }
@@ -242,7 +242,7 @@ namespace Chummer
                     {
                         if (objKnow.Rating >= _intMinimumRating && objKnow.Rating < _intMaximumRating)
                         {
-                            lstSkills.Add(new ListItem(objKnow.Name, objKnow.DisplayName));
+                            lstSkills.Add(new ListItem(objKnow.Name, objKnow.DisplayNameMethod(GlobalOptions.Language)));
                         }
                     }
                 }

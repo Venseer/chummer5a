@@ -69,7 +69,7 @@ namespace Chummer
         public frmSelectCyberware(Character objCharacter, Improvement.ImprovementSource objWareSource, XmlNode objParentNode = null)
         {
             InitializeComponent();
-            LanguageManager.Translate(GlobalOptions.Language, this);
+            LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
             lblMarkupLabel.Visible = objCharacter.Created;
             nudMarkup.Visible = objCharacter.Created;
             lblMarkupPercentLabel.Visible = objCharacter.Created;
@@ -327,7 +327,7 @@ namespace Chummer
                 cboGrade.SelectedValue = strForceGrade;
             if (cboGrade.SelectedIndex == -1 && cboGrade.Items.Count > 0)
                 cboGrade.SelectedIndex = 0;
-            string strBook = _objCharacter.Options.LanguageBookShort(objXmlCyberware["source"].InnerText);
+            string strBook = _objCharacter.Options.LanguageBookShort(objXmlCyberware["source"].InnerText, GlobalOptions.Language);
             string strPage = objXmlCyberware["page"].InnerText;
             if (objXmlCyberware["altpage"] != null)
             {
@@ -347,7 +347,7 @@ namespace Chummer
             }
 
             tipTooltip.SetToolTip(lblSource,
-                _objCharacter.Options.LanguageBookLong(objXmlCyberware["source"].InnerText) + " " +
+                _objCharacter.Options.LanguageBookLong(objXmlCyberware["source"].InnerText, GlobalOptions.Language) + " " +
                 LanguageManager.GetString("String_Page", GlobalOptions.Language) + " " + strPage);
 
             UpdateCyberwareInfo();
@@ -1164,7 +1164,7 @@ namespace Chummer
                         (!_objCharacter.BurnoutEnabled || objGrade.Name != "Standard") &&
                         (_objCharacter.AdapsinEnabled || !objGrade.Adapsin))
                     {
-                        _lstGrade.Add(new ListItem(objGrade.Name, objGrade.DisplayName));
+                        _lstGrade.Add(new ListItem(objGrade.Name, objGrade.DisplayName(GlobalOptions.Language)));
                     }
                 }
                 cboGrade.BeginUpdate();

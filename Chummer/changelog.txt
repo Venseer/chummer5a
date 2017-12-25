@@ -65,6 +65,7 @@ Application Changes:
 - Fixed a crash when adding multiple armor mods a given piece of armor in career mode.
 - Fixed a potential crash when loading lifestyles that didn't have their base lifestyle saved properly.
 - Added preliminary support for being able to switch languages without restarting Chummer. This also feeds into character sheets that would be printed in a language different from the one under which Chummer is running. Note that not all strings properly update yet.
+- Added a basic system for management of vehicle-based firing modes. 
 
 Data Changes:
 
@@ -79,12 +80,21 @@ Data Changes:
 - The Spiritual Way now allows discounting the following powers that were previously missed: Heightened Concentration, Spirit Ram, Nimble Fingers, Metabolic Control, Magic Sense, Kinesics Mastery, Traceless Walk, Pain Resistance, Improved Physical Attribute.
 - The Ultimax Carbine has been converted back to using its actual stats from Gun H(e)aven 3, as no official errata has ever been released for it. An amend entry has been added to the SR Missions 1.4 Rules customdata folder, and a separate entry has been added for users that want to treat Missions as official errata for it. Characters that already have this weapon should not be affected, but I'd recommend enabling the rule if you intend to reapply improvements or purchase a new one at some point.
 - Fixed Karma values for qualities from Dark Terrors.
+- Fixed being unable to buy Flex Hand if the user had bought any cyberarms. Fixes #2202.
+- Removed extra recoil compensation from the Walther P118.
+
 New Strings:
 
 - Menu_Main_Translator
 - Label_PrototypeTranshuman
 - String_CannotFindLifestyle
-
+- Tip_Skill_Cannot_Default
+- Label_FiringMode
+- Enum_Skill
+- Enum_GunneryCommandDevice
+- Enum_RemoteOperated
+- Enum_DogBrain
+- Enum_ManualOperation
 Build 196
 
 Application Changes:
