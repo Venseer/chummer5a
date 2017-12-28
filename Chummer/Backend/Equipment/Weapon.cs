@@ -53,6 +53,7 @@ namespace Chummer.Backend.Equipment
         private List<WeaponAccessory> _lstAccessories = new List<WeaponAccessory>();
         private List<Weapon> _lstUnderbarrel = new List<Weapon>();
         private Vehicle _objMountedVehicle = null;
+        private WeaponMount _objWeaponMount = null;
         private string _strNotes = string.Empty;
         private string _strUseSkill = string.Empty;
         private string _strLocation = string.Empty;
@@ -658,7 +659,7 @@ namespace Chummer.Backend.Equipment
                     }
                 }
             }
-            Gear objGear = CommonFunctions.DeepFindById(ParentID, lstGearToSearch);
+            Gear objGear = lstGearToSearch.DeepFindById(ParentID);
 
             objWriter.WriteStartElement("weapon");
             objWriter.WriteElementString("name", DisplayNameShort(strLanguageToPrint));
@@ -689,7 +690,7 @@ namespace Chummer.Backend.Equipment
                 objWriter.WriteElementString("cost", TotalCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
                 objWriter.WriteElementString("owncost", OwnCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
             }
-            objWriter.WriteElementString("source", _objCharacter.Options.LanguageBookShort(Source, strLanguageToPrint));
+            objWriter.WriteElementString("source", CommonFunctions.LanguageBookShort(Source, strLanguageToPrint));
             objWriter.WriteElementString("page", DisplayPage(strLanguageToPrint));
             objWriter.WriteElementString("weaponname", _strWeaponName);
             objWriter.WriteElementString("location", _strLocation);
@@ -772,11 +773,8 @@ namespace Chummer.Backend.Equipment
                 return string.Empty;
             else
             {
-                Gear objAmmo = CommonFunctions.DeepFindById(guiAmmo.ToString(), _objCharacter.Gear);
-                if (objAmmo == null)
-                {
-                    objAmmo = CommonFunctions.FindVehicleGear(guiAmmo.ToString(), _objCharacter.Vehicles);
-                }
+                string strAmmoGuid = guiAmmo.ToString();
+                Gear objAmmo = _objCharacter.Gear.DeepFindById(strAmmoGuid) ?? CommonFunctions.FindVehicleGear(strAmmoGuid, _objCharacter.Vehicles);
 
                 if (objAmmo != null)
                     return objAmmo.DisplayNameShort(strLanguage);
@@ -1274,6 +1272,21 @@ namespace Chummer.Backend.Equipment
         }
 
         /// <summary>
+        /// WeaponMount to which the weapon is mounted (if none, returns null)
+        /// </summary>
+        public WeaponMount ParentMount
+        {
+            get => _objWeaponMount;
+            set
+            {
+                _objWeaponMount = value;
+                _objMountedVehicle = _objWeaponMount.Parent;
+                foreach (Weapon objChild in Children)
+                    objChild.ParentMount = value;
+            }
+        }
+
+        /// <summary>
         /// Whether or not the Underbarrel Weapon is part of the parent Weapon by default.
         /// </summary>
         public bool IncludedInWeapon
@@ -1653,7 +1666,7 @@ namespace Chummer.Backend.Equipment
             if (!string.IsNullOrEmpty(AmmoLoaded))
             {
                 // Look for Ammo on the character.
-                Gear objGear = CommonFunctions.DeepFindById(AmmoLoaded, _objCharacter.Gear);
+                Gear objGear = _objCharacter.Gear.DeepFindById(AmmoLoaded);
                 if (objGear == null)
                 {
                     objGear = CommonFunctions.FindVehicleGear(AmmoLoaded, _objCharacter.Vehicles);
@@ -1819,7 +1832,18 @@ namespace Chummer.Backend.Equipment
                 }
                 intAmmoBonus += objAccessory.AmmoBonus;
             }
-
+            if (ParentMount != null)
+            {
+                foreach (VehicleMod objMod in ParentMount.Mods)
+                {
+                    if (!string.IsNullOrEmpty(objMod.AmmoReplace))
+                    {
+                        strAmmos = new string[] { objMod.AmmoReplace };
+                        break;
+                    }
+                    intAmmoBonus += objMod.AmmoBonus;
+                }
+            }
             foreach (string strAmmo in strAmmos)
             {
                 string strThisAmmo = strAmmo;
@@ -1834,14 +1858,14 @@ namespace Chummer.Backend.Equipment
                         strPrepend = strThisAmmo.Substring(0, strThisAmmo.IndexOf('x') + 1);
                         strThisAmmo = strThisAmmo.Substring(strThisAmmo.IndexOf('x') + 1, strThisAmmo.Length - (strThisAmmo.IndexOf('x') + 1));
                     }
-
+                    strThisAmmo = strThisAmmo.CheapReplace("Weapon", () => _strAmmo);
                     // If this is an Underbarrel Weapons that has been added, cut the Ammo capacity in half.
                     try
                     {
                         if (IsUnderbarrelWeapon && !IncludedInWeapon)
-                            intAmmo = Convert.ToInt32(strThisAmmo) / 2;
+                            intAmmo = Convert.ToInt32(Math.Ceiling((double)CommonFunctions.EvaluateInvariantXPath(strThisAmmo))) / 2;
                         else
-                            intAmmo = Convert.ToInt32(strThisAmmo);
+                            intAmmo = Convert.ToInt32(Math.Ceiling((double)CommonFunctions.EvaluateInvariantXPath(strThisAmmo)));
                     }
                     catch (FormatException) { }
 
@@ -1860,7 +1884,6 @@ namespace Chummer.Backend.Equipment
                 }
                 strReturn += strThisAmmo + " ";
             }
-
             strReturn = strReturn.Trim();
 
             if (strLanguage != GlobalOptions.DefaultLanguage)
@@ -1900,7 +1923,7 @@ namespace Chummer.Backend.Equipment
             if (!string.IsNullOrEmpty(AmmoLoaded))
             {
                 // Look for Ammo on the character.
-                Gear objGear = CommonFunctions.DeepFindById(AmmoLoaded, _objCharacter.Gear);
+                Gear objGear = _objCharacter.Gear.DeepFindById(AmmoLoaded);
                 if (objGear == null)
                 {
                     objGear = CommonFunctions.FindVehicleGear(AmmoLoaded, _objCharacter.Vehicles);
@@ -2161,7 +2184,7 @@ namespace Chummer.Backend.Equipment
             if (!string.IsNullOrEmpty(AmmoLoaded))
             {
                 // Look for Ammo on the character.
-                Gear objGear = CommonFunctions.DeepFindById(AmmoLoaded, _objCharacter.Gear);
+                Gear objGear = _objCharacter.Gear.DeepFindById(AmmoLoaded);
                 if (objGear == null)
                 {
                     objGear = CommonFunctions.FindVehicleGear(AmmoLoaded, _objCharacter.Vehicles);
@@ -2437,7 +2460,7 @@ namespace Chummer.Backend.Equipment
                 // Check if the Weapon has Ammunition loaded and look for any Recoil bonus.
                 if (!string.IsNullOrEmpty(AmmoLoaded) && AmmoLoaded != "00000000-0000-0000-0000-000000000000")
                 {
-                    Gear objGear = CommonFunctions.DeepFindById(AmmoLoaded, _objCharacter.Gear);
+                    Gear objGear = _objCharacter.Gear.DeepFindById(AmmoLoaded);
                     if (objGear == null)
                     {
                         objGear = CommonFunctions.FindVehicleGear(AmmoLoaded, _objCharacter.Vehicles);
@@ -3102,7 +3125,7 @@ namespace Chummer.Backend.Equipment
                 // Check if the Weapon has Ammunition loaded and look for any Range bonus.
                 if (!string.IsNullOrEmpty(AmmoLoaded))
                 {
-                    Gear objGear = CommonFunctions.DeepFindById(AmmoLoaded, _objCharacter.Gear);
+                    Gear objGear = _objCharacter.Gear.DeepFindById(AmmoLoaded);
                     if (objGear == null)
                     {
                         objGear = CommonFunctions.FindVehicleGear(AmmoLoaded, _objCharacter.Vehicles);
@@ -3668,7 +3691,7 @@ namespace Chummer.Backend.Equipment
         /// Convert a string to a Firing Mode.
         /// </summary>
         /// <param name="strValue">String value to convert.</param>
-        public FiringMode ConvertToFiringMode(string strValue)
+        public static FiringMode ConvertToFiringMode(string strValue)
         {
             switch (strValue)
             {
@@ -3683,6 +3706,88 @@ namespace Chummer.Backend.Equipment
                 default:
                     return FiringMode.Skill;
             }
+        }
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Recursive method to delete a piece of 'ware and its Improvements from the character. Returns total extra cost removed unrelated to children.
+        /// </summary>
+        /// <param name="objWeapon">Weapon to delete.</param>
+        /// <param name="treWeapons">TreeView that holds the list of Weapons.</param>
+        /// <param name="treVehicles">TreeView that holds the list of Vehicles.</param>
+        public decimal DeleteWeapon(TreeView treWeapons, TreeView treVehicles)
+        {
+            decimal decReturn = 0;
+            // Remove any children the Gear may have.
+            foreach (Weapon objChild in Children)
+                decReturn += objChild.DeleteWeapon(treWeapons, treVehicles);
+
+            foreach (WeaponAccessory objLoopAccessory in WeaponAccessories)
+            {
+                foreach (Gear objLoopGear in objLoopAccessory.Gear)
+                {
+                    decReturn += objLoopGear.DeleteGear(treWeapons, treVehicles);
+                }
+            }
+
+            List<string> lstNodesToRemoveIds = new List<string>();
+            List<Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>> lstWeaponsToDelete = new List<Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>>();
+            foreach (Weapon objDeleteWeapon in _objCharacter.Weapons.DeepWhere(x => x.Children, x => x.ParentID == InternalId))
+            {
+                lstNodesToRemoveIds.Add(objDeleteWeapon.InternalId);
+                lstWeaponsToDelete.Add(new Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>(objDeleteWeapon, null, null, null));
+            }
+            foreach (Vehicle objVehicle in _objCharacter.Vehicles)
+            {
+                foreach (Weapon objDeleteWeapon in objVehicle.Weapons.DeepWhere(x => x.Children, x => x.ParentID == InternalId))
+                {
+                    lstNodesToRemoveIds.Add(objDeleteWeapon.InternalId);
+                    lstWeaponsToDelete.Add(new Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>(objDeleteWeapon, objVehicle, null, null));
+                }
+
+                foreach (VehicleMod objMod in objVehicle.Mods)
+                {
+                    foreach (Weapon objDeleteWeapon in objMod.Weapons.DeepWhere(x => x.Children, x => x.ParentID == InternalId))
+                    {
+                        lstNodesToRemoveIds.Add(objDeleteWeapon.InternalId);
+                        lstWeaponsToDelete.Add(new Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>(objDeleteWeapon, objVehicle, objMod, null));
+                    }
+                }
+
+                foreach (WeaponMount objMount in objVehicle.WeaponMounts)
+                {
+                    foreach (Weapon objDeleteWeapon in objMount.Weapons.DeepWhere(x => x.Children, x => x.ParentID == InternalId))
+                    {
+                        lstNodesToRemoveIds.Add(objDeleteWeapon.InternalId);
+                        lstWeaponsToDelete.Add(new Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>(objDeleteWeapon, objVehicle, null, objMount));
+                    }
+                }
+            }
+            // We need this list separate because weapons to remove can contain gear that add more weapons in need of removing
+            foreach (Tuple<Weapon, Vehicle, VehicleMod, WeaponMount> objLoopTuple in lstWeaponsToDelete)
+            {
+                Weapon objDeleteWeapon = objLoopTuple.Item1;
+                decReturn += objDeleteWeapon.TotalCost + objDeleteWeapon.DeleteWeapon(treWeapons, treVehicles);
+                if (objDeleteWeapon.Parent != null)
+                    objDeleteWeapon.Parent.Children.Remove(objDeleteWeapon);
+                else if (objLoopTuple.Item4 != null)
+                    objLoopTuple.Item4.Weapons.Remove(objDeleteWeapon);
+                else if (objLoopTuple.Item3 != null)
+                    objLoopTuple.Item3.Weapons.Remove(objDeleteWeapon);
+                else if (objLoopTuple.Item2 != null)
+                    objLoopTuple.Item2.Weapons.Remove(objDeleteWeapon);
+                else
+                    _objCharacter.Weapons.Remove(objDeleteWeapon);
+            }
+            foreach (string strNodeId in lstNodesToRemoveIds)
+            {
+                // Remove the Weapons from the TreeView.
+                TreeNode objLoopNode = treWeapons.FindNode(strNodeId) ?? treVehicles.FindNode(strNodeId);
+                objLoopNode?.Remove();
+            }
+
+            return decReturn;
         }
         #endregion
 

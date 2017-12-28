@@ -139,7 +139,7 @@ namespace Chummer
             string strTooltip = LanguageManager.GetString("Tip_Power_EditNotes", GlobalOptions.Language);
             if (_objPower.Notes != "")
                 strTooltip += "\n\n" + _objPower.Notes;
-            tipTooltip.SetToolTip(imgNotes, CommonFunctions.WordWrap(strTooltip, 100));
+            tipTooltip.SetToolTip(imgNotes, strTooltip.WordWrap(100));
         }
         #endregion
 
@@ -194,8 +194,7 @@ namespace Chummer
         #region Methods
         private void lblPowerName_Click(object sender, EventArgs e)
         {
-            string strBook = _objPower.Source + " " + _objPower.Page(GlobalOptions.Language);
-            CommonFunctions.OpenPDF(strBook, _objPower.CharacterObject);
+            CommonFunctions.OpenPDF(_objPower.Source + " " + _objPower.Page(GlobalOptions.Language));
         }
 
         private void MoveControls()

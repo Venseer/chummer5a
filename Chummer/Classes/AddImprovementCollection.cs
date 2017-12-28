@@ -3217,7 +3217,7 @@ namespace Chummer.Classes
 
                         // If no, add the power and mark it free or give it free levels
                         Power objNewPower = new Power(_objCharacter);
-                        if (!objNewPower.Create(objXmlPower, 0))
+                        if (!objNewPower.Create(objXmlPower))
                             throw new AbortedException();
 
                         if (!string.IsNullOrEmpty(objNewPower.Extra))
@@ -3466,7 +3466,7 @@ namespace Chummer.Classes
             string strNodeOuterXml = bonusNode.OuterXml;
             Log.Info("hardwire = " + strNodeOuterXml);
             Log.Info("Calling CreateImprovement");
-            Cyberware objCyberware = CommonFunctions.DeepFindById(SourceName, _objCharacter.Cyberware);
+            Cyberware objCyberware = _objCharacter.Cyberware.DeepFindById(SourceName);
             if (objCyberware == null)
             {
                 Log.Info("_strSelectedValue = " + SelectedValue);
@@ -5339,7 +5339,7 @@ namespace Chummer.Classes
             List<Vehicle> objVehicles = new List<Vehicle>();
             List<TreeNode> objVehicleNodes = new List<TreeNode>();
 
-            Grade g = Cyberware.ConvertToCyberwareGrade(bonusNode["grade"].InnerText, _objImprovementSource, _objCharacter.Options);
+            Grade g = Cyberware.ConvertToCyberwareGrade(bonusNode["grade"].InnerText, _objImprovementSource, _objCharacter);
             objCyberware.Create(node, _objCharacter, g,
                 bonusNode["type"].InnerText == "bioware"
                     ? Improvement.ImprovementSource.Bioware

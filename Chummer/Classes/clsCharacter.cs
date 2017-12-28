@@ -483,6 +483,14 @@ namespace Chummer
             // <contactmultiplier />
             objWriter.WriteElementString("contactmultiplier", _intContactMultiplier.ToString());
 
+            // <bannedgrades >
+            objWriter.WriteStartElement("bannedgrades");
+            foreach (string g in BannedGrades)
+            {
+                objWriter.WriteElementString("grade", g);
+            }
+            // </bannedgrades>
+            objWriter.WriteEndElement();
 
             // <nuyenbp />
             objWriter.WriteElementString("nuyenbp", _decNuyenBP.ToString(GlobalOptions.InvariantCultureInfo));
@@ -1128,6 +1136,18 @@ namespace Chummer
                 foreach (XmlNode objXmlSkillName in objXmlPrioritySkillsList)
                 {
                     _lstPrioritySkills.Add(objXmlSkillName.InnerText);
+                }
+            }
+            if (objXmlCharacter["bannedgrades"] != null)
+            {
+                BannedGrades.Clear();
+                XmlNodeList gradeList = objXmlCharacter.SelectNodes("bannedgrades/grade");
+                if (gradeList != null)
+                {
+                    foreach (XmlNode g in gradeList)
+                    {
+                        BannedGrades.Add(g.InnerText);
+                    }
                 }
             }
             string strSkill1 = string.Empty;
@@ -2956,7 +2976,7 @@ namespace Chummer
         }
 #endregion
 
-#region Helper Methods
+        #region Helper Methods
         /// <summary>
         /// Collate and save the character's used sourcebooks. This list is cleared after loading a character to ensure that only the current items are stored.
         /// </summary>
@@ -3289,9 +3309,391 @@ namespace Chummer
             objReturn.Append("'" + strSearch + "')");
             return objReturn.ToString();
         }
-#endregion
 
-#region Basic Properties
+        /// <summary>
+        /// Return a list of CyberwareGrades from XML files.
+        /// </summary>
+        /// <param name="objSource">Source to load the Grades from, either Bioware or Cyberware.</param>
+        public IList<Grade> GetGradeList(Improvement.ImprovementSource objSource)
+        {
+            List<Grade> lstGrades = new List<Grade>();
+            string strXmlFile = objSource == Improvement.ImprovementSource.Bioware ? "bioware.xml" : "cyberware.xml";
+            XmlDocument objXMlDocument = XmlManager.Load(strXmlFile);
+
+            string strBookFilter = string.Empty;
+            if (Options != null)
+                strBookFilter = "[(" + Options.BookXPath() + ")]";
+            foreach (XmlNode objNode in objXMlDocument.SelectNodes("/chummer/grades/grade" + strBookFilter))
+            {
+
+                Grade objGrade = new Grade(objSource);
+                objGrade.Load(objNode);
+                if (IgnoreRules || Created || !BannedGrades.Any(s => objGrade.Name.Contains(s)))
+                    lstGrades.Add(objGrade);
+            }
+
+            return lstGrades;
+        }
+
+        /// <summary>
+        /// Calculate the number of Free Spirit Power Points used.
+        /// </summary>
+        public string CalculateFreeSpiritPowerPoints()
+        {
+            string strReturn;
+
+            if (Metatype == "Free Spirit" && !IsCritter)
+            {
+                // PC Free Spirit.
+                decimal decPowerPoints = 0;
+
+                foreach (CritterPower objPower in CritterPowers)
+                {
+                    if (objPower.CountTowardsLimit)
+                        decPowerPoints += objPower.PowerPoints;
+                }
+
+                int intPowerPoints = EDG.TotalValue + ImprovementManager.ValueOf(this, Improvement.ImprovementType.FreeSpiritPowerPoints);
+
+                // If the house rule to base Power Points on the character's MAG value instead, use the character's MAG.
+                if (Options.FreeSpiritPowerPointsMAG)
+                    intPowerPoints = MAG.TotalValue + ImprovementManager.ValueOf(this, Improvement.ImprovementType.FreeSpiritPowerPoints);
+
+                strReturn = string.Format("{1} ({0} " + LanguageManager.GetString("String_Remaining", GlobalOptions.Language) + ")", intPowerPoints - decPowerPoints, intPowerPoints);
+            }
+            else
+            {
+                int intPowerPoints;
+
+                if (Metatype == "Free Spirit")
+                {
+                    // Critter Free Spirits have a number of Power Points equal to their EDG plus any Free Spirit Power Points Improvements.
+                    intPowerPoints = EDG.Value + ImprovementManager.ValueOf(this, Improvement.ImprovementType.FreeSpiritPowerPoints);
+                }
+                else if (Metatype == "Ally Spirit")
+                {
+                    // Ally Spirits get a number of Power Points equal to their MAG.
+                    intPowerPoints = MAG.TotalValue;
+                }
+                else
+                {
+                    // Spirits get 1 Power Point for every 3 full points of Force (MAG) they possess.
+                    intPowerPoints = MAG.TotalValue / 3;
+                }
+
+                int intUsed = 0;// _objCharacter.CritterPowers.Count - intExisting;
+                foreach (CritterPower objPower in CritterPowers)
+                {
+                    if (objPower.Category != "Weakness" && objPower.CountTowardsLimit)
+                        intUsed += 1;
+                }
+
+                strReturn = string.Format("{1} ({0} " + LanguageManager.GetString("String_Remaining", GlobalOptions.Language) + ")", intPowerPoints - intUsed, intPowerPoints);
+            }
+
+            return strReturn;
+        }
+
+        /// <summary>
+        /// Calculate the number of Free Sprite Power Points used.
+        /// </summary>
+        public string CalculateFreeSpritePowerPoints()
+        {
+            // Free Sprite Power Points.
+            int intUsedPowerPoints = 0;
+
+            foreach (CritterPower objPower in CritterPowers)
+            {
+                if (objPower.CountTowardsLimit)
+                    intUsedPowerPoints += 1;
+            }
+
+            int intPowerPoints = EDG.TotalValue + ImprovementManager.ValueOf(this, Improvement.ImprovementType.FreeSpiritPowerPoints);
+
+            return string.Format("{1} ({0} " + LanguageManager.GetString("String_Remaining", GlobalOptions.Language) + ")", intPowerPoints - intUsedPowerPoints, intPowerPoints);
+        }
+
+        /// <summary>
+        /// Construct a list of possible places to put a piece of modular cyberware. Names are display names of the given items, values are internalIDs of the given items.
+        /// </summary>
+        /// <param name="objModularCyberware">Cyberware for which to construct the list.</param>
+        /// <returns></returns>
+        public IList<ListItem> ConstructModularCyberlimbList(Cyberware objModularCyberware)
+        {
+            List<ListItem> lstReturn = new List<ListItem>
+            {
+                new ListItem("None", LanguageManager.GetString("String_None", GlobalOptions.Language))
+            };
+
+            foreach (Cyberware objLoopCyberware in Cyberware.GetAllDescendants(x => x.Children))
+            {
+                // Make sure this has an eligible mount location and it's not the selected piece modular cyberware
+                if (objLoopCyberware.HasModularMount == objModularCyberware.PlugsIntoModularMount && objLoopCyberware.Location == objModularCyberware.Location &&
+                    objLoopCyberware.Grade.Name == objModularCyberware.Grade.Name && objLoopCyberware != objModularCyberware)
+                {
+                    // Make sure it's not the place where the mount is already occupied (either by us or something else)
+                    if (!objLoopCyberware.Children.Any(x => x.PlugsIntoModularMount == objLoopCyberware.HasModularMount))
+                    {
+                        string strName = string.Empty;
+                        if (objLoopCyberware.Parent != null)
+                            strName = objLoopCyberware.Parent.DisplayName(GlobalOptions.Language);
+                        else
+                            strName = objLoopCyberware.DisplayName(GlobalOptions.Language);
+                        lstReturn.Add(new ListItem(objLoopCyberware.InternalId, strName));
+                    }
+                }
+            }
+            foreach (Vehicle objLoopVehicle in Vehicles)
+            {
+                foreach (VehicleMod objLoopVehicleMod in objLoopVehicle.Mods)
+                {
+                    foreach (Cyberware objLoopCyberware in objLoopVehicleMod.Cyberware.GetAllDescendants(x => x.Children))
+                    {
+                        // Make sure this has an eligible mount location and it's not the selected piece modular cyberware
+                        if (objLoopCyberware.HasModularMount == objModularCyberware.PlugsIntoModularMount && objLoopCyberware.Location == objModularCyberware.Location &&
+                            objLoopCyberware.Grade.Name == objModularCyberware.Grade.Name && objLoopCyberware != objModularCyberware)
+                        {
+                            // Make sure it's not the place where the mount is already occupied (either by us or something else)
+                            if (!objLoopCyberware.Children.Any(x => x.PlugsIntoModularMount == objLoopCyberware.HasModularMount))
+                            {
+                                string strName = objLoopVehicle.DisplayName(GlobalOptions.Language) + " ";
+                                if (objLoopCyberware.Parent != null)
+                                    strName += objLoopCyberware.Parent.DisplayName(GlobalOptions.Language);
+                                else
+                                    strName += objLoopVehicleMod.DisplayName(GlobalOptions.Language);
+                                lstReturn.Add(new ListItem(objLoopCyberware.InternalId, strName));
+                            }
+                        }
+                    }
+                }
+            }
+            return lstReturn;
+        }
+        #endregion
+
+        #region UI Methods
+        /// <summary>
+        /// Populate the list of Bonded Foci.
+        /// </summary>
+        public void PopulateFocusList(TreeView treFoci)
+        {
+            treFoci.Nodes.Clear();
+            int intFociTotal = 0;
+            bool blnWarned = false;
+
+            int intMaxFocusTotal = MAG.TotalValue * 5;
+            if (Options.MysAdeptSecondMAGAttribute && IsMysticAdept)
+                intMaxFocusTotal = Math.Min(intMaxFocusTotal, MAGAdept.TotalValue * 5);
+            foreach (Gear objGear in Gear.Where(objGear => objGear.Category == "Foci" || objGear.Category == "Metamagic Foci"))
+            {
+                List<Focus> removeFoci = new List<Focus>();
+                TreeNode objNode = new TreeNode
+                {
+                    Text = objGear.DisplayName(GlobalOptions.Language).Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language)),
+                    Tag = objGear.InternalId
+                };
+                foreach (Focus objFocus in Foci)
+                {
+                    if (objFocus.GearId == objGear.InternalId)
+                    {
+                        objNode.Checked = true;
+                        objFocus.Rating = objGear.Rating;
+                        intFociTotal += objFocus.Rating;
+                        // Do not let the number of BP spend on bonded Foci exceed MAG * 5.
+                        if (intFociTotal > intMaxFocusTotal && !IgnoreRules)
+                        {
+                            // Mark the Gear a Bonded.
+                            foreach (Gear objCharacterGear in Gear)
+                            {
+                                if (objCharacterGear.InternalId == objFocus.GearId)
+                                    objCharacterGear.Bonded = false;
+                            }
+                            removeFoci.Add(objFocus);
+                            if (!blnWarned)
+                            {
+                                objNode.Checked = false;
+                                MessageBox.Show(LanguageManager.GetString("Message_FocusMaximumForce", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_FocusMaximum", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                blnWarned = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                foreach (Focus f in removeFoci)
+                {
+                    Foci.Remove(f);
+                }
+                treFoci.Nodes.Add(objNode);
+            }
+
+            // Add Stacked Foci.
+            foreach (Gear objGear in Gear)
+            {
+                if (objGear.Category == "Stacked Focus")
+                {
+                    foreach (StackedFocus objStack in StackedFoci)
+                    {
+                        if (objStack.GearId == objGear.InternalId)
+                        {
+                            TreeNode objNode = new TreeNode
+                            {
+                                Text = LanguageManager.GetString("String_StackedFocus", GlobalOptions.Language) + ": " + objStack.Name(GlobalOptions.Language),
+                                Tag = objStack.InternalId
+                            };
+
+                            ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.StackedFocus, objStack.InternalId);
+
+                            if (objStack.Bonded)
+                            {
+                                foreach (Gear objFociGear in objStack.Gear)
+                                {
+                                    if (!string.IsNullOrEmpty(objFociGear.Extra))
+                                        ImprovementManager.ForcedValue = objFociGear.Extra;
+                                    ImprovementManager.CreateImprovements(this, Improvement.ImprovementSource.StackedFocus, objStack.InternalId, objFociGear.Bonus, false, objFociGear.Rating, objFociGear.DisplayNameShort(GlobalOptions.Language));
+                                    if (objFociGear.WirelessOn)
+                                        ImprovementManager.CreateImprovements(this, Improvement.ImprovementSource.StackedFocus, objStack.InternalId, objFociGear.WirelessBonus, false, objFociGear.Rating, objFociGear.DisplayNameShort(GlobalOptions.Language));
+                                }
+                                objNode.Checked = true;
+                            }
+
+                            treFoci.Nodes.Add(objNode);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verify that the user wants to delete an item.
+        /// </summary>
+        public bool ConfirmDelete(string strMessage)
+        {
+            return !Options.ConfirmDelete ||
+                   MessageBox.Show(strMessage, LanguageManager.GetString("MessageTitle_Delete", GlobalOptions.Language),
+                       MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
+        }
+
+        #region Tab clearing
+        /// <summary>
+        /// Clear all Spell tab elements from the character.
+        /// </summary>
+        /// <param name="treSpells"></param>
+        public void ClearSpellTab(TreeView treSpells)
+        {
+            // Run through all of the Spells and remove their Improvements.
+            ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.Spell, string.Empty);
+
+            // Clear the list of Spells.
+            foreach (TreeNode objNode in treSpells.Nodes)
+                objNode.Nodes.Clear();
+
+            Spells.Clear();
+            ((List<Spirit>)Spirits).RemoveAll(x => x.EntityType == SpiritType.Spirit);
+        }
+
+        /// <summary>
+        /// Clear all Adept tab elements from the character.
+        /// </summary>
+        public void ClearAdeptTab()
+        {
+            // Run through all of the Powers and remove their Improvements.
+            ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.Power, string.Empty);
+
+            Powers.Clear();
+        }
+
+        /// <summary>
+        /// Clear all Technomancer tab elements from the character.
+        /// </summary>
+        public void ClearTechnomancerTab(TreeView treComplexForms)
+        {
+            // Run through all of the Complex Forms and remove their Improvements.
+            ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.ComplexForm, string.Empty);
+
+            // Clear the list of Complex Forms.
+            foreach (TreeNode objNode in treComplexForms.Nodes)
+                objNode.Nodes.Clear();
+
+            ((List<Spirit>)Spirits).RemoveAll(x => x.EntityType == SpiritType.Sprite);
+            ComplexForms.Clear();
+        }
+
+        /// <summary>
+        /// Clear all Advanced Programs tab elements from the character.
+        /// </summary>
+        public void ClearAdvancedProgramsTab(TreeView treAIPrograms)
+        {
+            // Run through all of the Advanced Programs and remove their Improvements.
+            ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.AIProgram, string.Empty);
+
+            // Clear the list of Advanced Programs.
+            foreach (TreeNode objNode in treAIPrograms.Nodes)
+                objNode.Nodes.Clear();
+
+            AIPrograms.Clear();
+        }
+
+        /// <summary>
+        /// Clear all Cyberware tab elements from the character.
+        /// </summary>
+        public void ClearCyberwareTab(TreeView treCyberware, TreeView treWeapons, TreeView treVehicles)
+        {
+            foreach (Cyberware objCyberware in Cyberware)
+            {
+                objCyberware.DeleteCyberware(treWeapons, treVehicles);
+            }
+            Cyberware.Clear();
+
+            // Clear the list of Advanced Programs.
+            // Remove the item from the TreeView.
+            foreach (TreeNode objNode in treCyberware.Nodes)
+                objNode.Nodes.Clear();
+            treCyberware.Nodes.Clear();
+        }
+
+        /// <summary>
+        /// Clear all Critter tab elements from the character.
+        /// </summary>
+        public void ClearCritterTab(TreeView treCritterPowers)
+        {
+            // Run through all of the Critter Powers and remove their Improvements.
+            ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.CritterPower, string.Empty);
+
+            // Clear the list of Critter Powers.
+            foreach (TreeNode objNode in treCritterPowers.Nodes)
+                objNode.Nodes.Clear();
+
+            CritterPowers.Clear();
+        }
+
+        /// <summary>
+        /// Clear all Initiation tab elements from the character that were not added by improvements.
+        /// </summary>
+        public void ClearInitiations()
+        {
+            InitiateGrade = 0;
+            SubmersionGrade = 0;
+            InitiationGrades.Clear();
+            // Metamagics/Echoes can add addition bonus metamagics/echoes, so we cannot use foreach or RemoveAll()
+            for (int j = Metamagics.Count - 1; j >= 0; j--)
+            {
+                if (j < Metamagics.Count)
+                {
+                    Metamagic objToRemove = Metamagics[j];
+                    if (objToRemove.Grade >= 0)
+                    {
+                        // Remove the Improvements created by the Metamagic.
+                        ImprovementManager.RemoveImprovements(this, objToRemove.SourceType, objToRemove.InternalId);
+                        Metamagics.Remove(objToRemove);
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #endregion
+
+        #region Basic Properties
         /// <summary>
         /// Character Options object.
         /// </summary>
@@ -8556,6 +8958,11 @@ namespace Chummer
                 return Options.MysaddPPCareer && Karma >= 5 && MAG.TotalValue > MysticAdeptPowerPoints;
             }
         }
+
+        /// <summary>
+        /// Blocked grades of cyber/bioware in Create mode. 
+        /// </summary>
+        public IList<string> BannedGrades { get; } = new List<string>(){ "Betaware", "Deltaware", "Gammaware" };
 
         public event PropertyChangedEventHandler PropertyChanged;
 

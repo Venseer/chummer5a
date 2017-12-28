@@ -1409,7 +1409,7 @@ namespace Chummer
                             {
                                 string strNewName = objCyberware.Grade.Name.Replace("(Adapsin)", string.Empty).Trim();
                                 // Determine which GradeList to use for the Cyberware.
-                                objCyberware.Grade = CommonFunctions.GetGradeList(objCyberware.SourceType, objCharacter.Options).FirstOrDefault(x => x.Name == strNewName);
+                                objCyberware.Grade = objCharacter.GetGradeList(objCyberware.SourceType).FirstOrDefault(x => x.Name == strNewName);
                             }
                         }
                         break;
@@ -1460,7 +1460,7 @@ namespace Chummer
                         if (objGear != null)
                         {
                             RemoveImprovements(objCharacter, Improvement.ImprovementSource.Gear, objGear.InternalId);
-                            CommonFunctions.DeleteGear(objCharacter, objGear, null, null);
+                            objGear.DeleteGear(null, null);
                             objCharacter.Gear.Remove(objGear);
                         }
                         break;

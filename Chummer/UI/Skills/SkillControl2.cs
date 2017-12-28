@@ -325,7 +325,7 @@ namespace Chummer.UI.Skills
             if (frmItemNotes.DialogResult == DialogResult.OK)
             {
                 _skill.Notes = frmItemNotes.Notes;
-                _skill.Notes = CommonFunctions.WordWrap(_skill.Notes, 100);
+                _skill.Notes = _skill.Notes.WordWrap(100);
                 tipTooltip.SetToolTip(lblName, _skill.SkillToolTip);
             }
             if (!string.IsNullOrEmpty(_skill.Notes))
@@ -345,7 +345,7 @@ namespace Chummer.UI.Skills
         
         private void lblName_Click(object sender, EventArgs e)
         {
-            CommonFunctions.OpenPDF(_skill.Source + " " + _skill.Page, _skill.CharacterObject);
+            CommonFunctions.OpenPDF(_skill.Source + " " + _skill.DisplayPage(GlobalOptions.Language));
         }
 
         private void cboSpec_TextChanged(object sender, EventArgs e)

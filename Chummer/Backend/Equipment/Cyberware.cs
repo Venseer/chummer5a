@@ -86,9 +86,9 @@ namespace Chummer.Backend.Equipment
         /// Convert a string to a Grade.
         /// </summary>
         /// <param name="strValue">String value to convert.</param>
-        public static Grade ConvertToCyberwareGrade(string strValue, Improvement.ImprovementSource objSource, CharacterOptions objCharacterOptions)
+        public static Grade ConvertToCyberwareGrade(string strValue, Improvement.ImprovementSource objSource, Character objCharacter)
         {
-            IList<Grade> lstGrades = CommonFunctions.GetGradeList(objSource, objCharacterOptions);
+            IList<Grade> lstGrades = objCharacter.GetGradeList(objSource);
             foreach (Grade objGrade in lstGrades)
             {
                 if (objGrade.Name == strValue)
@@ -722,7 +722,7 @@ namespace Chummer.Backend.Equipment
             }
             objNode.TryGetStringFieldQuickly("subsystems", ref _strAllowSubsystems);
             if (objNode["grade"] != null)
-                _objGrade = ConvertToCyberwareGrade(objNode["grade"].InnerText, _objImprovementSource, _objCharacter.Options);
+                _objGrade = ConvertToCyberwareGrade(objNode["grade"].InnerText, _objImprovementSource, _objCharacter);
             objNode.TryGetStringFieldQuickly("location", ref _strLocation);
             if (!objNode.TryGetStringFieldQuickly("extra", ref _strExtra) && _strLocation != "Left" && _strLocation != "Right")
             {
@@ -748,7 +748,7 @@ namespace Chummer.Backend.Equipment
             {
                 _strForceGrade = GetNode()?["forcegrade"].InnerText;
                 if (!string.IsNullOrEmpty(_strForceGrade))
-                    _objGrade = ConvertToCyberwareGrade(_strForceGrade, _objImprovementSource, _objCharacter.Options);
+                    _objGrade = ConvertToCyberwareGrade(_strForceGrade, _objImprovementSource, _objCharacter);
             }
             if (objNode["weaponguid"] != null)
             {
@@ -859,10 +859,7 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteElementString("avail", TotalAvail(strLanguageToPrint));
             objWriter.WriteElementString("cost", TotalCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
             objWriter.WriteElementString("owncost", OwnCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
-            if (_objCharacter.Options != null)
-            {
-                objWriter.WriteElementString("source", _objCharacter.Options.LanguageBookShort(Source, strLanguageToPrint));
-            }
+            objWriter.WriteElementString("source", CommonFunctions.LanguageBookShort(Source, strLanguageToPrint));
             objWriter.WriteElementString("page", Page(strLanguageToPrint));
             objWriter.WriteElementString("rating", Rating.ToString(objCulture));
             objWriter.WriteElementString("minrating", MinRating.ToString(objCulture));
@@ -1455,7 +1452,7 @@ namespace Chummer.Backend.Equipment
             }
 
             foreach (Gear objChildGear in Gear)
-                CommonFunctions.ChangeGearEquippedStatus(_objCharacter, objChildGear, blnEquip);
+                objChildGear.ChangeEquippedStatus(blnEquip);
 
             foreach (Cyberware objChild in Children)
                 objChild.ChangeModularEquip(blnEquip);
@@ -1584,7 +1581,7 @@ namespace Chummer.Backend.Equipment
             {
                 if (!string.IsNullOrWhiteSpace(_strForceGrade) && _strForceGrade != _objGrade.Name)
                 {
-                    return ConvertToCyberwareGrade(_strForceGrade, Improvement.ImprovementSource.Bioware, _objCharacter.Options);
+                    return ConvertToCyberwareGrade(_strForceGrade, Improvement.ImprovementSource.Bioware, _objCharacter);
                 }
                 return _objGrade;
             }
@@ -3114,6 +3111,164 @@ namespace Chummer.Backend.Equipment
             {
                 return IEnumerableExtensions.Both(Gear.Cast<IHasMatrixAttributes>(), Children.Cast<IHasMatrixAttributes>()).ToList();
             }
+        }
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Recursive method to delete a piece of 'ware and its Improvements from the character. Returns total extra cost removed unrelated to children.
+        /// </summary>
+        /// <param name="objGear">Gear to delete.</param>
+        /// <param name="treWeapons">TreeView that holds the list of Weapons.</param>
+        /// <param name="objImprovementManager">Improvement Manager the character is using.</param>
+        public decimal DeleteCyberware(TreeView treWeapons, TreeView treVehicles)
+        {
+            decimal decReturn = 0;
+            // Remove any children the Gear may have.
+            foreach (Cyberware objChild in Children)
+                decReturn += objChild.DeleteCyberware(treWeapons, treVehicles);
+
+            // Remove the Gear Weapon created by the Gear if applicable.
+            if (WeaponID != Guid.Empty.ToString())
+            {
+                List<string> lstNodesToRemoveIds = new List<string>();
+                List<Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>> lstWeaponsToDelete = new List<Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>>();
+                foreach (Weapon objWeapon in _objCharacter.Weapons.DeepWhere(x => x.Children, x => x.ParentID == InternalId))
+                {
+                    lstNodesToRemoveIds.Add(objWeapon.InternalId);
+                    lstWeaponsToDelete.Add(new Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>(objWeapon, null, null, null));
+                }
+                foreach (Vehicle objVehicle in _objCharacter.Vehicles)
+                {
+                    foreach (Weapon objWeapon in objVehicle.Weapons.DeepWhere(x => x.Children, x => x.ParentID == InternalId))
+                    {
+                        lstNodesToRemoveIds.Add(objWeapon.InternalId);
+                        lstWeaponsToDelete.Add(new Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>(objWeapon, objVehicle, null, null));
+                    }
+
+                    foreach (VehicleMod objMod in objVehicle.Mods)
+                    {
+                        foreach (Weapon objWeapon in objMod.Weapons.DeepWhere(x => x.Children, x => x.ParentID == InternalId))
+                        {
+                            lstNodesToRemoveIds.Add(objWeapon.InternalId);
+                            lstWeaponsToDelete.Add(new Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>(objWeapon, objVehicle, objMod, null));
+                        }
+                    }
+
+                    foreach (WeaponMount objMount in objVehicle.WeaponMounts)
+                    {
+                        foreach (Weapon objWeapon in objMount.Weapons.DeepWhere(x => x.Children, x => x.ParentID == InternalId))
+                        {
+                            lstNodesToRemoveIds.Add(objWeapon.InternalId);
+                            lstWeaponsToDelete.Add(new Tuple<Weapon, Vehicle, VehicleMod, WeaponMount>(objWeapon, objVehicle, null, objMount));
+                        }
+                    }
+                }
+                // We need this list separate because weapons to remove can contain gear that add more weapons in need of removing
+                foreach (Tuple<Weapon, Vehicle, VehicleMod, WeaponMount> objLoopTuple in lstWeaponsToDelete)
+                {
+                    Weapon objWeapon = objLoopTuple.Item1;
+                    decReturn += objWeapon.TotalCost + objWeapon.DeleteWeapon(treWeapons, treVehicles);
+                    if (objWeapon.Parent != null)
+                        objWeapon.Parent.Children.Remove(objWeapon);
+                    else if (objLoopTuple.Item4 != null)
+                        objLoopTuple.Item4.Weapons.Remove(objWeapon);
+                    else if (objLoopTuple.Item3 != null)
+                        objLoopTuple.Item3.Weapons.Remove(objWeapon);
+                    else if (objLoopTuple.Item2 != null)
+                        objLoopTuple.Item2.Weapons.Remove(objWeapon);
+                    else
+                        _objCharacter.Weapons.Remove(objWeapon);
+                }
+                foreach (string strNodeId in lstNodesToRemoveIds)
+                {
+                    // Remove the Weapons from the TreeView.
+                    TreeNode objLoopNode = treWeapons.FindNode(strNodeId) ?? treVehicles.FindNode(strNodeId);
+                    objLoopNode?.Remove();
+                }
+            }
+
+            // Remove any Vehicle that the Cyberware created.
+            if (VehicleID != Guid.Empty.ToString())
+            {
+                List<string> lstNodesToRemoveIds = new List<string>();
+                List<Vehicle> lstVehiclesToRemove = new List<Vehicle>();
+                foreach (Vehicle objLoopVehicle in _objCharacter.Vehicles)
+                {
+                    if (objLoopVehicle.ParentID == InternalId)
+                    {
+                        lstNodesToRemoveIds.Add(objLoopVehicle.InternalId);
+                        lstVehiclesToRemove.Add(objLoopVehicle);
+                    }
+                }
+                foreach (Vehicle objLoopVehicle in lstVehiclesToRemove)
+                {
+                    decReturn += objLoopVehicle.TotalCost;
+                    _objCharacter.Vehicles.Remove(objLoopVehicle);
+                    foreach (Gear objLoopGear in objLoopVehicle.Gear)
+                    {
+                        decReturn += objLoopGear.DeleteGear(treWeapons, treVehicles);
+                    }
+                    foreach (Weapon objLoopWeapon in objLoopVehicle.Weapons)
+                    {
+                        decReturn += objLoopWeapon.DeleteWeapon(treWeapons, treVehicles);
+                    }
+                    foreach (VehicleMod objLoopMod in objLoopVehicle.Mods)
+                    {
+                        foreach (Weapon objLoopWeapon in objLoopMod.Weapons)
+                        {
+                            decReturn += objLoopWeapon.DeleteWeapon(treWeapons, treVehicles);
+                        }
+                        foreach (Cyberware objLoopCyberware in objLoopMod.Cyberware)
+                        {
+                            decReturn += objLoopCyberware.DeleteCyberware(treWeapons, treVehicles);
+                        }
+                    }
+                    foreach (WeaponMount objLoopWeaponMount in objLoopVehicle.WeaponMounts)
+                    {
+                        foreach (Weapon objLoopWeapon in objLoopWeaponMount.Weapons)
+                        {
+                            decReturn += objLoopWeapon.DeleteWeapon(treWeapons, treVehicles);
+                        }
+                    }
+                }
+                foreach (string strNodeId in lstNodesToRemoveIds)
+                {
+                    // Remove the Weapons from the TreeView.
+                    treVehicles.FindNode(strNodeId)?.Remove();
+                }
+            }
+
+            ImprovementManager.RemoveImprovements(_objCharacter, SourceType, InternalId);
+            if (PairBonus != null)
+            {
+                List<Cyberware> lstPairableCyberwares = _objCharacter.Cyberware.DeepWhere(x => x.Children, x => x.Name == Name && x.Extra == Extra && x.IsModularCurrentlyEquipped).ToList();
+                int intCyberwaresCount = lstPairableCyberwares.Count - 1;
+                if (!string.IsNullOrEmpty(Location))
+                {
+                    intCyberwaresCount = Math.Min(lstPairableCyberwares.Count(x => x.Location == Location) - 1, lstPairableCyberwares.Count(x => x.Location != Location));
+                }
+                foreach (Cyberware objLoopCyberware in lstPairableCyberwares.Where(x => x.InternalId != InternalId))
+                {
+                    ImprovementManager.RemoveImprovements(_objCharacter, objLoopCyberware.SourceType, objLoopCyberware.InternalId);
+                    if (objLoopCyberware.Bonus != null)
+                        ImprovementManager.CreateImprovements(_objCharacter, objLoopCyberware.SourceType, objLoopCyberware.InternalId, objLoopCyberware.Bonus, false, objLoopCyberware.Rating, objLoopCyberware.DisplayNameShort(GlobalOptions.Language));
+                    if (objLoopCyberware.WirelessOn && objLoopCyberware.WirelessBonus != null)
+                        ImprovementManager.CreateImprovements(_objCharacter, objLoopCyberware.SourceType, objLoopCyberware.InternalId, objLoopCyberware.WirelessBonus, false, objLoopCyberware.Rating, objLoopCyberware.DisplayNameShort(GlobalOptions.Language));
+                    if (intCyberwaresCount > 0 && intCyberwaresCount % 2 == 0)
+                    {
+                        ImprovementManager.CreateImprovements(_objCharacter, objLoopCyberware.SourceType, objLoopCyberware.InternalId, objLoopCyberware.PairBonus, false, objLoopCyberware.Rating, objLoopCyberware.DisplayNameShort(GlobalOptions.Language));
+                    }
+                    intCyberwaresCount -= 1;
+                }
+            }
+
+            foreach (Gear objLoopGear in Gear)
+            {
+                decReturn += objLoopGear.DeleteGear(treWeapons, treVehicles);
+            }
+
+            return decReturn;
         }
         #endregion
     }
