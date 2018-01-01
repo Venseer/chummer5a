@@ -626,10 +626,6 @@ namespace Chummer
                     objSpiritControl.DeleteSpirit += objSpirit_DeleteSpirit;
                     objSpiritControl.FileNameChanged += objSpirit_FileNameChanged;
                     
-                    if (CharacterObjectOptions.SpiritForceBasedOnTotalMAG)
-                        objSpiritControl.ForceMaximum = CharacterObject.MAG.TotalValue;
-                    else
-                        objSpiritControl.ForceMaximum = CharacterObject.MAG.Value;
                     objSpiritControl.RebuildSpiritList(CharacterObject.MagicTradition);
 
                     objSpiritControl.Top = i * objSpiritControl.Height;
@@ -644,10 +640,7 @@ namespace Chummer
                 if (objSpirit.EntityType == SpiritType.Sprite)
                 {
                     i++;
-                    SpiritControl objSpiritControl = new SpiritControl(objSpirit)
-                    {
-                        EntityType = SpiritType.Sprite
-                    };
+                    SpiritControl objSpiritControl = new SpiritControl(objSpirit);
 
                     // Attach an EventHandler for the ServicesOwedChanged Event.
                     objSpiritControl.ServicesOwedChanged += objSprite_ServicesOwedChanged;
@@ -656,7 +649,6 @@ namespace Chummer
                     objSpiritControl.DeleteSpirit += objSprite_DeleteSpirit;
                     objSpiritControl.FileNameChanged += objSprite_FileNameChanged;
                     
-                    objSpiritControl.ForceMaximum = CharacterObject.RES.TotalValue;
                     objSpiritControl.RebuildSpiritList(CharacterObject.TechnomancerStream);
 
                     objSpiritControl.Top = i * objSpiritControl.Height;
@@ -902,6 +894,7 @@ namespace Chummer
             lstSpecialAttributes.CollectionChanged += AttributeCollectionChanged;
             BuildAttributePanel();
 
+            CharacterObject.Spells.CollectionChanged += SpellCollectionChanged;
             // Hacky, but necessary
             // UpdateCharacterInfo() needs to be run before BuildAttributesPanel() so that it can properly regenerate Essence Loss improvements based on options...
             // ...but BuildAttributePanel() ends up requesting a character update when it sets up the values of attribute NumericalUpDowns
@@ -2282,11 +2275,11 @@ namespace Chummer
                 int intCyberwaresCount = objItem.Value;
                 if (!string.IsNullOrEmpty(objCyberware.Location))
                 {
-                    intCyberwaresCount = Math.Min(intCyberwaresCount, CharacterObject.Cyberware.DeepCount(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.Location != objCyberware.Location && x.IsModularCurrentlyEquipped));
+                    intCyberwaresCount = Math.Min(intCyberwaresCount, CharacterObject.Cyberware.DeepCount(x => x.Children, x => objCyberware.IncludePair.Contains(x.Name) && x.Extra == objCyberware.Extra && x.Location != objCyberware.Location && x.IsModularCurrentlyEquipped));
                 }
                 if (intCyberwaresCount > 0)
                 {
-                    foreach (Cyberware objLoopCyberware in CharacterObject.Cyberware.DeepWhere(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.IsModularCurrentlyEquipped))
+                    foreach (Cyberware objLoopCyberware in CharacterObject.Cyberware.DeepWhere(x => x.Children, x => objCyberware.IncludePair.Contains(x.Name) && x.Extra == objCyberware.Extra && x.IsModularCurrentlyEquipped))
                     {
                         if (intCyberwaresCount % 2 == 0)
                         {
@@ -2421,7 +2414,6 @@ namespace Chummer
             RefreshMartialArts();
             RefreshAIPrograms();
             RefreshLimitModifiers();
-            RefreshSpells(treSpells, cmsSpell, CharacterObject);
             PopulateGearList();
             RefreshContacts();
             if (treCyberware.SelectedNode != null)
@@ -3490,8 +3482,10 @@ namespace Chummer
             int intBPUsed = 0;
             foreach (ContactControl objContactControl in panEnemies.Controls)
             {
-                if (!objContactControl.Free) {
-                    intBPUsed -= (objContactControl.ConnectionRating + objContactControl.LoyaltyRating) * CharacterObjectOptions.KarmaEnemy;
+                Contact objLoopEnemy = objContactControl.ContactObject;
+                if (!objLoopEnemy.Free)
+                {
+                    intBPUsed -= (objLoopEnemy.Connection + objLoopEnemy.Loyalty) * CharacterObjectOptions.KarmaEnemy;
                 }
             }
 
@@ -3507,15 +3501,15 @@ namespace Chummer
             if (intBPUsed < (intEnemyMax * -1) && !CharacterObject.IgnoreRules)
             {
                 MessageBox.Show(LanguageManager.GetString("Message_EnemyLimit", GlobalOptions.Language).Replace("{0}", strEnemyPoints), LanguageManager.GetString("MessageTitle_EnemyLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                ContactControl objSender = (ContactControl)sender;
+                Contact objSenderContact = ((ContactControl)sender).ContactObject;
                 int intTotal = (intEnemyMax*-1) - intBPUsed;
                 switch (strMode)
                 {
                     case "Connection":
-                        objSender.ConnectionRating -= intTotal;
+                        objSenderContact.Connection -= intTotal;
                         break;
                     case "Loyalty":
-                        objSender.LoyaltyRating -= intTotal;
+                        objSenderContact.Loyalty -= intTotal;
                         break;
                 }
                 return;
@@ -3526,15 +3520,15 @@ namespace Chummer
                 if (intBPUsed + intNegativeQualityBP < (intQualityMax * -1) && !CharacterObject.IgnoreRules)
                 {
                     MessageBox.Show(LanguageManager.GetString("Message_NegativeQualityLimit", GlobalOptions.Language).Replace("{0}", strQualityPoints), LanguageManager.GetString("MessageTitle_NegativeQualityLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    ContactControl objSender = (ContactControl)sender;
+                    Contact objSenderContact = ((ContactControl)sender).ContactObject;
                     switch (strMode)
                     {
                         case "Connection":
-                            objSender.ConnectionRating -= (((intQualityMax*-1) - (intBPUsed + intNegativeQualityBP))/
+                            objSenderContact.Connection -= (((intQualityMax*-1) - (intBPUsed + intNegativeQualityBP))/
                                                            CharacterObjectOptions.KarmaQuality);
                             break;
                         case "Loyalty":
-                            objSender.LoyaltyRating -= (((intQualityMax * -1) - (intBPUsed + intNegativeQualityBP)) /
+                            objSenderContact.Loyalty -= (((intQualityMax * -1) - (intBPUsed + intNegativeQualityBP)) /
                                                         CharacterObjectOptions.KarmaQuality);
                             break;
                     }
@@ -3640,15 +3634,15 @@ namespace Chummer
         {
             // Handle the ServicesOwedChanged Event for the SpiritControl object.
             // A Spirit cannot owe more services than the character's Summoning Skill Rating.
-            SpiritControl objSpiritControl = (SpiritControl)sender;
+            Spirit objSpirit = ((SpiritControl)sender).SpiritObject;
 
             // Retrieve the character's Summoning Skill Rating.
             int intSkillValue = CharacterObject.SkillsSection.GetActiveSkill("Summoning")?.Rating ?? 0;
 
-            if (objSpiritControl.ServicesOwed > intSkillValue && !CharacterObject.IgnoreRules)
+            if (objSpirit.ServicesOwed > intSkillValue && !CharacterObject.IgnoreRules)
             {
                 MessageBox.Show(LanguageManager.GetString("Message_SpiritServices", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_SpiritServices", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                objSpiritControl.ServicesOwed = intSkillValue;
+                objSpirit.ServicesOwed = intSkillValue;
             }
 
             ScheduleCharacterUpdate();
@@ -3708,15 +3702,15 @@ namespace Chummer
         {
             // Handle the ServicesOwedChanged Event for the SpiritControl object.
             // A Sprite cannot owe more services than the character's Compiling Skill Rating.
-            SpiritControl objSpriteControl = (SpiritControl)sender;
+            Spirit objSprite = ((SpiritControl)sender).SpiritObject;
 
             // Retrieve the character's Compiling Skill Rating.
             int intSkillValue = CharacterObject.SkillsSection.GetActiveSkill("Compiling")?.Rating ?? 0;
 
-            if (objSpriteControl.ServicesOwed > intSkillValue && !CharacterObject.IgnoreRules)
+            if (objSprite.ServicesOwed > intSkillValue && !CharacterObject.IgnoreRules)
             {
                 MessageBox.Show(LanguageManager.GetString("Message_SpriteServices", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_SpriteServices", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                objSpriteControl.ServicesOwed = intSkillValue;
+                objSprite.ServicesOwed = intSkillValue;
             }
 
             ScheduleCharacterUpdate();
@@ -3825,14 +3819,14 @@ namespace Chummer
 
         private void cmdAddContact_Click(object sender, EventArgs e)
         {
-            Contact objContact = new Contact(CharacterObject);
-            CharacterObject.Contacts.Add(objContact);
-
-            int i = panContacts.Controls.Count;
-            ContactControl objContactControl = new ContactControl(objContact)
+            Contact objContact = new Contact(CharacterObject)
             {
                 EntityType = ContactType.Contact
             };
+            CharacterObject.Contacts.Add(objContact);
+
+            int i = panContacts.Controls.Count;
+            ContactControl objContactControl = new ContactControl(objContact);
 
             // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChangedEvent
             objContactControl.ConnectionRatingChanged += objContact_ConnectionRatingChanged;
@@ -3880,7 +3874,8 @@ namespace Chummer
 
             foreach (ContactControl objEnemyControl in panEnemies.Controls)
             {
-                intBPUsed -= (objEnemyControl.ConnectionRating + objEnemyControl.LoyaltyRating) * CharacterObjectOptions.KarmaEnemy;
+                Contact objLoopEnemy = objEnemyControl.ContactObject;
+                intBPUsed -= (objLoopEnemy.Connection + objLoopEnemy.Loyalty) * CharacterObjectOptions.KarmaEnemy;
             }
 
             if (intBPUsed < (intEnemyMax * -1) && !CharacterObject.IgnoreRules)
@@ -3898,14 +3893,14 @@ namespace Chummer
                 }
             }
 
-            Contact objContact = new Contact(CharacterObject);
-            CharacterObject.Contacts.Add(objContact);
-
-            int i = panEnemies.Controls.Count;
-            ContactControl objContactControl = new ContactControl(objContact)
+            Contact objContact = new Contact(CharacterObject)
             {
                 EntityType = ContactType.Enemy
             };
+            CharacterObject.Contacts.Add(objContact);
+
+            int i = panEnemies.Controls.Count;
+            ContactControl objContactControl = new ContactControl(objContact);
 
             // Attach an EventHandler for the ConnectioNRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged and OtherCostChanged(hackish) Events
             objContactControl.ConnectionRatingChanged += objEnemy_ConnectionRatingChanged;
@@ -3947,8 +3942,6 @@ namespace Chummer
 
                 Spell objSpell = new Spell(CharacterObject);
                 TreeNode objNode = new TreeNode();
-                objSpell.Create(objXmlSpell, objNode, string.Empty, frmPickSpell.Limited, frmPickSpell.Extended, frmPickSpell.Alchemical);
-                objNode.ContextMenuStrip = cmsSpell;
                 if (objSpell.InternalId == Guid.Empty.ToString())
                 {
                     frmPickSpell.Dispose();
@@ -3963,41 +3956,6 @@ namespace Chummer
                 }
                 CharacterObject.Spells.Add(objSpell);
 
-                switch (objSpell.Category)
-                {
-                    case "Combat":
-                        treSpells.Nodes[0].Nodes.Add(objNode);
-                        treSpells.Nodes[0].Expand();
-                        break;
-                    case "Detection":
-                        treSpells.Nodes[1].Nodes.Add(objNode);
-                        treSpells.Nodes[1].Expand();
-                        break;
-                    case "Health":
-                        treSpells.Nodes[2].Nodes.Add(objNode);
-                        treSpells.Nodes[2].Expand();
-                        break;
-                    case "Illusion":
-                        treSpells.Nodes[3].Nodes.Add(objNode);
-                        treSpells.Nodes[3].Expand();
-                        break;
-                    case "Manipulation":
-                        treSpells.Nodes[4].Nodes.Add(objNode);
-                        treSpells.Nodes[4].Expand();
-                        break;
-                    case "Rituals":
-                        treSpells.Nodes[5].Nodes.Add(objNode);
-                        treSpells.Nodes[5].Expand();
-                        break;
-                    case "Enchantments":
-                        treSpells.Nodes[6].Nodes.Add(objNode);
-                        treSpells.Nodes[6].Expand();
-                        break;
-                }
-
-                treSpells.SelectedNode = objNode;
-
-                treSpells.SortCustom();
                 ScheduleCharacterUpdate();
 
                 IsDirty = true;
@@ -4022,8 +3980,6 @@ namespace Chummer
                     ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Spell, objSpell.InternalId);
 
                     CharacterObject.Spells.Remove(objSpell);
-                    treSpells.SelectedNode.Remove();
-
                     ScheduleCharacterUpdate();
 
                     IsDirty = true;
@@ -4042,13 +3998,14 @@ namespace Chummer
                 return;
             }
 
-            Spirit objSpirit = new Spirit(CharacterObject);
+            Spirit objSpirit = new Spirit(CharacterObject)
+            {
+                EntityType = SpiritType.Spirit,
+                Force = CharacterObject.MaxSpiritForce
+            };
             CharacterObject.Spirits.Add(objSpirit);
 
-            SpiritControl objSpiritControl = new SpiritControl(objSpirit)
-            {
-                EntityType = SpiritType.Spirit
-            };
+            SpiritControl objSpiritControl = new SpiritControl(objSpirit);
 
             // Attach an EventHandler for the ServicesOwedChanged Event.
             objSpiritControl.ServicesOwedChanged += objSpirit_ServicesOwedChanged;
@@ -4058,20 +4015,6 @@ namespace Chummer
             objSpiritControl.DeleteSpirit += objSpirit_DeleteSpirit;
             objSpiritControl.FileNameChanged += objSpirit_FileNameChanged;
 
-            if (CharacterObjectOptions.SpiritForceBasedOnTotalMAG)
-            {
-                int intMAGTotalValue = CharacterObject.MAG.TotalValue;
-                objSpiritControl.ForceMaximum = intMAGTotalValue * 2;
-                objSpiritControl.Force = intMAGTotalValue;
-            }
-            else
-            {
-                int intMAG = Convert.ToInt32(CharacterObject.MAG.Value);
-                if (intMAG == 0)
-                    intMAG = 1;
-                objSpiritControl.ForceMaximum = intMAG * 2;
-                objSpiritControl.Force = intMAG;
-            }
             objSpiritControl.RebuildSpiritList(CharacterObject.MagicTradition);
 
             objSpiritControl.Top = i * objSpiritControl.Height;
@@ -4091,13 +4034,14 @@ namespace Chummer
                 return;
             }
 
-            Spirit objSprite = new Spirit(CharacterObject);
+            Spirit objSprite = new Spirit(CharacterObject)
+            {
+                EntityType = SpiritType.Sprite,
+                Force = CharacterObject.MaxSpriteLevel
+            };
             CharacterObject.Spirits.Add(objSprite);
 
-            SpiritControl objSpriteControl = new SpiritControl(objSprite)
-            {
-                EntityType = SpiritType.Sprite
-            };
+            SpiritControl objSpriteControl = new SpiritControl(objSprite);
 
             // Attach an EventHandler for the ServicesOwedChanged Event.
             objSpriteControl.ServicesOwedChanged += objSprite_ServicesOwedChanged;
@@ -4105,9 +4049,7 @@ namespace Chummer
             objSpriteControl.BoundChanged += objSprite_BoundChanged;
             objSpriteControl.DeleteSpirit += objSprite_DeleteSpirit;
             objSpriteControl.FileNameChanged += objSprite_FileNameChanged;
-
-            objSpriteControl.ForceMaximum = CharacterObject.RES.Value;
-            objSpriteControl.ForceMaximum = CharacterObject.RES.Value;
+            
             objSpriteControl.RebuildSpiritList(CharacterObject.TechnomancerStream);
 
             objSpriteControl.Top = i * objSpriteControl.Height;
@@ -4517,6 +4459,7 @@ namespace Chummer
 
         private void cmdDeleteWeapon_Click(object sender, EventArgs e)
         {
+            if (treWeapons.SelectedNode == null) return;
             // Delete the selected Weapon.
             if (treWeapons.SelectedNode.Level == 0)
             {
@@ -4718,6 +4661,7 @@ namespace Chummer
         private void cmdDeleteGear_Click(object sender, EventArgs e)
         {
             // Delete the selected Gear.
+            if (treGear.SelectedNode == null) return;
             if (treGear.SelectedNode.Level == 0)
             {
                 if (treGear.SelectedNode.Text == LanguageManager.GetString("Node_SelectedGear", GlobalOptions.Language))
@@ -5997,7 +5941,6 @@ namespace Chummer
                 RefreshContacts();
                 PopulateCyberwareList();
                 RefreshSelectedCyberware();
-                RefreshSpells(treSpells, cmsSpell, CharacterObject);
                 PopulateGearList();
                 RefreshCritterPowers(treCritterPowers, cmsCritterPowers);
             }
@@ -6228,7 +6171,6 @@ namespace Chummer
                 RefreshMartialArts();
                 RefreshAIPrograms();
                 RefreshLimitModifiers();
-                RefreshSpells(treSpells, cmsSpell, CharacterObject);
                 PopulateGearList();
                 RefreshContacts();
                 RefreshSelectedCyberware();
@@ -10249,7 +10191,6 @@ namespace Chummer
                     RefreshMartialArts();
                     RefreshAIPrograms();
                     RefreshLimitModifiers();
-                    RefreshSpells(treSpells, cmsSpell, CharacterObject);
                     PopulateGearList();
                     RefreshCritterPowers(treCritterPowers, cmsCritterPowers);
                     RefreshContacts();
@@ -10327,7 +10268,7 @@ namespace Chummer
                     {
                         if (objCyberware.PairBonus != null)
                         {
-                            List<Cyberware> lstPairableCyberwares = CharacterObject.Cyberware.DeepWhere(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.IsModularCurrentlyEquipped).ToList();
+                            List<Cyberware> lstPairableCyberwares = CharacterObject.Cyberware.DeepWhere(x => x.Children, x => objCyberware.IncludePair.Contains(x.Name) && x.Extra == objCyberware.Extra && x.IsModularCurrentlyEquipped).ToList();
                             int intCyberwaresCount = lstPairableCyberwares.Count;
                             if (!string.IsNullOrEmpty(objCyberware.Location))
                             {
@@ -12562,81 +12503,6 @@ namespace Chummer
         #endregion
 
         #region Sourcebook Label Events
-        private void lblWeaponSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblWeaponSource.Text);
-        }
-
-        private void lblMetatypeSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblMetatypeSource.Text);
-        }
-
-        private void lblQualitySource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblQualitySource.Text);
-        }
-
-        private void lblMartialArtSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblMartialArtSource.Text);
-        }
-
-        private void lblSpellSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblSpellSource.Text);
-        }
-
-        private void lblTraditionSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblTraditionSource.Text);
-        }
-
-        private void lblComplexFormSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblComplexFormSource.Text);
-        }
-
-        private void lblAdvancedProgramsSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblAIProgramsSource.Text);
-        }
-
-        private void lblCritterPowerSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblCritterPowerSource.Text);
-        }
-
-        private void lblMetamagicSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblMetamagicSource.Text);
-        }
-
-        private void lblCyberwareSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblCyberwareSource.Text);
-        }
-
-        private void lblLifestyleSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblLifestyleSource.Text);
-        }
-
-        private void lblArmorSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblArmorSource.Text);
-        }
-
-        private void lblGearSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblGearSource.Text);
-        }
-
-        private void lblVehicleSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblVehicleSource.Text);
-        }
-
         private void txtNotes_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Control && e.KeyCode == Keys.A)
@@ -12789,7 +12655,7 @@ namespace Chummer
                     intHighPlacesFriends += (objContactControl.ContactObject.Connection +
                                             objContactControl.ContactObject.Loyalty);
                 }
-                else if (objContactControl.IsGroup == false)
+                else if (objContactControl.ContactObject.IsGroup == false)
                 {
                     int over = intContactPointsLeft - objContactControl.ContactObject.ContactPoints;
 
@@ -12838,10 +12704,11 @@ namespace Chummer
             int intEnemyPoints = 0;
             foreach (ContactControl objContactControl in panEnemies.Controls)
             {
-                if (!objContactControl.Free)
+                Contact objLoopEnemy = objContactControl.ContactObject;
+                if (!objLoopEnemy.Free)
                 {
                     // The Enemy's Karma cost = their (Connection + Loyalty Rating) x Karma multiplier.
-                    intEnemyPoints -= (objContactControl.ConnectionRating + objContactControl.LoyaltyRating) * CharacterObjectOptions.KarmaEnemy;
+                    intEnemyPoints -= (objLoopEnemy.Connection + objLoopEnemy.Loyalty) * CharacterObjectOptions.KarmaEnemy;
                 }
             }
 
@@ -13194,16 +13061,17 @@ namespace Chummer
             int intSpiritPointsUsed = 0;
             foreach (SpiritControl objSpiritControl in panSpirits.Controls)
             {
+                Spirit objLoopSpirit = objSpiritControl.SpiritObject;
                 // Each Spirit costs KarmaSpirit x Services Owed.
-                intKarmaPointsRemain -= objSpiritControl.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
-                intSpiritPointsUsed += objSpiritControl.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
+                intKarmaPointsRemain -= objLoopSpirit.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
+                intSpiritPointsUsed += objLoopSpirit.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
 
                 // Each Fettered Spirit costs 3 x Force.
                 //TODO: Bind the 3 to an option.
-                if (objSpiritControl.Fettered)
+                if (objLoopSpirit.Fettered)
                 {
-                    intKarmaPointsRemain -= objSpiritControl.Force * 3;
-                    intSpiritPointsUsed += objSpiritControl.Force * 3;
+                    intKarmaPointsRemain -= objLoopSpirit.Force * 3;
+                    intSpiritPointsUsed += objLoopSpirit.Force * 3;
                 }
             }
             intFreestyleBP += intSpiritPointsUsed;
@@ -13213,9 +13081,10 @@ namespace Chummer
             int intSpritePointsUsed = 0;
             foreach (SpiritControl objSpriteControl in panSprites.Controls)
             {
+                Spirit objLoopSprite = objSpriteControl.SpiritObject;
                 // Each Sprite costs KarmaSpirit x Services Owed.
-                intKarmaPointsRemain -= objSpriteControl.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
-                intSpritePointsUsed += objSpriteControl.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
+                intKarmaPointsRemain -= objLoopSprite.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
+                intSpritePointsUsed += objLoopSprite.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
             }
             intFreestyleBP += intSpritePointsUsed;
 
@@ -13526,7 +13395,6 @@ namespace Chummer
             RefreshMartialArts();
             RefreshAIPrograms();
             RefreshLimitModifiers();
-            RefreshSpells(treSpells, cmsSpell, CharacterObject);
             PopulateGearList();
             RefreshContacts();
             PopulateCyberwareList();
@@ -13793,35 +13661,18 @@ namespace Chummer
             }
             CharacterObject.ContactPoints = intCHA * CharacterObjectOptions.FreeContactsMultiplier;
 
-            // If MAG is enabled, update the Force for Spirits (equal to Magician MAG Rating) and Adept Powers.
-            if (CharacterObject.MAGEnabled)
+            // Update the Force for Spirits and Sprites (equal to Magician MAG Rating or RES Rating).
+            foreach (SpiritControl objSpiritControl in panSpirits.Controls)
             {
-                foreach (SpiritControl objSpiritControl in panSpirits.Controls)
+                Spirit objLoopSpirit = objSpiritControl.SpiritObject;
+                if (objLoopSpirit.EntityType == SpiritType.Spirit)
                 {
-                    if (CharacterObjectOptions.SpiritForceBasedOnTotalMAG)
-                    {
-                        objSpiritControl.ForceMaximum = dicAttributeTotalValues["MAG"];
-                    }
-                    else
-                    {
-                        int intLocalMAG = dicAttributeValues["MAG"];
-                        if (intLocalMAG == 0)
-                            intLocalMAG = 1;
-
-                        objSpiritControl.ForceMaximum = intLocalMAG;
-                    }
-                    objSpiritControl.Force = objSpiritControl.ForceMaximum;
+                    objLoopSpirit.Force = CharacterObject.MaxSpiritForce;
                     objSpiritControl.RebuildSpiritList(CharacterObject.MagicTradition);
                 }
-            }
-
-            // If RES is enabled, update the Rating for Sprites (equal to Technomancer RES Rating).
-            if (CharacterObject.RESEnabled)
-            {
-                foreach (SpiritControl objSpiritControl in panSprites.Controls)
+                else
                 {
-                    objSpiritControl.ForceMaximum = dicAttributeTotalValues["RES"];
-                    objSpiritControl.Force = objSpiritControl.ForceMaximum;
+                    objLoopSpirit.Force = CharacterObject.MaxSpriteLevel;
                     objSpiritControl.RebuildSpiritList(CharacterObject.TechnomancerStream);
                 }
             }
@@ -14286,13 +14137,14 @@ namespace Chummer
 
             for (int i = panContacts.Controls.Count - 1; i >= 0; i--)
             {
-                Control contact = panContacts.Controls[i];
+                ContactControl contactControl = panContacts.Controls[i] as ContactControl;
 
-                if (contact is ContactControl contactControl)
+                if (contactControl != null)
                 {
-                    if (CharacterObject.Contacts.Contains(contactControl.ContactObject))
+                    Contact objLoopContact = contactControl.ContactObject;
+                    if (CharacterObject.Contacts.Contains(objLoopContact))
                     {
-                        contactControl.LoyaltyRating = contactControl.LoyaltyRating; //Force refresh
+                        objLoopContact.RefreshForControl(); //Force refresh
                         existing.Add(contactControl.ContactObject);
                     }
                     else
@@ -14308,12 +14160,7 @@ namespace Chummer
             //objContactControl.DeleteContact += objContact_DeleteContact;
             //objContactControl.FileNameChanged += objContact_FileNameChanged;
 
-            var newcontacts = from contact in CharacterObject.Contacts
-                              where contact.EntityType == ContactType.Contact
-                              && !existing.Contains(contact)
-                              select contact;
-
-            foreach (Contact contact in newcontacts)
+            foreach (Contact contact in CharacterObject.Contacts.Where(x => x.EntityType == ContactType.Contact && !existing.Contains(x)))
             {
                 ContactControl ctrl = new ContactControl(contact);
 
@@ -17122,7 +16969,7 @@ namespace Chummer
                     continue;
                 else if (!CharacterObject.AdapsinEnabled && objWareGrade.Adapsin)
                     continue;
-                else if (CharacterObject.BannedGrades.Any(s => objWareGrade.Name.Contains(s)))
+                else if (CharacterObject.bannedwaregrades.Any(s => objWareGrade.Name.Contains(s)))
                     continue;
 
                 lstCyberwareGrades.Add(new ListItem(objWareGrade.Name, objWareGrade.DisplayName(GlobalOptions.Language)));
@@ -17183,22 +17030,23 @@ namespace Chummer
             int intHighPlaces = 0;
             foreach (ContactControl objContactControl in panContacts.Controls)
             {
-                if (!objContactControl.Free)
+                Contact objLoopContact = objContactControl.ContactObject;
+                if (!objLoopContact.Free)
                 {
-                    if (objContactControl.IsGroup)
+                    if (objLoopContact.IsGroup)
                     {
-                        intGroupContacts += objContactControl.ContactObject.ContactPoints;
+                        intGroupContacts += objLoopContact.ContactPoints;
                     }
-                    else if (objContactControl.ConnectionRating >= 8 && CharacterObject.FriendsInHighPlaces)
+                    else if (objLoopContact.Connection >= 8 && CharacterObject.FriendsInHighPlaces)
                     {
-                        intHighPlaces += (objContactControl.ConnectionRating +
-                                          objContactControl.LoyaltyRating);
+                        intHighPlaces += (objLoopContact.Connection +
+                                          objLoopContact.Loyalty);
                     }
                     else
                     {
                         // The Contact's BP cost = their Connection + Loyalty Rating.
-                        intContactPointsUsed += (objContactControl.ConnectionRating +
-                                                 objContactControl.LoyaltyRating) * CharacterObjectOptions.BPContact;
+                        intContactPointsUsed += (objLoopContact.Connection +
+                                                 objLoopContact.Loyalty) * CharacterObjectOptions.BPContact;
                     }
 
                 }
@@ -17227,9 +17075,10 @@ namespace Chummer
             int intNegativePoints = 0;
             foreach (ContactControl objContactControl in panEnemies.Controls)
             {
-                if (!objContactControl.Free)
+                Contact objLoopEnemy = objContactControl.ContactObject;
+                if (!objLoopEnemy.Free)
                 {
-                    intNegativePoints -= (objContactControl.ConnectionRating + objContactControl.LoyaltyRating) * CharacterObjectOptions.KarmaEnemy;
+                    intNegativePoints -= (objLoopEnemy.Connection + objLoopEnemy.Loyalty) * CharacterObjectOptions.KarmaEnemy;
                 }
             }
 
@@ -17457,7 +17306,7 @@ namespace Chummer
             // Cyberware Availability.
             foreach (Cyberware objCyberware in CharacterObject.Cyberware.DeepWhere(x => x.Children, x => string.IsNullOrEmpty(x.ParentID)))
             {
-                if (CharacterObject.BannedGrades.Any( s => objCyberware.Grade.Name.Contains(s)))
+                if (CharacterObject.bannedwaregrades.Any( s => objCyberware.Grade.Name.Contains(s)))
                     strCyberwareGrade += "\n\t\t" + objCyberware.DisplayNameShort(GlobalOptions.Language);
 
                 string strTotalAvail = objCyberware.TotalAvail(GlobalOptions.Language);
@@ -18537,23 +18386,22 @@ namespace Chummer
                 {
                     int i = panSpirits.Controls.Count;
 
-                    Spirit objSpirit = new Spirit(CharacterObject);
+                    Spirit objSpirit = new Spirit(CharacterObject)
+                    {
+                        EntityType = SpiritType.Spirit,
+                        Name = objXmlSpirit["name"].InnerText,
+                        Force = Convert.ToInt32(objXmlSpirit["force"].InnerText),
+                        ServicesOwed = Convert.ToInt32(objXmlSpirit["services"].InnerText)
+                    };
                     CharacterObject.Spirits.Add(objSpirit);
 
-                    SpiritControl objSpiritControl = new SpiritControl(objSpirit)
-                    {
-                        EntityType = SpiritType.Spirit
-                    };
+                    SpiritControl objSpiritControl = new SpiritControl(objSpirit);
 
                     // Attach an EventHandler for the ServicesOwedChanged Event.
                     objSpiritControl.ServicesOwedChanged += objSpirit_ServicesOwedChanged;
                     objSpiritControl.ForceChanged += objSpirit_ForceChanged;
                     objSpiritControl.BoundChanged += objSpirit_BoundChanged;
                     objSpiritControl.DeleteSpirit += objSpirit_DeleteSpirit;
-
-                    objSpiritControl.Name = objXmlSpirit["name"].InnerText;
-                    objSpiritControl.Force = Convert.ToInt32(objXmlSpirit["force"].InnerText);
-                    objSpiritControl.ServicesOwed = Convert.ToInt32(objXmlSpirit["services"].InnerText);
 
                     objSpiritControl.Top = i * objSpiritControl.Height;
                     panSpirits.Controls.Add(objSpiritControl);
@@ -21450,6 +21298,11 @@ namespace Chummer
                     break;
             }
         }
+
+        private void SpellCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+        {
+            RefreshSpells(treSpells, cmsSpell, CharacterObject);
+        }
         private void objAttribute_ValueChanged(Object sender, EventArgs e)
         {
             // Handle the AttributeValueChanged Event for the AttributeControl object.
@@ -21773,11 +21626,14 @@ namespace Chummer
 
         private void cmdContactsExpansionToggle_Click(object sender, EventArgs e)
         {
-            bool toggle = ((ContactControl) panContacts.Controls[0]).Expanded;
-
-            foreach (ContactControl c in panContacts.Controls)
+            if (panContacts.Controls.Count > 0)
             {
-                c.ExpansionToggle(!toggle);
+                bool toggle = ((ContactControl)panContacts.Controls[0]).Expanded;
+
+                foreach (ContactControl c in panContacts.Controls)
+                {
+                    c.Expanded = !toggle;
+                }
             }
         }
 

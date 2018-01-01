@@ -211,7 +211,7 @@ namespace Chummer
         private List<MentorSpirit> _lstMentorSpirits = new List<MentorSpirit>();
         private List<Contact> _lstContacts = new List<Contact>();
         private List<Spirit> _lstSpirits = new List<Spirit>();
-        private List<Spell> _lstSpells = new List<Spell>();
+        private ObservableCollection<Spell> _lstSpells = new ObservableCollection<Spell>();
         private List<Focus> _lstFoci = new List<Focus>();
         private List<StackedFocus> _lstStackedFoci = new List<StackedFocus>();
         private BindingList<Power> _lstPowers = new BindingList<Power>();
@@ -483,13 +483,13 @@ namespace Chummer
             // <contactmultiplier />
             objWriter.WriteElementString("contactmultiplier", _intContactMultiplier.ToString());
 
-            // <bannedgrades >
-            objWriter.WriteStartElement("bannedgrades");
-            foreach (string g in BannedGrades)
+            // <bannedwaregrades >
+            objWriter.WriteStartElement("bannedwaregrades");
+            foreach (string g in bannedwaregrades)
             {
                 objWriter.WriteElementString("grade", g);
             }
-            // </bannedgrades>
+            // </bannedwaregrades>
             objWriter.WriteEndElement();
 
             // <nuyenbp />
@@ -1138,17 +1138,25 @@ namespace Chummer
                     _lstPrioritySkills.Add(objXmlSkillName.InnerText);
                 }
             }
-            if (objXmlCharacter["bannedgrades"] != null)
+            if (objXmlCharacter["bannedwaregrades"] != null && objXmlCharacter["bannedwaregrades"].HasChildNodes)
             {
-                BannedGrades.Clear();
-                XmlNodeList gradeList = objXmlCharacter.SelectNodes("bannedgrades/grade");
+                bannedwaregrades.Clear();
+                XmlNodeList gradeList = objXmlCharacter.SelectNodes("bannedwaregrades/grade");
                 if (gradeList != null)
                 {
                     foreach (XmlNode g in gradeList)
                     {
-                        BannedGrades.Add(g.InnerText);
+                        bannedwaregrades.Add(g.InnerText);
                     }
                 }
+            }
+            else
+            {
+                XmlDocument objXmlDocumentGameplayOptions = XmlManager.Load("gameplayoptions.xml");
+                XmlNodeList lstBannedGradeNodes = objXmlDocumentGameplayOptions.SelectNodes("/chummer/gameplayoptions/gameplayoption[name = \"" + GameplayOption + "\"]/bannedwaregrades/grade");
+                bannedwaregrades.Clear();
+                foreach (XmlNode xmlNode in lstBannedGradeNodes)
+                    bannedwaregrades.Add(xmlNode.InnerText);
             }
             string strSkill1 = string.Empty;
             string strSkill2 = string.Empty;
@@ -1501,11 +1509,11 @@ namespace Chummer
                 int intCyberwaresCount = objItem.Value;
                 if (!string.IsNullOrEmpty(objCyberware.Location))
                 {
-                    intCyberwaresCount = Math.Min(intCyberwaresCount, Cyberware.DeepCount(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.Location != objCyberware.Location && x.IsModularCurrentlyEquipped));
+                    intCyberwaresCount = Math.Min(intCyberwaresCount, Cyberware.DeepCount(x => x.Children, x => objCyberware.IncludePair.Contains(x.Name) && x.Extra == objCyberware.Extra && x.Location != objCyberware.Location && x.IsModularCurrentlyEquipped));
                 }
                 if (intCyberwaresCount > 0)
                 {
-                    foreach (Cyberware objLoopCyberware in Cyberware.DeepWhere(x => x.Children, x => x.Name == objCyberware.Name && x.Extra == objCyberware.Extra && x.IsModularCurrentlyEquipped))
+                    foreach (Cyberware objLoopCyberware in Cyberware.DeepWhere(x => x.Children, x => objCyberware.IncludePair.Contains(x.Name) && x.Extra == objCyberware.Extra && x.IsModularCurrentlyEquipped))
                     {
                         if (intCyberwaresCount % 2 == 0)
                         {
@@ -2946,7 +2954,7 @@ namespace Chummer
             _lstImprovements = new List<Improvement>();
             _lstContacts = new List<Contact>();
             _lstSpirits = new List<Spirit>();
-            _lstSpells = new List<Spell>();
+            _lstSpells = new ObservableCollection<Spell>();
             _lstFoci = new List<Focus>();
             _lstStackedFoci = new List<StackedFocus>();
             _lstPowers = new BindingList<Power>();
@@ -3328,7 +3336,7 @@ namespace Chummer
 
                 Grade objGrade = new Grade(objSource);
                 objGrade.Load(objNode);
-                if (IgnoreRules || Created || !BannedGrades.Any(s => objGrade.Name.Contains(s)))
+                if (IgnoreRules || Created || !bannedwaregrades.Any(s => objGrade.Name.Contains(s)))
                     lstGrades.Add(objGrade);
             }
 
@@ -5065,6 +5073,28 @@ namespace Chummer
         }
 
         /// <summary>
+        /// Maximum force of spirits summonable/bindable by the character
+        /// </summary>
+        public int MaxSpiritForce
+        {
+            get
+            {
+                return 2 * (Options.SpiritForceBasedOnTotalMAG ? MAG.TotalValue : MAG.Value);
+            }
+        }
+
+        /// <summary>
+        /// Maximum level of sprites compilable/registerable by the character
+        /// </summary>
+        public int MaxSpriteLevel
+        {
+            get
+            {
+                return 2 * RES.TotalValue;
+            }
+        }
+
+        /// <summary>
         /// Amount of Power Points for Mystic Adepts.
         /// </summary>
         public int MysticAdeptPowerPoints
@@ -6218,7 +6248,7 @@ namespace Chummer
         /// <summary>
         /// Magician Spells.
         /// </summary>
-        public IList<Spell> Spells
+        public ObservableCollection<Spell> Spells
         {
             get
             {
@@ -8962,7 +8992,7 @@ namespace Chummer
         /// <summary>
         /// Blocked grades of cyber/bioware in Create mode. 
         /// </summary>
-        public IList<string> BannedGrades { get; } = new List<string>(){ "Betaware", "Deltaware", "Gammaware" };
+        public IList<string> bannedwaregrades { get; } = new List<string>(){ "Betaware", "Deltaware", "Gammaware" };
 
         public event PropertyChangedEventHandler PropertyChanged;
 

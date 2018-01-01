@@ -160,7 +160,7 @@ namespace Chummer
             XmlNode objXmlGrade = null;
             // Retrieve the information for the selected Grade.
             string strSelectedGrade = cboGrade.SelectedValue?.ToString();
-            if (cboGrade.Enabled)
+            if (cboGrade.Enabled && strSelectedGrade != null)
                 _strOldSelectedGrade = strSelectedGrade;
             if (!string.IsNullOrEmpty(strSelectedGrade))
                 objXmlGrade = _objXmlDocument.SelectSingleNode("/chummer/grades/grade[id = \"" + strSelectedGrade + "\"]");
@@ -184,7 +184,9 @@ namespace Chummer
             {
                 _blnOldGradeEnabled = cboGrade.Enabled;
                 if (_blnOldGradeEnabled)
+                {
                     cboGrade.SelectedValue = _strOldSelectedGrade;
+                }
                 cboGrade_SelectedIndexChanged(sender, e);
             }
         }
@@ -285,6 +287,7 @@ namespace Chummer
                 if (cboGrade.Enabled)
                     cboGrade.Enabled = false;
                 objForcedGrade = _objGradeList.FirstOrDefault(x => x.Name == strForceGrade);
+                strForceGrade = objForcedGrade.SourceId.ToString();
             }
             else
             {
@@ -322,11 +325,6 @@ namespace Chummer
         private void chkHideOverAvailLimit_CheckedChanged(object sender, EventArgs e)
         {
             RefreshList(_strSelectedCategory);
-        }
-
-        private void lblSource_Click(object sender, EventArgs e)
-        {
-            CommonFunctions.OpenPDF(lblSource.Text);
         }
 
         private void nudMarkup_ValueChanged(object sender, EventArgs e)
@@ -869,7 +867,7 @@ namespace Chummer
                 if (blnDoUIUpdate)
                 {
                     lstCyberware.BeginUpdate();
-                    lstCyberware.DataSource = null;
+                    lstCyberware.DataSource = new List<ListItem>();
                     lstCyberware.EndUpdate();
                 }
                 return null;
@@ -1040,10 +1038,11 @@ namespace Chummer
                 string strOldSelected = lstCyberware.SelectedValue?.ToString();
 
                 lstCyberware.BeginUpdate();
-                lstCyberware.DataSource = null;
                 lstCyberware.ValueMember = "Value";
                 lstCyberware.DisplayMember = "Name";
+                lstCyberware.SelectedIndexChanged -= lstCyberware_SelectedIndexChanged;
                 lstCyberware.DataSource = lstCyberwares;
+                lstCyberware.SelectedIndexChanged += lstCyberware_SelectedIndexChanged;
 
                 if (!string.IsNullOrEmpty(strOldSelected))
                     lstCyberware.SelectedValue = strOldSelected;
@@ -1159,7 +1158,7 @@ namespace Chummer
                         continue;
                     if (!_objCharacter.AdapsinEnabled && objWareGrade.Adapsin)
                         continue;
-                    if (!_objCharacter.Created && _objCharacter.BannedGrades.Any(s => objWareGrade.Name.Contains(s)))
+                    if (!_objCharacter.Created && _objCharacter.bannedwaregrades.Any(s => objWareGrade.Name.Contains(s)))
                         continue;
 
                     lstGrade.Add(new ListItem(objWareGrade.SourceId.ToString(), objWareGrade.DisplayName(GlobalOptions.Language)));
@@ -1171,14 +1170,15 @@ namespace Chummer
                     _blnSkipListRefresh = true;
 
                 cboGrade.BeginUpdate();
-                cboGrade.DataSource = null;
                 cboGrade.ValueMember = "Value";
                 cboGrade.DisplayMember = "Name";
+                cboGrade.SelectedIndexChanged -= cboGrade_SelectedIndexChanged;
                 cboGrade.DataSource = lstGrade;
-                
+                cboGrade.SelectedIndexChanged += cboGrade_SelectedIndexChanged;
+
                 if (!string.IsNullOrEmpty(strForceGrade))
                     cboGrade.SelectedValue = strForceGrade;
-                if (cboGrade.SelectedIndex == -1 && !string.IsNullOrEmpty(strOldSelected))
+                else if (cboGrade.SelectedIndex <= 0 && !string.IsNullOrWhiteSpace(strOldSelected))
                     cboGrade.SelectedValue = strOldSelected;
                 if (cboGrade.SelectedIndex == -1 && lstGrade.Count > 0)
                     cboGrade.SelectedIndex = 0;
@@ -1237,13 +1237,13 @@ namespace Chummer
             string strOldSelectedCyberware = lstCyberware.SelectedValue?.ToString();
 
             cboCategory.BeginUpdate();
-            cboCategory.DataSource = null;
             cboCategory.ValueMember = "Value";
             cboCategory.DisplayMember = "Name";
+            cboCategory.SelectedIndexChanged -= cboCategory_SelectedIndexChanged;
             cboCategory.DataSource = lstCategory;
+            cboCategory.SelectedIndexChanged += cboCategory_SelectedIndexChanged;
 
-            if (!string.IsNullOrEmpty(strOldSelected))
-                cboCategory.SelectedValue = strOldSelected;
+            cboCategory.SelectedValue = strOldSelected;
             if (cboCategory.SelectedIndex == -1 && lstCategory.Count > 0)
                 cboCategory.SelectedIndex = 0;
 
