@@ -209,7 +209,7 @@ namespace Chummer
                             return;
                         }
                     }
-                    if (!SelectionShared.RequirementsMet(objXmlSpell, true, _objCharacter, null, null, _objXmlDocument, string.Empty, LanguageManager.GetString("String_DescSpell", GlobalOptions.Language)))
+                    if (!SelectionShared.RequirementsMet(objXmlSpell, true, _objCharacter, string.Empty, LanguageManager.GetString("String_DescSpell", GlobalOptions.Language)))
                     {
                         return;
                     }
@@ -431,7 +431,12 @@ namespace Chummer
                     if (!SelectionShared.RequirementsMet(objXmlSpell, false, _objCharacter))
                         continue;
                 }
-
+                HashSet<string> limit = new HashSet<string>();
+                foreach (Improvement improvement in _objCharacter.Improvements.Where(improvement => improvement.ImproveType == Improvement.ImprovementType.LimitSpellDescriptor))
+                {
+                    limit.Add(improvement.ImprovedName);
+                }
+                if (limit.Count != 0 && limit.Any(l => objXmlSpell["descriptor"].InnerText.Contains(l))) continue;
                 string strDisplayName = objXmlSpell["translate"]?.InnerText ?? objXmlSpell["name"].InnerText;
                 if (!_objCharacter.Options.SearchInCategoryOnly && txtSearch.TextLength != 0)
                 {

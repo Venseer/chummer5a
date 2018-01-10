@@ -1,3 +1,21 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -165,7 +183,7 @@ namespace Chummer
 		    if (_mount == null)
 		    {
 		        _mount = new WeaponMount(_objCharacter, _vehicle);
-		        _mount.Create(node, tree, _vehicle);
+		        _mount.Create(node, tree);
 		    }
 		    else
 		    {
@@ -222,10 +240,11 @@ namespace Chummer
 	        string availSuffix = string.Empty;
 	        int slots = Convert.ToInt32(node?["slots"]?.InnerText);
 
-	        if (node["avail"].InnerText.EndsWith('F') || node["avail"].InnerText.EndsWith('R'))
+            string strAvail = node["avail"]?.InnerText ?? string.Empty;
+            if (strAvail.EndsWith('F', 'R'))
 	        {
-	            availSuffix = node["avail"].InnerText.Substring(node["avail"].InnerText.Length - 1, 1);
-	            avail = Convert.ToInt32(node["avail"].InnerText.Substring(0, node["avail"].InnerText.Length - 1));
+	            availSuffix = strAvail.Substring(strAvail.Length - 1, 1);
+	            avail = Convert.ToInt32(strAvail.Substring(0, strAvail.Length - 1));
 	        }
 	        List<object> boxes = new List<object>
 	        {
@@ -274,7 +293,7 @@ namespace Chummer
                 }
                 blnAddAgain = frmPickVehicleMod.AddAgain;
                 XmlDocument objXmlDocument = XmlManager.Load("vehicles.xml");
-                XmlNode objXmlMod = objXmlDocument.SelectSingleNode("/chummer/weaponmounts/mods/mod[id = \"" + frmPickVehicleMod.SelectedMod + "\"]");
+                XmlNode objXmlMod = objXmlDocument.SelectSingleNode("/chummer/weaponmountmods/mod[id = \"" + frmPickVehicleMod.SelectedMod + "\"]");
 
                 TreeNode objNode = new TreeNode();
                 VehicleMod objMod = new VehicleMod(_objCharacter);

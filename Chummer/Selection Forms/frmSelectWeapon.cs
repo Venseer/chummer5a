@@ -166,13 +166,14 @@ namespace Chummer
                 lblWeaponCost.Text = 0.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                 decItemCost = 0;
             }
-            else if (objXmlWeapon["cost"] != null)
+            else
             {
-                if (objXmlWeapon["cost"].InnerText.StartsWith("Variable"))
+                string strCostElement = objXmlWeapon["cost"]?.InnerText ?? string.Empty;
+                if (strCostElement.StartsWith("Variable("))
                 {
                     decimal decMin;
                     decimal decMax = decimal.MaxValue;
-                    string strCost = objXmlWeapon["cost"].InnerText.TrimStart("Variable", true).Trim("()".ToCharArray());
+                    string strCost = strCostElement.TrimStart("Variable(", true).TrimEnd(')');
                     if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
@@ -191,7 +192,10 @@ namespace Chummer
                 }
                 else
                 {
-                    objXmlWeapon.TryGetDecFieldQuickly("cost", ref decCost);
+                    if (decimal.TryParse(strCostElement, NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decimal decTmp))
+                    {
+                        decCost = decTmp;
+                    }
                     decCost *= 1 + (nudMarkup.Value / 100.0m);
                     if (chkBlackMarketDiscount.Checked)
                     {
@@ -259,11 +263,13 @@ namespace Chummer
                 {
                     if (objXmlWeapon["cyberware"]?.InnerText == "yes")
                         continue;
-                    if (!string.IsNullOrEmpty(objXmlWeapon["mount"]?.InnerText) && !Mounts.Contains(objXmlWeapon["mount"].InnerText))
+                    string strTest = objXmlWeapon["mount"]?.InnerText;
+                    if (!string.IsNullOrEmpty(strTest) && !Mounts.Contains(strTest))
                         continue;
-                    if (!string.IsNullOrEmpty(objXmlWeapon["extramount"]?.InnerText) && !Mounts.Contains(objXmlWeapon["extramount"].InnerText))
+                    strTest = objXmlWeapon["extramount"]?.InnerText;
+                    if (!string.IsNullOrEmpty(strTest) && !Mounts.Contains(strTest))
                         continue;
-                    if (!Backend.SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter, chkHideOverAvailLimit.Checked))
+                    if (chkHideOverAvailLimit.Checked && !Backend.SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter))
                         continue;
 
                     Weapon objWeapon = new Weapon(_objCharacter);
@@ -330,17 +336,22 @@ namespace Chummer
                 List<ListItem> lstWeapons = new List<ListItem>();
                 foreach (XmlNode objXmlWeapon in objNodeList)
                 {
-                    bool blnHide = objXmlWeapon["cyberware"]?.InnerText == "yes" || objXmlWeapon["hide"]?.InnerText == "yes";
+                    if (objXmlWeapon["cyberware"]?.InnerText == "yes" || objXmlWeapon["hide"]?.InnerText == "yes")
+                        continue;
 
-                    if (objXmlWeapon["mount"] != null && !blnHide)
+                    string strTest = objXmlWeapon["mount"]?.InnerText;
+                    if (!string.IsNullOrEmpty(strTest) && !Mounts.Contains(strTest))
                     {
-                        blnHide = !Mounts.Contains(objXmlWeapon["mount"].InnerText);
+                        continue;
                     }
-                    if (objXmlWeapon["extramount"] != null && !blnHide)
+
+                    strTest = objXmlWeapon["extramount"]?.InnerText;
+                    if (!string.IsNullOrEmpty(strTest) && !Mounts.Contains(strTest))
                     {
-                        blnHide = !Mounts.Contains(objXmlWeapon["extramount"].InnerText);
+                        continue;
                     }
-                    if (blnHide || !Backend.SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter, chkHideOverAvailLimit.Checked))
+
+                    if (chkHideOverAvailLimit.Checked && !Backend.SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter))
                     {
                         continue;
                     }

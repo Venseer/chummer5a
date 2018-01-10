@@ -1,3 +1,21 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -346,7 +364,7 @@ namespace Chummer.Backend.Equipment
             }
 
             objWriter.WriteElementString("baselifestyle", strBaseLifestyle);
-            objWriter.WriteElementString("trustfund", _blnTrustFund.ToString());
+            objWriter.WriteElementString("trustfund", TrustFund.ToString());
             objWriter.WriteElementString("source", CommonFunctions.LanguageBookShort(Source, strLanguageToPrint));
             objWriter.WriteElementString("page", DisplayPage(strLanguageToPrint));
             objWriter.WriteStartElement("qualities");
@@ -620,7 +638,23 @@ namespace Chummer.Backend.Equipment
         /// </summary>
         public bool TrustFund
         {
-            get => _blnTrustFund;
+            get
+            {
+                if (_blnTrustFund)
+                {
+                    switch (_objCharacter.TrustFund)
+                    {
+                        case 1:
+                        case 3:
+                            return BaseLifestyle == "Medium";
+                        case 2:
+                            return BaseLifestyle == "Low";
+                        case 4:
+                            return BaseLifestyle == "High";
+                    }
+                }
+                return false;
+            }
             set => _blnTrustFund = value;
         }
 
@@ -746,7 +780,7 @@ namespace Chummer.Backend.Equipment
                         decExtraAssetCost += objQuality.Cost;
                 }
 
-                if (!_blnTrustFund)
+                if (!TrustFund)
                 {
                     decReturn += BaseCost;
                 }

@@ -399,7 +399,7 @@ namespace Translator
         private void DoStringsProcessing(object sender, DoWorkEventArgs e)
         {
             string[] strArgs = e.Argument as string[];
-            string strFilePath = Path.Combine(PATH, "lang", strArgs[0] + "_data.xml");
+            string strFilePath = Path.Combine(PATH, "lang", strArgs[0] + ".xml");
 
             XmlDocument objDoc = new XmlDocument();
             if (File.Exists(strFilePath))
@@ -436,31 +436,41 @@ namespace Translator
             }
 
             var xmlDocument = new XmlDocument();
-            xmlDocument.Load(Path.Combine(PATH, "lang", "en-US.xml"));
+            xmlDocument.Load(Path.Combine(PATH, "lang", "en-us.xml"));
             XmlNode xmlStringsNode = xmlDocument.SelectSingleNode("/chummer/strings");
             if (xmlStringsNode != null)
             {
-                foreach (XmlNode xmlStringNode in xmlStringsNode.SelectNodes("string"))
+                try
                 {
-                    if (_workerStringsProcessor.CancellationPending)
-                        break;
-                    string strKey = xmlStringNode["key"].InnerText;
-                    XmlNode xmlTranslatedStringNode = xmlTranslatedStringsNode.SelectSingleNode("string[key = \"" + strKey + "\"]");
-                    if (xmlTranslatedStringNode == null)
+
+                    foreach (XmlNode xmlStringNode in xmlStringsNode.SelectNodes("string"))
                     {
-                        xmlTranslatedStringsNode.AppendChild(objDoc.ImportNode(xmlStringNode, true));
+                        if (_workerStringsProcessor.CancellationPending)
+                            break;
+                        string strKey = xmlStringNode["key"].InnerText;
+                        XmlNode xmlTranslatedStringNode = xmlTranslatedStringsNode.SelectSingleNode("string[key = \"" + strKey + "\"]");
+                        if (xmlTranslatedStringNode == null)
+                        {
+                            xmlTranslatedStringsNode.AppendChild(objDoc.ImportNode(xmlStringNode, true));
+                        }
+                    }
+                    foreach (XmlNode xmlTranslatedStringNode in xmlTranslatedStringsNode.SelectNodes("string"))
+                    {
+                        if (_workerStringsProcessor.CancellationPending)
+                            break;
+                        string strKey = xmlTranslatedStringNode["key"].InnerText;
+                        XmlNode xmlStringNode = xmlStringsNode.SelectSingleNode("string[key = \"" + strKey + "\"]");
+                        if (xmlStringNode == null)
+                        {
+                            xmlTranslatedStringsNode.RemoveChild(xmlTranslatedStringNode);
+                        }
                     }
                 }
-                foreach (XmlNode xmlTranslatedStringNode in xmlTranslatedStringsNode.SelectNodes("string"))
+                catch (Exception ex)
                 {
-                    if (_workerStringsProcessor.CancellationPending)
-                        break;
-                    string strKey = xmlTranslatedStringNode["key"].InnerText;
-                    XmlNode xmlStringNode = xmlStringsNode.SelectSingleNode("string[key = \"" + strKey + "\"]");
-                    if (xmlStringNode == null)
-                    {
-                        xmlTranslatedStringsNode.RemoveChild(xmlTranslatedStringNode);
-                    }
+                    MessageBox.Show(ex.ToString());
+                    e.Cancel = true;
+                    _objDataDocWithPath = null;
                 }
             }
             if (_workerStringsProcessor.CancellationPending)
@@ -510,12 +520,22 @@ namespace Translator
             }
 
             int intFunctionCount = s_LstProcessFunctions.Length;
-            for (int i = 0; i < intFunctionCount; ++i)
+            try
             {
-                if (_workerDataProcessor.CancellationPending)
-                    break;
-                s_LstProcessFunctions[i].Invoke(objDataDoc, _workerDataProcessor);
-                _workerDataProcessor.ReportProgress(i * 100 / (intFunctionCount));
+                for (int i = 0; i < intFunctionCount; ++i)
+                {
+                    if (_workerDataProcessor.CancellationPending)
+                        break;
+                    s_LstProcessFunctions[i].Invoke(objDataDoc, _workerDataProcessor);
+                
+                    _workerDataProcessor.ReportProgress(i * 100 / (intFunctionCount));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+                e.Cancel = true;
+                _objDataDocWithPath = null;
             }
 
             if (_workerDataProcessor.CancellationPending)
@@ -564,6 +584,7 @@ namespace Translator
             (x, y) => ProcessBioware(x, y),
             (x, y) => ProcessBooks(x, y),
             (x, y) => ProcessComplexForms(x, y),
+            (x, y) => ProcessContacts(x, y),
             (x, y) => ProcessCritterPowers(x, y),
             (x, y) => ProcessCritters(x, y),
             (x, y) => ProcessCyberware(x, y),
@@ -577,6 +598,7 @@ namespace Translator
             (x, y) => ProcessMentors(x, y),
             (x, y) => ProcessMetamagic(x, y),
             (x, y) => ProcessMetatypes(x, y),
+            (x, y) => ProcessParagons(x, y),
             (x, y) => ProcessPowers(x, y),
             (x, y) => ProcessPriorities(x, y),
             (x, y) => ProcessPrograms(x, y),
@@ -588,6 +610,7 @@ namespace Translator
             (x, y) => ProcessStreams(x, y),
             (x, y) => ProcessTraditions(x, y),
             (x, y) => ProcessVehicles(x, y),
+            (x, y) => ProcessVessels(x, y),
             (x, y) => ProcessWeapons(x, y),
         };
 
@@ -1096,8 +1119,8 @@ namespace Translator
                         xmlTranslateElement.InnerText = strDataGradeName;
                         xmlGradeNode.AppendChild(xmlTranslateElement);
 
-                        XmlNode xmlPageElement = objDataDoc.CreateElement("page");
-                        xmlPageElement.InnerText = xmlDataGradeNode["altpage"].InnerText;
+                        XmlNode xmlPageElement = objDataDoc.CreateElement("altpage");
+                        xmlPageElement.InnerText = xmlDataGradeNode["page"].InnerText;
                         xmlGradeNode.AppendChild(xmlPageElement);
 
                         xmlGradeNodesParent.AppendChild(xmlGradeNode);
@@ -1371,6 +1394,294 @@ namespace Translator
                         xmlComplexFormNodesParent.RemoveChild(xmlComplexFormNode);
                     }
 #endif
+                }
+            }
+        }
+
+        private static void ProcessContacts(XmlDocument objDataDoc, BackgroundWorker objWorker)
+        {
+            XmlDocument xmlDataDocument = new XmlDocument();
+            xmlDataDocument.Load(Path.Combine(PATH, "data", "contacts.xml"));
+
+            XmlNode xmlRootNode = objDataDoc.SelectSingleNode("/chummer");
+            if (xmlRootNode == null)
+            {
+                xmlRootNode = objDataDoc.CreateElement("chummer");
+                objDataDoc.AppendChild(xmlRootNode);
+            }
+            XmlNode xmlRootContactFileNode = objDataDoc.SelectSingleNode("/chummer/chummer[@file = \"contacts.xml\"]");
+            if (xmlRootContactFileNode == null)
+            {
+                xmlRootContactFileNode = objDataDoc.CreateElement("chummer");
+                XmlAttribute xmlAttribute = objDataDoc.CreateAttribute("file");
+                xmlAttribute.Value = "contacts.xml";
+                xmlRootContactFileNode.Attributes.Append(xmlAttribute);
+                xmlRootNode.AppendChild(xmlRootContactFileNode);
+            }
+
+            // Process Contacts
+
+            XmlNode xmlContactNodesParent = xmlRootContactFileNode.SelectSingleNode("contacts");
+
+            if (xmlContactNodesParent == null)
+            {
+                xmlContactNodesParent = objDataDoc.CreateElement("contacts");
+                xmlRootContactFileNode.AppendChild(xmlContactNodesParent);
+            }
+
+            XmlNode xmlDataContactNodeList = xmlDataDocument.SelectSingleNode("/chummer/contacts");
+            if (xmlDataContactNodeList != null)
+            {
+                foreach (XmlNode xmlDataContactNode in xmlDataContactNodeList.SelectNodes("contact"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    if (xmlContactNodesParent.SelectSingleNode("contact[text()=\"" + xmlDataContactNode.InnerText + "\"]") == null)
+                    {
+                        XmlNode xmlContactNode = objDataDoc.CreateElement("contact");
+                        xmlContactNode.InnerText = xmlDataContactNode.InnerText;
+                        XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
+                        xmlTranslateAttribute.Value = xmlDataContactNode.InnerText;
+                        xmlContactNode.Attributes.Append(xmlTranslateAttribute);
+                        xmlContactNodesParent.AppendChild(xmlContactNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlContactNode in xmlContactNodesParent.SelectNodes("contact"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                if (xmlDataContactNodeList?.SelectSingleNode("contact[text() = \"" + xmlContactNode.InnerText + "\"]") == null)
+                {
+                    xmlContactNodesParent.RemoveChild(xmlContactNode);
+                }
+            }
+
+            // Process Sexes
+
+            XmlNode xmlSexNodesParent = xmlRootContactFileNode.SelectSingleNode("sexes");
+
+            if (xmlSexNodesParent == null)
+            {
+                xmlSexNodesParent = objDataDoc.CreateElement("sexes");
+                xmlRootContactFileNode.AppendChild(xmlSexNodesParent);
+            }
+
+            XmlNode xmlDataSexNodeList = xmlDataDocument.SelectSingleNode("/chummer/sexes");
+            if (xmlDataSexNodeList != null)
+            {
+                foreach (XmlNode xmlDataSexNode in xmlDataSexNodeList.SelectNodes("sex"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    if (xmlSexNodesParent.SelectSingleNode("sex[text()=\"" + xmlDataSexNode.InnerText + "\"]") == null)
+                    {
+                        XmlNode xmlSexNode = objDataDoc.CreateElement("sex");
+                        xmlSexNode.InnerText = xmlDataSexNode.InnerText;
+                        XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
+                        xmlTranslateAttribute.Value = xmlDataSexNode.InnerText;
+                        xmlSexNode.Attributes.Append(xmlTranslateAttribute);
+                        xmlSexNodesParent.AppendChild(xmlSexNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlSexNode in xmlSexNodesParent.SelectNodes("sex"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                if (xmlDataSexNodeList?.SelectSingleNode("sex[text() = \"" + xmlSexNode.InnerText + "\"]") == null)
+                {
+                    xmlSexNodesParent.RemoveChild(xmlSexNode);
+                }
+            }
+
+            // Process Ages
+
+            XmlNode xmlAgeNodesParent = xmlRootContactFileNode.SelectSingleNode("ages");
+
+            if (xmlAgeNodesParent == null)
+            {
+                xmlAgeNodesParent = objDataDoc.CreateElement("ages");
+                xmlRootContactFileNode.AppendChild(xmlAgeNodesParent);
+            }
+
+            XmlNode xmlDataAgeNodeList = xmlDataDocument.SelectSingleNode("/chummer/ages");
+            if (xmlDataAgeNodeList != null)
+            {
+                foreach (XmlNode xmlDataAgeNode in xmlDataAgeNodeList.SelectNodes("age"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    if (xmlAgeNodesParent.SelectSingleNode("age[text()=\"" + xmlDataAgeNode.InnerText + "\"]") == null)
+                    {
+                        XmlNode xmlAgeNode = objDataDoc.CreateElement("age");
+                        xmlAgeNode.InnerText = xmlDataAgeNode.InnerText;
+                        XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
+                        xmlTranslateAttribute.Value = xmlDataAgeNode.InnerText;
+                        xmlAgeNode.Attributes.Append(xmlTranslateAttribute);
+                        xmlAgeNodesParent.AppendChild(xmlAgeNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlAgeNode in xmlAgeNodesParent.SelectNodes("age"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                if (xmlDataAgeNodeList?.SelectSingleNode("age[text() = \"" + xmlAgeNode.InnerText + "\"]") == null)
+                {
+                    xmlAgeNodesParent.RemoveChild(xmlAgeNode);
+                }
+            }
+
+            // Process Personal Lives
+
+            XmlNode xmlPersonalLifeNodesParent = xmlRootContactFileNode.SelectSingleNode("personallives");
+
+            if (xmlPersonalLifeNodesParent == null)
+            {
+                xmlPersonalLifeNodesParent = objDataDoc.CreateElement("personallives");
+                xmlRootContactFileNode.AppendChild(xmlPersonalLifeNodesParent);
+            }
+
+            XmlNode xmlDataPersonalLifeNodeList = xmlDataDocument.SelectSingleNode("/chummer/personallives");
+            if (xmlDataPersonalLifeNodeList != null)
+            {
+                foreach (XmlNode xmlDataPersonalLifeNode in xmlDataPersonalLifeNodeList.SelectNodes("personallife"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    if (xmlPersonalLifeNodesParent.SelectSingleNode("personallife[text()=\"" + xmlDataPersonalLifeNode.InnerText + "\"]") == null)
+                    {
+                        XmlNode xmlPersonalLifeNode = objDataDoc.CreateElement("personallife");
+                        xmlPersonalLifeNode.InnerText = xmlDataPersonalLifeNode.InnerText;
+                        XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
+                        xmlTranslateAttribute.Value = xmlDataPersonalLifeNode.InnerText;
+                        xmlPersonalLifeNode.Attributes.Append(xmlTranslateAttribute);
+                        xmlPersonalLifeNodesParent.AppendChild(xmlPersonalLifeNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlPersonalLifeNode in xmlPersonalLifeNodesParent.SelectNodes("personallife"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                if (xmlDataPersonalLifeNodeList?.SelectSingleNode("personallife[text() = \"" + xmlPersonalLifeNode.InnerText + "\"]") == null)
+                {
+                    xmlPersonalLifeNodesParent.RemoveChild(xmlPersonalLifeNode);
+                }
+            }
+
+            // Process Types
+
+            XmlNode xmlTypeNodesParent = xmlRootContactFileNode.SelectSingleNode("types");
+
+            if (xmlTypeNodesParent == null)
+            {
+                xmlTypeNodesParent = objDataDoc.CreateElement("types");
+                xmlRootContactFileNode.AppendChild(xmlTypeNodesParent);
+            }
+
+            XmlNode xmlDataTypeNodeList = xmlDataDocument.SelectSingleNode("/chummer/types");
+            if (xmlDataTypeNodeList != null)
+            {
+                foreach (XmlNode xmlDataTypeNode in xmlDataTypeNodeList.SelectNodes("type"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    if (xmlTypeNodesParent.SelectSingleNode("type[text()=\"" + xmlDataTypeNode.InnerText + "\"]") == null)
+                    {
+                        XmlNode xmlTypeNode = objDataDoc.CreateElement("type");
+                        xmlTypeNode.InnerText = xmlDataTypeNode.InnerText;
+                        XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
+                        xmlTranslateAttribute.Value = xmlDataTypeNode.InnerText;
+                        xmlTypeNode.Attributes.Append(xmlTranslateAttribute);
+                        xmlTypeNodesParent.AppendChild(xmlTypeNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlTypeNode in xmlTypeNodesParent.SelectNodes("type"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                if (xmlDataTypeNodeList?.SelectSingleNode("type[text() = \"" + xmlTypeNode.InnerText + "\"]") == null)
+                {
+                    xmlTypeNodesParent.RemoveChild(xmlTypeNode);
+                }
+            }
+
+            // Process PreferredPayments
+
+            XmlNode xmlPreferredPaymentNodesParent = xmlRootContactFileNode.SelectSingleNode("preferredpayments");
+
+            if (xmlPreferredPaymentNodesParent == null)
+            {
+                xmlPreferredPaymentNodesParent = objDataDoc.CreateElement("preferredpayments");
+                xmlRootContactFileNode.AppendChild(xmlPreferredPaymentNodesParent);
+            }
+
+            XmlNode xmlDataPreferredPaymentNodeList = xmlDataDocument.SelectSingleNode("/chummer/preferredpayments");
+            if (xmlDataPreferredPaymentNodeList != null)
+            {
+                foreach (XmlNode xmlDataPreferredPaymentNode in xmlDataPreferredPaymentNodeList.SelectNodes("preferredpayment"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    if (xmlPreferredPaymentNodesParent.SelectSingleNode("preferredpayment[text()=\"" + xmlDataPreferredPaymentNode.InnerText + "\"]") == null)
+                    {
+                        XmlNode xmlPreferredPaymentNode = objDataDoc.CreateElement("preferredpayment");
+                        xmlPreferredPaymentNode.InnerText = xmlDataPreferredPaymentNode.InnerText;
+                        XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
+                        xmlTranslateAttribute.Value = xmlDataPreferredPaymentNode.InnerText;
+                        xmlPreferredPaymentNode.Attributes.Append(xmlTranslateAttribute);
+                        xmlPreferredPaymentNodesParent.AppendChild(xmlPreferredPaymentNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlPreferredPaymentNode in xmlPreferredPaymentNodesParent.SelectNodes("preferredpayment"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                if (xmlDataPreferredPaymentNodeList?.SelectSingleNode("preferredpayment[text() = \"" + xmlPreferredPaymentNode.InnerText + "\"]") == null)
+                {
+                    xmlPreferredPaymentNodesParent.RemoveChild(xmlPreferredPaymentNode);
+                }
+            }
+
+            // Process Hobbies/Vices
+
+            XmlNode xmlHobbyViceNodesParent = xmlRootContactFileNode.SelectSingleNode("hobbiesvices");
+
+            if (xmlHobbyViceNodesParent == null)
+            {
+                xmlHobbyViceNodesParent = objDataDoc.CreateElement("hobbiesvices");
+                xmlRootContactFileNode.AppendChild(xmlHobbyViceNodesParent);
+            }
+
+            XmlNode xmlDataHobbyViceNodeList = xmlDataDocument.SelectSingleNode("/chummer/hobbiesvices");
+            if (xmlDataHobbyViceNodeList != null)
+            {
+                foreach (XmlNode xmlDataHobbyViceNode in xmlDataHobbyViceNodeList.SelectNodes("hobbyvice"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    if (xmlHobbyViceNodesParent.SelectSingleNode("hobbyvice[text()=\"" + xmlDataHobbyViceNode.InnerText + "\"]") == null)
+                    {
+                        XmlNode xmlHobbyViceNode = objDataDoc.CreateElement("hobbyvice");
+                        xmlHobbyViceNode.InnerText = xmlDataHobbyViceNode.InnerText;
+                        XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
+                        xmlTranslateAttribute.Value = xmlDataHobbyViceNode.InnerText;
+                        xmlHobbyViceNode.Attributes.Append(xmlTranslateAttribute);
+                        xmlHobbyViceNodesParent.AppendChild(xmlHobbyViceNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlHobbyViceNode in xmlHobbyViceNodesParent.SelectNodes("hobbyvice"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                if (xmlDataHobbyViceNodeList?.SelectSingleNode("hobbyvice[text() = \"" + xmlHobbyViceNode.InnerText + "\"]") == null)
+                {
+                    xmlHobbyViceNodesParent.RemoveChild(xmlHobbyViceNode);
                 }
             }
         }
@@ -3820,6 +4131,255 @@ namespace Translator
             }
         }
 
+        private static void ProcessParagons(XmlDocument objDataDoc, BackgroundWorker objWorker)
+        {
+            XmlDocument xmlDataDocument = new XmlDocument();
+            xmlDataDocument.Load(Path.Combine(PATH, "data", "paragons.xml"));
+
+            XmlNode xmlRootNode = objDataDoc.SelectSingleNode("/chummer");
+            if (xmlRootNode == null)
+            {
+                xmlRootNode = objDataDoc.CreateElement("chummer");
+                objDataDoc.AppendChild(xmlRootNode);
+            }
+            XmlNode xmlRootParagonFileNode = objDataDoc.SelectSingleNode("/chummer/chummer[@file = \"paragons.xml\"]");
+            if (xmlRootParagonFileNode == null)
+            {
+                xmlRootParagonFileNode = objDataDoc.CreateElement("chummer");
+                XmlAttribute xmlAttribute = objDataDoc.CreateAttribute("file");
+                xmlAttribute.Value = "paragons.xml";
+                xmlRootParagonFileNode.Attributes.Append(xmlAttribute);
+                xmlRootNode.AppendChild(xmlRootParagonFileNode);
+            }
+
+            // Process Categories
+
+            XmlNode xmlCategoryNodesParent = xmlRootParagonFileNode.SelectSingleNode("categories");
+
+            if (xmlCategoryNodesParent == null)
+            {
+                xmlCategoryNodesParent = objDataDoc.CreateElement("categories");
+                xmlRootParagonFileNode.AppendChild(xmlCategoryNodesParent);
+            }
+
+            XmlNode xmlDataCategoryNodeList = xmlDataDocument.SelectSingleNode("/chummer/categories");
+            if (xmlDataCategoryNodeList != null)
+            {
+                foreach (XmlNode xmlDataCategoryNode in xmlDataCategoryNodeList.SelectNodes("category"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    if (xmlCategoryNodesParent.SelectSingleNode("category[text()=\"" + xmlDataCategoryNode.InnerText + "\"]") == null)
+                    {
+                        XmlNode xmlCategoryNode = objDataDoc.CreateElement("category");
+                        xmlCategoryNode.InnerText = xmlDataCategoryNode.InnerText;
+                        XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
+                        xmlTranslateAttribute.Value = xmlDataCategoryNode.InnerText;
+                        xmlCategoryNode.Attributes.Append(xmlTranslateAttribute);
+                        xmlCategoryNodesParent.AppendChild(xmlCategoryNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlCategoryNode in xmlCategoryNodesParent.SelectNodes("category"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                if (xmlDataCategoryNodeList?.SelectSingleNode("category[text() = \"" + xmlCategoryNode.InnerText + "\"]") == null)
+                {
+                    xmlCategoryNodesParent.RemoveChild(xmlCategoryNode);
+                }
+            }
+
+            // Process Paragons
+
+            XmlNode xmlParagonNodesParent = xmlRootParagonFileNode.SelectSingleNode("mentors");
+            if (xmlParagonNodesParent == null)
+            {
+                xmlParagonNodesParent = objDataDoc.CreateElement("mentors");
+                xmlRootParagonFileNode.AppendChild(xmlParagonNodesParent);
+            }
+
+            XmlNode xmlDataParagonNodeList = xmlDataDocument.SelectSingleNode("/chummer/mentors");
+            if (xmlDataParagonNodeList != null)
+            {
+                foreach (XmlNode xmlDataParagonNode in xmlDataParagonNodeList.SelectNodes("mentor"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    string strDataParagonName = xmlDataParagonNode["name"].InnerText;
+                    string strDataParagonId = xmlDataParagonNode["id"].InnerText;
+                    string strDataParagonAdvantage = xmlDataParagonNode["advantage"].InnerText;
+                    string strDataParagonDisadvantage = xmlDataParagonNode["disadvantage"].InnerText;
+                    XmlNode xmlParagonNode = xmlRootParagonFileNode.SelectSingleNode("mentors/mentor[name=\"" + strDataParagonName + "\"]");
+                    if (xmlParagonNode != null)
+                    {
+                        if (xmlParagonNode["id"] == null)
+                        {
+                            XmlNode xmlIdElement = objDataDoc.CreateElement("id");
+                            xmlIdElement.InnerText = strDataParagonId;
+                            xmlParagonNode.PrependChild(xmlIdElement);
+                        }
+
+                        if (xmlParagonNode["name"] == null)
+                        {
+                            XmlNode xmlNameElement = objDataDoc.CreateElement("name");
+                            xmlNameElement.InnerText = strDataParagonName;
+                            xmlParagonNode.AppendChild(xmlNameElement);
+                        }
+
+                        if (xmlParagonNode["translate"] == null)
+                        {
+                            XmlNode xmlTranslateElement = objDataDoc.CreateElement("translate");
+                            xmlTranslateElement.InnerText = strDataParagonName;
+                            xmlParagonNode.AppendChild(xmlTranslateElement);
+                        }
+
+                        XmlNode xmlAdvantage = xmlParagonNode["advantage"];
+                        if (xmlParagonNode["altadvantage"] == null)
+                        {
+                            XmlNode xmlAdvantageElement = objDataDoc.CreateElement("altadvantage");
+                            xmlAdvantageElement.InnerText = xmlAdvantage?.InnerText ?? strDataParagonAdvantage;
+                            xmlParagonNode.AppendChild(xmlAdvantageElement);
+                        }
+                        if (xmlAdvantage != null)
+                        {
+                            xmlParagonNode.RemoveChild(xmlAdvantage);
+                        }
+
+                        XmlNode xmlDisadvantage = xmlParagonNode["disadvantage"];
+                        if (xmlParagonNode["altdisadvantage"] == null)
+                        {
+                            XmlNode xmlDisadvantageElement = objDataDoc.CreateElement("altdisadvantage");
+                            xmlDisadvantageElement.InnerText = xmlDisadvantage?.InnerText ?? strDataParagonDisadvantage;
+                            xmlParagonNode.AppendChild(xmlDisadvantageElement);
+                        }
+                        if (xmlDisadvantage != null)
+                        {
+                            xmlParagonNode.RemoveChild(xmlDisadvantage);
+                        }
+
+                        XmlNode xmlPage = xmlParagonNode["page"];
+                        if (xmlParagonNode["altpage"] == null)
+                        {
+                            string strPage = xmlPage?.InnerText ?? xmlDataParagonNode["page"].InnerText;
+                            XmlNode xmlIdElement = objDataDoc.CreateElement("altpage");
+                            xmlIdElement.InnerText = strPage;
+                            xmlParagonNode.AppendChild(xmlIdElement);
+                        }
+                        if (xmlPage != null)
+                        {
+                            xmlParagonNode.RemoveChild(xmlPage);
+                        }
+                    }
+                    else
+                    {
+                        xmlParagonNode = objDataDoc.CreateElement("mentor");
+
+                        XmlNode xmlIdElement = objDataDoc.CreateElement("id");
+                        xmlIdElement.InnerText = strDataParagonId;
+                        xmlParagonNode.AppendChild(xmlIdElement);
+
+                        XmlNode xmlNameElement = objDataDoc.CreateElement("name");
+                        xmlNameElement.InnerText = strDataParagonName;
+                        xmlParagonNode.AppendChild(xmlNameElement);
+
+                        XmlNode xmlTranslateElement = objDataDoc.CreateElement("translate");
+                        xmlTranslateElement.InnerText = strDataParagonName;
+                        xmlParagonNode.AppendChild(xmlTranslateElement);
+
+                        XmlNode xmlAdvantageElement = objDataDoc.CreateElement("altadvantage");
+                        xmlAdvantageElement.InnerText = strDataParagonAdvantage;
+                        xmlParagonNode.AppendChild(xmlAdvantageElement);
+
+                        XmlNode xmlDisadvantageElement = objDataDoc.CreateElement("altdisadvantage");
+                        xmlDisadvantageElement.InnerText = strDataParagonDisadvantage;
+                        xmlParagonNode.AppendChild(xmlDisadvantageElement);
+
+                        XmlNode xmlPageElement = objDataDoc.CreateElement("altpage");
+                        xmlPageElement.InnerText = xmlDataParagonNode["page"].InnerText;
+                        xmlParagonNode.AppendChild(xmlPageElement);
+
+                        xmlParagonNodesParent.AppendChild(xmlParagonNode);
+                    }
+
+                    XmlNode xmlDataParagonChoicesNode = xmlDataParagonNode["choices"];
+                    if (xmlDataParagonChoicesNode != null)
+                    {
+                        XmlNode xmlParagonChoicesNode = xmlParagonNode["choices"];
+                        if (xmlParagonChoicesNode == null)
+                        {
+                            xmlParagonChoicesNode = objDataDoc.CreateElement("choices");
+                            xmlParagonNode.AppendChild(xmlParagonChoicesNode);
+                        }
+
+                        foreach (XmlNode xmlDataChoiceNode in xmlDataParagonChoicesNode.SelectNodes("choice"))
+                        {
+                            if (objWorker.CancellationPending)
+                                return;
+                            string strDataChoiceName = xmlDataChoiceNode["name"]?.InnerText ?? string.Empty;
+                            XmlNode xmlChoiceNode = xmlParagonChoicesNode.SelectSingleNode("choice[name=\"" + strDataChoiceName + "\"]");
+                            if (xmlChoiceNode == null)
+                            {
+                                xmlChoiceNode = objDataDoc.CreateElement("choice");
+
+                                XmlNode xmlNameElement = objDataDoc.CreateElement("name");
+                                xmlNameElement.InnerText = strDataChoiceName;
+                                xmlChoiceNode.AppendChild(xmlNameElement);
+
+                                XmlNode xmlTranslateElement = objDataDoc.CreateElement("translate");
+                                xmlTranslateElement.InnerText = strDataChoiceName;
+                                xmlChoiceNode.AppendChild(xmlTranslateElement);
+
+                                foreach (XmlAttribute xmlDataChoiceNodeAttribute in xmlDataChoiceNode.Attributes)
+                                {
+                                    if (objWorker.CancellationPending)
+                                        return;
+                                    XmlAttribute xmlChoiceNodeAttribute = objDataDoc.CreateAttribute(xmlDataChoiceNodeAttribute.Name);
+                                    xmlChoiceNodeAttribute.Value = xmlDataChoiceNodeAttribute.InnerText;
+                                    xmlChoiceNode.Attributes.Append(xmlChoiceNodeAttribute);
+                                }
+
+                                xmlParagonChoicesNode.AppendChild(xmlChoiceNode);
+                            }
+                        }
+                    }
+                }
+            }
+            foreach (XmlNode xmlParagonNode in xmlParagonNodesParent.SelectNodes("mentor"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                for (int i = xmlParagonNode.Attributes.Count - 1; i >= 0; --i)
+                {
+                    XmlAttribute xmlAttribute = xmlParagonNode.Attributes[i];
+                    if (xmlAttribute.Name != "translated")
+                        xmlParagonNode.Attributes.RemoveAt(i);
+                }
+                if (xmlDataParagonNodeList?.SelectSingleNode("mentor[name = \"" + xmlParagonNode["name"]?.InnerText + "\"]") == null)
+                {
+#if !DELETE
+                    {
+                        XmlAttribute xmlExistsAttribute = objDataDoc.CreateAttribute("exists");
+                        xmlExistsAttribute.Value = "False";
+                        xmlParagonNode.Attributes.Append(xmlExistsAttribute);
+                    }
+#else
+                    {
+                        xmlParagonNodesParent.RemoveChild(xmlParagonNode);
+                    }
+#endif
+                }
+            }
+
+            // Remove Paragon nodes
+
+            XmlNode xmlRemoveNode = xmlRootParagonFileNode.SelectSingleNode("paragons");
+            if (xmlRemoveNode != null)
+            {
+                xmlRootParagonFileNode.RemoveChild(xmlRemoveNode);
+            }
+        }
+
         private static void ProcessPowers(XmlDocument objDataDoc, BackgroundWorker objWorker)
         {
             XmlDocument xmlDataDocument = new XmlDocument();
@@ -6016,14 +6576,14 @@ namespace Translator
                 {
                     if (objWorker.CancellationPending)
                         return;
-                    if (xmlCategoryNodesParent.SelectSingleNode("category[text()=\"" + xmlDataCategoryNode.InnerText + "\"]") == null)
+                    if (xmlModCategoryNodesParent.SelectSingleNode("category[text()=\"" + xmlDataCategoryNode.InnerText + "\"]") == null)
                     {
                         XmlNode xmlCategoryNode = objDataDoc.CreateElement("category");
                         xmlCategoryNode.InnerText = xmlDataCategoryNode.InnerText;
                         XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
                         xmlTranslateAttribute.Value = xmlDataCategoryNode.InnerText;
                         xmlCategoryNode.Attributes.Append(xmlTranslateAttribute);
-                        xmlCategoryNodesParent.AppendChild(xmlCategoryNode);
+                        xmlModCategoryNodesParent.AppendChild(xmlCategoryNode);
                     }
                 }
             }
@@ -6352,12 +6912,282 @@ namespace Translator
                 }
             }
 
+            // Process Mods for Weapon Mounts
+
+            XmlNode xmlWeaponMountModNodesParent = xmlRootVehicleFileNode.SelectSingleNode("weaponmountmods");
+            if (xmlWeaponMountModNodesParent == null)
+            {
+                xmlWeaponMountModNodesParent = objDataDoc.CreateElement("weaponmountmods");
+                xmlRootVehicleFileNode.AppendChild(xmlWeaponMountModNodesParent);
+            }
+
+            XmlNode xmlDataWeaponMountModNodeList = xmlDataDocument.SelectSingleNode("/chummer/weaponmountmods");
+            if (xmlDataWeaponMountModNodeList != null)
+            {
+                foreach (XmlNode xmlDataWeaponMountModNode in xmlDataWeaponMountModNodeList.SelectNodes("mod"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    string strDataWeaponMountModId = xmlDataWeaponMountModNode["id"].InnerText;
+                    string strDataWeaponMountModName = xmlDataWeaponMountModNode["name"].InnerText;
+                    XmlNode xmlWeaponMountModNode = xmlWeaponMountModNodesParent.SelectSingleNode("mod[name=\"" + strDataWeaponMountModName + "\"]");
+                    if (xmlWeaponMountModNode != null)
+                    {
+                        if (xmlWeaponMountModNode["id"] == null)
+                        {
+                            XmlNode xmlIdElement = objDataDoc.CreateElement("id");
+                            xmlIdElement.InnerText = strDataWeaponMountModId;
+                            xmlWeaponMountModNode.PrependChild(xmlIdElement);
+                        }
+
+                        if (xmlWeaponMountModNode["name"] == null)
+                        {
+                            XmlNode xmlNameElement = objDataDoc.CreateElement("name");
+                            xmlNameElement.InnerText = strDataWeaponMountModName;
+                            xmlWeaponMountModNode.AppendChild(xmlNameElement);
+                        }
+
+                        if (xmlWeaponMountModNode["translate"] == null)
+                        {
+                            XmlNode xmlTranslateElement = objDataDoc.CreateElement("translate");
+                            xmlTranslateElement.InnerText = strDataWeaponMountModName;
+                            xmlWeaponMountModNode.AppendChild(xmlTranslateElement);
+                        }
+
+                        XmlNode xmlPage = xmlWeaponMountModNode["page"];
+                        if (xmlWeaponMountModNode["altpage"] == null)
+                        {
+                            string strPage = xmlPage?.InnerText ?? xmlDataWeaponMountModNode["page"].InnerText;
+                            XmlNode xmlIdElement = objDataDoc.CreateElement("altpage");
+                            xmlIdElement.InnerText = strPage;
+                            xmlWeaponMountModNode.AppendChild(xmlIdElement);
+                        }
+                        if (xmlPage != null)
+                        {
+                            xmlWeaponMountModNode.RemoveChild(xmlPage);
+                        }
+                    }
+                    else
+                    {
+                        xmlWeaponMountModNode = objDataDoc.CreateElement("mod");
+
+                        XmlNode xmlIdElement = objDataDoc.CreateElement("id");
+                        xmlIdElement.InnerText = strDataWeaponMountModId;
+                        xmlWeaponMountModNode.AppendChild(xmlIdElement);
+
+                        XmlNode xmlNameElement = objDataDoc.CreateElement("name");
+                        xmlNameElement.InnerText = strDataWeaponMountModName;
+                        xmlWeaponMountModNode.AppendChild(xmlNameElement);
+
+                        XmlNode xmlTranslateElement = objDataDoc.CreateElement("translate");
+                        xmlTranslateElement.InnerText = strDataWeaponMountModName;
+                        xmlWeaponMountModNode.AppendChild(xmlTranslateElement);
+
+                        XmlNode xmlPageElement = objDataDoc.CreateElement("altpage");
+                        xmlPageElement.InnerText = xmlDataWeaponMountModNode["page"].InnerText;
+                        xmlWeaponMountModNode.AppendChild(xmlPageElement);
+
+                        xmlWeaponMountModNodesParent.AppendChild(xmlWeaponMountModNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlWeaponMountModNode in xmlWeaponMountModNodesParent.SelectNodes("mod"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                for (int i = xmlWeaponMountModNode.Attributes.Count - 1; i >= 0; --i)
+                {
+                    XmlAttribute xmlAttribute = xmlWeaponMountModNode.Attributes[i];
+                    if (xmlAttribute.Name != "translated")
+                        xmlWeaponMountModNode.Attributes.RemoveAt(i);
+                }
+                if (xmlDataWeaponMountModNodeList?.SelectSingleNode("mod[name = \"" + xmlWeaponMountModNode["name"]?.InnerText + "\"]") == null)
+                {
+#if !DELETE
+                    {
+                        XmlAttribute xmlExistsAttribute = objDataDoc.CreateAttribute("exists");
+                        xmlExistsAttribute.Value = "False";
+                        xmlWeaponMountModNode.Attributes.Append(xmlExistsAttribute);
+                    }
+#else
+                    {
+                        xmlWeaponMountModNodesParent.RemoveChild(xmlWeaponMountModNode);
+                    }
+#endif
+                }
+            }
+
             // Remove Limits
 
             XmlNode xmlRemoveNode = xmlRootVehicleFileNode.SelectSingleNode("limits");
             if (xmlRemoveNode != null)
             {
                 xmlRootVehicleFileNode.RemoveChild(xmlRemoveNode);
+            }
+        }
+
+        private static void ProcessVessels(XmlDocument objDataDoc, BackgroundWorker objWorker)
+        {
+            XmlDocument xmlDataDocument = new XmlDocument();
+            xmlDataDocument.Load(Path.Combine(PATH, "data", "vessels.xml"));
+
+            XmlNode xmlRootNode = objDataDoc.SelectSingleNode("/chummer");
+            if (xmlRootNode == null)
+            {
+                xmlRootNode = objDataDoc.CreateElement("chummer");
+                objDataDoc.AppendChild(xmlRootNode);
+            }
+            XmlNode xmlRootMetatypeFileNode = objDataDoc.SelectSingleNode("/chummer/chummer[@file = \"vessels.xml\"]");
+            if (xmlRootMetatypeFileNode == null)
+            {
+                xmlRootMetatypeFileNode = objDataDoc.CreateElement("chummer");
+                XmlAttribute xmlAttribute = objDataDoc.CreateAttribute("file");
+                xmlAttribute.Value = "vessels.xml";
+                xmlRootMetatypeFileNode.Attributes.Append(xmlAttribute);
+                xmlRootNode.AppendChild(xmlRootMetatypeFileNode);
+            }
+
+            // Process Categories
+
+            XmlNode xmlCategoryNodesParent = xmlRootMetatypeFileNode.SelectSingleNode("categories");
+
+            if (xmlCategoryNodesParent == null)
+            {
+                xmlCategoryNodesParent = objDataDoc.CreateElement("categories");
+                xmlRootMetatypeFileNode.AppendChild(xmlCategoryNodesParent);
+            }
+
+            XmlNode xmlDataCategoryNodeList = xmlDataDocument.SelectSingleNode("/chummer/categories");
+            if (xmlDataCategoryNodeList != null)
+            {
+                foreach (XmlNode xmlDataCategoryNode in xmlDataCategoryNodeList.SelectNodes("category"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    if (xmlCategoryNodesParent.SelectSingleNode("category[text()=\"" + xmlDataCategoryNode.InnerText + "\"]") == null)
+                    {
+                        XmlNode xmlCategoryNode = objDataDoc.CreateElement("category");
+                        xmlCategoryNode.InnerText = xmlDataCategoryNode.InnerText;
+                        XmlAttribute xmlTranslateAttribute = objDataDoc.CreateAttribute("translate");
+                        xmlTranslateAttribute.Value = xmlDataCategoryNode.InnerText;
+                        xmlCategoryNode.Attributes.Append(xmlTranslateAttribute);
+                        xmlCategoryNodesParent.AppendChild(xmlCategoryNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlCategoryNode in xmlCategoryNodesParent.SelectNodes("category"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                if (xmlDataCategoryNodeList?.SelectSingleNode("category[text() = \"" + xmlCategoryNode.InnerText + "\"]") == null)
+                {
+                    xmlCategoryNodesParent.RemoveChild(xmlCategoryNode);
+                }
+            }
+
+            // Process Metatypes
+
+            XmlNode xmlMetatypeNodesParent = xmlRootMetatypeFileNode.SelectSingleNode("metatypes");
+            if (xmlMetatypeNodesParent == null)
+            {
+                xmlMetatypeNodesParent = objDataDoc.CreateElement("metatypes");
+                xmlRootMetatypeFileNode.AppendChild(xmlMetatypeNodesParent);
+            }
+
+            XmlNode xmlDataMetatypeNodeList = xmlDataDocument.SelectSingleNode("/chummer/metatypes");
+            if (xmlDataMetatypeNodeList != null)
+            {
+                foreach (XmlNode xmlDataMetatypeNode in xmlDataMetatypeNodeList.SelectNodes("metatype"))
+                {
+                    if (objWorker.CancellationPending)
+                        return;
+                    string strDataMetatypeName = xmlDataMetatypeNode["name"].InnerText;
+                    string strDataMetatypeId = xmlDataMetatypeNode["id"].InnerText;
+                    XmlNode xmlMetatypeNode = xmlMetatypeNodesParent.SelectSingleNode("metatype[name=\"" + strDataMetatypeName + "\"]");
+                    if (xmlMetatypeNode != null)
+                    {
+                        if (xmlMetatypeNode["id"] == null)
+                        {
+                            XmlNode xmlIdElement = objDataDoc.CreateElement("id");
+                            xmlIdElement.InnerText = strDataMetatypeId;
+                            xmlMetatypeNode.PrependChild(xmlIdElement);
+                        }
+
+                        if (xmlMetatypeNode["name"] == null)
+                        {
+                            XmlNode xmlNameElement = objDataDoc.CreateElement("name");
+                            xmlNameElement.InnerText = strDataMetatypeName;
+                            xmlMetatypeNode.AppendChild(xmlNameElement);
+                        }
+
+                        if (xmlMetatypeNode["translate"] == null)
+                        {
+                            XmlNode xmlTranslateElement = objDataDoc.CreateElement("translate");
+                            xmlTranslateElement.InnerText = strDataMetatypeName;
+                            xmlMetatypeNode.AppendChild(xmlTranslateElement);
+                        }
+
+                        XmlNode xmlPage = xmlMetatypeNode["page"];
+                        if (xmlMetatypeNode["altpage"] == null)
+                        {
+                            string strPage = xmlPage?.InnerText ?? xmlDataMetatypeNode["page"].InnerText;
+                            XmlNode xmlIdElement = objDataDoc.CreateElement("altpage");
+                            xmlIdElement.InnerText = strPage;
+                            xmlMetatypeNode.AppendChild(xmlIdElement);
+                        }
+                        if (xmlPage != null)
+                        {
+                            xmlMetatypeNode.RemoveChild(xmlPage);
+                        }
+                    }
+                    else
+                    {
+                        xmlMetatypeNode = objDataDoc.CreateElement("metatype");
+
+                        XmlNode xmlIdElement = objDataDoc.CreateElement("id");
+                        xmlIdElement.InnerText = strDataMetatypeId;
+                        xmlMetatypeNode.AppendChild(xmlIdElement);
+
+                        XmlNode xmlNameElement = objDataDoc.CreateElement("name");
+                        xmlNameElement.InnerText = strDataMetatypeName;
+                        xmlMetatypeNode.AppendChild(xmlNameElement);
+
+                        XmlNode xmlTranslateElement = objDataDoc.CreateElement("translate");
+                        xmlTranslateElement.InnerText = strDataMetatypeName;
+                        xmlMetatypeNode.AppendChild(xmlTranslateElement);
+
+                        XmlNode xmlPageElement = objDataDoc.CreateElement("altpage");
+                        xmlPageElement.InnerText = xmlDataMetatypeNode["page"].InnerText;
+                        xmlMetatypeNode.AppendChild(xmlPageElement);
+
+                        xmlMetatypeNodesParent.AppendChild(xmlMetatypeNode);
+                    }
+                }
+            }
+            foreach (XmlNode xmlMetatypeNode in xmlMetatypeNodesParent.SelectNodes("metatype"))
+            {
+                if (objWorker.CancellationPending)
+                    return;
+                for (int i = xmlMetatypeNode.Attributes.Count - 1; i >= 0; --i)
+                {
+                    XmlAttribute xmlAttribute = xmlMetatypeNode.Attributes[i];
+                    if (xmlAttribute.Name != "translated")
+                        xmlMetatypeNode.Attributes.RemoveAt(i);
+                }
+                if (xmlDataMetatypeNodeList?.SelectSingleNode("metatype[name = \"" + xmlMetatypeNode["name"]?.InnerText + "\"]") == null)
+                {
+#if !DELETE
+                    {
+                        XmlAttribute xmlExistsAttribute = objDataDoc.CreateAttribute("exists");
+                        xmlExistsAttribute.Value = "False";
+                        xmlMetatypeNode.Attributes.Append(xmlExistsAttribute);
+                    }
+#else
+                    {
+                        xmlMetatypeNodesParent.RemoveChild(xmlMetatypeNode);
+                    }
+#endif
+                }
             }
         }
 

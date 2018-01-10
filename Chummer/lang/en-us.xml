@@ -1264,6 +1264,10 @@
       <text>Change Priority Selection</text>
     </string>
     <string>
+      <key>Menu_SpecialChangeOptions</key>
+      <text>"Change &amp;Options File</text>
+    </string>
+    <string>
       <key>Menu_SpecialConvertToMutantCritter</key>
       <text>Convert to Mutant Critter</text>
     </string>
@@ -1426,6 +1430,10 @@
     <string>
       <key>Menu_EditPaste</key>
       <text>&amp;Paste</text>
+    </string>
+    <string>
+      <key>Menu_AddFromFile</key>
+      <text>&amp;Add From File</text>
     </string>
     <string>
       <key>Tab_Common</key>
@@ -2314,6 +2322,30 @@
     <string>
       <key>Checkbox_PrototypeTranshuman</key>
       <text>Prototype Transhuman</text>
+    </string>
+    <string>
+      <key>Label_CyberlimbAGI</key>
+      <text>Agility (AGI):</text>
+    </string>
+    <string>
+      <key>Label_CyberlimbSTR</key>
+      <text>Strength (STR):</text>
+    </string>
+    <string>
+      <key>Label_Overclocker</key>
+      <text>Overclocker:</text>
+    </string>
+    <string>
+      <key>Label_Visibility</key>
+      <text>Visibility:</text>
+    </string>
+    <string>
+      <key>Label_Control</key>
+      <text>Control:</text>
+    </string>
+    <string>
+      <key>Label_Size</key>
+      <text>Size:</text>
     </string>
     <string>
       <key>Message_OverPrototypeLimit</key>
@@ -3615,6 +3647,10 @@
       <text>Nuyen:</text>
     </string>
     <string>
+      <key>Node_SelectedQualities</key>
+      <text>Selected Qualities</text>
+    </string>
+    <string>
       <key>Label_Contacts</key>
       <text>Contacts</text>
     </string>
@@ -4696,6 +4732,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Mugshot:</text>
     </string>
     <string>
+      <key>Checkbox_IsMainMugshot</key>
+      <text>Is Main Mugshot</text>
+    </string>
+    <string>
       <key>Checkbox_Created</key>
       <text>Mark character as Created</text>
     </string>
@@ -4990,6 +5030,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Compensate for higher karma costs when raising the rating of the last skill in a skill group</text>
     </string>
     <string>
+      <key>Checkbox_Options_EnemyKarmaQualityLimit</key>
+      <text>Karma spent on enemies counts towards negative Quality limit in create mode</text>
+    </string>
+    <string>
       <key>String_SelectBP_LifeModuleSummary</key>
       <text>Enter the maximum availability and karma you are allowed to create your character with (Default {0})</text>
     </string>
@@ -5232,6 +5276,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
     <!-- End Region-->
     <!-- Region Spell Defence Tab-->
     <string>
+      <key>String_SpellDefense</key>
+      <text>Spell Defense</text>
+    </string>
+    <string>
       <key>String_SpellResistanceDice</key>
       <text>Spell Resistance Dice</text>
     </string>
@@ -5378,6 +5426,14 @@ Only one attribute may be at its Maximum value during character creation.</text>
     <!-- End Region -->
     <!-- Region Individual Form- and UserControl-specific strings below this point -->
     <!-- Region Contacts/Enemies -->
+    <string>
+      <key>String_Relationships</key>
+      <text>Relationships</text>
+    </string>
+    <string>
+      <key>Button_SwapOrdering</key>
+      <text>&amp;Swap Ordering</text>
+    </string>
     <string>
       <key>Label_Contact_Connection</key>
       <text>Connection:</text>
@@ -5943,6 +5999,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
     <string>
       <key>String_WorkingForThePeople</key>
       <text>Working for the People</text>
+    </string>
+    <string>
+      <key>String_WorkingForTheManPeople</key>
+      <text>Working for the Man/People</text>
     </string>
     <!-- End Region-->
     <!-- Region History Window -->
@@ -7536,6 +7596,18 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <key>Message_SelectCyberware_CyberwareRestriction</key>
       <text>You cannot select this Cyberware/Bioware because of the following forbidden items you have already taken.</text>
     </string>
+    <string>
+      <key>Checkbox_HideBannedCyberwareGrades</key>
+      <text>Hide Banned Cyberware Grades</text>
+    </string>
+    <string>
+      <key>MessageTitle_BannedGrade</key>
+      <text>Banned Grade!</text>
+    </string>
+    <string>
+      <key>Message_BannedGrade</key>
+      <text>You've selected a Grade that is banned by your gameplay options. Please select a valid Grade.</text>
+    </string>
     <!-- End Region-->
     <!-- Region Select Cyberware Suite Window -->
     <string>
@@ -8791,7 +8863,7 @@ Only one attribute may be at its Maximum value during character creation.</text>
 	</string>
 	<string>
 	  <key>Message_MissingSourceBooks</key>
-	  <text>This character was created with the following books that are not enabled:\n {0} This may cause issues. Do you want to continue loading the character?</text>
+	  <text>This character was created with the following books that are not enabled:\n\n{0}\n\nThis may cause issues. Do you want to continue loading the character?</text>
 	</string>
 	<string>
 	  <key>Message_MissingSourceBooks_Title</key>
@@ -8799,12 +8871,20 @@ Only one attribute may be at its Maximum value during character creation.</text>
 	</string>
 	<string>
 	  <key>Message_MissingCustomDataDirectories</key>
-	  <text>This character was created with the following custom data directories that are not enabled:\n {0} This may cause issues. Do you want to continue loading the character?</text>
+	  <text>This character was created with the following custom data directories that are not enabled:\n\n{0}\n\nThis may cause issues. Do you want to continue loading the character?</text>
 	</string>
 	<string>
 	  <key>Message_MissingCustomDataDirectories_Title</key>
 	  <text>Missing Custom Data Directories</text>
 	</string>
+    <string>
+      <key>Message_MissingGameplayOption</key>
+      <text>This character was created with the following gameplay option:\n\n{0}\n\nThis gameplay option could not be found in the current data files. In order to continue loading this character, a new gameplay option must be selected for them.</text>
+    </string>
+    <string>
+      <key>Message_MissingGameplayOption_Title</key>
+      <text>Missing Gameplay Option</text>
+    </string>
 	<string>
 	  <key>Message_Duplicate_CustomDataDirectoryName</key>
 	  <text>Custom data directory of this name already exists.</text>

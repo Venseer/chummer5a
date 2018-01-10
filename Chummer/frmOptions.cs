@@ -16,7 +16,7 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
- using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -153,6 +153,7 @@ namespace Chummer
             _characterOptions.MysAdeptSecondMAGAttribute = chkMysAdeptSecondMAGAttribute.Checked;
             _characterOptions.FreeMartialArtSpecialization = chkFreeMartialArtSpecialization.Checked;
             _characterOptions.PrioritySpellsAsAdeptPowers = chkPrioritySpellsAsAdeptPowers.Checked;
+            _characterOptions.EnemyKarmaQualityLimit = chkEnemyKarmaQualityLimit.Checked;
             string strLimbCount = cboLimbCount.SelectedValue?.ToString();
             if (string.IsNullOrEmpty(strLimbCount))
             {
@@ -296,11 +297,14 @@ namespace Chummer
 
         private void cmdVerify_Click(object sender, EventArgs e)
         {
+            Cursor = Cursors.WaitCursor;
             LanguageManager.VerifyStrings(_strSelectedLanguage);
+            Cursor = Cursors.Default;
         }
 
         private void cmdVerifyData_Click(object sender, EventArgs e)
         {
+            Cursor = Cursors.WaitCursor;
             // Build a list of Sourcebooks that will be passed to the Verify method.
             // This is done since not all of the books are available in every language or the user may only wish to verify the content of certain books.
             List<string> lstBooks = new List<string>();
@@ -327,6 +331,7 @@ namespace Chummer
 
             string strFilePath = Path.Combine(Application.StartupPath, "lang", "results_" + strSelectedLanguage + ".xml");
             MessageBox.Show("Results were written to " + strFilePath, "Validation Results", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Cursor = Cursors.Default;
         }
 
         private void chkExceedNegativeQualities_CheckedChanged(object sender, EventArgs e)
@@ -817,6 +822,7 @@ namespace Chummer
             chkStrictSkillGroups.Checked = _characterOptions.StrictSkillGroupsInCreateMode;
             chkAlternateMetatypeAttributeKarma.Checked = _characterOptions.AlternateMetatypeAttributeKarma;
             chkCompensateSkillGroupKarmaDifference.Checked = _characterOptions.CompensateSkillGroupKarmaDifference;
+            chkEnemyKarmaQualityLimit.Checked = _characterOptions.EnemyKarmaQualityLimit;
             chkReverseAttributePriorityOrder.Checked = _characterOptions.ReverseAttributePriorityOrder;
             chkAllowHoverIncrement.Checked = _characterOptions.AllowHoverIncrement;
             chkSearchInCategoryOnly.Checked = _characterOptions.SearchInCategoryOnly;
@@ -1460,12 +1466,18 @@ namespace Chummer
             }
 
             string response;
-            using (MemoryStream ms = new MemoryStream(bytes))
+            MemoryStream ms = null;
+            try
             {
+                ms = new MemoryStream(bytes);
                 using (StreamReader reader = new StreamReader(ms))
                 {
                     response = reader.ReadToEnd();
                 }
+            }
+            finally
+            {
+                ms?.Dispose();
             }
             Clipboard.SetText(response);
             #endif

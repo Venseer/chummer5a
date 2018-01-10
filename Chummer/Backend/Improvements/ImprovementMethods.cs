@@ -83,6 +83,10 @@ namespace Chummer
                     return objImprovementAdder.selectspell;
                 case "ADDSPELL":
                     return objImprovementAdder.addspell;
+                case "SELECTCOMPLEXFORM":
+                    return objImprovementAdder.selectcomplexform;
+                case "ADDCOMPLEXFORM":
+                    return objImprovementAdder.addcomplexform;
                 case "ADDGEAR":
                     return objImprovementAdder.addgear;
                 case "SELECTAIPROGRAM":
@@ -219,8 +223,6 @@ namespace Chummer
                     return objImprovementAdder.trustfund;
                 case "MADEMAN":
                     return objImprovementAdder.mademan;
-                case "LIGHTNINGREFLEXES":
-                    return objImprovementAdder.lightningreflexes;
                 case "FAME":
                     return objImprovementAdder.fame;
                 case "BORNRICH":
@@ -369,6 +371,8 @@ namespace Chummer
                     return objImprovementAdder.concealability;
                 case "DRAINRESIST":
                     return objImprovementAdder.drainresist;
+                case "DRAINVALUE":
+                    return objImprovementAdder.drainvalue;
                 case "FADINGRESIST":
                     return objImprovementAdder.fadingresist;
                 case "NOTORIETY":
@@ -443,6 +447,8 @@ namespace Chummer
                     return objImprovementAdder.addskillspecializationoption;
                 case "LIMITSPELLCATEGORY":
                     return objImprovementAdder.limitspellcategory;
+                case "LIMITSPELLDESCRIPTOR":
+                    return objImprovementAdder.limitspelldescriptor;
                 case "LIMITSPIRITCATEGORY":
                     return objImprovementAdder.limitspiritcategory;
                 case "MOVEMENTREPLACE":

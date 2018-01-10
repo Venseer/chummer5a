@@ -167,7 +167,7 @@ namespace Chummer
                     }
                 }
 
-                if (Backend.SelectionShared.CheckAvailRestriction(objXmlAccessory, _objCharacter, chkHideOverAvailLimit.Checked))
+                if (!chkHideOverAvailLimit.Checked || Backend.SelectionShared.CheckAvailRestriction(objXmlAccessory, _objCharacter))
                 {
                     string strName = objXmlAccessory["name"]?.InnerText ?? string.Empty;
                     lstAccessories.Add(new ListItem(strName, objXmlAccessory["translate"]?.InnerText ?? strName));
@@ -427,15 +427,18 @@ namespace Chummer
                 lblRC.Visible = false;
                 lblRCLabel.Visible = false;
             }
-            if (int.TryParse(objXmlAccessory["rating"]?.InnerText, out int intMaxRating) && intMaxRating > 1)
+            if (int.TryParse(objXmlAccessory["rating"]?.InnerText, out int intMaxRating) && intMaxRating > 0)
             {
                 nudRating.Enabled = true;
                 nudRating.Visible = true;
                 lblRatingLabel.Visible = true;
                 nudRating.Maximum = intMaxRating;
-                while (nudRating.Maximum > nudRating.Minimum && !Backend.SelectionShared.CheckAvailRestriction(objXmlAccessory, _objCharacter, chkHideOverAvailLimit.Checked, decimal.ToInt32(nudRating.Maximum)))
+                if (chkHideOverAvailLimit.Checked)
                 {
-                    nudRating.Maximum -= 1;
+                    while (nudRating.Maximum > nudRating.Minimum && !Backend.SelectionShared.CheckAvailRestriction(objXmlAccessory, _objCharacter, decimal.ToInt32(nudRating.Maximum)))
+                    {
+                        nudRating.Maximum -= 1;
+                    }
                 }
             }
             else
@@ -524,8 +527,7 @@ namespace Chummer
             if (!string.IsNullOrWhiteSpace(strAvailExpr))
             {
                 lblAvail.Text = strAvailExpr;
-                if (strAvailExpr.Substring(strAvailExpr.Length - 1, 1) == "F" ||
-                    strAvailExpr.Substring(strAvailExpr.Length - 1, 1) == "R")
+                if (strAvailExpr.EndsWith('F', 'R'))
                 {
                     strAvail = strAvailExpr.Substring(strAvailExpr.Length - 1, 1);
                     if (strAvail == "R")
@@ -552,11 +554,11 @@ namespace Chummer
                 if (objXmlAccessory.TryGetStringFieldQuickly("cost", ref strCost))
                     strCost = strCost.Replace("Weapon Cost", _decWeaponCost.ToString(GlobalOptions.InvariantCultureInfo))
                         .Replace("Rating", nudRating.Value.ToString(GlobalOptions.CultureInfo));
-                if (strCost.StartsWith("Variable"))
+                if (strCost.StartsWith("Variable("))
                 {
                     decimal decMin = 0;
                     decimal decMax = decimal.MaxValue;
-                    strCost = strCost.TrimStart("Variable", true).Trim("()".ToCharArray());
+                    strCost = strCost.TrimStart("Variable(", true).TrimEnd(')');
                     if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');

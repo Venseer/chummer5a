@@ -1,3 +1,21 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -94,6 +112,7 @@ namespace Chummer
         private bool _blnUseTotalValueForFreeContacts;
         private bool _blnUseTotalValueForFreeKnowledge;
         private bool _blnDoNotRoundEssenceInternally;
+        private bool _blnEnemyKarmaQualityLimit = true;
         private int _intEssenceDecimals = 2;
         private int _intForbiddenCostMultiplier = 1;
         private int _intFreeContactsFlatNumber = 0;
@@ -167,21 +186,28 @@ namespace Chummer
         private int _intKarmaNewAIAdvancedProgram = 8;
 
         // Karma Foci variables.
+        // Enchanting
         private int _intKarmaAlchemicalFocus = 3;
-        private int _intKarmaBanishingFocus = 2;
-        private int _intKarmaBindingFocus = 2;
-        private int _intKarmaCenteringFocus = 3;
-        private int _intKarmaCounterspellingFocus = 2;
         private int _intKarmaDisenchantingFocus = 3;
+        // Metamagic
+        private int _intKarmaCenteringFocus = 3;
         private int _intKarmaFlexibleSignatureFocus = 3;
         private int _intKarmaMaskingFocus = 3;
+        private int _intKarmaSpellShapingFocus = 3;
+        // Power
         private int _intKarmaPowerFocus = 6;
+        // Qi
         private int _intKarmaQiFocus = 2;
+        // Spell
+        private int _intKarmaCounterspellingFocus = 2;
         private int _intKarmaRitualSpellcastingFocus = 2;
         private int _intKarmaSpellcastingFocus = 2;
-        private int _intKarmaSpellShapingFocus = 3;
-        private int _intKarmaSummoningFocus = 2;
         private int _intKarmaSustainingFocus = 2;
+        // Spirit
+        private int _intKarmaBanishingFocus = 2;
+        private int _intKarmaBindingFocus = 2;
+        private int _intKarmaSummoningFocus = 2;
+        // Weapon
         private int _intKarmaWeaponFocus = 3;
 
         // Default build settings.
@@ -375,6 +401,8 @@ namespace Chummer
             objWriter.WriteElementString("forbiddencostmultiplier", _intForbiddenCostMultiplier.ToString());
             // <donotroundessenceinternally />
             objWriter.WriteElementString("donotroundessenceinternally", _blnDoNotRoundEssenceInternally.ToString());
+            // <donotroundessenceinternally />
+            objWriter.WriteElementString("enemykarmaqualitylimit", _blnEnemyKarmaQualityLimit.ToString());
             // <nuyenformat />
             objWriter.WriteElementString("nuyenformat", _strNuyenFormat);
             // <essencedecimals />
@@ -780,6 +808,8 @@ namespace Chummer
             objXmlNode.TryGetInt32FieldQuickly("forbiddencostmultiplier", ref _intForbiddenCostMultiplier);
             // Only round essence when its value is displayed
             objXmlNode.TryGetBoolFieldQuickly("donotroundessenceinternally", ref _blnDoNotRoundEssenceInternally);
+            // Only round essence when its value is displayed
+            objXmlNode.TryGetBoolFieldQuickly("enemykarmaqualitylimit", ref _blnEnemyKarmaQualityLimit);
             // Format in which nuyen values are displayed
             objXmlNode.TryGetStringFieldQuickly("nuyenformat", ref _strNuyenFormat);
             // Number of decimal places to round to when calculating Essence.
@@ -2068,6 +2098,15 @@ namespace Chummer
             {
                 _blnDoNotRoundEssenceInternally = value;
             }
+        }
+
+        /// <summary>
+        /// Do Enemies count towards Negative Quality Karma limit in create mode?
+        /// </summary>
+        public bool EnemyKarmaQualityLimit
+        {
+            get => _blnEnemyKarmaQualityLimit;
+            set => _blnEnemyKarmaQualityLimit = value;
         }
 
         /// <summary>

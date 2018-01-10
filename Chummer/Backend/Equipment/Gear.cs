@@ -1,3 +1,21 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -156,11 +174,11 @@ namespace Chummer.Backend.Equipment
             // Check for a Variable Cost.
             if (!string.IsNullOrEmpty(_strCost))
             {
-                if (_strCost.StartsWith("Variable") && string.IsNullOrEmpty(_strForcedValue))
+                if (_strCost.StartsWith("Variable(") && string.IsNullOrEmpty(_strForcedValue))
                 {
                     decimal decMin = 0;
                     decimal decMax = decimal.MaxValue;
-                    string strCost = _strCost.TrimStart("Variable", true).Trim("()".ToCharArray());
+                    string strCost = _strCost.TrimStart("Variable(", true).TrimEnd(')');
                     if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
@@ -1232,6 +1250,7 @@ namespace Chummer.Backend.Equipment
             }
         }
 
+        private static readonly char[] lstBracketChars = { '[', ']' };
         /// <summary>
         /// Cost.
         /// </summary>
@@ -1239,14 +1258,14 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
-                if (_strCost.StartsWith("FixedValues"))
+                if (_strCost.StartsWith("FixedValues("))
                 {
-                    string[] strValues = _strCost.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
+                    string[] strValues = _strCost.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
                     string strCost = "0";
                     if (Rating > 0)
-                        strCost = strValues[Math.Min(Rating, strValues.Length) - 1].Trim("[]".ToCharArray());
+                        strCost = strValues[Math.Min(Rating, strValues.Length) - 1].Trim(lstBracketChars);
                     else
-                        strCost = strValues[0].Trim("[]".ToCharArray());
+                        strCost = strValues[0].Trim(lstBracketChars);
                     return strCost;
                 }
                 else if (_strCost.StartsWith("Parent Cost"))
@@ -1469,38 +1488,69 @@ namespace Chummer.Backend.Equipment
                 {
                     case "Device Rating":
                         if (IsCommlink)
-                            return 2;
+                            strExpression = "2";
                         else
-                            return 0;
+                            strExpression = "0";
+                        break;
                     case "Program Limit":
                         if (IsCommlink)
                         {
                             strExpression = this.GetMatrixAttributeString("Device Rating");
                             if (string.IsNullOrEmpty(strExpression))
-                                return 2;
+                                strExpression = "2";
                         }
                         else
-                            return 0;
+                            strExpression = "0";
                         break;
                     case "Data Processing":
                     case "Firewall":
                         strExpression = this.GetMatrixAttributeString("Device Rating");
                         if (string.IsNullOrEmpty(strExpression))
-                            return 0;
+                            strExpression = "0";
                         break;
                     case "Attack":
                     case "Sleaze":
                     default:
-                        return 0;
+                        strExpression = "0";
+                        break;
                 }
             }
 
-            if (strExpression.StartsWith("FixedValues"))
+            if (strExpression.StartsWith("FixedValues("))
             {
-                string[] strValues = strExpression.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
+                string[] strValues = strExpression.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
                 if (Rating > 0)
-                    strExpression = strValues[Math.Min(Rating, strValues.Length) - 1].Trim("[]".ToCharArray());
+                    strExpression = strValues[Math.Min(Rating, strValues.Length) - 1].Trim(lstBracketChars);
             }
+
+            if (Name == "Living Persona")
+            {
+                string strExtraExpression = string.Empty;
+                switch (strAttributeName)
+                {
+                    case "Device Rating":
+                        strExtraExpression = string.Concat(CharacterObject.Improvements.Where(x => x.ImproveType == Improvement.ImprovementType.LivingPersonaDeviceRating && x.Enabled).Select(x => x.ImprovedName));
+                        break;
+                    case "Program Limit":
+                        strExtraExpression = string.Concat(CharacterObject.Improvements.Where(x => x.ImproveType == Improvement.ImprovementType.LivingPersonaProgramLimit && x.Enabled).Select(x => x.ImprovedName));
+                        break;
+                    case "Attack":
+                        strExtraExpression = string.Concat(CharacterObject.Improvements.Where(x => x.ImproveType == Improvement.ImprovementType.LivingPersonaAttack && x.Enabled).Select(x => x.ImprovedName));
+                        break;
+                    case "Sleaze":
+                        strExtraExpression = string.Concat(CharacterObject.Improvements.Where(x => x.ImproveType == Improvement.ImprovementType.LivingPersonaSleaze && x.Enabled).Select(x => x.ImprovedName));
+                        break;
+                    case "Data Processing":
+                        strExtraExpression = string.Concat(CharacterObject.Improvements.Where(x => x.ImproveType == Improvement.ImprovementType.LivingPersonaDataProcessing && x.Enabled).Select(x => x.ImprovedName));
+                        break;
+                    case "Firewall":
+                        strExtraExpression = string.Concat(CharacterObject.Improvements.Where(x => x.ImproveType == Improvement.ImprovementType.LivingPersonaFirewall && x.Enabled).Select(x => x.ImprovedName));
+                        break;
+                }
+                if (!string.IsNullOrEmpty(strExtraExpression))
+                    strExpression += strExtraExpression;
+            }
+
             if (strExpression.Contains('{') || strExpression.Contains('+') || strExpression.Contains('-') || strExpression.Contains('*') || strExpression.Contains("div"))
             {
                 StringBuilder objValue = new StringBuilder(strExpression);
@@ -1845,6 +1895,8 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
+                if (!CharacterObject.Overclocker)
+                    return string.Empty;
                 return _strOverclocked;
             }
             set
@@ -1966,14 +2018,14 @@ namespace Chummer.Backend.Equipment
             else
             {
                 // Just a straight cost, so return the value.
-                strCalculated = strAvailExpression.EndsWith('F') || strAvailExpression.EndsWith('R')
+                strCalculated = strAvailExpression.EndsWith('F', 'R')
                     ? Convert.ToInt32(strAvailExpression.Substring(0, strAvailExpression.Length - 1)).ToString() + strAvailExpression.Substring(strAvailExpression.Length - 1, 1)
                     : Convert.ToInt32(strAvailExpression).ToString();
             }
 
             int intAvail;
             string strAvailText = string.Empty;
-            if (strCalculated.EndsWith('F') || strCalculated.EndsWith('R'))
+            if (strCalculated.EndsWith('F', 'R'))
             {
                 strAvailText = strCalculated.Substring(strCalculated.Length - 1);
                 intAvail = Convert.ToInt32(strCalculated.Substring(0, strCalculated.Length - 1));
@@ -1988,7 +2040,7 @@ namespace Chummer.Backend.Equipment
                 {
                     string strAvail = objChild.Avail.Replace("Rating", objChild.Rating.ToString());
                     strAvail = strAvail.Substring(1).Trim();
-                    if (strAvail.EndsWith('R') || strAvail.EndsWith('F'))
+                    if (strAvail.EndsWith('R', 'F'))
                     {
                         if (strAvailText != "F")
                             strAvailText = strAvail.Substring(strAvail.Length - 1);
@@ -2043,9 +2095,9 @@ namespace Chummer.Backend.Equipment
 
                     if (_strArmorCapacity == "[*]")
                         strReturn = "*";
-                    else if (_strArmorCapacity.StartsWith("FixedValues"))
+                    else if (_strArmorCapacity.StartsWith("FixedValues("))
                     {
-                        string[] strValues = _strArmorCapacity.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
+                        string[] strValues = _strArmorCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
                         strReturn = strValues[Math.Min(Rating, strValues.Length) - 1];
                     }
                     else
@@ -2100,9 +2152,9 @@ namespace Chummer.Backend.Equipment
                     string strReturn;
                     if (_strArmorCapacity == "[*]")
                         strReturn = "*";
-                    else if (_strArmorCapacity.StartsWith("FixedValues"))
+                    else if (_strArmorCapacity.StartsWith("FixedValues("))
                     {
-                        string[] strValues = _strArmorCapacity.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
+                        string[] strValues = _strArmorCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
                         strReturn = strValues[Math.Min(Rating, strValues.Length) - 1];
                     }
                     else
@@ -2148,11 +2200,11 @@ namespace Chummer.Backend.Equipment
             {
                 string strCostExpression = _strCost;
 
-                if (strCostExpression.StartsWith("FixedValues"))
+                if (strCostExpression.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strCostExpression.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
+                    string[] strValues = strCostExpression.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
                     if (Rating > 0)
-                        strCostExpression = strValues[Math.Min(Rating, strValues.Length) - 1].Trim("[]".ToCharArray());
+                        strCostExpression = strValues[Math.Min(Rating, strValues.Length) - 1].Trim(lstBracketChars);
                 }
 
                 decimal decGearCost = 0;

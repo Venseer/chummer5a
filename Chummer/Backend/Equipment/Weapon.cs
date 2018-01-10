@@ -1,3 +1,21 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -130,11 +148,11 @@ namespace Chummer.Backend.Equipment
             if (!string.IsNullOrEmpty(strCostElement))
             {
                 // Check for a Variable Cost.
-                if (strCostElement.StartsWith("Variable"))
+                if (strCostElement.StartsWith("Variable("))
                 {
                     decimal decMin = 0;
                     decimal decMax = decimal.MaxValue;
-                    string strCost = strCostElement.TrimStart("Variable", true).Trim("()".ToCharArray());
+                    string strCost = strCostElement.TrimStart("Variable(", true).TrimEnd(')');
                     if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
@@ -356,8 +374,10 @@ namespace Chummer.Backend.Equipment
                         : objXmlDocument.SelectSingleNode("/chummer/weapons/weapon[name = \"" + strLoopID + "\"]");
 
                     List<TreeNode> lstSubWeaponNodes = lstNodes == null ? null : new List<TreeNode>();
-                    Weapon objSubWeapon = new Weapon(_objCharacter);
-                    objSubWeapon.ParentVehicle = ParentVehicle;
+                    Weapon objSubWeapon = new Weapon(_objCharacter)
+                    {
+                        ParentVehicle = ParentVehicle
+                    };
                     objSubWeapon.Create(objXmlSubWeapon, lstSubWeaponNodes, cmsWeapon, cmsWeaponAccessory, objWeapons, cmsWeaponAccessoryGear, blnCreateChildren, blnCreateImprovements);
                     objSubWeapon.ParentID = InternalId;
                     if (lstNodes != null)
@@ -598,8 +618,10 @@ namespace Chummer.Backend.Equipment
             {
                 foreach (XmlNode nodWeapon in objNode.SelectNodes("underbarrel/weapon"))
                 {
-                    Weapon objUnderbarrel = new Weapon(_objCharacter);
-                    objUnderbarrel.ParentVehicle = ParentVehicle;
+                    Weapon objUnderbarrel = new Weapon(_objCharacter)
+                    {
+                        ParentVehicle = ParentVehicle
+                    };
                     objUnderbarrel.Load(nodWeapon, blnCopy);
                     objUnderbarrel.Parent = this;
                     _lstUnderbarrel.Add(objUnderbarrel);
@@ -1432,7 +1454,7 @@ namespace Chummer.Backend.Equipment
 
             return strReturn;
         }
-
+        
         /// <summary>
         /// Weapon's Damage including all Accessories, Modifications, Attributes, and Ammunition.
         /// </summary>
@@ -1540,20 +1562,21 @@ namespace Chummer.Backend.Equipment
             }
 
             // Evaluate the min expression if there is one.
-            if (strDamage.Contains("min") && !strDamage.Contains("mini") && !strDamage.Contains("mine"))
+            if (strDamage.Contains("min("))
             {
                 string strMin = string.Empty;
-                int intStart = strDamage.IndexOf("min");
+                int intStart = strDamage.IndexOf("min(");
                 int intEnd = strDamage.IndexOf(')', intStart);
                 strMin = strDamage.Substring(intStart, intEnd - intStart + 1);
+                
+                string[] strValue = strMin.TrimStart("min(", true).TrimEnd(')').Split(',');
+                int intMinValue = Convert.ToInt32(strValue[0]);
+                for (int i = 1; i < strValue.Length; ++i)
+                {
+                    intMinValue = Math.Min(intMinValue,Convert.ToInt32(strValue[i]));
+                }
 
-                string strExpression = strMin;
-                strExpression = strExpression.Replace("min", string.Empty).FastEscape("()".ToCharArray());
-
-                string[] strValue = strExpression.Split(',');
-                strExpression = Math.Min(Convert.ToInt32(strValue[0]), Convert.ToInt32(strValue[1])).ToString();
-
-                strDamage = strDamage.Replace(strMin, strExpression);
+                strDamage = strDamage.Replace(strMin, intMinValue.ToString());
             }
 
             // Place the Damage Type (P or S) into a string and remove it from the expression.
@@ -1602,13 +1625,18 @@ namespace Chummer.Backend.Equipment
             int intImprove = 0;
             if (_objCharacter != null)
             {
+                var s = _strCategory;
+                if (s == "Unarmed")
+                {
+                    s = "Unarmed Combat";
+                }
                 foreach (Improvement objImprovement in _objCharacter.Improvements)
                 {
-                    if (objImprovement.ImproveType == Improvement.ImprovementType.WeaponCategoryDV && objImprovement.Enabled && (objImprovement.ImprovedName == _strCategory || "Cyberware " + objImprovement.ImprovedName == _strCategory))
+                    if (objImprovement.ImproveType == Improvement.ImprovementType.WeaponCategoryDV && objImprovement.Enabled && (objImprovement.ImprovedName == s || "Cyberware " + objImprovement.ImprovedName == s))
                         intImprove += objImprovement.Value;
                     if (!string.IsNullOrEmpty(_strUseSkill))
                     {
-                        if (objImprovement.ImproveType == Improvement.ImprovementType.WeaponCategoryDV && objImprovement.Enabled && (objImprovement.ImprovedName == _strUseSkill || "Cyberware " + objImprovement.ImprovedName == _strCategory))
+                        if (objImprovement.ImproveType == Improvement.ImprovementType.WeaponCategoryDV && objImprovement.Enabled && (objImprovement.ImprovedName == _strUseSkill || "Cyberware " + objImprovement.ImprovedName == s))
                             intImprove += objImprovement.Value;
                     }
                 }
@@ -2406,6 +2434,7 @@ namespace Chummer.Backend.Equipment
                 return intAP.ToString();
         }
 
+        private static readonly char[] lstParenthesesChars = "()".ToCharArray();
         /// <summary>
         /// The Weapon's total RC including Accessories and Modifications.
         /// </summary>
@@ -2453,7 +2482,7 @@ namespace Chummer.Backend.Equipment
                 }
 
                 intRCBase = Convert.ToInt32(strRCBase);
-                intRCFull = Convert.ToInt32(strRCFull.Trim("()".ToCharArray()));
+                intRCFull = Convert.ToInt32(strRCFull.Trim(lstParenthesesChars));
 
                 if (intRCBase < 0)
                 {
@@ -2816,7 +2845,7 @@ namespace Chummer.Backend.Equipment
                 }
                 string s = Name.ToLower();
                 intAccuracy += _objCharacter.Improvements
-                    .Where(i => i.ImproveType == Improvement.ImprovementType.WeaponAccuracy && (i.ImprovedName == string.Empty || i.ImprovedName == Name || i.ImprovedName.Contains("[contains]") && s.Contains(i.ImprovedName.Replace("[contains]",string.Empty).ToLower())))
+                    .Where(i => i.ImproveType == Improvement.ImprovementType.WeaponAccuracy && (string.IsNullOrEmpty(i.ImprovedName) || i.ImprovedName == Name || i.ImprovedName.Contains("[contains]") && s.Contains(i.ImprovedName.Replace("[contains]",string.Empty).ToLower())))
                     .Sum(objImprovement => objImprovement.Value);
 
                 // Look for Powers that increase accuracy
@@ -3597,7 +3626,7 @@ namespace Chummer.Backend.Equipment
                             intMaxChildAvail = objLoopAvail.Item1;
                         if (objLoopAvail.Item2.EndsWith('F'))
                             strAvail = "F";
-                        else if (objLoopAvail.Item2.EndsWith('R') && strAvail != "F")
+                        else if (strAvail != "F" && objLoopAvail.Item2.EndsWith('R'))
                             strAvail = "R";
                     }
                     strAvailExpr = strAvailExpr.Replace("{Children Avail}", intMaxChildAvail.ToString());
@@ -3618,7 +3647,7 @@ namespace Chummer.Backend.Equipment
 
                     if (!objAccessory.IncludedInWeapon)
                     {
-                        if (strAccAvail.StartsWith('+') || strAccAvail.StartsWith('-'))
+                        if (strAccAvail.StartsWith('+', '-'))
                         {
                             strAccAvail = objAccessory.TotalAvail(GlobalOptions.DefaultLanguage);
                             if (strAccAvail.EndsWith(LanguageManager.GetString("String_AvailForbidden", GlobalOptions.DefaultLanguage)))

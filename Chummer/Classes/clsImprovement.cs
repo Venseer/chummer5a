@@ -72,11 +72,12 @@ namespace Chummer
             CyberwareTotalEssMultiplierNonRetroactive,
             SpecialTab,
             Initiative,
-            LivingPersonaResponse,
-            LivingPersonaSignal,
+            LivingPersonaDeviceRating,
+            LivingPersonaProgramLimit,
+            LivingPersonaAttack,
+            LivingPersonaSleaze,
+            LivingPersonaDataProcessing,
             LivingPersonaFirewall,
-            LivingPersonaSystem,
-            LivingPersonaBiofeedback,
             Smartlink,
             BiowareEssCost,
             BiowareTotalEssMultiplier,
@@ -195,6 +196,7 @@ namespace Chummer
             SwapSkillSpecAttribute,
             SpellResistance,
             LimitSpellCategory,
+            LimitSpellDescriptor,
             LimitSpiritCategory,
             WalkSpeed,
             RunSpeed,
@@ -212,6 +214,7 @@ namespace Chummer
             FreeSpells,
             DrainValue,
             Spell,
+            ComplexForm,
             Gear,
             MentorSpirit,
             Paragon,
@@ -906,9 +909,9 @@ namespace Chummer
             //         Log.Enter("ValueToInt");
             //         Log.Info("strValue = " + strValue);
             //Log.Info("intRating = " + intRating.ToString());
-            if (strValue.Contains("FixedValues"))
+            if (strValue.StartsWith("FixedValues("))
             {
-                string[] strValues = strValue.TrimStart("FixedValues", true).Trim("()".ToCharArray()).Split(',');
+                string[] strValues = strValue.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
                 if (strValues.Length >= intRating)
                     strValue = strValues[intRating - 1];
                 else
@@ -982,47 +985,46 @@ namespace Chummer
 
             /*try
             {*/
-                if (nodBonus == null)
-                {
-                    s_StrForcedValue = string.Empty;
-                    s_StrLimitSelection = string.Empty;
-                    Log.Exit("CreateImprovements");
-                    return true;
-                }
+            if (nodBonus == null)
+            {
+                s_StrForcedValue = string.Empty;
+                s_StrLimitSelection = string.Empty;
+                Log.Exit("CreateImprovements");
+                return true;
+            }
+            
+            s_StrSelectedValue = string.Empty;
 
-                string strUnique = string.Empty;
-                if (nodBonus.Attributes?["unique"] != null)
-                    strUnique = nodBonus.Attributes["unique"].InnerText;
+            Log.Info("_strForcedValue = " + s_StrForcedValue);
+            Log.Info("_strLimitSelection = " + s_StrLimitSelection);
 
-                s_StrSelectedValue = string.Empty;
+            // If there is no character object, don't attempt to add any Improvements.
+            if (objCharacter == null)
+            {
+                Log.Info("_objCharacter = Null");
+                Log.Exit("CreateImprovements");
+                return true;
+            }
 
-                Log.Info(
-                    "_strForcedValue = " + s_StrForcedValue);
-                Log.Info(
-                    "_strLimitSelection = " + s_StrLimitSelection);
+            string strUnique = nodBonus.Attributes?["unique"]?.InnerText ?? string.Empty;
+            // If no friendly name was provided, use the one from SourceName.
+            if (string.IsNullOrEmpty(strFriendlyName))
+                strFriendlyName = strSourceName;
 
-                // If no friendly name was provided, use the one from SourceName.
-                if (string.IsNullOrEmpty(strFriendlyName))
-                    strFriendlyName = strSourceName;
-
-                if (nodBonus.HasChildNodes)
-                {
-                    Log.Info("Has Child Nodes");
-                }
-                if (NodeExists(nodBonus, "selecttext"))
+            if (nodBonus.HasChildNodes)
+            {
+                Log.Info("Has Child Nodes");
+                if (nodBonus["selecttext"] != null)
                 {
                     Log.Info("selecttext");
 
-                    if (objCharacter != null)
+                    if (!string.IsNullOrEmpty(s_StrForcedValue))
                     {
-                        if (!string.IsNullOrEmpty(s_StrForcedValue))
-                        {
-                            LimitSelection = s_StrForcedValue;
-                        }
-                        else if (objCharacter.Pushtext.Count != 0)
-                        {
-                            LimitSelection = objCharacter.Pushtext.Pop();
-                        }
+                        LimitSelection = s_StrForcedValue;
+                    }
+                    else if (objCharacter.Pushtext.Count != 0)
+                    {
+                        LimitSelection = objCharacter.Pushtext.Pop();
                     }
 
                     Log.Info("_strForcedValue = " + SelectedValue);
@@ -1034,26 +1036,25 @@ namespace Chummer
                     }
                     else
                     {
-                    // Display the Select Text window and record the value that was entered.
-                    frmSelectText frmPickText = new frmSelectText
-                    {
-                        Description = LanguageManager.GetString("String_Improvement_SelectText", GlobalOptions.Language)
-                        .Replace("{0}", strFriendlyName)
-                    };
-                    frmPickText.ShowDialog();
+                        // Display the Select Text window and record the value that was entered.
+                        frmSelectText frmPickText = new frmSelectText
+                        {
+                            Description = LanguageManager.GetString("String_Improvement_SelectText", GlobalOptions.Language).Replace("{0}", strFriendlyName)
+                        };
+                        frmPickText.ShowDialog();
 
-                    // Make sure the dialogue window was not canceled.
-                    if (frmPickText.DialogResult == DialogResult.Cancel)
-                    {
+                        // Make sure the dialogue window was not canceled.
+                        if (frmPickText.DialogResult == DialogResult.Cancel)
+                        {
 
-                        Rollback(objCharacter);
+                            Rollback(objCharacter);
                             ForcedValue = string.Empty;
                             LimitSelection = string.Empty;
-                        Log.Exit("CreateImprovements");
-                        return false;
-                    }
+                            Log.Exit("CreateImprovements");
+                            return false;
+                        }
 
-                    s_StrSelectedValue = frmPickText.SelectedValue;
+                        s_StrSelectedValue = frmPickText.SelectedValue;
                     }
                     if (blnConcatSelectedValue)
                         strSourceName += " (" + SelectedValue + ")";
@@ -1068,14 +1069,6 @@ namespace Chummer
                         strUnique);
                 }
 
-                // If there is no character object, don't attempt to add any Improvements.
-                if (objCharacter == null)
-                {
-                    Log.Info( "_objCharacter = Null");
-                    Log.Exit("CreateImprovements");
-                    return true;
-                }
-
                 // Check to see what bonuses the node grants.
                 foreach (XmlNode bonusNode in nodBonus.ChildNodes)
                 {
@@ -1086,15 +1079,16 @@ namespace Chummer
                         return false;
                     }
                 }
+            }
 
+            // If we've made it this far, everything went OK, so commit the Improvements.
+            Log.Info("Calling Commit");
+            Commit(objCharacter);
+            Log.Info("Returned from Commit");
+            // Clear the Forced Value and Limit Selection strings once we're done to prevent these from forcing their values on other Improvements.
+            s_StrForcedValue = string.Empty;
+            s_StrLimitSelection = string.Empty;
 
-                // If we've made it this far, everything went OK, so commit the Improvements.
-                Log.Info("Calling Commit");
-                Commit(objCharacter);
-                Log.Info("Returned from Commit");
-                // Clear the Forced Value and Limit Selection strings once we're done to prevent these from forcing their values on other Improvements.
-                s_StrForcedValue = string.Empty;
-                s_StrLimitSelection = string.Empty;
             /*}
             catch (Exception ex)
             {
@@ -1201,6 +1195,8 @@ namespace Chummer
                 objCharacter.Improvements.Remove(objImprovement);
                 ClearCachedValue(new Tuple<Character, Improvement.ImprovementType>(objCharacter, objImprovement.ImproveType));
             }
+            bool blnDoSkillsSectionForceProperyChangedNotificationAll = false;
+            bool blnDoAttributeSectionForceProperyChangedNotificationAll = false;
             // Now that the entire list is deleted from the character's improvements list, we do the checking of duplicates and extra effects
             foreach (Improvement objImprovement in objImprovementList)
             {
@@ -1236,7 +1232,7 @@ namespace Chummer
                         break;
                     case Improvement.ImprovementType.SwapSkillAttribute:
                     case Improvement.ImprovementType.SwapSkillSpecAttribute:
-                        objCharacter.SkillsSection.ForceProperyChangedNotificationAll(nameof(Skill.PoolToolTip));
+                        blnDoSkillsSectionForceProperyChangedNotificationAll = true;
                         break;
                     case Improvement.ImprovementType.SkillsoftAccess:
                         objCharacter.SkillsSection.KnowledgeSkills.RemoveAll(objCharacter.SkillsSection.KnowsoftSkills.Contains);
@@ -1263,7 +1259,7 @@ namespace Chummer
                                     break;
                             }
                         }
-                        objCharacter.AttributeSection.ForceAttributePropertyChangedNotificationAll(nameof(CharacterAttrib.AttributeModifiers));
+                        blnDoAttributeSectionForceProperyChangedNotificationAll = true;
                         break;
                     case Improvement.ImprovementType.SpecialTab:
                         // Determine if access to any special tabs have been lost.
@@ -1378,10 +1374,6 @@ namespace Chummer
                         if (!blnHasDuplicate)
                             objCharacter.Fame = false;
                         break;
-                    case Improvement.ImprovementType.LightningReflexes:
-                        if (!blnHasDuplicate)
-                            objCharacter.LightningReflexes = false;
-                        break;
                     case Improvement.ImprovementType.MadeMan:
                         if (!blnHasDuplicate)
                             objCharacter.MadeMan = false;
@@ -1472,6 +1464,14 @@ namespace Chummer
                             objCharacter.Spells.Remove(objSpell);
                         }
                         break;
+                    case Improvement.ImprovementType.ComplexForm:
+                        ComplexForm objComplexForm = objCharacter.ComplexForms.FirstOrDefault(x => x.InternalId == objImprovement.ImprovedName);
+                        if (objComplexForm != null)
+                        {
+                            RemoveImprovements(objCharacter, Improvement.ImprovementSource.ComplexForm, objComplexForm.InternalId);
+                            objCharacter.ComplexForms.Remove(objComplexForm);
+                        }
+                        break;
                     case Improvement.ImprovementType.MartialArt:
                         MartialArt objMartialArt = objCharacter.MartialArts.FirstOrDefault(x => x.InternalId == objImprovement.ImprovedName);
                         if (objMartialArt != null)
@@ -1546,8 +1546,10 @@ namespace Chummer
                         break;
                 }
             }
-
-
+            if (blnDoSkillsSectionForceProperyChangedNotificationAll)
+                objCharacter.SkillsSection.ForceProperyChangedNotificationAll(nameof(Skill.PoolToolTip));
+            if (blnDoAttributeSectionForceProperyChangedNotificationAll)
+                objCharacter.AttributeSection.ForceAttributePropertyChangedNotificationAll(nameof(CharacterAttrib.AttributeModifiers));
             objCharacter.ImprovementHook(objImprovementList);
 
             Log.Exit("RemoveImprovements");

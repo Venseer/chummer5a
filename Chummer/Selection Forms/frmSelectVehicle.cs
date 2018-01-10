@@ -325,7 +325,7 @@ namespace Chummer
                 if (chkUsedVehicle.Checked)
                 {
                     string strSuffix = string.Empty;
-                    if (strAvail.EndsWith('R') || strAvail.EndsWith('F'))
+                    if (strAvail.EndsWith('R', 'F'))
                     {
                         strSuffix = strAvail.Substring(strAvail.Length - 1, 1);
                         // Translate the Avail string.
@@ -412,7 +412,7 @@ namespace Chummer
             List<ListItem> lstVehicles = new List<ListItem>();
             foreach (XmlNode objXmlVehicle in objXmlVehicleList)
             {
-                if (Backend.SelectionShared.CheckAvailRestriction(objXmlVehicle, _objCharacter, chkHideOverAvailLimit.Checked))
+                if (!chkHideOverAvailLimit.Checked || Backend.SelectionShared.CheckAvailRestriction(objXmlVehicle, _objCharacter))
                 {
                     string strName = objXmlVehicle["name"]?.InnerText;
                     string strDisplayname = objXmlVehicle["translate"]?.InnerText ?? strName;

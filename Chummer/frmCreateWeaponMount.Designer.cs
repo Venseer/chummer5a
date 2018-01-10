@@ -1,4 +1,4 @@
-﻿namespace Chummer
+namespace Chummer
 {
     partial class frmCreateWeaponMount
     {
@@ -85,7 +85,7 @@
             this.lblVisbility.Name = "lblVisbility";
             this.lblVisbility.Size = new System.Drawing.Size(44, 13);
             this.lblVisbility.TabIndex = 21;
-            this.lblVisbility.Tag = "";
+            this.lblVisbility.Tag = "Label_Visibility";
             this.lblVisbility.Text = "Visbility:";
             // 
             // cboVisibility
@@ -105,7 +105,7 @@
             this.lblControl.Name = "lblControl";
             this.lblControl.Size = new System.Drawing.Size(43, 13);
             this.lblControl.TabIndex = 23;
-            this.lblControl.Tag = "";
+            this.lblControl.Tag = "Label_Control";
             this.lblControl.Text = "Control:";
             // 
             // cboControl
@@ -125,7 +125,7 @@
             this.lblSize.Name = "lblSize";
             this.lblSize.Size = new System.Drawing.Size(30, 13);
             this.lblSize.TabIndex = 25;
-            this.lblSize.Tag = "";
+            this.lblSize.Tag = "Label_Size";
             this.lblSize.Text = "Size:";
             // 
             // cboSize
@@ -165,7 +165,7 @@
             this.lblAvailabilityLabel.Name = "lblAvailabilityLabel";
             this.lblAvailabilityLabel.Size = new System.Drawing.Size(33, 13);
             this.lblAvailabilityLabel.TabIndex = 30;
-            this.lblAvailabilityLabel.Tag = "";
+            this.lblAvailabilityLabel.Tag = "Label_Avail";
             this.lblAvailabilityLabel.Text = "Avail:";
             // 
             // lblCostLabel
@@ -175,7 +175,7 @@
             this.lblCostLabel.Name = "lblCostLabel";
             this.lblCostLabel.Size = new System.Drawing.Size(31, 13);
             this.lblCostLabel.TabIndex = 29;
-            this.lblCostLabel.Tag = "";
+            this.lblCostLabel.Tag = "Label_Cost";
             this.lblCostLabel.Text = "Cost:";
             // 
             // lblAvailability
@@ -215,7 +215,7 @@
             this.lblSlotsLabel.Name = "lblSlotsLabel";
             this.lblSlotsLabel.Size = new System.Drawing.Size(33, 13);
             this.lblSlotsLabel.TabIndex = 33;
-            this.lblSlotsLabel.Tag = "";
+            this.lblSlotsLabel.Tag = "Label_Slots";
             this.lblSlotsLabel.Text = "Slots:";
             // 
             // chkFreeItem
