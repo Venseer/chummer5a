@@ -85,10 +85,13 @@ namespace Chummer
             if (string.IsNullOrEmpty(s_StrSelectCategory))
                 cboCategory.SelectedIndex = 0;
             else
+            {
                 cboCategory.SelectedValue = s_StrSelectCategory;
 
-            if (cboCategory.SelectedIndex == -1)
-                cboCategory.SelectedIndex = 0;
+                if (cboCategory.SelectedIndex == -1)
+                    cboCategory.SelectedIndex = 0;
+            }
+            cboCategory.Enabled = _lstCategory.Count > 1;
             cboCategory.EndUpdate();
 
             if (_objCharacter.MetageneticLimit == 0)
@@ -106,61 +109,70 @@ namespace Chummer
 
         private void lstQualities_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(lstQualities.Text))
+            if (_blnLoading)
                 return;
 
-            XmlNode objXmlQuality = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + lstQualities.SelectedValue + "\"]");
-            int intBP = 0;
-            string strKarma = objXmlQuality["karma"]?.InnerText ?? string.Empty;
-            if (strKarma.StartsWith("Variable("))
+            XmlNode xmlQuality = null;
+            string strSelectedQuality = lstQualities.SelectedValue?.ToString();
+            if (!string.IsNullOrEmpty(strSelectedQuality))
             {
-                int intMin = 0;
-                int intMax = int.MaxValue;
-                string strCost = strKarma.TrimStart("Variable(", true).TrimEnd(')');
-                if (strCost.Contains('-'))
-                {
-                    string[] strValues = strCost.Split('-');
-                    int.TryParse(strValues[0], out intMin);
-                    int.TryParse(strValues[1], out intMax);
-                }
-                else
-                    int.TryParse(strCost.FastEscape('+'), out intMin);
+                xmlQuality = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[id = \"" + strSelectedQuality + "\"]");
+            }
 
-                if (intMax == int.MaxValue)
-                {
-                    lblBP.Text = intMin.ToString(GlobalOptions.CultureInfo);
-                }
+            if (xmlQuality != null)
+            {
+                if (chkFree.Checked)
+                    lblBP.Text = "0";
                 else
-                    lblBP.Text = intMin.ToString(GlobalOptions.CultureInfo) + " - " + intMax.ToString(GlobalOptions.CultureInfo);
+                {
+                    string strKarma = xmlQuality["karma"]?.InnerText ?? string.Empty;
+                    if (strKarma.StartsWith("Variable("))
+                    {
+                        int intMin = 0;
+                        int intMax = int.MaxValue;
+                        string strCost = strKarma.TrimStart("Variable(", true).TrimEnd(')');
+                        if (strCost.Contains('-'))
+                        {
+                            string[] strValues = strCost.Split('-');
+                            int.TryParse(strValues[0], out intMin);
+                            int.TryParse(strValues[1], out intMax);
+                        }
+                        else
+                            int.TryParse(strCost.FastEscape('+'), out intMin);
 
-                intBP = intMin;
+                        if (intMax == int.MaxValue)
+                            lblBP.Text = intMin.ToString(GlobalOptions.CultureInfo);
+                        else
+                            lblBP.Text = intMin.ToString(GlobalOptions.CultureInfo) + " - " + intMax.ToString(GlobalOptions.CultureInfo);
+                    }
+                    else
+                    {
+                        int.TryParse(strKarma, out int intBP);
+
+                        if (_objCharacter.Created && !_objCharacter.Options.DontDoubleQualityPurchases)
+                        {
+                            string strDoubleCostCareer = xmlQuality["doublecareer"]?.InnerText;
+                            if (string.IsNullOrEmpty(strDoubleCostCareer) || bool.Parse(strDoubleCostCareer))
+                            {
+                                intBP *= 2;
+                            }
+                        }
+                        lblBP.Text = (intBP * _objCharacter.Options.KarmaQuality).ToString();
+                    }
+                }
+
+                string strSource = xmlQuality["source"].InnerText;
+                string strPage = xmlQuality["altpage"]?.InnerText ?? xmlQuality["page"].InnerText;
+                lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + ' ' + strPage;
+
+                tipTooltip.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + ' ' + LanguageManager.GetString("String_Page", GlobalOptions.Language) + ' ' + strPage);
             }
             else
             {
-                int.TryParse(strKarma, out intBP);
+                lblBP.Text = string.Empty;
+                lblSource.Text = string.Empty;
+                tipTooltip.SetToolTip(lblSource, string.Empty);
             }
-            bool blnDoubleCostCareer = true;
-            string strDoubleCostCareer = objXmlQuality["doublecareer"]?.InnerText;
-            if (!string.IsNullOrEmpty(strDoubleCostCareer))
-            {
-                blnDoubleCostCareer = bool.Parse(strDoubleCostCareer);
-            }
-
-
-            if (_objCharacter.Created && !_objCharacter.Options.DontDoubleQualityPurchases && blnDoubleCostCareer)
-            {
-                intBP *= 2;
-            }
-            lblBP.Text = (intBP * _objCharacter.Options.KarmaQuality).ToString();
-            if (chkFree.Checked)
-                lblBP.Text = "0";
-
-            string strSource = objXmlQuality["source"]?.InnerText;
-            string strBook = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language);
-            string strPage = objXmlQuality["altpage"]?.InnerText ?? objXmlQuality["page"]?.InnerText ?? string.Empty;
-            lblSource.Text = strBook + " " + strPage;
-
-            tipTooltip.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + " " + LanguageManager.GetString("String_Page", GlobalOptions.Language) + " " + strPage);
         }
 
         private void cmdOK_Click(object sender, EventArgs e)
@@ -221,7 +233,7 @@ namespace Chummer
             {
                 if (lstQualities.SelectedIndex + 1 < lstQualities.Items.Count)
                 {
-                    lstQualities.SelectedIndex++;
+                    lstQualities.SelectedIndex += 1;
                 }
                 else if (lstQualities.Items.Count > 0)
                 {
@@ -232,7 +244,7 @@ namespace Chummer
             {
                 if (lstQualities.SelectedIndex - 1 >= 0)
                 {
-                    lstQualities.SelectedIndex--;
+                    lstQualities.SelectedIndex -= 1;
                 }
                 else if (lstQualities.Items.Count > 0)
                 {
@@ -245,6 +257,25 @@ namespace Chummer
         {
             if (e.KeyCode == Keys.Up)
                 txtSearch.Select(txtSearch.Text.Length, 0);
+        }
+
+        private void KarmaFilter(object sender, EventArgs e)
+        {
+            _blnLoading = true;
+            if (string.IsNullOrWhiteSpace(nudMinimumBP.Text))
+            {
+                nudMinimumBP.Value = 0;
+            }
+            if (string.IsNullOrWhiteSpace(nudValueBP.Text))
+            {
+                nudValueBP.Value = 0;
+            }
+            if (string.IsNullOrWhiteSpace(nudMaximumBP.Text))
+            {
+                nudMaximumBP.Value = 0;
+            }
+            _blnLoading = false;
+            BuildQualityList();
         }
         #endregion
 
@@ -267,15 +298,18 @@ namespace Chummer
         {
             set
             {
-                cboCategory.BeginUpdate();
-                cboCategory.DataSource = null;
-                cboCategory.Items.Add(value);
-                cboCategory.EndUpdate();
+                if (_lstCategory.Any(x => x.Value.ToString() == value))
+                {
+                    cboCategory.BeginUpdate();
+                    cboCategory.SelectedValue = value;
+                    cboCategory.Enabled = false;
+                    cboCategory.EndUpdate();
+                }
             }
         }
 
         /// <summary>
-        /// A Quality the character has that should be ignored for checking Fobidden requirements (which would prevent upgrading/downgrading a Quality).
+        /// A Quality the character has that should be ignored for checking Forbidden requirements (which would prevent upgrading/downgrading a Quality).
         /// </summary>
         public string IgnoreQuality { get; set; } = string.Empty;
 
@@ -312,9 +346,15 @@ namespace Chummer
                 return;
 
             string strCategory = cboCategory.SelectedValue?.ToString();
-            string strFilter = "(" + _objCharacter.Options.BookXPath() + ")";
+            StringBuilder strFilter = new StringBuilder("(");
+            strFilter.Append(_objCharacter.Options.BookXPath());
+            strFilter.Append(')');
             if (!string.IsNullOrEmpty(strCategory) && strCategory != "Show All" && (_objCharacter.Options.SearchInCategoryOnly || txtSearch.TextLength == 0))
-                strFilter += " and category = \"" + strCategory + "\"";
+            {
+                strFilter.Append(" and category = \"");
+                strFilter.Append(strCategory);
+                strFilter.Append('\"');
+            }
             else
             {
                 StringBuilder objCategoryFilter = new StringBuilder();
@@ -325,91 +365,86 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ")";
+                    objCategoryFilter.Length -= 4;
+                    strFilter.Append(" and (");
+                    strFilter.Append(objCategoryFilter.ToString());
+                    strFilter.Append(')');
                 }
-            }
-            if (!string.IsNullOrWhiteSpace(txtSearch.Text))
-            {
-                // Treat everything as being uppercase so the search is case-insensitive.
-                string strSearchText = txtSearch.Text.ToUpper();
-                strFilter += " and ((contains(translate(name,'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýß','ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝß'), \"" + strSearchText + "\") and not(translate)) or contains(translate(translate,'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýß','ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝß'), \"" + strSearchText + "\"))";
             }
             if (chkMetagenetic.Checked)
             {
-                strFilter += " and (metagenetic = 'yes' or required/oneof[contains(., 'Changeling')])";
+                strFilter.Append(" and (metagenetic = 'True' or required/oneof[contains(., 'Changeling')])");
             }
             else if (chkNotMetagenetic.Checked)
             {
-                strFilter += " and not(metagenetic = 'yes') and not(required/oneof[contains(., 'Changeling')])";
+                strFilter.Append(" and not(metagenetic = 'True') and not(required/oneof[contains(., 'Changeling')])");
             }
             if (nudValueBP.Value != 0)
             {
-                strFilter += "and karma = " + nudValueBP.Value;
+                strFilter.Append(" and karma = ");
+                strFilter.Append(nudValueBP.Value.ToString(GlobalOptions.InvariantCultureInfo));
             }
             else
             {
                 if (nudMinimumBP.Value != 0)
                 {
-                    strFilter += "and karma >= " + nudMinimumBP.Value;
+                    strFilter.Append(" and karma >= ");
+                    strFilter.Append(nudMinimumBP.Value.ToString(GlobalOptions.InvariantCultureInfo));
                 }
 
                 if (nudMaximumBP.Value != 0)
                 {
-                    strFilter += "and karma <= " + nudMaximumBP.Value;
+                    strFilter.Append(" and karma <= ");
+                    strFilter.Append(nudMaximumBP.Value.ToString(GlobalOptions.InvariantCultureInfo));
                 }
             }
-            
-            bool blnNeedQualityWhitelist = false;
-            XmlNode objXmlMetatype = XmlManager.Load("metatypes.xml").SelectSingleNode("/chummer/metatypes/metatype[name = \"" + _objCharacter.Metatype + "\"]");
-            if (objXmlMetatype?.SelectSingleNode("qualityrestriction") != null)
-                blnNeedQualityWhitelist = true;
-            else
+            string strSearch = CommonFunctions.GenerateSearchXPath(txtSearch.Text);
+            if (!string.IsNullOrWhiteSpace(strSearch))
             {
-                objXmlMetatype = XmlManager.Load("critters.xml").SelectSingleNode("/chummer/metatypes/metatype[name = \"" + _objCharacter.Metatype + "\"]");
-                if (objXmlMetatype?.SelectSingleNode("qualityrestriction") != null)
-                    blnNeedQualityWhitelist = true;
+                strFilter.Append(strSearch);
             }
 
-            XmlNodeList objXmlQualityList = _objXmlDocument.SelectNodes("/chummer/qualities/quality[" + strFilter + "]");
+            string strMetatypeXPath = "/chummer/metatypes/metatype[name = \"" + _objCharacter.Metatype;
+            if (!string.IsNullOrEmpty(_objCharacter.Metavariant) && _objCharacter.Metavariant != "None")
+            {
+                strMetatypeXPath += "\"]/metavariants/metavariant[name = \"" + _objCharacter.Metavariant;
+            }
+            strMetatypeXPath += "\"]/qualityrestriction";
+            XmlNode objXmlMetatypeQualityRestriction = XmlManager.Load("metatypes.xml").SelectSingleNode(strMetatypeXPath) ?? XmlManager.Load("critters.xml").SelectSingleNode(strMetatypeXPath);
 
+            string strCategoryLower = strCategory == "Show All" ? "*" : strCategory.ToLower();
             List <ListItem> lstQuality = new List<ListItem>();
-            foreach (XmlNode objXmlQuality in objXmlQualityList)
+            foreach (XmlNode objXmlQuality in _objXmlDocument.SelectNodes("/chummer/qualities/quality[" + strFilter + "]"))
             {
-                if (objXmlQuality["name"] == null)
-                    continue;
-                if (blnNeedQualityWhitelist)
+                string strLoopName = objXmlQuality["name"]?.InnerText;
+                if (!string.IsNullOrEmpty(strLoopName))
                 {
-                    if (strCategory == "Show All")
+                    if (objXmlMetatypeQualityRestriction != null)
                     {
-                        bool blnAllowed = false;
-                        foreach (ListItem objCategory in _lstCategory)
+                        if (objXmlMetatypeQualityRestriction.SelectSingleNode(strCategoryLower + "/quality[. = \"" + strLoopName + "\"]") == null)
                         {
-                            if (objXmlMetatype.SelectSingleNode("qualityrestriction/*/quality[. = \"" + objXmlQuality["name"].InnerText + "\"]") != null)
-                            {
-                                blnAllowed = true;
-                                break;
-                            }
-                        }
-                        if (!blnAllowed)
                             continue;
+                        }
                     }
-                    else if (objXmlMetatype.SelectSingleNode("qualityrestriction/" + strCategory.ToLower() + "/quality[. = \"" + objXmlQuality["name"].InnerText + "\"]") == null)
+                    if (!chkLimitList.Checked || objXmlQuality.RequirementsMet(_objCharacter, string.Empty, IgnoreQuality))
                     {
-                        continue;
+                        lstQuality.Add(new ListItem(objXmlQuality["id"].InnerText, objXmlQuality["translate"]?.InnerText ?? strLoopName));
                     }
-                }
-                if (!chkLimitList.Checked || SelectionShared.RequirementsMet(objXmlQuality, false, _objCharacter, IgnoreQuality))
-                {
-                    string strName = objXmlQuality["name"].InnerText;
-                    lstQuality.Add(new ListItem(strName, objXmlQuality["translate"]?.InnerText ?? strName));
                 }
             }
             lstQuality.Sort(CompareListItems.CompareNames);
+
+            string strOldSelectedQuality = lstQualities.SelectedValue?.ToString();
+            _blnLoading = true;
             lstQualities.BeginUpdate();
-            lstQualities.DataSource = null;
             lstQualities.ValueMember = "Value";
             lstQualities.DisplayMember = "Name";
             lstQualities.DataSource = lstQuality;
+            _blnLoading = false;
+            if (string.IsNullOrEmpty(strOldSelectedQuality))
+                lstQualities.SelectedIndex = -1;
+            else
+                lstQualities.SelectedValue = strOldSelectedQuality;
             lstQualities.EndUpdate();
         }
 
@@ -418,10 +453,17 @@ namespace Chummer
         /// </summary>
         private void AcceptForm()
         {
-            if (string.IsNullOrEmpty(lstQualities.Text))
+            string strSelectedQuality = lstQualities.SelectedValue?.ToString();
+            if (string.IsNullOrEmpty(strSelectedQuality))
                 return;
+
+            XmlNode objNode = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[id = \"" + strSelectedQuality + "\"]");
+            
+            if (!objNode.RequirementsMet(_objCharacter, LanguageManager.GetString("String_Quality", GlobalOptions.Language), IgnoreQuality))
+                return;
+
             //Test for whether we're adding a "Special" quality. This should probably be a separate function at some point.
-            switch (lstQualities.SelectedValue.ToString())
+            switch (strSelectedQuality)
             {
                 case "Changeling (Class I SURGE)":
                     _objCharacter.MetageneticLimit = 10;
@@ -436,14 +478,8 @@ namespace Chummer
                     break;
             }
 
-            XmlNode objNode = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + lstQualities.SelectedValue + "\"]");
-            if (objNode == null)
-                return;
-            _strSelectedQuality = objNode["name"]?.InnerText;
+            _strSelectedQuality = strSelectedQuality;
             s_StrSelectCategory = (_objCharacter.Options.SearchInCategoryOnly || txtSearch.TextLength == 0) ? cboCategory.SelectedValue?.ToString() : objNode["category"]?.InnerText;
-
-            if (!SelectionShared.RequirementsMet(objNode, true, _objCharacter, IgnoreQuality, LanguageManager.GetString("String_Quality", GlobalOptions.Language)))
-                return;
             DialogResult = DialogResult.OK;
         }
 
@@ -456,22 +492,5 @@ namespace Chummer
             lblSearchLabel.Left = txtSearch.Left - 6 - lblSearchLabel.Width;
         }
         #endregion
-
-        private void KarmaFilter(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(nudMinimumBP.Text))
-            {
-                nudMinimumBP.Value = 0;
-            }
-            if (string.IsNullOrWhiteSpace(nudValueBP.Text))
-            {
-                nudValueBP.Value = 0;
-            }
-            if (string.IsNullOrWhiteSpace(nudMaximumBP.Text))
-            {
-                nudMaximumBP.Value = 0;
-            }
-            BuildQualityList();
-        }
     }
 }

@@ -94,16 +94,16 @@ namespace Chummer.UI.Attributes
 
 		private void cmdImproveATT_Click(object sender, EventArgs e)
         {
-            int upgradeKarmaCost = _objAttribute.UpgradeKarmaCost();
+            int intUpgradeKarmaCost = _objAttribute.UpgradeKarmaCost;
 
-            if (upgradeKarmaCost == -1) return; //TODO: more descriptive
-            if (upgradeKarmaCost > _objCharacter.Karma)
+            if (intUpgradeKarmaCost == -1) return; //TODO: more descriptive
+            if (intUpgradeKarmaCost > _objCharacter.Karma)
             {
                 MessageBox.Show(LanguageManager.GetString("Message_NotEnoughKarma", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_NotEnoughKarma", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            string confirmstring = string.Format(LanguageManager.GetString("Message_ConfirmKarmaExpense", GlobalOptions.Language), _objAttribute.DisplayNameFormatted, _objAttribute.Value + 1, upgradeKarmaCost);
+            string confirmstring = string.Format(LanguageManager.GetString("Message_ConfirmKarmaExpense", GlobalOptions.Language), _objAttribute.DisplayNameFormatted, _objAttribute.Value + 1, intUpgradeKarmaCost);
             if (!_objAttribute.CharacterObject.ConfirmKarmaExpense(confirmstring))
                 return;
 
@@ -116,7 +116,7 @@ namespace Chummer.UI.Attributes
             decimal d = ((NumericUpDownEx) sender).Value;
             if (d != _oldBase)
             {
-                if (!ShowAttributeRule(Math.Max(Math.Min(decimal.ToInt32(d + nudKarma.Value) + _objAttribute.FreeBase + _objAttribute.RawMinimum + _objAttribute.AttributeValueModifiers, _objAttribute.TotalMaximum), _objAttribute.TotalMinimum)))
+                if (!ShowAttributeRule(Math.Max(decimal.ToInt32(d) + _objAttribute.FreeBase + _objAttribute.RawMinimum + _objAttribute.AttributeValueModifiers, _objAttribute.TotalMinimum) + decimal.ToInt32(nudKarma.Value)))
                 {
                     nudBase.Value = _oldBase;
                     return;
@@ -131,7 +131,7 @@ namespace Chummer.UI.Attributes
             decimal d = ((NumericUpDownEx)sender).Value;
             if (d != _oldKarma)
             {
-                if (!ShowAttributeRule(Math.Max(Math.Min(decimal.ToInt32(d + nudBase.Value) + _objAttribute.FreeBase + _objAttribute.RawMinimum + _objAttribute.AttributeValueModifiers, _objAttribute.TotalMaximum), _objAttribute.TotalMinimum)))
+                if (!ShowAttributeRule(Math.Max(decimal.ToInt32(nudBase.Value) + _objAttribute.FreeBase + _objAttribute.RawMinimum + _objAttribute.AttributeValueModifiers, _objAttribute.TotalMinimum) + decimal.ToInt32(d)))
                 {
                     nudKarma.Value = _oldKarma;
                     return;

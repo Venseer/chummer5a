@@ -107,7 +107,7 @@
       <name>Catlike</name>
       <karma>7</karma>
       <category>Positive</category>
-      <mutant>yes</mutant>
+      <mutant>True</mutant>
       <bonus>
         <specificskill>
           <name>Sneaking</name>
@@ -122,7 +122,7 @@
       <name>Codeslinger</name>
       <karma>10</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -244,7 +244,7 @@
       <name>Home Ground</name>
       <karma>10</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -430,7 +430,7 @@
       <name>Natural Immunity (Natural)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -447,7 +447,7 @@
       <name>Natural Immunity (Synthetic)</name>
       <karma>10</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -576,7 +576,7 @@
       <name>Spirit Affinity</name>
       <karma>7</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -683,7 +683,7 @@
       <name>Brand Loyalty (Manufacturer)</name>
       <karma>3</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -695,7 +695,7 @@
       <name>Brand Loyalty (Product)</name>
       <karma>3</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -827,6 +827,7 @@
       </forbidden>
       <source>SR5</source>
       <page>69</page>
+      <nameonpage>Magicians</nameonpage>
     </quality>
     <quality>
       <id>55247bdc-c313-4614-ae15-5012308096ff</id>
@@ -858,6 +859,7 @@
       </forbidden>
       <source>SR5</source>
       <page>69</page>
+      <nameonpage>Adepts</nameonpage>
     </quality>
     <quality>
       <id>9d53e1e4-3f31-40cb-bfbe-4b94f5ba757e</id>
@@ -890,6 +892,7 @@
       </forbidden>
       <source>SR5</source>
       <page>69</page>
+      <nameonpage>Mystic Adepts</nameonpage>
     </quality>
     <quality>
       <id>c4b35412-bd91-45b4-b428-29da7edd5ff4</id>
@@ -958,6 +961,7 @@
       </forbidden>
       <source>SR5</source>
       <page>69</page>
+      <nameonpage>Aspected Magicians</nameonpage>
     </quality>
     <quality>
       <id>dea0e693-05c5-422d-bd1b-f1d1eac9cd30</id>
@@ -965,7 +969,6 @@
       <karma>15</karma>
       <category>Positive</category>
       <contributetolimit>False</contributetolimit>
-      <hide />
       <onlyprioritygiven />
       <bonus>
         <enableattribute>
@@ -995,7 +998,7 @@
       <name>Addiction (Mild)</name>
       <karma>-4</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <notoriety>1</notoriety>
         <selecttext />
@@ -1008,7 +1011,7 @@
       <name>Addiction (Moderate)</name>
       <karma>-9</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <notoriety>1</notoriety>
         <selecttext />
@@ -1021,7 +1024,7 @@
       <name>Addiction (Severe)</name>
       <karma>-20</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <notoriety>1</notoriety>
         <selecttext />
@@ -1034,7 +1037,7 @@
       <name>Addiction (Burnout)</name>
       <karma>-25</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <notoriety>1</notoriety>
         <selecttext />
@@ -1048,7 +1051,7 @@
       <name>Allergy (Uncommon, Mild)</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1060,7 +1063,7 @@
       <name>Allergy (Uncommon, Moderate)</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1072,7 +1075,7 @@
       <name>Allergy (Uncommon, Severe)</name>
       <karma>-15</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1084,7 +1087,7 @@
       <name>Allergy (Uncommon, Extreme)</name>
       <karma>-20</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1096,7 +1099,7 @@
       <name>Allergy (Common, Mild)</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1108,7 +1111,7 @@
       <name>Allergy (Common, Moderate)</name>
       <karma>-15</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1120,7 +1123,7 @@
       <name>Allergy (Common, Severe)</name>
       <karma>-20</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1132,7 +1135,7 @@
       <name>Allergy (Common, Extreme)</name>
       <karma>-25</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1199,7 +1202,7 @@
       <name>Code of Honor</name>
       <karma>-15</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1211,7 +1214,7 @@
       <name>Codeblock</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1368,7 +1371,7 @@
       <name>Loss of Confidence</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selectskill minimumrating="4">
           <val>-2</val>
@@ -1413,7 +1416,7 @@
       <name>Prejudiced (Common, Biased)</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1425,7 +1428,7 @@
       <name>Prejudiced (Common, Outspoken)</name>
       <karma>-7</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1437,7 +1440,7 @@
       <name>Prejudiced (Common, Radical)</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1449,7 +1452,7 @@
       <name>Prejudiced (Specific, Biased)</name>
       <karma>-3</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1461,7 +1464,7 @@
       <name>Prejudiced (Specific, Outspoken)</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1473,7 +1476,7 @@
       <name>Prejudiced (Specific, Radical)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1591,7 +1594,7 @@
       <name>Social Stress</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -1603,7 +1606,7 @@
       <name>Spirit Bane</name>
       <karma>-7</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <notoriety>1</notoriety>
         <selecttext />
@@ -2560,7 +2563,6 @@
       <bonus>
         <blackmarketdiscount />
         <selectcontact />
-        <selecttext />
       </bonus>
       <source>RF</source>
       <page>145</page>
@@ -2587,7 +2589,7 @@
     </quality>
     <quality>
       <id>604aea10-3f13-4f28-a87b-25b8bf677276</id>
-      <name>College Education.RF</name>
+      <name>College Education</name>
       <karma>4</karma>
       <category>Positive</category>
       <bonus>
@@ -2805,7 +2807,7 @@
     </quality>
     <quality>
       <id>f8f216b5-1c29-467d-9fb5-c9812408203d</id>
-      <name>Inspired.RF</name>
+      <name>Inspired</name>
       <karma>4</karma>
       <category>Positive</category>
       <bonus>
@@ -3048,7 +3050,7 @@
       <name>Sensei</name>
       <karma>5</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selectcontact />
         <selecttext />
@@ -3061,7 +3063,7 @@
       <name>Solid Rep</name>
       <karma>2</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3073,7 +3075,7 @@
       <name>Legendary Rep</name>
       <karma>4</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3426,7 +3428,7 @@
       <name>Big Regret</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3650,7 +3652,7 @@
       <name>Driven</name>
       <karma>-2</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3662,7 +3664,7 @@
       <name>Emotional Attachment</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3688,7 +3690,7 @@
       <name>Flashbacks I</name>
       <karma>-7</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3700,7 +3702,7 @@
       <name>Flashbacks II</name>
       <karma>-15</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3919,7 +3921,7 @@
       <name>Phobia (Uncommon, Mild)</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3931,7 +3933,7 @@
       <name>Phobia (Uncommon, Moderate)</name>
       <karma>-7</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3943,7 +3945,7 @@
       <name>Phobia (Uncommon, Severe)</name>
       <karma>-12</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3955,7 +3957,7 @@
       <name>Phobia (Common, Mild)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3967,7 +3969,7 @@
       <name>Phobia (Common, Moderate)</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -3979,7 +3981,7 @@
       <name>Phobia (Common, Severe)</name>
       <karma>-15</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4013,7 +4015,7 @@
       <name>Poor Self Control (Compulsive I, Personal)</name>
       <karma>-4</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4026,7 +4028,7 @@
       <name>Poor Self Control (Compulsive II, Personal)</name>
       <karma>-6</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4039,7 +4041,7 @@
       <name>Poor Self Control (Compulsive III, Personal)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4052,7 +4054,7 @@
       <name>Poor Self Control (Compulsive IV, Personal)</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4065,7 +4067,7 @@
       <name>Poor Self Control (Compulsive I, Public Single Aspect)</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4078,7 +4080,7 @@
       <name>Poor Self Control (Compulsive II, Public Single Aspect)</name>
       <karma>-7</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4091,7 +4093,7 @@
       <name>Poor Self Control (Compulsive III, Public Single Aspect)</name>
       <karma>-9</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4104,7 +4106,7 @@
       <name>Poor Self Control (Compulsive IV, Public Single Aspect)</name>
       <karma>-11</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4117,7 +4119,7 @@
       <name>Poor Self Control (Compulsive I, Public Broad Aspect)</name>
       <karma>-6</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4130,7 +4132,7 @@
       <name>Poor Self Control (Compulsive II, Public Broad Aspect)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4143,7 +4145,7 @@
       <name>Poor Self Control (Compulsive III, Public Broad Aspect)</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4156,7 +4158,7 @@
       <name>Poor Self Control (Compulsive IV, Public Broad Aspect)</name>
       <karma>-12</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4314,7 +4316,7 @@
       <name>Vendetta</name>
       <karma>-7</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -4421,7 +4423,7 @@
       <name>360-degree Eyesight</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -4438,7 +4440,7 @@
       <name>Animal Pelage (Quills)</name>
       <karma>5</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -4461,7 +4463,7 @@
       <name>Animal Pelage (Insulating Pelt)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <coldarmor>4</coldarmor>
       </bonus>
@@ -4486,7 +4488,7 @@
       <name>Animal Pelage (Camo Fur)</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -4510,7 +4512,7 @@
       <karma>10</karma>
       <category>Positive</category>
       <limit>2</limit>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <spellresistance>2</spellresistance>
       </bonus>
@@ -4534,7 +4536,7 @@
       <name>Balance Receptor</name>
       <karma>6</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificskill>
           <name>Gymnastics</name>
@@ -4556,7 +4558,7 @@
       <name>Beak</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <lifestylecost>-10</lifestylecost>
         <toxiningestionresist>1</toxiningestionresist>
@@ -4577,7 +4579,7 @@
       <karma>5</karma>
       <category>Positive</category>
       <addweapon>Raptor Beak</addweapon>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <lifestylecost>-10</lifestylecost>
         <toxiningestionresist>1</toxiningestionresist>
@@ -4597,7 +4599,7 @@
       <name>Bicardiac</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -4614,7 +4616,7 @@
       <name>Biosonar</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -4631,7 +4633,7 @@
       <name>Bone Spikes</name>
       <karma>5</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <unarmeddv>2</unarmeddv>
         <unarmeddvphysical />
@@ -4651,7 +4653,7 @@
       <name>Broadened Auditory System (Infrasound)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -4668,7 +4670,7 @@
       <name>Broadened Auditory System (Ultrasound)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -4685,7 +4687,7 @@
       <name>Camouflage</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -4702,7 +4704,7 @@
       <name>Dynamic Coloration</name>
       <karma>8</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -4719,7 +4721,7 @@
       <name>Celerity</name>
       <karma>6</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <movementreplace>
           <category>Ground</category>
@@ -4757,7 +4759,7 @@
       <karma>3</karma>
       <category>Positive</category>
       <addweapon>Digging Claws</addweapon>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -4781,7 +4783,7 @@
       <karma>5</karma>
       <category>Positive</category>
       <addweapon>Razor Claws</addweapon>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -4805,7 +4807,7 @@
       <karma>7</karma>
       <category>Positive</category>
       <addweapon>Retractable Claws</addweapon>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -4849,7 +4851,7 @@
       <name>Climate Adaptation (Desert)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -4871,7 +4873,7 @@
       <name>Corrosive Spit</name>
       <karma>5</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -4893,7 +4895,7 @@
       <name>Dermal Alteration (Bark Skin)</name>
       <karma>5</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <armor group="0">2</armor>
       </bonus>
@@ -4920,7 +4922,7 @@
       <name>Dermal Alteration (Blubber)</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <coldarmor>2</coldarmor>
       </bonus>
@@ -4947,7 +4949,7 @@
       <name>Dermal Alteration (Dragon Skin)</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <firearmor>2</firearmor>
       </bonus>
@@ -4974,7 +4976,7 @@
       <name>Dermal Alteration (Granite Shell)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <armor group="0">4</armor>
       </bonus>
@@ -5001,7 +5003,7 @@
       <name>Dermal Alteration (Rhino Hide)</name>
       <karma>7</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <armor group="0">3</armor>
       </bonus>
@@ -5028,7 +5030,7 @@
       <name>Dermal Deposits</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <armor>1</armor>
       </bonus>
@@ -5047,7 +5049,7 @@
       <name>Defensive Secretion</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5064,7 +5066,7 @@
       <name>Electroception (Electrosense)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5081,7 +5083,7 @@
       <name>Electroception (Technosense)</name>
       <karma>7</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5098,7 +5100,7 @@
       <name>Elongated Limbs</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <reach>1</reach>
       </bonus>
@@ -5118,7 +5120,7 @@
       <karma>4</karma>
       <category>Positive</category>
       <addweapon>Fangs</addweapon>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5135,7 +5137,7 @@
       <name>Frog Tongue</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5152,7 +5154,7 @@
       <name>Functional Tail (Balance)</name>
       <karma>6</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificskill>
           <name>Gymnastics</name>
@@ -5182,7 +5184,7 @@
       <name>Functional Tail (Paddle)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificskill>
           <name>Swimming</name>
@@ -5212,7 +5214,7 @@
       <name>Functional Tail (Prehensile)</name>
       <karma>7</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificskill>
           <name>Gymnastics</name>
@@ -5243,7 +5245,7 @@
       <karma>5</karma>
       <category>Positive</category>
       <addweapon>Functional Tail (Thagomizer)</addweapon>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -5268,7 +5270,7 @@
       <name>Gills (Air)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -5291,7 +5293,7 @@
       <name>Gills (Aqua)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -5314,7 +5316,7 @@
       <name>Gills (Full)</name>
       <karma>6</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -5337,7 +5339,7 @@
       <name>Glamour</name>
       <karma>12</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <addqualities>
           <addquality>Distinctive Style</addquality>
@@ -5364,7 +5366,7 @@
       <name>Greasy Skin</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5382,7 +5384,7 @@
       <karma>5</karma>
       <category>Positive</category>
       <addweapon>Goring Horns</addweapon>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5399,7 +5401,7 @@
       <name>Keen-Eared</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5417,7 +5419,7 @@
       <karma>5</karma>
       <category>Positive</category>
       <addweapon>Larger Tusks</addweapon>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5434,7 +5436,7 @@
       <name>Low-Light Vision (Changeling)</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5451,7 +5453,7 @@
       <name>Low-Light Vision (Feline)</name>
       <karma>2</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5468,7 +5470,7 @@
       <name>Magic Sense (Changeling)</name>
       <karma>7</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5485,7 +5487,7 @@
       <name>Magnetoception</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificskill>
           <name>Navigation</name>
@@ -5507,7 +5509,7 @@
       <name>Marsupial Pouch</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5524,7 +5526,7 @@
       <name>Metagenetic Improvement (Body)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>BOD</name>
@@ -5547,7 +5549,7 @@
       <name>Metagenetic Improvement (Agility)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>AGI</name>
@@ -5570,7 +5572,7 @@
       <name>Metagenetic Improvement (Reaction)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>REA</name>
@@ -5593,7 +5595,7 @@
       <name>Metagenetic Improvement (Strength)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>STR</name>
@@ -5616,7 +5618,7 @@
       <name>Metagenetic Improvement (Charisma)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>CHA</name>
@@ -5639,7 +5641,7 @@
       <name>Metagenetic Improvement (Intuition)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>INT</name>
@@ -5662,7 +5664,7 @@
       <name>Metagenetic Improvement (Logic)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>LOG</name>
@@ -5685,7 +5687,7 @@
       <name>Metagenetic Improvement (Willpower)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>WIL</name>
@@ -5708,8 +5710,8 @@
       <name>Metahuman Traits</name>
       <karma>2</karma>
       <category>Positive</category>
-      <limit>no</limit>
-      <metagenetic>yes</metagenetic>
+      <limit>False</limit>
+      <metagenetic>True</metagenetic>
       <bonus>
         <selecttext />
       </bonus>
@@ -5731,7 +5733,7 @@
       <name>Monkey Paws</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -5748,7 +5750,7 @@
       <name>Nasty Vibe</name>
       <karma>5</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificskill>
           <name>Intimidation</name>
@@ -5770,7 +5772,7 @@
       <name>Natural Venom (Exhaled, Mild)</name>
       <karma>6</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -5803,7 +5805,7 @@
       <name>Natural Venom (Exhaled, Moderate)</name>
       <karma>8</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -5836,7 +5838,7 @@
       <name>Natural Venom (Exhaled, Serious)</name>
       <karma>13</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -5901,7 +5903,7 @@
       <name>Natural Venom (Spat, Mild)</name>
       <karma>8</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -5934,7 +5936,7 @@
       <name>Natural Venom (Spat, Moderate)</name>
       <karma>10</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -5967,7 +5969,7 @@
       <name>Natural Venom (Spat, Serious)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6000,7 +6002,7 @@
       <name>Natural Venom (Spat, Deadly)</name>
       <karma>20</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6033,7 +6035,7 @@
       <name>Natural Venom (Injected, Mild)</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6069,7 +6071,7 @@
       <name>Natural Venom (Injected, Moderate)</name>
       <karma>5</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6105,7 +6107,7 @@
       <name>Natural Venom (Injected, Serious)</name>
       <karma>10</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6141,7 +6143,7 @@
       <name>Natural Venom (Injected, Deadly)</name>
       <karma>15</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6177,7 +6179,7 @@
       <name>Ogre Stomach</name>
       <karma>8</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <lifestylecost>-20</lifestylecost>
         <toxiningestionresist>2</toxiningestionresist>
@@ -6197,7 +6199,7 @@
       <name>Photometabolism</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <lifestylecost>-10</lifestylecost>
       </bonus>
@@ -6237,7 +6239,7 @@
       <name>Satyr Legs</name>
       <karma>10</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <movementreplace>
           <category>Ground</category>
@@ -6264,7 +6266,7 @@
       <name>Setae</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -6282,7 +6284,7 @@
       <karma>8</karma>
       <category>Positive</category>
       <limit>2</limit>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <addlimb>
           <limbslot>arm</limbslot>
@@ -6304,7 +6306,7 @@
       <name>Thermal Sensitivity</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -6321,7 +6323,7 @@
       <name>Thermographic Vision (SURGE)</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -6338,7 +6340,7 @@
       <name>Thorns</name>
       <karma>2</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <skillcategory>
           <name>Physical Active</name>
@@ -6361,7 +6363,7 @@
       <name>Underwater Vision</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -6378,7 +6380,7 @@
       <name>Vomeronasal Organ</name>
       <karma>3</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <required>
         <oneof>
@@ -6395,7 +6397,7 @@
       <name>Webbed Digits</name>
       <karma>4</karma>
       <category>Positive</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificskill>
           <name>Swimming</name>
@@ -6419,7 +6421,7 @@
       <name>Adiposis</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <movementreplace>
           <category>Ground</category>
@@ -6467,7 +6469,7 @@
         </required>
         <value>10</value>
       </costdiscount>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>119</page>
@@ -6477,7 +6479,7 @@
       <name>Berserker</name>
       <karma>-6</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>119</page>
@@ -6487,7 +6489,7 @@
       <name>Bioluminescence</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>119</page>
@@ -6497,7 +6499,7 @@
       <name>Cephalopod Skull</name>
       <karma>-6</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>120</page>
@@ -6507,7 +6509,7 @@
       <name>Cold-Blooded</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>120</page>
@@ -6517,7 +6519,7 @@
       <name>Critter Spook</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>120</page>
@@ -6527,7 +6529,7 @@
       <name>Cyclopean Eye</name>
       <karma>-6</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6542,7 +6544,7 @@
       <name>Deformity (Picasso)</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificskill>
           <name>Perception</name>
@@ -6557,7 +6559,7 @@
       <name>Deformity (Quasimodo)</name>
       <karma>-15</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <skillcategory>
           <name>Physical Active</name>
@@ -6573,7 +6575,7 @@
       <name>Feathers</name>
       <karma>-3</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6592,7 +6594,7 @@
       <name>Impaired Attribute (Body)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>BOD</name>
@@ -6607,7 +6609,7 @@
       <name>Impaired Attribute (Agility)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>AGI</name>
@@ -6622,7 +6624,7 @@
       <name>Impaired Attribute (Reaction)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>REA</name>
@@ -6637,7 +6639,7 @@
       <name>Impaired Attribute (Strength)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>STR</name>
@@ -6652,7 +6654,7 @@
       <name>Impaired Attribute (Charisma)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>CHA</name>
@@ -6667,7 +6669,7 @@
       <name>Impaired Attribute (Intuition)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>INT</name>
@@ -6682,7 +6684,7 @@
       <name>Impaired Attribute (Logic)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>LOG</name>
@@ -6697,7 +6699,7 @@
       <name>Impaired Attribute (Willpower)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <specificattribute>
           <name>WIL</name>
@@ -6712,7 +6714,7 @@
       <name>Insectoid Features</name>
       <karma>-6</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>121</page>
@@ -6722,7 +6724,7 @@
       <name>Mood Hair</name>
       <karma>-4</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6739,7 +6741,7 @@
       <name>Neoteny</name>
       <karma>-6</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <conditionmonitor>
           <physical>-2</physical>
@@ -6754,7 +6756,7 @@
       <name>Nocturnal</name>
       <karma>-4</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6769,7 +6771,7 @@
       <name>Progeria</name>
       <karma>-9</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <skillcategory>
           <name>Physical Active</name>
@@ -6784,7 +6786,7 @@
       <name>Scales</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6803,7 +6805,7 @@
       <name>Scent Glands</name>
       <karma>-4</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>121</page>
@@ -6813,7 +6815,7 @@
       <name>Slow Healer</name>
       <karma>-3</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <physicalcmrecovery>-2</physicalcmrecovery>
         <stuncmrecovery>-2</stuncmrecovery>
@@ -6826,7 +6828,7 @@
       <name>Striking Skin Pigmentation</name>
       <karma>-4</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>122</page>
@@ -6836,7 +6838,7 @@
       <name>Stubby Arms</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus>
         <reach>-1</reach>
       </bonus>
@@ -6848,7 +6850,7 @@
       <name>Symbiosis</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <source>RF</source>
       <page>122</page>
@@ -6858,7 +6860,7 @@
       <name>Third Eye</name>
       <karma>-3</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6873,7 +6875,7 @@
       <name>Unusual Hair</name>
       <karma>-3</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -6888,7 +6890,7 @@
       <name>Vestigial Tail</name>
       <karma>-6</karma>
       <category>Negative</category>
-      <metagenetic>yes</metagenetic>
+      <metagenetic>True</metagenetic>
       <bonus />
       <forbidden>
         <oneof>
@@ -8520,7 +8522,7 @@
       <karma>32</karma>
       <category>Positive</category>
       <contributetolimit>False</contributetolimit>
-      <implemented>no</implemented>
+      <implemented>False</implemented>
       <naturalweapons>
         <naturalweapon>
           <name>Infected Claws</name>
@@ -10005,7 +10007,7 @@
       <category>Positive</category>
       <chargenlimit>0</chargenlimit>
       <doublecareer>False</doublecareer>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <critterpowers>
           <power rating="1">Armor</power>
@@ -11540,7 +11542,7 @@
       <name>Dead Emotion</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11552,7 +11554,7 @@
       <name>Dry Addict (Mild)</name>
       <karma>-2</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11564,7 +11566,7 @@
       <name>Dry Addict (Moderate)</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11576,7 +11578,7 @@
       <name>Dry Addict (Severe)</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11588,7 +11590,7 @@
       <name>Dry Addict (Burnout)</name>
       <karma>-13</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11777,7 +11779,7 @@
       <name>Elemental Focus</name>
       <karma>10</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -11906,7 +11908,7 @@
       <name>Subtle Pilot</name>
       <karma>4</karma>
       <category>Positive</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12429,7 +12431,7 @@
       <name>Favored (Common Target, Biased)</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12441,7 +12443,7 @@
       <name>Favored (Common Target, Outspoken)</name>
       <karma>-7</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12453,7 +12455,7 @@
       <name>Favored (Common Target, Fanatic)</name>
       <karma>-10</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12465,7 +12467,7 @@
       <name>Favored (Specific Target, Biased)</name>
       <karma>-3</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12477,7 +12479,7 @@
       <name>Favored (Specific Target, Outspoken)</name>
       <karma>-5</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -12489,7 +12491,7 @@
       <name>Favored (Specific Target, Fanatic)</name>
       <karma>-8</karma>
       <category>Negative</category>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <selecttext />
       </bonus>
@@ -14710,7 +14712,7 @@
       <category>Positive</category>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <conditionmonitor>
           <physical>-1</physical>
@@ -14737,7 +14739,7 @@
       <category>Positive</category>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <conditionmonitor>
           <physical>-1</physical>
@@ -15456,7 +15458,7 @@
       <category>Positive</category>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <armor>1</armor>
         <conditionmonitor>
@@ -15485,7 +15487,7 @@
       <category>Positive</category>
       <contributetolimit>False</contributetolimit>
       <doublecareer>False</doublecareer>
-      <limit>no</limit>
+      <limit>False</limit>
       <bonus>
         <armor>1</armor>
         <conditionmonitor>
@@ -16159,7 +16161,7 @@
       <page>189</page>
     </quality>
     <!-- End Region -->
-    <!-- Region The Seattle Gauntlet-->
+    <!-- Region The Seattle Gambit-->
     <quality>
       <id>ab862f1f-5ed3-4976-a781-bf63565faf26</id>
       <name>Busted Cyberware</name>

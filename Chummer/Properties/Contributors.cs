@@ -39,6 +39,7 @@ namespace Chummer.Properties
             "Youneko17",
             "Ternega",
             "sethsatan",
+            "luizbgomide",
             "MerGatto<MerGatto>",
             "Michael Jesse<michaeljesse73>",
             "Skarablood",
@@ -54,7 +55,6 @@ namespace Chummer.Properties
             "mudge6",
             "Richard Zang<richard-zang>",
             "Claire<MachineMuse>",
-            "DeastinY<DeastinY>",
         };
     }
 }

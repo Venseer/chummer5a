@@ -63,8 +63,6 @@ namespace Chummer
                 DataSourceUpdateMode.OnPropertyChanged);
             txtCritterName.DataBindings.Add("Enabled", _objSpirit, nameof(_objSpirit.NoLinkedCharacter), false,
                 DataSourceUpdateMode.OnPropertyChanged);
-            chkFettered.DataBindings.Add("Checked", _objSpirit, nameof(_objSpirit.Fettered), false,
-                DataSourceUpdateMode.OnPropertyChanged);
             if (_objSpirit.EntityType == SpiritType.Spirit)
                 nudForce.DataBindings.Add("Maximum", _objSpirit.CharacterObject, nameof(Character.MaxSpiritForce), false,
                     DataSourceUpdateMode.OnPropertyChanged);
@@ -79,6 +77,8 @@ namespace Chummer
 
             if (_objSpirit.EntityType == SpiritType.Spirit)
             {
+                chkFettered.DataBindings.Add("Checked", _objSpirit, nameof(_objSpirit.Fettered), false,
+                    DataSourceUpdateMode.OnPropertyChanged);
                 lblForce.Text = LanguageManager.GetString("Label_Spirit_Force", GlobalOptions.Language);
                 chkBound.Text = LanguageManager.GetString("Checkbox_Spirit_Bound", GlobalOptions.Language);
                 if (!string.IsNullOrEmpty(_objSpirit.FileName))
@@ -93,6 +93,7 @@ namespace Chummer
             }
             else
             {
+                chkFettered.Visible = false;
                 lblForce.Text = LanguageManager.GetString("Label_Sprite_Rating", GlobalOptions.Language);
                 chkBound.Text = LanguageManager.GetString("Label_Sprite_Registered", GlobalOptions.Language);
                 if (!string.IsNullOrEmpty(_objSpirit.FileName))
@@ -372,13 +373,35 @@ namespace Chummer
             }
             else
             {
-                foreach (XmlNode objXmlSpirit in objXmlDocument.SelectSingleNode("/chummer/traditions/tradition[name = \"" + strTradition + "\"]/spirits").ChildNodes)
+                if (objXmlDocument.SelectSingleNode("/chummer/traditions/tradition[name = \"" + strTradition + "\"]/spirits/spirit[. = \"All\"]") != null)
                 {
-                    string strSpiritName = objXmlSpirit.InnerText;
-                    if (lstLimitCategories.Count == 0 || lstLimitCategories.Contains(strSpiritName))
+                    if (lstLimitCategories.Count == 0)
                     {
-                        XmlNode objXmlCritterNode = objXmlDocument.SelectSingleNode("/chummer/spirits/spirit[name = \"" + strSpiritName + "\"]");
-                        lstCritters.Add(new ListItem(strSpiritName, objXmlCritterNode?["translate"]?.InnerText ?? strSpiritName));
+                        foreach (XmlNode objXmlCritterNode in objXmlDocument.SelectSingleNode("/chummer/spirits/spirit"))
+                        {
+                            string strSpiritName = objXmlCritterNode["name"].InnerText;
+                            lstCritters.Add(new ListItem(strSpiritName, objXmlCritterNode["translate"]?.InnerText ?? strSpiritName));
+                        }
+                    }
+                    else
+                    {
+                        foreach (string strSpiritName in lstLimitCategories)
+                        {
+                            XmlNode objXmlCritterNode = objXmlDocument.SelectSingleNode("/chummer/spirits/spirit[name = \"" + strSpiritName + "\"]");
+                            lstCritters.Add(new ListItem(strSpiritName, objXmlCritterNode?["translate"]?.InnerText ?? strSpiritName));
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (XmlNode objXmlSpirit in objXmlDocument.SelectSingleNode("/chummer/traditions/tradition[name = \"" + strTradition + "\"]/spirits").ChildNodes)
+                    {
+                        string strSpiritName = objXmlSpirit.InnerText;
+                        if (lstLimitCategories.Count == 0 || lstLimitCategories.Contains(strSpiritName))
+                        {
+                            XmlNode objXmlCritterNode = objXmlDocument.SelectSingleNode("/chummer/spirits/spirit[name = \"" + strSpiritName + "\"]");
+                            lstCritters.Add(new ListItem(strSpiritName, objXmlCritterNode?["translate"]?.InnerText ?? strSpiritName));
+                        }
                     }
                 }
             }
@@ -454,7 +477,7 @@ namespace Chummer
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
                 Filter = "Chummer5 Files (*.chum5)|*.chum5|All Files (*.*)|*.*",
-                FileName = strCritterName + " (" + strForce + " " + _objSpirit.Force.ToString() + ").chum5"
+                FileName = strCritterName + " (" + strForce + ' ' + _objSpirit.Force.ToString() + ").chum5"
             };
             if (saveFileDialog.ShowDialog(this) == DialogResult.OK)
             {
@@ -541,44 +564,18 @@ namespace Chummer
                 ImprovementManager.CreateImprovements(objCharacter, Improvement.ImprovementSource.Metatype, strCritterName, objXmlMetatype.SelectSingleNode("bonus"), false, 1, strCritterName);
 
             // Create the Qualities that come with the Metatype.
-            foreach (XmlNode objXmlQualityItem in objXmlMetatype.SelectNodes("qualities/positive/quality"))
+            foreach (XmlNode objXmlQualityItem in objXmlMetatype.SelectNodes("qualities/*/quality"))
             {
                 XmlNode objXmlQuality = objXmlQualityDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + objXmlQualityItem.InnerText + "\"]");
-                TreeNode objNode = new TreeNode();
-                List<Weapon> objWeapons = new List<Weapon>();
-                List<TreeNode> objWeaponNodes = new List<TreeNode>();
+                List<Weapon> lstWeapons = new List<Weapon>();
                 Quality objQuality = new Quality(objCharacter);
-                string strForceValue = string.Empty;
-                if (objXmlQualityItem.Attributes["select"] != null)
-                    strForceValue = objXmlQualityItem.Attributes["select"].InnerText;
-                QualitySource objSource = QualitySource.Metatype;
-                if (objXmlQualityItem.Attributes["removable"]?.InnerText == bool.TrueString)
-                    objSource = QualitySource.MetatypeRemovable;
-                objQuality.Create(objXmlQuality, objCharacter, objSource, objNode, objWeapons, objWeaponNodes, strForceValue);
+                string strForceValue = objXmlQualityItem.Attributes?["select"]?.InnerText ?? string.Empty;
+                QualitySource objSource = objXmlQualityItem.Attributes["removable"]?.InnerText == bool.TrueString ? QualitySource.MetatypeRemovable : QualitySource.Metatype;
+                objQuality.Create(objXmlQuality, objSource, lstWeapons, strForceValue);
                 objCharacter.Qualities.Add(objQuality);
 
                 // Add any created Weapons to the character.
-                foreach (Weapon objWeapon in objWeapons)
-                    objCharacter.Weapons.Add(objWeapon);
-            }
-            foreach (XmlNode objXmlQualityItem in objXmlMetatype.SelectNodes("qualities/negative/quality"))
-            {
-                XmlNode objXmlQuality = objXmlQualityDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + objXmlQualityItem.InnerText + "\"]");
-                TreeNode objNode = new TreeNode();
-                List<Weapon> objWeapons = new List<Weapon>();
-                List<TreeNode> objWeaponNodes = new List<TreeNode>();
-                Quality objQuality = new Quality(objCharacter);
-                string strForceValue = string.Empty;
-                if (objXmlQualityItem.Attributes["select"] != null)
-                    strForceValue = objXmlQualityItem.Attributes["select"].InnerText;
-                QualitySource objSource = QualitySource.Metatype;
-                if (objXmlQualityItem.Attributes["removable"]?.InnerText == bool.TrueString)
-                    objSource = QualitySource.MetatypeRemovable;
-                objQuality.Create(objXmlQuality, objCharacter, objSource, objNode, objWeapons, objWeaponNodes, strForceValue);
-                objCharacter.Qualities.Add(objQuality);
-
-                // Add any created Weapons to the character.
-                foreach (Weapon objWeapon in objWeapons)
+                foreach (Weapon objWeapon in lstWeapons)
                     objCharacter.Weapons.Add(objWeapon);
             }
 
@@ -589,17 +586,11 @@ namespace Chummer
             foreach (XmlNode objXmlPower in objXmlCritter.SelectNodes("powers/power"))
             {
                 XmlNode objXmlCritterPower = objXmlDocument.SelectSingleNode("/chummer/powers/power[name = \"" + objXmlPower.InnerText + "\"]");
-                TreeNode objNode = new TreeNode();
                 CritterPower objPower = new CritterPower(objCharacter);
-                string strForcedValue = string.Empty;
-                int intRating = 0;
+                string strForcedValue = objXmlPower.Attributes?["select"]?.InnerText ?? string.Empty;
+                int intRating = Convert.ToInt32(objXmlPower.Attributes?["rating"]?.InnerText);
 
-                if (objXmlPower.Attributes["rating"] != null)
-                    intRating = Convert.ToInt32(objXmlPower.Attributes["rating"].InnerText);
-                if (objXmlPower.Attributes["select"] != null)
-                    strForcedValue = objXmlPower.Attributes["select"].InnerText;
-
-                objPower.Create(objXmlCritterPower, objNode, intRating, strForcedValue);
+                objPower.Create(objXmlCritterPower, intRating, strForcedValue);
                 objCharacter.CritterPowers.Add(objPower);
             }
 
@@ -621,14 +612,11 @@ namespace Chummer
             XmlDocument objXmlProgramDocument = XmlManager.Load("complexforms.xml");
             foreach (XmlNode objXmlComplexForm in objXmlCritter.SelectNodes("complexforms/complexform"))
             {
-                string strForceValue = string.Empty;
-                if (objXmlComplexForm.Attributes["select"] != null)
-                    strForceValue = objXmlComplexForm.Attributes["select"].InnerText;
-                XmlNode objXmlProgram = objXmlProgramDocument.SelectSingleNode("/chummer/complexforms/complexform[name = \"" + objXmlComplexForm.InnerText + "\"]");
-                TreeNode objNode = new TreeNode();
-                ComplexForm objProgram = new ComplexForm(objCharacter);
-                objProgram.Create(objXmlProgram, objNode, null, strForceValue);
-                objCharacter.ComplexForms.Add(objProgram);
+                string strForceValue = objXmlComplexForm.Attributes?["select"]?.InnerText ?? string.Empty;
+                XmlNode objXmlComplexFormData = objXmlProgramDocument.SelectSingleNode("/chummer/complexforms/complexform[name = \"" + objXmlComplexForm.InnerText + "\"]");
+                ComplexForm objComplexForm = new ComplexForm(objCharacter);
+                objComplexForm.Create(objXmlComplexFormData, strForceValue);
+                objCharacter.ComplexForms.Add(objComplexForm);
             }
 
             // Add any Gear the Critter comes with (typically Programs for A.I.s)
@@ -638,15 +626,11 @@ namespace Chummer
                 int intRating = 0;
                 if (objXmlGear.Attributes["rating"] != null)
                     intRating = ExpressionToInt(objXmlGear.Attributes["rating"].InnerText, decimal.ToInt32(nudForce.Value), 0);
-                string strForceValue = string.Empty;
-                if (objXmlGear.Attributes["select"] != null)
-                    strForceValue = objXmlGear.Attributes["select"].InnerText;
+                string strForceValue = objXmlGear.Attributes?["select"]?.InnerText ?? string.Empty;
                 XmlNode objXmlGearItem = objXmlGearDocument.SelectSingleNode("/chummer/gears/gear[name = \"" + objXmlGear.InnerText + "\"]");
-                TreeNode objNode = new TreeNode();
                 Gear objGear = new Gear(objCharacter);
                 List<Weapon> lstWeapons = new List<Weapon>();
-                List<TreeNode> lstWeaponNodes = new List<TreeNode>();
-                objGear.Create(objXmlGearItem, objNode, intRating, lstWeapons, lstWeaponNodes, strForceValue);
+                objGear.Create(objXmlGearItem, intRating, lstWeapons, strForceValue);
                 objGear.Cost = "0";
                 objCharacter.Gear.Add(objGear);
             }
@@ -656,10 +640,13 @@ namespace Chummer
             XmlNode objXmlWeapon = objXmlDocument.SelectSingleNode("/chummer/weapons/weapon[name = \"Unarmed Attack\"]");
             if (objXmlWeapon != null)
             {
+                List<Weapon> lstWeapons = new List<Weapon>();
                 Weapon objWeapon = new Weapon(objCharacter);
-                objWeapon.Create(objXmlWeapon, null, null, null, objCharacter.Weapons);
-                objWeapon.ParentID = Guid.NewGuid().ToString(); // Unarmed Attack can never be removed
+                objWeapon.Create(objXmlWeapon, lstWeapons);
+                objWeapon.ParentID = Guid.NewGuid().ToString("D"); // Unarmed Attack can never be removed
                 objCharacter.Weapons.Add(objWeapon);
+                foreach (Weapon objLoopWeapon in lstWeapons)
+                    objCharacter.Weapons.Add(objLoopWeapon);
             }
 
             objCharacter.Alias = strCritterName;
@@ -677,10 +664,7 @@ namespace Chummer
 
             // Link the newly-created Critter to the Spirit.
             _objSpirit.FileName = strOpenFile;
-            if (_objSpirit.EntityType == SpiritType.Spirit)
-                tipTooltip.SetToolTip(imgLink, LanguageManager.GetString("Tip_Spirit_OpenFile", GlobalOptions.Language));
-            else
-                tipTooltip.SetToolTip(imgLink, LanguageManager.GetString("Tip_Sprite_OpenFile", GlobalOptions.Language));
+            tipTooltip.SetToolTip(imgLink, LanguageManager.GetString(_objSpirit.EntityType == SpiritType.Spirit ? "Tip_Spirit_OpenFile" : "Tip_Sprite_OpenFile", GlobalOptions.Language));
             ContactDetailChanged?.Invoke(this, null);
 
             Character objOpenCharacter = Program.MainForm.LoadCharacter(strOpenFile);

@@ -75,7 +75,7 @@ namespace Chummer
             foreach (XmlNode objXmlGameplayOption in objXmlGameplayOptionList)
             {
                 string strName = objXmlGameplayOption["name"].InnerText;
-                if (objXmlGameplayOption["default"]?.InnerText == "yes")
+                if (objXmlGameplayOption["default"]?.InnerText == bool.TrueString)
                     _strDefaultOption = strName;
                 lstGameplayOptions.Add(new ListItem(strName, objXmlGameplayOption["translate"]?.InnerText ?? strName));
             }
@@ -108,7 +108,7 @@ namespace Chummer
             }
             else
             {
-                XmlNode objXmlSelectedGameplayOption = objXmlDocumentGameplayOptions.SelectSingleNode("/chummer/gameplayoptions/gameplayoption[name = \"" + cboGamePlay.Text + "\"]");
+                XmlNode objXmlSelectedGameplayOption = objXmlDocumentGameplayOptions.SelectSingleNode("/chummer/gameplayoptions/gameplayoption[name = \"" + cboGamePlay.SelectedValue.ToString() + "\"]");
                 intQualityLimits = Convert.ToInt32(objXmlSelectedGameplayOption["karma"].InnerText);
                 decNuyenBP = Convert.ToDecimal(objXmlSelectedGameplayOption["maxnuyen"].InnerText, GlobalOptions.InvariantCultureInfo);
             }
@@ -137,12 +137,12 @@ namespace Chummer
                     break;
             }
 
-            XmlNode xmlGameplayOption = XmlManager.Load("gameplayoptions.xml").SelectSingleNode("/chummer/gameplayoptions/gameplayoption[name = \"" + cboGamePlay.Text + "\"]");
+            XmlNode xmlGameplayOption = XmlManager.Load("gameplayoptions.xml").SelectSingleNode("/chummer/gameplayoptions/gameplayoption[name = \"" + cboGamePlay.SelectedValue.ToString() + "\"]");
             if (xmlGameplayOption != null)
             {
-                _objCharacter.bannedwaregrades.Clear();
+                _objCharacter.BannedWareGrades.Clear();
                 foreach (XmlNode xmlNode in xmlGameplayOption.SelectNodes("bannedwaregrades/grade"))
-                    _objCharacter.bannedwaregrades.Add(xmlNode.InnerText);
+                    _objCharacter.BannedWareGrades.Add(xmlNode.InnerText);
 
                 if (!_objCharacter.Options.FreeContactsMultiplierEnabled)
                     _objCharacter.ContactMultiplier = Convert.ToInt32(xmlGameplayOption["contactmultiplier"].InnerText);
@@ -183,7 +183,7 @@ namespace Chummer
                         nudKarma.Value = _objOptions.BuildPoints;
                     else
                         nudKarma.Value = 800;
-                    lblDescription.Text = String.Format(LanguageManager.GetString("String_SelectBP_KarmaSummary", GlobalOptions.Language), nudKarma.Value.ToString(GlobalOptions.InvariantCultureInfo));
+                    lblDescription.Text = string.Format(LanguageManager.GetString("String_SelectBP_KarmaSummary", GlobalOptions.Language), nudKarma.Value.ToString(GlobalOptions.InvariantCultureInfo));
                     nudKarma.Visible = true;
                     nudMaxNuyen.Visible = true;
                     lblStartingKarma.Visible = true;
@@ -191,7 +191,7 @@ namespace Chummer
                     break;
                 case "LifeModule":
                     nudKarma.Value = 750;
-                    lblDescription.Text = String.Format(LanguageManager.GetString("String_SelectBP_LifeModuleSummary", GlobalOptions.Language), nudKarma.Value.ToString(GlobalOptions.InvariantCultureInfo));
+                    lblDescription.Text = string.Format(LanguageManager.GetString("String_SelectBP_LifeModuleSummary", GlobalOptions.Language), nudKarma.Value.ToString(GlobalOptions.InvariantCultureInfo));
                     nudKarma.Visible = true;
                     nudMaxNuyen.Visible = true;
                     lblStartingKarma.Visible = true;

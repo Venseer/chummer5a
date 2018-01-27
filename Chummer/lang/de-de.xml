@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--This file is part of Chummer5a.
 
     Chummer5a is free software: you can redistribute it and/or modify
@@ -357,6 +357,14 @@
 			<key>String_Weeks</key>
 			<text>Wochen</text>
 		</string>
+    <string>
+      <key>String_Month</key>
+      <text>Monat</text>
+    </string>
+    <string>
+      <key>String_Months</key>
+      <text>Monate</text>
+    </string>
 		<string>
 			<key>String_Hour</key>
 			<text>Stunde</text>
@@ -1026,14 +1034,6 @@
 			<text>Kraftstufe</text>
 		</string>
 		<string>
-			<key>Message_MartialArtAdvantageLimit</key>
-			<text>Sie können nur eine Gabe für jeweils eine Stufe von {0} wählen</text>
-		</string>
-		<string>
-			<key>MessageTitle_MartialArtAdvantageLimit</key>
-			<text>Maximale Anzahl an Gaben</text>
-		</string>
-		<string>
 			<key>Message_MartialArtManeuverLimit</key>
 			<text>Sie dürfen bis zu 2 Manöver pro Kampfkunstpunkt wählen</text>
 		</string>
@@ -1042,11 +1042,11 @@
 			<text>Maximale Anzahl von Manövern</text>
 		</string>
 		<string>
-			<key>Message_SelectMartialArtAdvantage</key>
+			<key>Message_SelectMartialArtTechnique</key>
 			<text>Sie müssen eine Kampfsportart wählen für die Sie eine Gabe hinzufügen wollen</text>
 		</string>
 		<string>
-			<key>MessageTitle_SelectMartialArtAdvantage</key>
+			<key>MessageTitle_SelectMartialArtTechnique</key>
 			<text>Kampfkunst auswählen</text>
 		</string>
 		<string>
@@ -1631,7 +1631,7 @@
 		</string>
 		<string>
 			<key>Message_ReduceQty</key>
-			<text>Möchten Sie die Menge wirklich um 1 reduzieren?</text>
+			<text>Möchten Sie die Menge wirklich um {0} reduzieren?</text>
 		</string>
 		<string>
 			<key>Message_VehicleCyberwarePlugin</key>
@@ -2231,7 +2231,7 @@
 		</string>
 		<string>
 			<key>String_SpellForce</key>
-			<text>K</text>
+			<text>KS</text>
 		</string>
 		<string>
 			<key>String_DescActive</key>
@@ -2748,8 +2748,8 @@
 			<text>Bioware auswählen</text>
 		</string>
 		<string>
-			<key>Label_LifestyleMonths</key>
-			<text>Monate (100 zum Kaufen)</text>
+			<key>Label_LifestylePermanent</key>
+			<text> ({0} zum Kaufen)</text>
 		</string>
 		<string>
 			<key>Label_LifestyleQualities</key>
@@ -2765,15 +2765,15 @@
 		</string>
 		<string>
 			<key>Tab_IncreaseLifestyleMonths</key>
-			<text>Anzahl der bezahlten Monate für diesen Lebensstil erhöhen.</text>
+			<text>Anzahl der bezahlten {0} für diesen Lebensstil erhöhen.</text>
 		</string>
 		<string>
 			<key>Tab_DecreaseLifestyleMonths</key>
-			<text>Anzahl der bezahlten Monate für diesen Lebensstil senken.</text>
+			<text>Anzahl der bezahlten {0} für diesen Lebensstil senken.</text>
 		</string>
 		<string>
 			<key>Label_BondedFoci</key>
-			<text>gebundene Foci</text>
+			<text>Gebundene Foki</text>
 		</string>
 		<string>
 			<key>Checkbox_Equipped</key>
@@ -4216,18 +4216,6 @@
 			<text>Gliedmaßen für Standard-Charaktere:</text>
 		</string>
 		<string>
-			<key>String_LimbCount6</key>
-			<text>6 (2 Arme, 2 Beine, Torso, Schädel)</text>
-		</string>
-		<string>
-			<key>String_LimbCount5Torso</key>
-			<text>5 (2 Arme, 2 Beine, Torso)</text>
-		</string>
-		<string>
-			<key>String_LimbCount5Skull</key>
-			<text>5 (2 Arme, 2 Beine, Schädel)</text>
-		</string>
-		<string>
 			<key>Label_Options_NuyenPerBP</key>
 			<text>Nuyen pro Generierungspunkt:</text>
 		</string>
@@ -4768,7 +4756,7 @@
 			<text>Wähle eine Kampfkunst</text>
 		</string>
 		<string>
-			<key>Title_SelectMartialArtAdvantage</key>
+			<key>Title_SelectMartialArtTechnique</key>
 			<text>Wähle eine Gabe</text>
 		</string>
 		<string>
@@ -6905,14 +6893,6 @@
 			<text>You cannot have more spells than allowed by your selected Talent priority.</text>
 		</string>
 		<string>
-			<key>Message_CannotRemoveSpell</key>
-			<text>Dieser Eintrag kann nicht entfernt werden, da er bei einer Initiation erworben wurde.</text>
-		</string>
-		<string>
-			<key>MessageTitle_CannotRemoveSpell</key>
-			<text>Cannot Remove Spell</text>
-		</string>
-		<string>
 			<key>Message_PriorityComplexFormLimit</key>
 			<text>Your number of Complex Forms cannot exceed the number defined by your selected Talent priority.</text>
 		</string>
@@ -7641,10 +7621,6 @@
 		<string>
 			<key>String_MetamagicSkills</key>
 			<text>{0} {1} Fertigkeit(en) die auf Stufe {2} beginnt</text>
-		</string>
-		<string>
-			<key>String_LimbCount4</key>
-			<text>4 (2 Arme, 2 Beine)</text>
 		</string>
 		<string>
 			<key>Label_About</key>

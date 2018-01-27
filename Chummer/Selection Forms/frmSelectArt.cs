@@ -16,7 +16,8 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
+using Chummer.Backend;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -32,18 +33,14 @@ namespace Chummer
     {
         private string _strSelectedItem = string.Empty;
 
+        private bool _blnLoading = true;
         private Mode _objMode = Mode.Art;
-        private string _strNode = "art";
-        private string _strRoot = "arts";
-        private string _strCategory = string.Empty;
-        private string _strLocalName = string.Empty;
+        private readonly string _strBaseXPath = "/chummer/arts/art";
+        private readonly string _strXPathFilter = string.Empty;
+        private readonly string _strLocalName = string.Empty;
         private readonly Character _objCharacter;
 
         private readonly XmlDocument _objXmlDocument = null;
-
-        private readonly XmlDocument _objMetamagicDocument = null;
-        private readonly XmlDocument _objSpellDocument = null;
-        private readonly XmlDocument _objPowerDocument = null;
 
         public enum Mode
         {
@@ -58,47 +55,40 @@ namespace Chummer
             InitializeComponent();
             LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
             _objCharacter = objCharacter;
-
-            _objMetamagicDocument = XmlManager.Load("metamagic.xml");
-            _objSpellDocument = XmlManager.Load("spells.xml");
-            _objPowerDocument = XmlManager.Load("powers.xml");
-
+            
             // Load the Metamagic information.
-            WindowMode = objWindowMode;
-            _objXmlDocument = _objSpellDocument;
+            _objMode = objWindowMode;
             switch (_objMode)
             {
                 case Mode.Art:
-                    _objXmlDocument = _objMetamagicDocument;
+                    _objXmlDocument = XmlManager.Load("metamagic.xml");
+                    _strLocalName = LanguageManager.GetString("String_Art", GlobalOptions.Language);
+                    _strBaseXPath = "/chummer/arts/art";
+                    _strXPathFilter = '[' + _objCharacter.Options.BookXPath() + ']';
                     break;
                 case Mode.Enhancement:
-                    _objXmlDocument = _objPowerDocument;
+                    _objXmlDocument = XmlManager.Load("powers.xml");
+                    _strLocalName = LanguageManager.GetString("String_Enhancement", GlobalOptions.Language);
+                    _strBaseXPath = "/chummer/enhancements/enhancement";
+                    _strXPathFilter = '[' + _objCharacter.Options.BookXPath() + ']';
+                    break;
+                case Mode.Enchantment:
+                    _strLocalName = LanguageManager.GetString("String_Enchantment", GlobalOptions.Language);
+                    _objXmlDocument = XmlManager.Load("spells.xml");
+                    _strBaseXPath = "/chummer/spells/spell";
+                    _strXPathFilter = "[category = 'Enchantments' and (" + _objCharacter.Options.BookXPath() + ")]";
+                    break;
+                case Mode.Ritual:
+                    _strLocalName = LanguageManager.GetString("String_Ritual", GlobalOptions.Language);
+                    _objXmlDocument = XmlManager.Load("spells.xml");
+                    _strBaseXPath = "/chummer/spells/spell";
+                    _strXPathFilter = "[category = 'Rituals' and (" + _objCharacter.Options.BookXPath() + ")]";
                     break;
             }
         }
 
         private void frmSelectArt_Load(object sender, EventArgs e)
         {
-            // Update the window title if needed.
-            
-            switch (_objMode)
-            {
-                case Mode.Enhancement:
-                    _strLocalName = LanguageManager.GetString("String_Enhancement", GlobalOptions.Language);
-                    break;
-                case Mode.Enchantment:
-                    _strLocalName = LanguageManager.GetString("String_Enchantment", GlobalOptions.Language);
-                    break;
-                case Mode.Ritual:
-                    _strLocalName = LanguageManager.GetString("String_Ritual", GlobalOptions.Language);
-                    break;
-                case Mode.Art:
-                    _strLocalName = LanguageManager.GetString("String_Art", GlobalOptions.Language);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            
             Text = LanguageManager.GetString("Title_SelectGeneric", GlobalOptions.Language).Replace("{0}", _strLocalName);
             chkLimitList.Text = LanguageManager.GetString("Checkbox_SelectGeneric_LimitList", GlobalOptions.Language).Replace("{0}", _strLocalName);
 
@@ -108,22 +98,38 @@ namespace Chummer
                     objLabel.Text = string.Empty;
             }
 
+            _blnLoading = false;
+
             BuildList();
         }
 
         private void lstArt_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(lstArt.Text))
+            if (_blnLoading)
                 return;
 
+            string strSelected = lstArt.SelectedValue?.ToString();
+            if (string.IsNullOrEmpty(strSelected))
+            {
+                lblSource.Text = string.Empty;
+                tipTooltip.SetToolTip(lblSource, string.Empty);
+                return;
+            }
+
             // Retireve the information for the selected piece of Cyberware.
-            XmlNode objXmlMetamagic = _objXmlDocument.SelectSingleNode("/chummer/" + _strRoot + "/" + _strNode + "[name = \"" + lstArt.SelectedValue + "\"]");
+            XmlNode objXmlMetamagic = _objXmlDocument.SelectSingleNode(_strBaseXPath + "[id = \"" + strSelected + "\"]");
 
-            string strBook = CommonFunctions.LanguageBookShort(objXmlMetamagic["source"]?.InnerText, GlobalOptions.Language);
+            if (objXmlMetamagic == null)
+            {
+                lblSource.Text = string.Empty;
+                tipTooltip.SetToolTip(lblSource, string.Empty);
+                return;
+            }
+
+            string strSource = objXmlMetamagic["source"].InnerText;
             string strPage = objXmlMetamagic["altpage"]?.InnerText ?? objXmlMetamagic["page"]?.InnerText;
-            lblSource.Text = $"{strBook} {strBook}";
-
-            tipTooltip.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(objXmlMetamagic["source"].InnerText, GlobalOptions.Language) + " " + LanguageManager.GetString("String_Page", GlobalOptions.Language) + " " + strPage);
+            lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + ' ' + strPage;
+            tipTooltip.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + ' ' + LanguageManager.GetString("String_Page", GlobalOptions.Language) + ' ' + strPage);
         }
 
         private void cmdOK_Click(object sender, EventArgs e)
@@ -138,8 +144,7 @@ namespace Chummer
 
         private void lstArt_DoubleClick(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(lstArt.Text))
-                AcceptForm();
+            AcceptForm();
         }
 
         private void chkLimitList_CheckedChanged(object sender, EventArgs e)
@@ -148,42 +153,6 @@ namespace Chummer
         }
 
         #region Properties
-        /// <summary>
-        /// Set the window's Mode to Art, Enchantment, Enhancement, or Ritual.
-        /// </summary>
-        public Mode WindowMode
-        {
-            get
-            {
-                return _objMode;
-            }
-            set
-            {
-                _objMode = value;
-                switch (_objMode)
-                {
-                    case Mode.Art:
-                        _strNode = "art";
-                        _strRoot = "arts";
-                        break;
-                    case Mode.Enchantment:
-                        _strNode = "spell";
-                        _strRoot = "spells";
-                        _strCategory = "Enchantments";
-                        break;
-                    case Mode.Enhancement:
-                        _strNode = "enhancement";
-                        _strRoot = "enhancements";
-                        break;
-                    case Mode.Ritual:
-                        _strNode = "spell";
-                        _strRoot = "spells";
-                        _strCategory = "Rituals";
-                        break;
-                }
-            }
-        }
-
         /// <summary>
         /// Name of Metamagic that was selected in the dialogue.
         /// </summary>
@@ -202,35 +171,30 @@ namespace Chummer
         /// </summary>
         private void BuildList()
         {
-            XmlNodeList objXmlMetamagicList;
+            if (_blnLoading)
+                return;
+            
             List<ListItem> lstArts = new List<ListItem>();
-
-            // Load the Metamagic information.
-            switch (_objMode)
+            foreach (XmlNode objXmlMetamagic in _objXmlDocument.SelectNodes(_strBaseXPath + _strXPathFilter))
             {
-                case Mode.Art:
-                case Mode.Enhancement:
-                    objXmlMetamagicList = _objXmlDocument.SelectNodes("/chummer/" + _strRoot + "/" + _strNode + "[" + _objCharacter.Options.BookXPath() + "]");
-                    break;
-                default:
-                    objXmlMetamagicList = _objXmlDocument.SelectNodes("/chummer/" + _strRoot + "/" + _strNode + "[category = '" + _strCategory + "' and (" + _objCharacter.Options.BookXPath() + ")]");
-                    break;
-            }
-
-            foreach (XmlNode objXmlMetamagic in objXmlMetamagicList)
-            {
-                if (!chkLimitList.Checked || Backend.SelectionShared.RequirementsMet(objXmlMetamagic, false, _objCharacter, string.Empty, _strLocalName))
+                if (!chkLimitList.Checked || objXmlMetamagic.RequirementsMet(_objCharacter))
                 {
-                    string strName = objXmlMetamagic["name"].InnerText;
-                    lstArts.Add(new ListItem(strName, objXmlMetamagic["translate"]?.InnerText ?? strName));
+                    lstArts.Add(new ListItem(objXmlMetamagic["id"].InnerText, objXmlMetamagic["translate"]?.InnerText ?? objXmlMetamagic["name"].InnerText));
                 }
             }
             lstArts.Sort(CompareListItems.CompareNames);
+            string strOldSelected = lstArt.SelectedValue?.ToString();
+            _blnLoading = true;
+
             lstArt.BeginUpdate();
-            lstArt.DataSource = null;
             lstArt.ValueMember = "Value";
             lstArt.DisplayMember = "Name";
             lstArt.DataSource = lstArts;
+            _blnLoading = false;
+            if (!string.IsNullOrEmpty(strOldSelected))
+                lstArt.SelectedValue = strOldSelected;
+            else
+                lstArt.SelectedIndex = -1;
             lstArt.EndUpdate();
         }
 
@@ -239,26 +203,22 @@ namespace Chummer
         /// </summary>
         private void AcceptForm()
         {
-            if (string.IsNullOrEmpty(lstArt.Text))
-                return;
+            string strSelectedItem = lstArt.SelectedValue?.ToString();
+            if (!string.IsNullOrEmpty(strSelectedItem))
+            {
+                // Make sure the selected Metamagic or Echo meets its requirements.
+                XmlNode objXmlMetamagic = _objXmlDocument.SelectSingleNode(_strBaseXPath + "[id = \"" + strSelectedItem + "\"]");
 
-            _strSelectedItem = lstArt.SelectedValue.ToString();
+                if (objXmlMetamagic != null)
+                {
+                    if (!objXmlMetamagic.RequirementsMet(_objCharacter, _strLocalName))
+                        return;
 
-            // Make sure the selected Metamagic or Echo meets its requirements.
-            XmlNode objXmlMetamagic;
-            if (_objMode == Mode.Art)
-                objXmlMetamagic = _objXmlDocument.SelectSingleNode("/chummer/arts/art[name = \"" + lstArt.SelectedValue + "\"]");
-            else if (_objMode == Mode.Enchantment)
-                objXmlMetamagic = _objXmlDocument.SelectSingleNode("/chummer/spells/spell[category = \"Enchantments\" and name = \"" + lstArt.SelectedValue + "\"]");
-            else if (_objMode == Mode.Enhancement)
-                objXmlMetamagic = _objXmlDocument.SelectSingleNode("/chummer/enhancements/enhancement[name = \"" + lstArt.SelectedValue + "\"]");
-            else
-                objXmlMetamagic = _objXmlDocument.SelectSingleNode("/chummer/spells/spell[category = \"Rituals\" and name = \"" + lstArt.SelectedValue + "\"]");
+                    _strSelectedItem = strSelectedItem;
 
-            if (!Backend.SelectionShared.RequirementsMet(objXmlMetamagic, true, _objCharacter, string.Empty, _strLocalName))
-                return;
-
-            DialogResult = DialogResult.OK;
+                    DialogResult = DialogResult.OK;
+                }
+            }
         }
 
 

@@ -31,7 +31,7 @@ namespace Chummer
     public partial class frmOptions : Form
     {
         private readonly CharacterOptions _characterOptions = new CharacterOptions(null);
-        private bool _skipRefresh;
+        private bool _blnSkipRefresh;
         private bool blnDirty = false;
         private bool blnLoading = true;
         private bool blnSourcebookToggle = true;
@@ -54,6 +54,8 @@ namespace Chummer
             PopulateGlobalOptions();
             PopulateLanguageList();
             SetDefaultValueForLanguageList();
+            PopulateSheetLanguageList();
+            SetDefaultValueForSheetLanguageList();
             PopulateXsltList();
             SetDefaultValueForXsltList();
             PopulatePDFParameters();
@@ -270,10 +272,10 @@ namespace Chummer
         private void cboSetting_SelectedIndexChanged(object sender, EventArgs e)
         {
             ListItem objItem = (ListItem)cboSetting.SelectedItem;
-            if (!objItem.Value.Contains(".xml"))
+            if (!objItem.Value.ToString().Contains(".xml"))
                 return;
 
-            _characterOptions.Load(objItem.Value);
+            _characterOptions.Load(objItem.Value.ToString());
             PopulateOptions();
         }
 
@@ -293,6 +295,11 @@ namespace Chummer
             }
             
             OptionsChanged(sender,e);
+        }
+
+        private void cboSheetLanguage_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            PopulateXsltList();
         }
 
         private void cmdVerify_Click(object sender, EventArgs e)
@@ -396,7 +403,7 @@ namespace Chummer
         private void cmdPDFAppPath_Click(object sender, EventArgs e)
         {
             // Prompt the user to select a save file to associate with this Contact.
-            using (var openFileDialog = new OpenFileDialog())
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 openFileDialog.Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*";
                 if (!string.IsNullOrEmpty(txtPDFAppPath.Text) && File.Exists(txtPDFAppPath.Text))
@@ -412,7 +419,7 @@ namespace Chummer
         private void cmdPDFLocation_Click(object sender, EventArgs e)
         {
             // Prompt the user to select a save file to associate with this Contact.
-            using (var openFileDialog = new OpenFileDialog())
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 openFileDialog.Filter = "PDF Files (*.pdf)|*.pdf|All Files (*.*)|*.*";
                 if (!string.IsNullOrEmpty(txtPDFLocation.Text) && File.Exists(txtPDFLocation.Text))
@@ -434,10 +441,10 @@ namespace Chummer
             nudPDFOffset.Enabled = true;
             cmdPDFTest.Enabled = true;
 
-            _skipRefresh = true;
+            _blnSkipRefresh = true;
             txtPDFLocation.Text = string.Empty;
             nudPDFOffset.Value = 0;
-            _skipRefresh = false;
+            _blnSkipRefresh = false;
 
             // Find the selected item in the Sourcebook List.
             SourcebookInfo objSource = GlobalOptions.SourcebookInfo.FirstOrDefault(x => x.Code == treSourcebook.SelectedNode.Tag.ToString());
@@ -451,26 +458,26 @@ namespace Chummer
 
         private void nudPDFOffset_ValueChanged(object sender, EventArgs e)
         {
-            if (_skipRefresh)
+            if (_blnSkipRefresh)
                 return;
 
-            int offset = decimal.ToInt32(nudPDFOffset.Value);
-            string tag = treSourcebook.SelectedNode.Tag.ToString();
-            SourcebookInfo foundSource = GlobalOptions.SourcebookInfo.FirstOrDefault(x => x.Code == tag);
+            int intOffset = decimal.ToInt32(nudPDFOffset.Value);
+            string strTag = treSourcebook.SelectedNode.Tag.ToString();
+            SourcebookInfo objFoundSource = GlobalOptions.SourcebookInfo.FirstOrDefault(x => x.Code == strTag);
 
-            if (foundSource != null)
+            if (objFoundSource != null)
             {
-                foundSource.Offset = offset;
+                objFoundSource.Offset = intOffset;
             }
             else
             {
                 // If the Sourcebook was not found in the options, add it.
-                var newSource = new SourcebookInfo
+                SourcebookInfo objNewSource = new SourcebookInfo
                 {
-                    Code = tag,
-                    Offset = offset
+                    Code = strTag,
+                    Offset = intOffset
                 };
-                GlobalOptions.SourcebookInfo.Add(newSource);
+                GlobalOptions.SourcebookInfo.Add(objNewSource);
             }
         }
 
@@ -498,7 +505,16 @@ namespace Chummer
             SetToolTips();
             PopulateSettingsList();
             PopulateGlobalOptions();
-            PopulateXsltList();
+
+            string strSheetLanguage = cboSheetLanguage.SelectedValue?.ToString();
+            if (strSheetLanguage != _strSelectedLanguage)
+            {
+                if (cboSheetLanguage.Items.Cast<ListItem>().Any(x => x.Value.ToString() == _strSelectedLanguage))
+                {
+                    cboSheetLanguage.SelectedValue = _strSelectedLanguage;
+                }
+            }
+            
             PopulatePDFParameters();
             MoveControls();
         }
@@ -534,7 +550,9 @@ namespace Chummer
             cboLanguage.Left = lblLanguage.Left + intWidth + 6;
             cmdVerify.Left = cboLanguage.Left + cboLanguage.Width + 6;
             cmdVerifyData.Left = cmdVerify.Left + cmdVerify.Width + 6;
-            cboXSLT.Left = lblXSLT.Left + intWidth + 6;
+            cboSheetLanguage.Left = lblXSLT.Left + intWidth + 6;
+            cboSheetLanguage.Width = cboLanguage.Width;
+            cboXSLT.Left = cmdVerify.Left;
 
             // Karma fields.
             intWidth = Math.Max(lblKarmaSpecialization.Width, lblKarmaKnowledgeSpecialization.Width);
@@ -665,12 +683,14 @@ namespace Chummer
 
             // Determine where the widest control ends so we can change the window with to accommodate it.
             intWidth = 0;
+            /* Control is anchored to all edges, so it will resize automatically anyway
             foreach (Control objControl in tabGeneral.Controls)
             {
                 int intTempWidth = objControl.Left + objControl.Width;
                 if (intTempWidth > intWidth)
                     intWidth = intTempWidth;
             }
+            */
             foreach (Control objControl in tabKarmaCosts.Controls)
             {
                 int intTempWidth = objControl.Left + objControl.Width;
@@ -712,12 +732,13 @@ namespace Chummer
             {
                 if (objXmlBook["hide"] != null)
                     continue;
-                bool blnChecked = _characterOptions.Books.Contains(objXmlBook["code"].InnerText);
+                string strCode = objXmlBook["code"].InnerText;
+                bool blnChecked = _characterOptions.Books.Contains(strCode);
                 TreeNode objNode = new TreeNode
                 {
                     Text = objXmlBook["translate"]?.InnerText ?? objXmlBook["name"].InnerText,
 
-                    Tag = objXmlBook["code"].InnerText,
+                    Tag = strCode,
                     Checked = blnChecked
                 };
                 treSourcebook.Nodes.Add(objNode);
@@ -736,7 +757,7 @@ namespace Chummer
                 {
                     TreeNode objNode = new TreeNode
                     {
-                        Text = objCustomDataDirectory.Name + " (" + objCustomDataDirectory.Path.Replace(Application.StartupPath, "<" + Application.ProductName + ">") + ")",
+                        Text = objCustomDataDirectory.Name + " (" + objCustomDataDirectory.Path.Replace(Application.StartupPath, '<' + Application.ProductName + '>') + ')',
                         Tag = objCustomDataDirectory.Name,
                         Checked = objCustomDataDirectory.Enabled
                     };
@@ -749,7 +770,7 @@ namespace Chummer
                 {
                     TreeNode objLoopNode = treCustomDataDirectories.Nodes[i];
                     CustomDataDirectoryInfo objLoopInfo = GlobalOptions.CustomDataDirectoryInfo[i];
-                    objLoopNode.Text = objLoopInfo.Name + " (" + objLoopInfo.Path.Replace(Application.StartupPath, "<" + Application.ProductName + ">") + ")";
+                    objLoopNode.Text = objLoopInfo.Name + " (" + objLoopInfo.Path.Replace(Application.StartupPath, '<' + Application.ProductName + '>') + ')';
                     objLoopNode.Tag = objLoopInfo.Name;
                     objLoopNode.Checked = objLoopInfo.Enabled;
                 }
@@ -1126,7 +1147,7 @@ namespace Chummer
                 string strExclude = objXmlNode["exclude"]?.InnerText ?? string.Empty;
                 if (!string.IsNullOrEmpty(strExclude))
                     strExclude = '<' + strExclude;
-                lstLimbCount.Add(new ListItem(objXmlNode["limbcount"].InnerText + strExclude, LanguageManager.GetString(objXmlNode["name"].InnerText, _strSelectedLanguage)));
+                lstLimbCount.Add(new ListItem(objXmlNode["limbcount"].InnerText + strExclude, objXmlNode["translate"]?.InnerText ?? objXmlNode["name"].InnerText));
             }
 
             string strOldSelected = cboLimbCount.SelectedValue?.ToString();
@@ -1158,7 +1179,7 @@ namespace Chummer
             foreach (XmlNode objXmlNode in objXmlNodeList)
             {
                 string strValue = objXmlNode["value"].InnerText;
-                lstPdfParameters.Add(new ListItem(objXmlNode["value"].InnerText, objXmlNode["name"].InnerText));
+                lstPdfParameters.Add(new ListItem(strValue, objXmlNode["translate"]?.InnerText ?? objXmlNode["name"].InnerText));
                 if (!string.IsNullOrWhiteSpace(GlobalOptions.PDFParameters) && GlobalOptions.PDFParameters == strValue)
                 {
                     intIndex = lstPdfParameters.Count - 1;
@@ -1274,6 +1295,54 @@ namespace Chummer
             cboLanguage.EndUpdate();
         }
 
+        private void PopulateSheetLanguageList()
+        {
+            HashSet<string> setLanguagesWithSheets = new HashSet<string>();
+
+            // Populate the XSL list with all of the manifested XSL files found in the sheets\[language] directory.
+            foreach (XmlNode xmlSheetLanguage in XmlManager.Load("sheets.xml").SelectNodes($"/chummer/sheets/@lang"))
+            {
+                setLanguagesWithSheets.Add(xmlSheetLanguage.InnerText);
+            }
+
+            List<ListItem> lstSheetLanguages = new List<ListItem>();
+
+            string languageDirectoryPath = Path.Combine(Application.StartupPath, "lang");
+            string[] languageFilePaths = Directory.GetFiles(languageDirectoryPath, "*.xml");
+
+            foreach (string filePath in languageFilePaths)
+            {
+                string strLanguageName = Path.GetFileNameWithoutExtension(filePath);
+                if (!setLanguagesWithSheets.Contains(strLanguageName))
+                    continue;
+
+                XmlDocument xmlDocument = new XmlDocument();
+
+                try
+                {
+                    xmlDocument.Load(filePath);
+                }
+                catch (XmlException)
+                {
+                    continue;
+                }
+
+                XmlNode node = xmlDocument.SelectSingleNode("/chummer/name");
+                if (node == null)
+                    continue;
+
+                lstSheetLanguages.Add(new ListItem(strLanguageName, node.InnerText));
+            }
+
+            lstSheetLanguages.Sort(CompareListItems.CompareNames);
+
+            cboSheetLanguage.BeginUpdate();
+            cboSheetLanguage.ValueMember = "Value";
+            cboSheetLanguage.DisplayMember = "Name";
+            cboSheetLanguage.DataSource = lstSheetLanguages;
+            cboSheetLanguage.EndUpdate();
+        }
+
         private void PopulateGlobalOptions()
         {
             chkAutomaticUpdate.Checked = GlobalOptions.AutomaticUpdate;
@@ -1324,7 +1393,7 @@ namespace Chummer
 
         private static IList<ListItem> GetXslFilesFromOmaeDirectory(string strLanguage)
         {
-            var items = new List<ListItem>();
+            List<ListItem> lstItems = new List<ListItem>();
 
             // Populate the XSLT list with all of the XSL files found in the sheets\omae directory.
             string omaeDirectoryPath = Path.Combine(Application.StartupPath, "sheets", "omae");
@@ -1334,18 +1403,19 @@ namespace Chummer
             // (hidden because they are partial templates that cannot be used on their own).
             foreach (string fileName in ReadXslFileNamesWithoutExtensionFromDirectory(omaeDirectoryPath))
             {
-                items.Add(new ListItem(Path.Combine("omae", fileName), menuMainOmae + ": " + fileName));
+                lstItems.Add(new ListItem(Path.Combine("omae", fileName), menuMainOmae + ": " + fileName));
             }
 
-            return items;
+            return lstItems;
         }
 
         private void PopulateXsltList()
         {
-            List<ListItem> lstFiles = (List<ListItem>)GetXslFilesFromLocalDirectory(_strSelectedLanguage);
+            string strSelectedSheetLanguage = cboSheetLanguage.SelectedValue?.ToString();
+            List<ListItem> lstFiles = (List<ListItem>)GetXslFilesFromLocalDirectory(strSelectedSheetLanguage);
             if (GlobalOptions.OmaeEnabled)
             {
-                lstFiles.AddRange(GetXslFilesFromOmaeDirectory(_strSelectedLanguage));
+                lstFiles.AddRange(GetXslFilesFromOmaeDirectory(strSelectedSheetLanguage));
             }
 
             string strOldSelected = cboXSLT.SelectedValue?.ToString() ?? string.Empty;
@@ -1360,17 +1430,17 @@ namespace Chummer
 
             if (!string.IsNullOrEmpty(strOldSelected))
             {
-                if (_strSelectedLanguage == GlobalOptions.DefaultLanguage)
+                if (strSelectedSheetLanguage == GlobalOptions.DefaultLanguage)
                     cboXSLT.SelectedValue = strOldSelected;
                 else
-                    cboXSLT.SelectedValue = Path.Combine(_strSelectedLanguage, strOldSelected);
+                    cboXSLT.SelectedValue = Path.Combine(strSelectedSheetLanguage, strOldSelected);
                 // If the desired sheet was not found, fall back to the Shadowrun 5 sheet.
                 if (cboXSLT.SelectedIndex == -1 && lstFiles.Count > 0)
                 {
-                    if (_strSelectedLanguage == GlobalOptions.DefaultLanguage)
+                    if (strSelectedSheetLanguage == GlobalOptions.DefaultLanguage)
                         cboXSLT.SelectedValue = GlobalOptions.DefaultCharacterSheetDefaultValue;
                     else
-                        cboXSLT.SelectedValue = Path.Combine(_strSelectedLanguage, GlobalOptions.DefaultCharacterSheetDefaultValue);
+                        cboXSLT.SelectedValue = Path.Combine(strSelectedSheetLanguage, GlobalOptions.DefaultCharacterSheetDefaultValue);
                     if (cboXSLT.SelectedIndex == -1)
                     {
                         cboXSLT.SelectedIndex = 0;
@@ -1396,6 +1466,27 @@ namespace Chummer
 
             if (cboLanguage.SelectedIndex == -1)
                 cboLanguage.SelectedValue = GlobalOptions.DefaultLanguage;
+        }
+
+        private void SetDefaultValueForSheetLanguageList()
+        {
+            string strDefaultCharacterSheet = GlobalOptions.DefaultCharacterSheet;
+            if (string.IsNullOrEmpty(strDefaultCharacterSheet))
+                strDefaultCharacterSheet = GlobalOptions.DefaultCharacterSheetDefaultValue;
+
+            string strDefaultSheetLanguage = GlobalOptions.Language;
+            int intLastIndexDirectorySeparator = strDefaultCharacterSheet.LastIndexOf(Path.DirectorySeparatorChar);
+            if (intLastIndexDirectorySeparator != -1)
+            {
+                string strSheetLanguage = strDefaultCharacterSheet.Substring(0, intLastIndexDirectorySeparator);
+                if (strSheetLanguage.Length == 5)
+                    strDefaultSheetLanguage = strSheetLanguage;
+            }
+
+            cboSheetLanguage.SelectedValue = strDefaultSheetLanguage;
+
+            if (cboSheetLanguage.SelectedIndex == -1)
+                cboSheetLanguage.SelectedValue = GlobalOptions.DefaultLanguage;
         }
 
         private void SetDefaultValueForXsltList()
@@ -1428,12 +1519,12 @@ namespace Chummer
             else
             {
                 // If the Sourcebook was not found in the options, add it.
-                var newSource = new SourcebookInfo
+                SourcebookInfo objNewSource = new SourcebookInfo
                 {
                     Code = tag,
                     Path = path
                 };
-                GlobalOptions.SourcebookInfo.Add(newSource);
+                GlobalOptions.SourcebookInfo.Add(objNewSource);
             }
         }
 
@@ -1492,6 +1583,20 @@ namespace Chummer
             }
         }
 
+        private void chkLifeModules_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chkLifeModule.Checked && !blnLoading)
+            {
+                DialogResult result = MessageBox.Show(LanguageManager.GetString("Tip_LifeModule_Warning", _strSelectedLanguage), "Warning!", MessageBoxButtons.OKCancel);
+
+                if (result != DialogResult.OK) chkOmaeEnabled.Checked = false;
+                else
+                {
+                    OptionsChanged(sender, e);
+                }
+            }
+        }
+
         private void chkOmaeEnabled_CheckedChanged(object sender, EventArgs e)
         {
             if (chkOmaeEnabled.Checked && !blnLoading)
@@ -1499,6 +1604,10 @@ namespace Chummer
                 DialogResult result = MessageBox.Show(LanguageManager.GetString("Tip_Omae_Warning", _strSelectedLanguage), "Warning!", MessageBoxButtons.OKCancel);
 
                 if (result != DialogResult.OK) chkOmaeEnabled.Checked = false;
+                else
+                {
+                    OptionsChanged(sender, e);
+                }
             }
         }
 
@@ -1517,21 +1626,21 @@ namespace Chummer
         private void cmdCharacterRoster_Click(object sender, EventArgs e)
         {
             // Prompt the user to select a save file to associate with this Contact.
-            using (var selectFolderDialog = new FolderBrowserDialog())
+            using (FolderBrowserDialog dlgSelectFolder = new FolderBrowserDialog())
             {
-                if (selectFolderDialog.ShowDialog(this) == DialogResult.OK)
-                    txtCharacterRosterPath.Text = selectFolderDialog.SelectedPath;
+                if (dlgSelectFolder.ShowDialog(this) == DialogResult.OK)
+                    txtCharacterRosterPath.Text = dlgSelectFolder.SelectedPath;
             }
         }
 
         private void cmdAddCustomDirectory_Click(object sender, EventArgs e)
         {
             // Prompt the user to select a save file to associate with this Contact.
-            using (var selectFolderDialog = new FolderBrowserDialog())
+            using (FolderBrowserDialog dlgSelectFolder = new FolderBrowserDialog())
             {
-                selectFolderDialog.SelectedPath = Application.StartupPath;
+                dlgSelectFolder.SelectedPath = Application.StartupPath;
 
-                if (selectFolderDialog.ShowDialog(this) == DialogResult.OK)
+                if (dlgSelectFolder.ShowDialog(this) == DialogResult.OK)
                 {
                     frmSelectText frmSelectCustomDirectoryName = new frmSelectText
                     {
@@ -1542,7 +1651,7 @@ namespace Chummer
                         CustomDataDirectoryInfo objNewCustomDataDirectory = new CustomDataDirectoryInfo
                         {
                             Name = frmSelectCustomDirectoryName.SelectedValue,
-                            Path = selectFolderDialog.SelectedPath
+                            Path = dlgSelectFolder.SelectedPath
                         };
 
                         if (GlobalOptions.CustomDataDirectoryInfo.Any(x => x.Name == objNewCustomDataDirectory.Name))

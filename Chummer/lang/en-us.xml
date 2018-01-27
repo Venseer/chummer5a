@@ -712,6 +712,10 @@
       <text>Metavariant:</text>
     </string>
     <string>
+      <key>Title_ChooseCharacterPriorities</key>
+      <text>Choose Character Priorities</text>
+    </string>
+    <string>
       <key>Label_PriorityHeritage</key>
       <text>Metatype:</text>
     </string>
@@ -784,6 +788,14 @@
       <text>weeks</text>
     </string>
     <string>
+      <key>String_Month</key>
+      <text>month</text>
+    </string>
+    <string>
+      <key>String_Months</key>
+      <text>months</text>
+    </string>
+    <string>
       <key>String_Hour</key>
       <text>hour</text>
     </string>
@@ -822,6 +834,10 @@
 	<string>
       <key>String_Immune</key>
       <text>Immune</text>
+    </string>
+    <string>
+      <key>String_LifeModules</key>
+      <text>Life Modules</text>
     </string>
     <!-- End Region -->
     <!-- Region Printout Strings -->
@@ -1132,6 +1148,10 @@
       <text>Chummer Wiki</text>
     </string>
     <string>
+      <key>Menu_Main_ChummerDiscord</key>
+      <text>Chummer Discord</text>
+    </string>
+    <string>
       <key>Menu_Main_RevisionHistory</key>
       <text>&amp;Revision History</text>
     </string>
@@ -1265,7 +1285,7 @@
     </string>
     <string>
       <key>Menu_SpecialChangeOptions</key>
-      <text>"Change &amp;Options File</text>
+      <text>Change &amp;Options File</text>
     </string>
     <string>
       <key>Menu_SpecialConvertToMutantCritter</key>
@@ -1278,6 +1298,10 @@
     <string>
       <key>Menu_SpecialConverToCyberzombie</key>
       <text>Convert to Cyberzombie</text>
+    </string>
+    <string>
+      <key>String_MutantCritter</key>
+      <text>Mutant Critter</text>
     </string>
     <string>
       <key>Menu_SpecialReduceAttribute</key>
@@ -1540,6 +1564,14 @@
       <text>Condition Monitor</text>
     </string>
     <string>
+      <key>Tab_PhysicalConditionMonitor</key>
+      <text>Physical Condition Monitor</text>
+    </string>
+    <string>
+      <key>Tab_MatrixConditionMonitor</key>
+      <text>Matrix Condition Monitor</text>
+    </string>
+    <string>
       <key>MessageTitle_DeleteGrade</key>
       <text>Cannot Delete</text>
     </string>
@@ -1578,6 +1610,10 @@
     <string>
       <key>MessageTitle_CyberzombieConfirm</key>
       <text>Convert to Cyberzombie</text>
+    </string>
+    <string>
+      <key>String_Cyberzombie</key>
+      <text>Cyberzombie</text>
     </string>
     <string>
       <key>String_CyberzombieWILText</key>
@@ -1692,6 +1728,10 @@
       <text>Are you sure you want to delete this Gear location? All of the Gear in this location will be moved to the Selected Gear container.</text>
     </string>
     <string>
+      <key>Message_DeleteVehicleLocationBase</key>
+      <text>Are you sure you want to delete this Vehicle location? All of the Vehicles in this location will be moved to the Selected Vehicle container.</text>
+    </string>
+    <string>
       <key>Message_DeleteVehicle</key>
       <text>Are you sure you want to delete this Vehicle/Plugin?</text>
     </string>
@@ -1754,6 +1794,10 @@
     <string>
       <key>Message_DeleteMetatypeQuality</key>
       <text>Are you sure you want to remove this Metatype Quality for {0}?</text>
+    </string>
+    <string>
+      <key>Message_LowerMetatypeQualityLevel</key>
+      <text>Are you sure you want to remove a level from this Metatype Quality for {0}?</text>
     </string>
     <string>
       <key>Message_DeleteKnowledgeSkill</key>
@@ -1820,14 +1864,6 @@
       <text>Cannot Delete</text>
     </string>
     <string>
-      <key>Message_MartialArtAdvantageLimit</key>
-      <text>You may only have 1 Advantage per Rating of {0}.</text>
-    </string>
-    <string>
-      <key>MessageTitle_MartialArtAdvantageLimit</key>
-      <text>Maximum Number of Advantages</text>
-    </string>
-    <string>
       <key>Message_MartialArtManeuverLimit</key>
       <text>You may only have 2 Maneuvers per Martial Art Rating.</text>
     </string>
@@ -1836,15 +1872,15 @@
       <text>Maximum Number of Maneuvers</text>
     </string>
     <string>
-      <key>Message_SelectMartialArtAdvantage</key>
-      <text>You must select a Martial Art to add an Advantage to.</text>
+      <key>Message_SelectMartialArtTechnique</key>
+      <text>You must select a Martial Art to which to add a Technique.</text>
     </string>
     <string>
       <key>Message_SelectLimitModifier</key>
-      <text>You must select a Limit to add a Modifier to.</text>
+      <text>You must select a Limit to which to add a Modifier.</text>
     </string>
     <string>
-      <key>MessageTitle_SelectMartialArtAdvantage</key>
+      <key>MessageTitle_SelectMartialArtTechnique</key>
       <text>Select Martial Art</text>
     </string>
     <string>
@@ -1918,14 +1954,6 @@
     <string>
       <key>MessageTitle_CannotRemoveCyberware</key>
       <text>Cannot Remove Cyberware</text>
-    </string>
-    <string>
-      <key>Message_CannotRemoveSpell</key>
-      <text>This item cannot be removed because it was acquired as an initiation bonus.</text>
-    </string>
-    <string>
-      <key>MessageTitle_CannotRemoveSpell</key>
-      <text>Cannot Remove Spell</text>
     </string>
     <string>
       <key>Message_ComplexFormLimitCareer</key>
@@ -2348,6 +2376,26 @@
       <text>Size:</text>
     </string>
     <string>
+      <key>Label_Flexibility</key>
+      <text>Flexibility:</text>
+    </string>
+    <string>
+      <key>Button_AddMod</key>
+      <text>Add Mod</text>
+    </string>
+    <string>
+      <key>Button_DeleteMod</key>
+      <text>Delete Mod</text>
+    </string>
+    <string>
+      <key>Node_AdditionalMods</key>
+      <text>Additional Mods</text>
+    </string>
+    <string>
+      <key>Title_CreateWeaponMount</key>
+      <text>Create Weapon Mount</text>
+    </string>
+    <string>
       <key>Message_OverPrototypeLimit</key>
       <text>Bioware limit exceeded for Prototype Transhuman. Current: {0} Maximum: {1}</text>
     </string>
@@ -2480,6 +2528,10 @@
       <text>Cannot Regain Edge</text>
     </string>
     <string>
+      <key>String_EdgeUse</key>
+      <text>Edge Use</text>
+    </string>
+    <string>
       <key>Message_NotEnoughKarma</key>
       <text>You do not have enough Karma for this expense.</text>
     </string>
@@ -2494,6 +2546,18 @@
     <string>
       <key>MessageTitle_NotEnoughMagic</key>
       <text>Not Enough Magic</text>
+    </string>
+    <string>
+      <key>String_EssenceLoss</key>
+      <text>Essence Loss</text>
+    </string>
+    <string>
+      <key>String_EssenceLossChargen</key>
+      <text>Essence Loss (Character Generation)</text>
+    </string>
+    <string>
+      <key>String_SpiritFettering</key>
+      <text>Spirit Fettering</text>
     </string>
     <string>
       <key>Message_ConfirmKarmaExpense</key>
@@ -2657,7 +2721,7 @@
     </string>
     <string>
       <key>Message_ReduceQty</key>
-      <text>Are you sure you want to reduce this quantity by 1?</text>
+      <text>Are you sure you want to reduce this quantity by {0}?</text>
     </string>
     <string>
       <key>Message_VehicleCyberwarePlugin</key>
@@ -2871,6 +2935,10 @@
     <string>
       <key>String_CyberzombieReduceAttribute</key>
       <text>Select an Attribute to reduce (both Value and Metatype Maximum).</text>
+    </string>
+    <string>
+      <key>String_AttributeLoss</key>
+      <text>Attribute Loss</text>
     </string>
     <string>
       <key>String_ExpenseDefault</key>
@@ -3203,6 +3271,10 @@
     <string>
       <key>String_Retrofit</key>
       <text>Retrofitting a Vehicle will cost a percentage of the Vehicle's base cost. Please select a percentage.</text>
+    </string>
+    <string>
+      <key>String_ReduceGear</key>
+      <text>Enter the number of items to remove.</text>
     </string>
     <string>
       <key>String_SplitGear</key>
@@ -3716,11 +3788,11 @@
     </string>
     <string>
       <key>Node_SelectedPositiveQualities</key>
-      <text>Selected Positive Qualities</text>
+      <text>Positive Qualities</text>
     </string>
     <string>
       <key>Node_SelectedNegativeQualities</key>
-      <text>Selected Negative Qualities</text>
+      <text>Negative Qualities</text>
     </string>
     <string>
       <key>Tip_CommonAttributes</key>
@@ -4003,31 +4075,31 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <string>
       <key>Node_SelectedCombatSpells</key>
-      <text>Selected Combat Spells</text>
+      <text>Combat Spells</text>
     </string>
     <string>
       <key>Node_SelectedDetectionSpells</key>
-      <text>Selected Detection Spells</text>
+      <text>Detection Spells</text>
     </string>
     <string>
       <key>Node_SelectedHealthSpells</key>
-      <text>Selected Health Spells</text>
+      <text>Health Spells</text>
     </string>
     <string>
       <key>Node_SelectedIllusionSpells</key>
-      <text>Selected Illusion Spells</text>
+      <text>Illusion Spells</text>
     </string>
     <string>
       <key>Node_SelectedManipulationSpells</key>
-      <text>Selected Manipulation Spells</text>
+      <text>Manipulation Spells</text>
     </string>
     <string>
       <key>Node_SelectedGeomancyRituals</key>
-      <text>Selected Rituals</text>
+      <text>Rituals</text>
     </string>
     <string>
       <key>Node_SelectedEnchantments</key>
-      <text>Selected Enchantments</text>
+      <text>Enchantments</text>
     </string>
     <string>
       <key>Tip_SpellsSelectedSpells</key>
@@ -4199,11 +4271,11 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <string>
       <key>Node_CritterPowers</key>
-      <text>Selected Critter Powers</text>
+      <text>Critter Powers</text>
     </string>
     <string>
       <key>Node_CritterWeaknesses</key>
-      <text>Selected Weaknesses</text>
+      <text>Weaknesses</text>
     </string>
     <string>
       <key>Checkbox_CritterPowerCount</key>
@@ -4287,11 +4359,11 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <string>
       <key>Node_SelectedCyberware</key>
-      <text>Selected Cyberware</text>
+      <text>Cyberware</text>
     </string>
     <string>
       <key>Node_SelectedBioware</key>
-      <text>Selected Bioware</text>
+      <text>Bioware</text>
     </string>
     <string>
       <key>Node_UnequippedModularCyberware</key>
@@ -4324,8 +4396,8 @@ Only one attribute may be at its Maximum value during character creation.</text>
     <!-- End Region-->
     <!-- Region Street Gear/Lifestyle Tab -->
     <string>
-      <key>Label_LifestyleMonths</key>
-      <text>Months (100 for Permanent)</text>
+      <key>Label_LifestylePermanent</key>
+      <text> ({0} for Permanent)</text>
     </string>
     <string>
       <key>Label_LifestyleQualities</key>
@@ -4341,11 +4413,11 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <string>
       <key>Tab_IncreaseLifestyleMonths</key>
-      <text>Increase the number of pre-paid months for the Lifestyle.</text>
+      <text>Increase the number of pre-paid {0} for the Lifestyle.</text>
     </string>
     <string>
       <key>Tab_DecreaseLifestyleMonths</key>
-      <text>Decrease the number of pre-paid months for the Lifestyle.</text>
+      <text>Decrease the number of pre-paid {0} for the Lifestyle.</text>
     </string>
     <string>
       <key>String_Roommates</key>
@@ -5050,6 +5122,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Omae is outside the current developers control and contain old characters that may not work or crash the current version of chummer. Proceed at your own risk.\nDo you want to continue?</text>
     </string>
     <string>
+      <key>Tip_LifeModule_Warning</key>
+      <text>Life Modules are currently an experiemental system with limited features; it is present exclusively for testing purposes. See https://github.com/chummer5a/chummer5a/issues/2000 for details about the existing issues. Proceed at your own risk.\nDo you want to continue?</text>
+    </string>
+    <string>
       <key>Tip_BuildFoci</key>
       <text>Each bonded Focus costs {0} Karma per point of Force.</text>
     </string>
@@ -5558,6 +5634,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <!-- End Region-->
     <!-- Region Adept Powers -->
+    <string>
+      <key>String_Power</key>
+      <text>Power</text>
+    </string>
     <string>
       <key>Label_Power_PowerRating</key>
       <text>Power Rating:</text>
@@ -6573,22 +6653,6 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Limbs for Standard Characters:</text>
     </string>
     <string>
-      <key>String_LimbCount4</key>
-      <text>4 (2 arms, 2 legs)</text>
-    </string>
-    <string>
-      <key>String_LimbCount6</key>
-      <text>6 (2 arms, 2 legs, torso, skull)</text>
-    </string>
-    <string>
-      <key>String_LimbCount5Torso</key>
-      <text>5 (2 arms, 2 legs, torso)</text>
-    </string>
-    <string>
-      <key>String_LimbCount5Skull</key>
-      <text>5 (2 arms, 2 legs, skull)</text>
-    </string>
-    <string>
       <key>Label_Options_NuyenPerBP</key>
       <text>Nuyen per Build Point:</text>
     </string>
@@ -7467,6 +7531,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Sum to Ten</text>
     </string>
     <string>
+      <key>Label_SelectBP_MaxNuyen</key>
+      <text>Nuyen Karma Max</text>
+    </string>
+    <string>
       <key>Checkbox_SelectBP_IgnoreRules</key>
       <text>Ignore Character Creation Rules</text>
     </string>
@@ -7710,6 +7778,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Cost/Week:</text>
     </string>
     <string>
+      <key>Label_SelectLifestyle_CostPerDay</key>
+      <text>Cost/Day:</text>
+    </string>
+    <string>
       <key>Label_SelectLifestyle_StartingNuyen</key>
       <text>Starting Nuyen:</text>
     </string>
@@ -7728,10 +7800,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Select a Martial Art</text>
     </string>
     <!-- End Region-->
-    <!-- Region Select Martial Art Advantage Window -->
+    <!-- Region Select Martial Art Technique Window -->
     <string>
-      <key>Title_SelectMartialArtAdvantage</key>
-      <text>Select an Advantage</text>
+      <key>Title_SelectMartialArtTechnique</key>
+      <text>Select a Technique</text>
     </string>
     <!-- End Region-->
     <!-- Region Select Martial Art Maneuver Window -->
@@ -8827,7 +8899,31 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <string>
       <key>String_MetamagicSkills</key>
-      <text>{0} {1} skill(s) to start at rating {2}</text>
+      <text>{0} {1} to start at rating {2}</text>
+    </string>
+    <string>
+      <key>String_MetamagicSkillType_magic</key>
+      <text>magic skill(s)</text>
+    </string>
+    <string>
+      <key>String_MetamagicSkillType_resonance</key>
+      <text>resonance skill(s)</text>
+    </string>
+    <string>
+      <key>String_MetamagicSkillType_matrix</key>
+      <text>matrix skill(s)</text>
+    </string>
+    <string>
+      <key>String_MetamagicSkillType_active</key>
+      <text>active skill(s)</text>
+    </string>
+    <string>
+      <key>String_MetamagicSkillType_specific</key>
+      <text>specific skill(s)</text>
+    </string>
+    <string>
+      <key>String_MetamagicSkillType_grouped</key>
+      <text>skill group(s)</text>
     </string>
     <string>
       <key>Message_Metatype_Duplicate</key>

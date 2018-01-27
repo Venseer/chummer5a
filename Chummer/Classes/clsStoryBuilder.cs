@@ -152,13 +152,12 @@ namespace Chummer
                 }
             }
         }
-
-        private static readonly char[] lstPunctuationChars = ",.".ToCharArray();
+        
         public string Macro(string innerText, XmlDocument xmlDoc)
         {
             if (string.IsNullOrEmpty(innerText))
                 return string.Empty;
-            string endString = innerText.ToLower().Substring(1).TrimEnd(lstPunctuationChars);
+            string endString = innerText.ToLower().Substring(1).TrimEnd(',', '.');
             string macroName, macroPool;
             if (endString.Contains('_'))
             {
@@ -257,7 +256,7 @@ namespace Chummer
                             }
                             else
                             {
-                                return String.Format("(Formating error in  $DOLLAR{0} )", macroName);
+                                return string.Format("(Formating error in  $DOLLAR{0} )", macroName);
                             }
                         }
 
@@ -271,7 +270,7 @@ namespace Chummer
                         }
                         else
                         {
-                            return String.Format("(Unknown key {0} in  $DOLLAR{1} )", macroPool, macroName);
+                            return string.Format("(Unknown key {0} in  $DOLLAR{1} )", macroPool, macroName);
                         }
                     }
                     else
@@ -280,7 +279,7 @@ namespace Chummer
                     }
                 }
             }
-            return String.Format("(Unknown Macro  $DOLLAR{0} )", innerText.Substring(1));
+            return string.Format("(Unknown Macro  $DOLLAR{0} )", innerText.Substring(1));
         }
     }
 }

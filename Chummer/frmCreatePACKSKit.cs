@@ -301,11 +301,11 @@ namespace Chummer
                     objWriter.WriteStartElement("martialart");
                     objWriter.WriteElementString("name", objArt.Name);
                     objWriter.WriteElementString("rating", objArt.Rating.ToString());
-                    if (objArt.Advantages.Count > 0)
+                    if (objArt.Techniques.Count > 0)
                     {
                         // <advantages>
                         objWriter.WriteStartElement("advantages");
-                        foreach (MartialArtAdvantage objAdvantage in objArt.Advantages)
+                        foreach (MartialArtTechnique objAdvantage in objArt.Techniques)
                             objWriter.WriteElementString("advantage", objAdvantage.Name);
                         // </advantages>
                         objWriter.WriteEndElement();
@@ -341,12 +341,12 @@ namespace Chummer
             {
                 // <programs>
                 objWriter.WriteStartElement("complexforms");
-                foreach (ComplexForm objProgram in _objCharacter.ComplexForms)
+                foreach (ComplexForm objComplexForm in _objCharacter.ComplexForms)
                 {
                     // <program>
                     objWriter.WriteStartElement("complexform");
                     objWriter.WriteStartElement("name");
-                    objWriter.WriteValue(objProgram.Name);
+                    objWriter.WriteValue(objComplexForm.Name);
                     objWriter.WriteEndElement();
                     // </program>
                     objWriter.WriteEndElement();
@@ -455,7 +455,7 @@ namespace Chummer
                     // <lifestyle>
                     objWriter.WriteStartElement("lifestyle");
                     objWriter.WriteElementString("name", objLifestyle.Name);
-                    objWriter.WriteElementString("months", objLifestyle.Months.ToString());
+                    objWriter.WriteElementString("months", objLifestyle.Increments.ToString());
                     if (!string.IsNullOrEmpty(objLifestyle.BaseLifestyle))
                     {
                         // This is an Advanced Lifestyle, so write out its properties.

@@ -18,9 +18,11 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.XPath;
@@ -39,7 +41,7 @@ namespace Chummer.Backend.Equipment
 		private string _strPage = string.Empty;
 		private bool _blnIncludeInVehicle;
 		private bool _blnInstalled = true;
-		private IList<Weapon> _weapons = new List<Weapon>();
+		private IList<Weapon> _lstWeapons = new List<Weapon>();
 		private string _strNotes = string.Empty;
 		private string _strExtra = string.Empty;
 		private string _strWeaponMountCategories = string.Empty;
@@ -53,17 +55,17 @@ namespace Chummer.Backend.Equipment
 
         private XmlNode _objCachedMyXmlNode = null;
         private string _strCachedXmlNodeLanguage = string.Empty;
-        private IList<VehicleMod> _mods = new List<VehicleMod>();
+        private IList<VehicleMod> _lstMods = new List<VehicleMod>();
 
         private readonly Vehicle _vehicle;
-	    private readonly Character _character;
+	    private readonly Character _objCharacter;
 
 		#region Constructor, Create, Save, Load, and Print Methods
 		public WeaponMount(Character character, Vehicle vehicle)
 		{
 			// Create the GUID for the new VehicleMod.
 			_guiID = Guid.NewGuid();
-		    _character = character;
+		    _objCharacter = character;
 			_vehicle = vehicle;
         }
 
@@ -72,7 +74,7 @@ namespace Chummer.Backend.Equipment
         /// <param name="objNode">TreeNode to populate a TreeView.</param>
         /// <param name="objParent">Vehicle that the mod will be attached to.</param>
         /// <param name="decMarkup">Discount or markup that applies to the base cost of the mod.</param>
-        public void Create(XmlNode objXmlMod, TreeNode objNode, decimal decMarkup = 0)
+        public void Create(XmlNode objXmlMod, decimal decMarkup = 0)
         {
             if (objXmlMod == null) Utils.BreakIfDebug();
             objXmlMod.TryGetStringFieldQuickly("id", ref _strSourceId);
@@ -82,7 +84,8 @@ namespace Chummer.Backend.Equipment
             objXmlMod.TryGetInt32FieldQuickly("slots", ref _intSlots);
             objXmlMod.TryGetStringFieldQuickly("weaponcategories", ref _strWeaponMountCategories);
             objXmlMod.TryGetStringFieldQuickly("avail", ref _strAvail);
-            objXmlMod.TryGetStringFieldQuickly("notes", ref _strNotes);
+            if (!objXmlMod.TryGetStringFieldQuickly("altnotes", ref _strNotes))
+                objXmlMod.TryGetStringFieldQuickly("notes", ref _strNotes);
             // Check for a Variable Cost.
             _strCost = objXmlMod["cost"]?.InnerText ?? string.Empty;
             if (!string.IsNullOrEmpty(_strCost))
@@ -103,7 +106,7 @@ namespace Chummer.Backend.Equipment
 
                     if (decMin != 0 || decMax != decimal.MaxValue)
                     {
-                        string strNuyenFormat = _character.Options.NuyenFormat;
+                        string strNuyenFormat = _objCharacter.Options.NuyenFormat;
                         int intDecimalPlaces = strNuyenFormat.IndexOf('.');
                         if (intDecimalPlaces == -1)
                             intDecimalPlaces = 0;
@@ -125,9 +128,6 @@ namespace Chummer.Backend.Equipment
 
             objXmlMod.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlMod.TryGetStringFieldQuickly("page", ref _strPage);
-
-            objNode.Text = DisplayName(GlobalOptions.Language);
-            objNode.Tag = _guiID.ToString();
         }
 
 		/// <summary>
@@ -137,8 +137,8 @@ namespace Chummer.Backend.Equipment
 		public void Save(XmlTextWriter objWriter)
 		{
 			objWriter.WriteStartElement("weaponmount");
-			objWriter.WriteElementString("guid", _guiID.ToString());
-            objWriter.WriteElementString("sourceid", _strSourceId.ToString());
+			objWriter.WriteElementString("guid", _guiID.ToString("D"));
+            objWriter.WriteElementString("sourceid", _strSourceId);
             objWriter.WriteElementString("name", _strName);
 			objWriter.WriteElementString("category", _strCategory);
 			objWriter.WriteElementString("limit", _strLimit);
@@ -153,27 +153,27 @@ namespace Chummer.Backend.Equipment
 			objWriter.WriteElementString("installed", _blnInstalled.ToString());
 			objWriter.WriteElementString("weaponmountcategories", _strWeaponMountCategories);
 			objWriter.WriteStartElement("weapons");
-            foreach (var w in _weapons)
+            foreach (Weapon objWeapon in _lstWeapons)
             {
-                w.Save(objWriter);
+                objWeapon.Save(objWriter);
             }
             objWriter.WriteEndElement();
             objWriter.WriteStartElement("weaponmountoptions");
-            foreach (var w in WeaponMountOptions)
+            foreach (WeaponMountOption objOption in WeaponMountOptions)
             {
-                w.Save(objWriter);
+                objOption.Save(objWriter);
             }
             objWriter.WriteEndElement();
             objWriter.WriteStartElement("mods");
-		    foreach (var m in Mods)
+		    foreach (VehicleMod objMod in _lstMods)
 		    {
-		        m.Save(objWriter);
+		        objMod.Save(objWriter);
 		    }
             objWriter.WriteEndElement();
             objWriter.WriteElementString("notes", _strNotes);
-			objWriter.WriteElementString("discountedcost", DiscountCost.ToString());
+			objWriter.WriteElementString("discountedcost", _blnDiscountCost.ToString());
 			objWriter.WriteEndElement();
-			_character.SourceProcess(_strSource);
+			_objCharacter.SourceProcess(_strSource);
 		}
 
 		/// <summary>
@@ -195,7 +195,7 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetStringFieldQuickly("name", ref _strName);
             if (!objNode.TryGetStringFieldQuickly("sourceid", ref _strSourceId))
             {
-                _strSourceId = XmlManager.Load("vehicles.xml")?.SelectSingleNode("/chummer/weaponmounts/weaponmount[name = \"" + _strName + "\"]")?["id"]?.InnerText ?? Guid.NewGuid().ToString();
+                _strSourceId = XmlManager.Load("vehicles.xml").SelectSingleNode("/chummer/weaponmounts/weaponmount[name = \"" + _strName + "\"]/id")?.InnerText ?? Guid.NewGuid().ToString("D");
             }
             objNode.TryGetStringFieldQuickly("category", ref _strCategory);
 			objNode.TryGetStringFieldQuickly("limit", ref _strLimit);
@@ -208,38 +208,43 @@ namespace Chummer.Backend.Equipment
 			objNode.TryGetStringFieldQuickly("source", ref _strSource);
 			objNode.TryGetBoolFieldQuickly("included", ref _blnIncludeInVehicle);
 			objNode.TryGetBoolFieldQuickly("installed", ref _blnInstalled);
-			if (objNode["weapons"] != null)
+
+            XmlNode xmlChildrenNode = objNode["weapons"];
+            if (xmlChildrenNode != null)
 			{
-                foreach (XmlNode xmlWeaponNode in objNode.SelectNodes("weapons/weapon"))
+                foreach (XmlNode xmlWeaponNode in xmlChildrenNode.SelectNodes("weapon"))
                 {
-                    Weapon objWeapon = new Weapon(_character)
+                    Weapon objWeapon = new Weapon(_objCharacter)
                     {
                         ParentVehicle = Parent,
                         ParentMount = this
                     };
                     objWeapon.Load(xmlWeaponNode, blnCopy);
-                    _weapons.Add(objWeapon);
+                    _lstWeapons.Add(objWeapon);
                 }
             }
-            if (objNode["weaponmountoptions"] != null)
+            xmlChildrenNode = objNode["weaponmountoptions"];
+            if (xmlChildrenNode != null)
             {
-                foreach (XmlNode xmlWeaponMountOptionNode in objNode.SelectNodes("weaponmountoptions/weaponmountoption"))
+                foreach (XmlNode xmlWeaponMountOptionNode in xmlChildrenNode.SelectNodes("weaponmountoption"))
                 {
-                    WeaponMountOption objWeaponMountOption = new WeaponMountOption(_character);
+                    WeaponMountOption objWeaponMountOption = new WeaponMountOption(_objCharacter);
                     objWeaponMountOption.Load(xmlWeaponMountOptionNode, Parent);
                     WeaponMountOptions.Add(objWeaponMountOption);
                 }
             }
-		    if (objNode["mods"] != null)
-		    {
-		        foreach (XmlNode xmlModNode in objNode.SelectNodes("mods/mod"))
+            xmlChildrenNode = objNode["mods"];
+            if (xmlChildrenNode != null)
+            {
+		        foreach (XmlNode xmlModNode in xmlChildrenNode.SelectNodes("mod"))
 		        {
-                    var objMod = new VehicleMod(_character)
+                    VehicleMod objMod = new VehicleMod(_objCharacter)
                     {
-                        Parent = Parent
+                        Parent = Parent,
+                        WeaponMountParent = this
                     };
                     objMod.Load(xmlModNode);
-		            Mods.Add(objMod);
+		            _lstMods.Add(objMod);
 		        }
             }
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
@@ -256,50 +261,53 @@ namespace Chummer.Backend.Equipment
 			objWriter.WriteStartElement("mod");
 			objWriter.WriteElementString("name", DisplayNameShort(strLanguageToPrint));
 			objWriter.WriteElementString("category", DisplayCategory(strLanguageToPrint));
-			objWriter.WriteElementString("limit", _strLimit);
-			objWriter.WriteElementString("slots", _intSlots.ToString());
+			objWriter.WriteElementString("limit", Limit);
+			objWriter.WriteElementString("slots", Slots.ToString());
 			objWriter.WriteElementString("avail", TotalAvail(strLanguageToPrint));
-			objWriter.WriteElementString("cost", TotalCost.ToString(_character.Options.NuyenFormat, objCulture));
-			objWriter.WriteElementString("owncost", OwnCost.ToString(_character.Options.NuyenFormat, objCulture));
+			objWriter.WriteElementString("cost", TotalCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
+			objWriter.WriteElementString("owncost", OwnCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
 			objWriter.WriteElementString("source", CommonFunctions.LanguageBookShort(Source, strLanguageToPrint));
 			objWriter.WriteElementString("page", Page(strLanguageToPrint));
-			objWriter.WriteElementString("included", _blnIncludeInVehicle.ToString());
+			objWriter.WriteElementString("included", IncludedInVehicle.ToString());
             objWriter.WriteStartElement("weapons");
-		    foreach (var w in _weapons)
+		    foreach (Weapon objWeapon in Weapons)
 		    {
-		        w.Print(objWriter, objCulture, strLanguageToPrint);
+		        objWeapon.Print(objWriter, objCulture, strLanguageToPrint);
             }
-		    foreach (var m in _mods)
+		    foreach (VehicleMod objVehicleMod in Mods)
 		    {
-		        m.Print(objWriter, objCulture, strLanguageToPrint);
+		        objVehicleMod.Print(objWriter, objCulture, strLanguageToPrint);
 		    }
             objWriter.WriteEndElement();
-			if (_character.Options.PrintNotes)
-				objWriter.WriteElementString("notes", _strNotes);
+			if (_objCharacter.Options.PrintNotes)
+				objWriter.WriteElementString("notes", Notes);
 			objWriter.WriteEndElement();
 		}
         /// <summary>
         /// Create a weapon mount using names instead of IDs, because user readability is important and untrustworthy. 
         /// </summary>
-        /// <param name="n"></param>
-        internal void CreateByName(XmlNode n, TreeNode t)
+        /// <param name="xmlNode"></param>
+        public void CreateByName(XmlNode xmlNode)
         {
-            XmlDocument doc = XmlManager.Load("vehicles.xml");
-            TreeNode tree = new TreeNode();
-            WeaponMount mount = this;
-            XmlNode node = doc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[name = \"{n["size"].InnerText}\" and category = \"Size\"]");
-            mount.Create(node, tree);
-            WeaponMountOption option = new WeaponMountOption(_character);
-            node = doc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[name = \"{n["flexibility"].InnerText}\" and category = \"Flexibility\"]");
-            option.Create(node["id"].InnerText, mount.WeaponMountOptions);
-            option = new WeaponMountOption(_character);
-            node = doc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[name = \"{n["control"].InnerText}\" and category = \"Control\"]");
-            option.Create(node["id"].InnerText, mount.WeaponMountOptions);
-            option = new WeaponMountOption(_character);
-            node = doc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[name = \"{n["visibility"].InnerText}\" and category = \"Visibility\"]");
-            option.Create(node["id"].InnerText, mount.WeaponMountOptions);
-            t.Text = DisplayName(GlobalOptions.Language);
-            t.Tag = _guiID.ToString();
+            XmlDocument xmlDoc = XmlManager.Load("vehicles.xml");
+            WeaponMount objMount = this;
+            XmlNode xmlDataNode = xmlDoc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[name = \"{xmlNode["size"].InnerText}\" and category = \"Size\"]");
+            objMount.Create(xmlDataNode);
+
+            WeaponMountOption objWeaponMountOption = new WeaponMountOption(_objCharacter);
+            xmlDataNode = xmlDoc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[name = \"{xmlNode["flexibility"].InnerText}\" and category = \"Flexibility\"]");
+            objWeaponMountOption.Create(xmlDataNode);
+            objMount.WeaponMountOptions.Add(objWeaponMountOption);
+
+            objWeaponMountOption = new WeaponMountOption(_objCharacter);
+            xmlDataNode = xmlDoc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[name = \"{xmlNode["control"].InnerText}\" and category = \"Control\"]");
+            objWeaponMountOption.Create(xmlDataNode);
+            objMount.WeaponMountOptions.Add(objWeaponMountOption);
+
+            objWeaponMountOption = new WeaponMountOption(_objCharacter);
+            xmlDataNode = xmlDoc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[name = \"{xmlNode["visibility"].InnerText}\" and category = \"Visibility\"]");
+            objWeaponMountOption.Create(xmlDataNode);
+            objMount.WeaponMountOptions.Add(objWeaponMountOption);
         }
         #endregion
 
@@ -311,7 +319,7 @@ namespace Chummer.Backend.Equipment
 		{
 			get
 			{
-				return _weapons;
+				return _lstWeapons;
 			}
 		}
 
@@ -322,7 +330,18 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
-                return _guiID.ToString();
+                return _guiID.ToString("D");
+            }
+        }
+
+        /// <summary>
+        /// Identifier of the WeaponMount's Size in the data files.
+        /// </summary>
+        public string SourceId
+        {
+            get
+            {
+                return _strSourceId;
             }
         }
 
@@ -349,7 +368,7 @@ namespace Chummer.Backend.Equipment
             if (strLanguage == GlobalOptions.DefaultLanguage)
                 return Category;
 
-            return XmlManager.Load("vehicles.xml", strLanguage)?.SelectSingleNode("/chummer/categories/category[. = \"" + Category + "\"]")?.Attributes?["translate"]?.InnerText ?? Category;
+            return XmlManager.Load("vehicles.xml", strLanguage).SelectSingleNode("/chummer/categories/category[. = \"" + Category + "\"]/@translate")?.InnerText ?? Category;
         }
 
         /// <summary>
@@ -550,7 +569,7 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
-                return _blnDiscountCost;
+                return _blnDiscountCost && _objCharacter.BlackMarketDiscount;
             }
             set
             {
@@ -702,7 +721,7 @@ namespace Chummer.Backend.Equipment
 
         public IList<VehicleMod> Mods
         {
-            get => _mods;
+            get => _lstMods;
         }
 
         /// <summary>
@@ -721,14 +740,27 @@ namespace Chummer.Backend.Equipment
         /// </summary>
         public string DisplayName(string strLanguage)
 		{
-            string strReturn = DisplayNameShort(strLanguage);
-
+            StringBuilder strReturn = new StringBuilder(DisplayNameShort(strLanguage));
+            
             if (WeaponMountOptions.Count > 0)
             {
-                strReturn += $" ({string.Join(", ", WeaponMountOptions.Select(wm => wm.DisplayName(strLanguage)).ToArray())})";
+                strReturn.Append(" (");
+                bool blnCloseParantheses = false;
+                foreach (WeaponMountOption objOption in WeaponMountOptions)
+                {
+                    if (objOption.Name != "None")
+                    {
+                        blnCloseParantheses = true;
+                        strReturn.Append(objOption.DisplayName(strLanguage));
+                        strReturn.Append(", ");
+                    }
+                }
+                strReturn.Length -= 2;
+                if (blnCloseParantheses)
+                    strReturn.Append(')');
             }
 
-            return strReturn;
+            return strReturn.ToString();
         }
 
         public XmlNode GetNode()
@@ -740,10 +772,54 @@ namespace Chummer.Backend.Equipment
         {
             if (_objCachedMyXmlNode == null || strLanguage != _strCachedXmlNodeLanguage || GlobalOptions.LiveCustomData)
             {
-                _objCachedMyXmlNode = XmlManager.Load("vehicles.xml", strLanguage)?.SelectSingleNode("/chummer/weaponmounts/weaponmount[id = \"" + _strSourceId + "\"]");
+                _objCachedMyXmlNode = XmlManager.Load("vehicles.xml", strLanguage).SelectSingleNode("/chummer/weaponmounts/weaponmount[id = \"" + _strSourceId + "\"]");
                 _strCachedXmlNodeLanguage = strLanguage;
             }
             return _objCachedMyXmlNode;
+        }
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Add a Weapon Mount to the TreeView
+        /// </summary>
+        /// <param name="objWeaponMount">WeaponMount that we're creating.</param>
+        /// <param name="parentNode">Parent treenode to add to.</param>
+        /// <param name="cmsVehicleWeapon">ContextMenuStrip for Vehicle Weapons</param>
+        /// <param name="cmsWeaponAccessory">ContextMenuStrip for Vehicle Weapon Accessories</param>
+        /// <param name="cmsWeaponAccessoryGear">ContextMenuStrip for Vehicle Weapon Gear</param>
+        /// <param name="cmsVehicleWeaponMount">ContextMenuStrip for Vehicle Weapon Mounts</param>
+        public TreeNode CreateTreeNode(ContextMenuStrip cmsVehicleWeaponMount, ContextMenuStrip cmsVehicleWeapon, ContextMenuStrip cmsWeaponAccessory, ContextMenuStrip cmsWeaponAccessoryGear, ContextMenuStrip cmsCyberware, ContextMenuStrip cmsCyberwareGear, ContextMenuStrip cmsVehicleMod)
+        {
+            TreeNode objNode = new TreeNode
+            {
+                Name = InternalId,
+                Text = DisplayName(GlobalOptions.Language),
+                Tag = InternalId,
+                ContextMenuStrip = cmsVehicleWeaponMount
+            };
+            if (!string.IsNullOrEmpty(Notes))
+            {
+                objNode.ForeColor = Color.SaddleBrown;
+            }
+            else if (IncludedInVehicle)
+            {
+                objNode.ForeColor = SystemColors.GrayText;
+            }
+            objNode.ToolTipText = Notes.WordWrap(100);
+            // VehicleMods.
+            foreach (VehicleMod objMod in Mods)
+            {
+                objNode.Nodes.Add(objMod.CreateTreeNode(cmsVehicleMod, cmsCyberware, cmsCyberwareGear, cmsVehicleWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
+                objNode.Expand();
+            }
+            foreach (Weapon objWeapon in Weapons)
+            {
+                objNode.Nodes.Add(objWeapon.CreateTreeNode(cmsVehicleWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
+                objNode.Expand();
+            }
+
+            return objNode;
         }
         #endregion
     }
@@ -766,16 +842,17 @@ namespace Chummer.Backend.Equipment
         }
 
         /// <summary>
-        /// Create a Weapon Mount Option from an XmlNode.
+        /// Create a Weapon Mount Option from an XmlNode, returns true if creation was successful.
         /// </summary>
         /// <param name="id">String guid of the object.</param>
-        /// <param name="list">List to add the object to. Called inside the Create method in case the mount itself is null.</param>
-        public void Create(string id, ICollection<WeaponMountOption> list)
+        public bool Create(XmlNode objXmlMod)
         {
-            XmlDocument xmlDoc = XmlManager.Load("vehicles.xml");
-            XmlNode objXmlMod = xmlDoc.SelectSingleNode($"/chummer/weaponmounts/weaponmount[id = \"{id}\"]");
-            if (objXmlMod == null) Utils.BreakIfDebug();
-            Guid.TryParse(id, out _sourceID);
+            if (objXmlMod == null)
+            {
+                Utils.BreakIfDebug();
+                return false;
+            }
+            objXmlMod.TryGetField("id", Guid.TryParse, out _sourceID);
             objXmlMod.TryGetStringFieldQuickly("name", ref _strName);
             objXmlMod.TryGetStringFieldQuickly("category", ref _strCategory);
             objXmlMod.TryGetInt32FieldQuickly("slots", ref _intSlots);
@@ -788,7 +865,7 @@ namespace Chummer.Backend.Equipment
             if (_strCost.StartsWith("Variable("))
             {
                 int intMin;
-                var intMax = 0;
+                int intMax = 0;
                 string strCost = _strCost.Replace("Variable(", string.Empty).TrimEnd(')');
                 if (strCost.Contains("-"))
                 {
@@ -797,7 +874,7 @@ namespace Chummer.Backend.Equipment
                     intMax = Convert.ToInt32(strValues[1]);
                 }
                 else
-                    intMin = Convert.ToInt32(strCost.Replace("+", string.Empty));
+                    intMin = Convert.ToInt32(strCost.FastEscape('+'));
 
                 if (intMin != 0 || intMax != 0)
                 {
@@ -818,7 +895,7 @@ namespace Chummer.Backend.Equipment
                     _strCost = frmPickNumber.SelectedValue.ToString(GlobalOptions.InvariantCultureInfo);
                 }
             }
-            list.Add(this);
+            return true;
         }
 
         public string DisplayNameShort(string strLanguage)
@@ -841,7 +918,7 @@ namespace Chummer.Backend.Equipment
         public void Save(XmlTextWriter objWriter)
         {
             objWriter.WriteStartElement("weaponmountoption");
-            objWriter.WriteElementString("id", _sourceID.ToString());
+            objWriter.WriteElementString("id", _sourceID.ToString("D"));
             objWriter.WriteElementString("name", _strName);
             objWriter.WriteElementString("category", _strCategory);
             objWriter.WriteElementString("slots", _intSlots.ToString());
@@ -894,6 +971,11 @@ namespace Chummer.Backend.Equipment
             get => _strName;
             set => _strName = value;
         }
+
+        /// <summary>
+        /// Identifier of the WeaponMountOption in the data files.
+        /// </summary>
+        public string SourceId => _sourceID.ToString("D");
         #endregion
 
         #region Complex Properties
@@ -905,7 +987,7 @@ namespace Chummer.Backend.Equipment
             if (strLanguage == GlobalOptions.DefaultLanguage)
                 return Category;
 
-            return XmlManager.Load("vehicles.xml", strLanguage)?.SelectSingleNode("/chummer/categories/category[. = \"" + Category + "\"]")?.Attributes?["translate"]?.InnerText ?? Category;
+            return XmlManager.Load("vehicles.xml", strLanguage).SelectSingleNode("/chummer/categories/category[. = \"" + Category + "\"]/@translate")?.InnerText ?? Category;
         }
 
         /// <summary>
@@ -958,7 +1040,7 @@ namespace Chummer.Backend.Equipment
         {
             if (_objCachedMyXmlNode == null || strLanguage != _strCachedXmlNodeLanguage || GlobalOptions.LiveCustomData)
             {
-                _objCachedMyXmlNode = XmlManager.Load("vehicles.xml", strLanguage)?.SelectSingleNode("/chummer/weaponmounts/weaponmount[id = \"" + _sourceID.ToString() + "\"]");
+                _objCachedMyXmlNode = XmlManager.Load("vehicles.xml", strLanguage).SelectSingleNode("/chummer/weaponmounts/weaponmount[id = \"" + _sourceID.ToString("D") + "\"]");
                 _strCachedXmlNodeLanguage = strLanguage;
             }
             return _objCachedMyXmlNode;

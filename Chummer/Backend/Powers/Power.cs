@@ -70,8 +70,8 @@ namespace Chummer
         public void Save(XmlTextWriter objWriter)
         {
             objWriter.WriteStartElement("power");
-            objWriter.WriteElementString("id", _sourceID.ToString());
-            objWriter.WriteElementString("guid", _guiID.ToString());
+            objWriter.WriteElementString("id", _sourceID.ToString("D"));
+            objWriter.WriteElementString("guid", _guiID.ToString("D"));
             objWriter.WriteElementString("name", Name);
             objWriter.WriteElementString("extra", Extra);
             objWriter.WriteElementString("pointsperlevel", _strPointsPerLevel);
@@ -117,7 +117,8 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("adeptway", ref _strAdeptWayDiscount);
             LevelsEnabled = objNode["levels"]?.InnerText == System.Boolean.TrueString;
             Rating = intRating;
-            objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
+            if (!objNode.TryGetStringFieldQuickly("altnotes", ref _strNotes))
+                objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objNode.TryGetInt32FieldQuickly("maxlevels", ref _intMaxLevel);
             objNode.TryGetBoolFieldQuickly("discounted", ref _blnDiscountedAdeptWay);
             objNode.TryGetBoolFieldQuickly("discountedgeas", ref _blnDiscountedGeas);
@@ -127,7 +128,6 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("action", ref _strAction);
             objNode.TryGetStringFieldQuickly("source", ref _strSource);
             objNode.TryGetStringFieldQuickly("page", ref _strPage);
-            objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             Bonus = objNode["bonus"];
             if (objBonusNodeOverride != null)
                 Bonus = objBonusNodeOverride;
@@ -273,7 +273,7 @@ namespace Chummer
             objWriter.WriteElementString("source", CommonFunctions.LanguageBookShort(Source, strLanguageToPrint));
             objWriter.WriteElementString("page", Page(strLanguageToPrint));
             if (CharacterObject.Options.PrintNotes)
-                objWriter.WriteElementString("notes", _strNotes);
+                objWriter.WriteElementString("notes", Notes);
             objWriter.WriteStartElement("enhancements");
             foreach (Enhancement objEnhancement in Enhancements)
             {
@@ -293,7 +293,7 @@ namespace Chummer
         /// <summary>
         /// Internal identifier which will be used to identify this Power in the Improvement system.
         /// </summary>
-        public string InternalId => _guiID.ToString();
+        public string InternalId => _guiID.ToString("D");
 
         /// <summary>
         /// Power's name.
@@ -328,13 +328,7 @@ namespace Chummer
         /// <summary>
         /// The translated name of the Power (Name + any Extra text).
         /// </summary>
-        public string DisplayName
-        {
-            get
-            {
-                return DisplayNameMethod(GlobalOptions.Language);
-            }
-        }
+        public string DisplayName => DisplayNameMethod(GlobalOptions.Language);
 
         /// <summary>
         /// The translated name of the Power (Name + any Extra text).
@@ -346,7 +340,7 @@ namespace Chummer
             if (!string.IsNullOrEmpty(Extra))
             {
                 // Attempt to retrieve the CharacterAttribute name.
-                strReturn += " (" + LanguageManager.TranslateExtra(Extra, strLanguage) + ")";
+                strReturn += " (" + LanguageManager.TranslateExtra(Extra, strLanguage) + ')';
             }
 
             return strReturn;
@@ -362,10 +356,7 @@ namespace Chummer
                 decimal decReturn = Convert.ToDecimal(_strPointsPerLevel, GlobalOptions.InvariantCultureInfo);
                 return decReturn;
             }
-            set
-            {
-                _strPointsPerLevel = value.ToString(GlobalOptions.InvariantCultureInfo);
-            }
+            set => _strPointsPerLevel = value.ToString(GlobalOptions.InvariantCultureInfo);
         }
 
         /// <summary>
@@ -374,8 +365,8 @@ namespace Chummer
         /// </summary>
         public decimal ExtraPointCost
         {
-            get { return _decExtraPointCost; }
-            set { _decExtraPointCost = value; }
+            get => _decExtraPointCost;
+            set => _decExtraPointCost = value;
         }
 
         /// <summary>
@@ -388,10 +379,7 @@ namespace Chummer
                 decimal decReturn = Convert.ToDecimal(_strAdeptWayDiscount, GlobalOptions.InvariantCultureInfo);
                 return decReturn;
             }
-            set
-            {
-                _strAdeptWayDiscount = value.ToString(GlobalOptions.InvariantCultureInfo);
-            }
+            set => _strAdeptWayDiscount = value.ToString(GlobalOptions.InvariantCultureInfo);
         }
 
         /// <summary>
@@ -414,7 +402,7 @@ namespace Chummer
         /// </summary>
         public int TotalRating
         {
-            get { return Math.Min(Rating + FreeLevels, TotalMaximumLevels); }
+            get => Math.Min(Rating + FreeLevels, TotalMaximumLevels);
             set
             {
                 Rating = Math.Max(value - FreeLevels, 0);
@@ -497,7 +485,7 @@ namespace Chummer
                 else
                     return PowerPoints.ToString("G29", GlobalOptions.CultureInfo);
             }
-            set { _displayPoints = value; }
+            set => _displayPoints = value;
         }
 
         /// <summary>
@@ -505,14 +493,8 @@ namespace Chummer
         /// </summary>
         public string BonusSource
         {
-            get
-            {
-                return _strBonusSource;
-            }
-            set
-            {
-                _strBonusSource = value;
-            }
+            get => _strBonusSource;
+            set => _strBonusSource = value;
         }
 
         /// <summary>
@@ -533,14 +515,8 @@ namespace Chummer
         /// </summary>
         public string Source
         {
-            get
-            {
-                return _strSource;
-            }
-            set
-            {
-                _strSource = value;
-            }
+            get => _strSource;
+            set => _strSource = value;
         }
 
         /// <summary>
@@ -570,14 +546,8 @@ namespace Chummer
         /// </summary>
         public int MaxLevels
         {
-            get
-            {
-                return _intMaxLevel;
-            }
-            set
-            {
-                _intMaxLevel = value;
-            }
+            get => _intMaxLevel;
+            set => _intMaxLevel = value;
         }
 
         /// <summary>
@@ -585,13 +555,12 @@ namespace Chummer
         /// </summary>
         public bool DiscountedAdeptWay
         {
-            get
-            {
-                return _blnDiscountedAdeptWay;
-            }
+            get => _blnDiscountedAdeptWay;
             set
             {
+                if (value == _blnDiscountedAdeptWay) return;
                 _blnDiscountedAdeptWay = value;
+                OnPropertyChanged();
             }
         }
 
@@ -600,14 +569,8 @@ namespace Chummer
         /// </summary>
         public bool DiscountedGeas
         {
-            get
-            {
-                return _blnDiscountedGeas;
-            }
-            set
-            {
-                _blnDiscountedGeas = value;
-            }
+            get => _blnDiscountedGeas;
+            set => _blnDiscountedGeas = value;
         }
 
         /// <summary>
@@ -615,14 +578,8 @@ namespace Chummer
         /// </summary>
         public string Notes
         {
-            get
-            {
-                return _strNotes;
-            }
-            set
-            {
-                _strNotes = value;
-            }
+            get => _strNotes;
+            set => _strNotes = value;
         }
 
         /// <summary>
@@ -630,26 +587,14 @@ namespace Chummer
         /// </summary>
         public string Action
         {
-            get
-            {
-                return _strAction;
-            }
-            set
-            {
-                _strAction = value;
-            }
+            get => _strAction;
+            set => _strAction = value;
         }
 
         /// <summary>
         /// Translated Action.
         /// </summary>
-        public string DisplayAction
-        {
-            get
-            {
-                return DisplayActionMethod(GlobalOptions.Language);
-            }
-        }
+        public string DisplayAction => DisplayActionMethod(GlobalOptions.Language);
 
         /// <summary>
         /// Translated Action.
@@ -733,29 +678,27 @@ namespace Chummer
                     return false;
                 }
                 bool blnReturn = false;
-                if (_nodAdeptWayRequirements != null)
+                //If the Adept Way Requirements node is missing OR the Adept Way Requirements node doesn't have magicianswayforbids, check for the magician's way discount. 
+                if (_nodAdeptWayRequirements?["magicianswayforbids"] == null)
                 {
-                    if (_nodAdeptWayRequirements["magicianswayforbids"] == null)
+                    blnReturn = CharacterObject.Improvements.Any(x => x.ImproveType == Improvement.ImprovementType.MagiciansWayDiscount && x.Enabled);
+                }
+                if (!blnReturn && _nodAdeptWayRequirements != null)
+                {
+                    foreach (XmlNode objNode in _nodAdeptWayRequirements.SelectNodes("required/oneof/quality"))
                     {
-                        blnReturn = CharacterObject.Improvements.Any(x => x.ImproveType == Improvement.ImprovementType.MagiciansWayDiscount && x.Enabled);
-                    }
-                    if (!blnReturn)
-                    {
-                        foreach (XmlNode objNode in _nodAdeptWayRequirements.SelectNodes("required/oneof/quality"))
+                        string strExtra = objNode.Attributes?["extra"]?.InnerText;
+                        if (!string.IsNullOrEmpty(strExtra))
                         {
-                            string strExtra = objNode.Attributes?["extra"]?.InnerText;
-                            if (!string.IsNullOrEmpty(strExtra))
-                            {
-                                blnReturn = CharacterObject.Qualities.Any(objQuality => objQuality.Name == objNode.InnerText && objQuality.Extra == strExtra);
-                                if (blnReturn)
-                                    break;
-                            }
-                            else
-                            {
-                                blnReturn = CharacterObject.Qualities.Any(objQuality => objQuality.Name == objNode.InnerText);
-                                if (blnReturn)
-                                    break;
-                            }
+                            blnReturn = CharacterObject.Qualities.Any(objQuality => objQuality.Name == objNode.InnerText && objQuality.Extra == strExtra);
+                            if (blnReturn)
+                                break;
+                        }
+                        else
+                        {
+                            blnReturn = CharacterObject.Qualities.Any(objQuality => objQuality.Name == objNode.InnerText);
+                            if (blnReturn)
+                                break;
                         }
                     }
                 }
@@ -805,7 +748,7 @@ namespace Chummer
         {
             if (_objCachedMyXmlNode == null || strLanguage != _strCachedXmlNodeLanguage || GlobalOptions.LiveCustomData)
             {
-                _objCachedMyXmlNode = XmlManager.Load("powers.xml", strLanguage)?.SelectSingleNode("/chummer/powers/power[id = \"" + _sourceID.ToString() + "\"]");
+                _objCachedMyXmlNode = XmlManager.Load("powers.xml", strLanguage).SelectSingleNode("/chummer/powers/power[id = \"" + _sourceID.ToString("D") + "\"]");
                 _strCachedXmlNodeLanguage = strLanguage;
             }
             return _objCachedMyXmlNode;

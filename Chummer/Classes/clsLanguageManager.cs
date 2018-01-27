@@ -72,7 +72,8 @@ namespace Chummer
         {
             public IDictionary<string, string> TranslatedStrings { get; } = new Dictionary<string, string>();
             public XmlDocument DataDocument { get; } = new XmlDocument();
-            public bool IsLoaded { get; private set; } = true;
+            public string ErrorMessage { get; private set; } = string.Empty;
+            public bool ErrorAlreadyShown { get; set; } = false;
 
             public LanguageData(string strLanguage)
             {
@@ -80,38 +81,62 @@ namespace Chummer
                 if (File.Exists(strFilePath))
                 {
                     XmlDocument objLanguageDocument = new XmlDocument();
-                    objLanguageDocument.Load(strFilePath);
-                    if (objLanguageDocument != null)
+                    try
                     {
-                        foreach (XmlNode objNode in objLanguageDocument.SelectNodes("/chummer/strings/string"))
+                        objLanguageDocument.Load(strFilePath);
+                        if (objLanguageDocument != null)
                         {
-                            // Look for the English version of the found string. If it has been found, replace the English contents with the contents from this file.
-                            // If the string was not found, then someone has inserted a Key that should not exist and is ignored.
-                            string strKey = objNode["key"]?.InnerText;
-                            string strText = objNode["text"]?.InnerText;
-                            if (!string.IsNullOrEmpty(strKey) && !string.IsNullOrEmpty(strText))
+                            foreach (XmlNode objNode in objLanguageDocument.SelectNodes("/chummer/strings/string"))
                             {
-                                if (TranslatedStrings.ContainsKey(strKey))
-                                    TranslatedStrings[strKey] = strText.Replace("\\n", "\n");
-                                else
-                                    TranslatedStrings.Add(strKey, strText.Replace("\\n", "\n"));
+                                // Look for the English version of the found string. If it has been found, replace the English contents with the contents from this file.
+                                // If the string was not found, then someone has inserted a Key that should not exist and is ignored.
+                                string strKey = objNode["key"]?.InnerText;
+                                string strText = objNode["text"]?.InnerText;
+                                if (!string.IsNullOrEmpty(strKey) && !string.IsNullOrEmpty(strText))
+                                {
+                                    if (TranslatedStrings.ContainsKey(strKey))
+                                        TranslatedStrings[strKey] = strText.Replace("\\n", "\n");
+                                    else
+                                        TranslatedStrings.Add(strKey, strText.Replace("\\n", "\n"));
+                                }
                             }
                         }
+                        else
+                        {
+                            ErrorMessage += "Failed to load the strings file " + strLanguage + ".xml into an XmlDocument.\n";
+                        }
                     }
-                    else
-                        IsLoaded = false;
+                    catch (Exception ex)
+                    {
+                        ErrorMessage += "Encountered the following the exception while loading " + strLanguage + ".xml into an XmlDocument: " + ex.ToString() + ".\n";
+                    }
                 }
                 else
-                    IsLoaded = false;
+                {
+                    ErrorMessage += "Could not find the strings file " + strLanguage + ".xml.\n";
+                }
 
                 // Check to see if the data translation file for the selected language exists.
                 string strDataPath = Path.Combine(Application.StartupPath, "lang", strLanguage + "_data.xml");
                 if (File.Exists(strDataPath))
                 {
-                    DataDocument.Load(strDataPath);
+                    try
+                    {
+                        DataDocument.Load(strDataPath);
+                        if (DataDocument == null)
+                        {
+                            ErrorMessage += "Failed to load the data file " + strLanguage + "_data.xml into an XmlDocument.\n";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrorMessage += "Encountered the following the exception while loading " + strLanguage + "_data.xml into an XmlDocument: " + ex.ToString() + ".\n";
+                    }
                 }
                 else
-                    IsLoaded = false;
+                {
+                    ErrorMessage += "Could not find the data file " + strLanguage + "_data.xml.\n";
+                }
             }
         }
         
@@ -154,25 +179,32 @@ namespace Chummer
         /// </summary>
         /// <param name="strIntoLanguage">Language to which to translate the object.</param>
         /// <param name="objObject">Object to translate.</param>
-        public static void TranslateWinForm(string strIntoLanguage, object objObject)
+        public static void TranslateWinForm(string strIntoLanguage, Control objObject)
         {
             if (LoadLanguage(strIntoLanguage))
-                UpdateControls(objObject as Control, strIntoLanguage);
+                UpdateControls(objObject, strIntoLanguage);
         }
 
         private static bool LoadLanguage(string strLanguage)
         {
-            if (strLanguage != GlobalOptions.DefaultLanguage && !s_DictionaryLanguages.ContainsKey(strLanguage))
+            if (strLanguage != GlobalOptions.DefaultLanguage)
             {
-                LanguageData objNewLanguage = new LanguageData(strLanguage);
-                if (!objNewLanguage.IsLoaded)
+                if (!s_DictionaryLanguages.TryGetValue(strLanguage, out LanguageData objNewLanguage))
                 {
-                    MessageBox.Show("Language with code " + strLanguage + " could not be loaded.", "Cannot Load Language", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    objNewLanguage = new LanguageData(strLanguage);
+                    s_DictionaryLanguages.Add(strLanguage, objNewLanguage);
+                }
+                if (!string.IsNullOrEmpty(objNewLanguage.ErrorMessage))
+                {
+                    if (!objNewLanguage.ErrorAlreadyShown)
+                    {
+                        MessageBox.Show("Language with code " + strLanguage + " could not be loaded for the following reasons:\n\n" + objNewLanguage.ErrorMessage, "Cannot Load Language", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        objNewLanguage.ErrorAlreadyShown = true;
+                    }
                     return false;
                 }
-                else
-                    s_DictionaryLanguages.Add(strLanguage, objNewLanguage);
             }
+
             return true;
         }
 
@@ -190,7 +222,7 @@ namespace Chummer
                 // Translatable items are identified by having a value in their Tag attribute. The contents of Tag is the string to lookup in the language list.
                 // Update the Form itself.
                 string strControlTag = frmForm.Tag?.ToString();
-                if (!string.IsNullOrEmpty(strControlTag))
+                if (!string.IsNullOrEmpty(strControlTag) && !int.TryParse(strControlTag, out int intDummy) && !strControlTag.IsGuid())
                     frmForm.Text = GetString(strControlTag, strIntoLanguage);
 
                 // update any menu strip items that have tags
@@ -205,7 +237,7 @@ namespace Chummer
                 if (objChild as Label != null || objChild as Button != null || objChild as CheckBox != null)
                 {
                     string strControlTag = objChild.Tag?.ToString();
-                    if (!string.IsNullOrEmpty(strControlTag))
+                    if (!string.IsNullOrEmpty(strControlTag) && !int.TryParse(strControlTag, out int intDummy) && !strControlTag.IsGuid())
                         objChild.Text = GetString(strControlTag, strIntoLanguage);
                 }
                 else if (objChild is ToolStrip tssStrip)
@@ -220,7 +252,7 @@ namespace Chummer
                     foreach (ColumnHeader objHeader in lstList.Columns)
                     {
                         string strControlTag = objHeader.Tag?.ToString();
-                        if (!string.IsNullOrEmpty(strControlTag))
+                        if (!string.IsNullOrEmpty(strControlTag) && !int.TryParse(strControlTag, out int intDummy) && !strControlTag.IsGuid())
                             objHeader.Text = GetString(strControlTag, strIntoLanguage);
                     }
                 }
@@ -229,7 +261,7 @@ namespace Chummer
                     foreach (TabPage tabPage in objTabControl.TabPages)
                     {
                         string strControlTag = tabPage.Tag?.ToString();
-                        if (!string.IsNullOrEmpty(strControlTag))
+                        if (!string.IsNullOrEmpty(strControlTag) && !int.TryParse(strControlTag, out int intDummy) && !strControlTag.IsGuid())
                             tabPage.Text = GetString(strControlTag, strIntoLanguage);
 
                         UpdateControls(tabPage, strIntoLanguage);
@@ -271,7 +303,7 @@ namespace Chummer
         public static void TranslateToolStripItemsRecursively(ToolStripItem tssItem, string strIntoLanguage)
         {
             string strControlTag = tssItem.Tag?.ToString();
-            if (!string.IsNullOrEmpty(strControlTag))
+            if (!string.IsNullOrEmpty(strControlTag) && !int.TryParse(strControlTag, out int intDummy) && !strControlTag.IsGuid())
                 tssItem.Text = GetString(strControlTag, strIntoLanguage);
 
             if (tssItem is ToolStripDropDownItem tssDropDownItem)
@@ -301,11 +333,7 @@ namespace Chummer
             {
                 return strReturn;
             }
-            if (!blnReturnError)
-            {
-                return string.Empty;
-            }
-            return "Error finding string for key - " + strKey;
+            return !blnReturnError ? string.Empty : $"{strKey} not found; check language file for string";
         }
 
         /// <summary>
@@ -396,6 +424,8 @@ namespace Chummer
             new Tuple<string, string, Func<XmlNode, string>, Func<XmlNode, string>>("programs.xml", "/chummer/categories/category",
                 new Func<XmlNode, string>(x => x.InnerText), new Func<XmlNode, string>(x => x.Attributes?["translate"]?.InnerText)),
             new Tuple<string, string, Func<XmlNode, string>, Func<XmlNode, string>>("skills.xml", "/chummer/skills/skill/specs/spec",
+                new Func<XmlNode, string>(x => x.InnerText), new Func<XmlNode, string>(x => x.Attributes?["translate"]?.InnerText)),
+            new Tuple<string, string, Func<XmlNode, string>, Func<XmlNode, string>>("skills.xml", "/chummer/knowledgeskills/skill/specs/spec",
                 new Func<XmlNode, string>(x => x.InnerText), new Func<XmlNode, string>(x => x.Attributes?["translate"]?.InnerText)),
             new Tuple<string, string, Func<XmlNode, string>, Func<XmlNode, string>>("skills.xml", "/chummer/skillgroups/name",
                 new Func<XmlNode, string>(x => x.InnerText), new Func<XmlNode, string>(x => x.Attributes?["translate"]?.InnerText)),
@@ -502,7 +532,7 @@ namespace Chummer
                         strReturn = GetString("String_AttributeMAGShort", strIntoLanguage);
                         break;
                     case "MAGAdept":
-                        strReturn = GetString("String_AttributeMAGShort", strIntoLanguage) + " (" + GetString("String_DescAdept", strIntoLanguage) + ")";
+                        strReturn = GetString("String_AttributeMAGShort", strIntoLanguage) + " (" + GetString("String_DescAdept", strIntoLanguage) + ')';
                         break;
                     case "RES":
                         strReturn = GetString("String_AttributeRESShort", strIntoLanguage);
@@ -552,7 +582,7 @@ namespace Chummer
             }
 
             // If no translation could be found, just use whatever we were passed.
-            if (string.IsNullOrEmpty(strReturn) || strReturn.Contains("Error finding string for key - "))
+            if (string.IsNullOrEmpty(strReturn) || strReturn.Contains("not found; check language file for string"))
                 strReturn = strExtra;
 
             return strReturn;
@@ -611,7 +641,7 @@ namespace Chummer
                 {
                     return "MAG";
                 }
-                else if (strExtra == GetString("String_AttributeMAGShort", strFromLanguage) + " (" + GetString("String_DescAdept", strFromLanguage) + ")")
+                else if (strExtra == GetString("String_AttributeMAGShort", strFromLanguage) + " (" + GetString("String_DescAdept", strFromLanguage) + ')')
                 {
                     return "MAGAdept";
                 }

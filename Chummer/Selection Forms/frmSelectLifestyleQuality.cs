@@ -31,6 +31,7 @@ namespace Chummer
 {
     public partial class frmSelectLifestyleQuality : Form
     {
+        private bool _blnLoading = true;
         private string _strSelectedQuality = string.Empty;
         private bool _blnAddAgain = false;
         private readonly Character _objCharacter;
@@ -91,11 +92,9 @@ namespace Chummer
             cboCategory.ValueMember = "Value";
             cboCategory.DisplayMember = "Name";
             cboCategory.DataSource = _lstCategory;
+            cboCategory.Enabled = _lstCategory.Count > 1;
 
-            // Select the first Category in the list.
-            if (string.IsNullOrEmpty(s_StrSelectCategory))
-                cboCategory.SelectedIndex = 0;
-            else
+            if (!string.IsNullOrEmpty(s_StrSelectCategory))
                 cboCategory.SelectedValue = s_StrSelectCategory;
 
             if (cboCategory.SelectedIndex == -1)
@@ -103,33 +102,52 @@ namespace Chummer
             cboCategory.EndUpdate();
 
             // Change the BP Label to Karma if the character is being built with Karma instead (or is in Career Mode).
-            if (_objCharacter.BuildMethod == CharacterBuildMethod.Karma || _objCharacter.BuildMethod == CharacterBuildMethod.Priority || _objCharacter.Created)
+            if (_objCharacter.BuildMethod == CharacterBuildMethod.Karma || _objCharacter.BuildMethod == CharacterBuildMethod.LifeModule || _objCharacter.Created)
                 lblBPLabel.Text = LanguageManager.GetString("Label_LP", GlobalOptions.Language);
+
+            _blnLoading = false;
 
             BuildQualityList(cboCategory.SelectedValue?.ToString());
         }
 
         private void cboCategory_SelectedIndexChanged(object sender, EventArgs e)
         {
-            BuildQualityList(cboCategory.SelectedValue?.ToString());
+            if (!_blnLoading)
+                BuildQualityList(cboCategory.SelectedValue?.ToString());
         }
 
         private void lstLifestyleQualities_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(lstLifestyleQualities.Text))
+            string strSelectedLifestyleId = lstLifestyleQualities.SelectedValue?.ToString();
+            if (_blnLoading || string.IsNullOrEmpty(strSelectedLifestyleId))
+            {
+                lblMinimum.Visible = false;
+                lblMinimumLabel.Visible = false;
+                lblCost.Visible = false;
+                lblCostLabel.Visible = false;
+                lblBP.Text = string.Empty;
+                lblSource.Text = string.Empty;
+                tipTooltip.SetToolTip(lblSource, string.Empty);
+
                 return;
+            }
 
-            XmlNode objXmlQuality = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + lstLifestyleQualities.SelectedValue + "\"]");
+            XmlNode objXmlQuality = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[id = \"" + strSelectedLifestyleId + "\"]");
             int intBP = Convert.ToInt32(objXmlQuality["lp"].InnerText);
-            lblBP.Text = intBP.ToString();
-            if (chkFree.Checked)
-                lblBP.Text = LanguageManager.GetString("Checkbox_Free", GlobalOptions.Language);
+            lblBP.Text = chkFree.Checked ? LanguageManager.GetString("Checkbox_Free", GlobalOptions.Language) : intBP.ToString();
 
-            string strBook = CommonFunctions.LanguageBookShort(objXmlQuality["source"].InnerText, GlobalOptions.Language);
-            string strPage = objXmlQuality["page"].InnerText;
-            if (objXmlQuality["altpage"] != null)
-                strPage = objXmlQuality["altpage"].InnerText;
-            lblSource.Text = strBook + " " + strPage;
+            string strSource = objXmlQuality["source"]?.InnerText ?? string.Empty;
+            string strPage = objXmlQuality["altpage"]?.InnerText ?? objXmlQuality["page"]?.InnerText ?? string.Empty;
+            if (!string.IsNullOrEmpty(strSource) && !string.IsNullOrEmpty(strPage))
+            {
+                lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + ' ' + strPage;
+                tipTooltip.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + ' ' + LanguageManager.GetString("String_Page", GlobalOptions.Language) + ' ' + strPage);
+            }
+            else
+            {
+                lblSource.Text = string.Empty;
+                tipTooltip.SetToolTip(lblSource, string.Empty);
+            }
             if (objXmlQuality["allowed"] != null)
             {
                 lblMinimum.Text = GetMinimumRequirement(objXmlQuality["allowed"].InnerText);
@@ -175,7 +193,6 @@ namespace Chummer
                 lblCost.Visible = false;
                 lblCostLabel.Visible = false;
             }
-            tipTooltip.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(objXmlQuality["source"].InnerText, GlobalOptions.Language) + " " + LanguageManager.GetString("String_Page", GlobalOptions.Language) + " " + strPage);
         }
 
         private static string GetMinimumRequirement(string strAllowedLifestyles)
@@ -220,22 +237,26 @@ namespace Chummer
 
         private void chkLimitList_CheckedChanged(object sender, EventArgs e)
         {
-            BuildQualityList(cboCategory.SelectedValue?.ToString());
+            if (!_blnLoading)
+                BuildQualityList(cboCategory.SelectedValue?.ToString());
         }
 
         private void chkFree_CheckedChanged(object sender, EventArgs e)
         {
-            lstLifestyleQualities_SelectedIndexChanged(sender, e);
+            if (!_blnLoading)
+                BuildQualityList(cboCategory.SelectedValue?.ToString());
         }
 
         private void chkMetagenetic_CheckedChanged(object sender, EventArgs e)
         {
-            BuildQualityList(cboCategory.SelectedValue?.ToString());
+            if (!_blnLoading)
+                BuildQualityList(cboCategory.SelectedValue?.ToString());
         }
 
         private void txtSearch_TextChanged(object sender, EventArgs e)
         {
-            BuildQualityList(cboCategory.SelectedValue?.ToString());
+            if (!_blnLoading)
+                BuildQualityList(cboCategory.SelectedValue?.ToString());
         }
 
         private void txtSearch_KeyDown(object sender, KeyEventArgs e)
@@ -244,7 +265,7 @@ namespace Chummer
             {
                 if (lstLifestyleQualities.SelectedIndex + 1 < lstLifestyleQualities.Items.Count)
                 {
-                    lstLifestyleQualities.SelectedIndex++;
+                    lstLifestyleQualities.SelectedIndex += 1;
                 }
                 else if (lstLifestyleQualities.Items.Count > 0)
                     {
@@ -255,7 +276,7 @@ namespace Chummer
             {
                 if (lstLifestyleQualities.SelectedIndex - 1 >= 0)
                 {
-                    lstLifestyleQualities.SelectedIndex--;
+                    lstLifestyleQualities.SelectedIndex -= 1;
                 }
                 else if (lstLifestyleQualities.Items.Count > 0)
                     {
@@ -291,8 +312,8 @@ namespace Chummer
             set
             {
                 cboCategory.BeginUpdate();
-                cboCategory.DataSource = null;
-                cboCategory.Items.Add(value);
+                cboCategory.SelectedValue = value;
+                cboCategory.Enabled = false;
                 cboCategory.EndUpdate();
             }
         }
@@ -337,10 +358,10 @@ namespace Chummer
         /// </summary>
         private IList<ListItem> BuildQualityList(string strCategory, bool blnDoUIUpdate = true, bool blnTerminateAfterFirst = false)
         {
-            string strFilter = "(" + _objCharacter.Options.BookXPath() + ")";
+            string strFilter = "(" + _objCharacter.Options.BookXPath() + ')';
             if (!string.IsNullOrEmpty(strCategory) && strCategory != "Show All" && (_objCharacter.Options.SearchInCategoryOnly || string.IsNullOrWhiteSpace(txtSearch.Text)))
             {
-                strFilter += " and category = \"" + strCategory + "\"";
+                strFilter += " and category = \"" + strCategory + '\"';
             }
             else
             {
@@ -352,40 +373,44 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ")";
+                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ')';
                 }
             }
 
-            if (txtSearch.TextLength != 0)
+            if (_strSelectedLifestyle != "Bolt Hole")
             {
-                // Treat everything as being uppercase so the search is case-insensitive.
-                string strSearchText = txtSearch.Text.ToUpper();
-                strFilter += " and ((contains(translate(name,'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýß','ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝß'), \"" + strSearchText + "\") and not(translate)) or contains(translate(translate,'abcdefghijklmnopqrstuvwxyzàáâãäåçèéêëìíîïñòóôõöùúûüýß','ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝß'), \"" + strSearchText + "\"))";
+                strFilter += " and (name != \"Dug a Hole\")";
             }
+
+            strFilter += CommonFunctions.GenerateSearchXPath(txtSearch.Text);
 
             XmlNodeList objXmlQualityList = _objXmlDocument.SelectNodes("/chummer/qualities/quality[" + strFilter + "]");
             List<ListItem> lstLifestyleQuality = new List<ListItem>();
             foreach (XmlNode objXmlQuality in objXmlQualityList)
             {
-                string strQualityName = objXmlQuality["name"].InnerText;
-                if (strQualityName != "Dug a Hole" || _strSelectedLifestyle == "Bolt Hole")
+                if (!blnDoUIUpdate || !chkLimitList.Checked || RequirementMet(objXmlQuality, false))
                 {
-                    if (!blnDoUIUpdate || !chkLimitList.Checked || (chkLimitList.Checked && RequirementMet(objXmlQuality, false)))
-                    {
-                        lstLifestyleQuality.Add(new ListItem(strQualityName, objXmlQuality["translate"]?.InnerText ?? strQualityName));
-                        if (blnTerminateAfterFirst)
-                            break;
-                    }
+                    lstLifestyleQuality.Add(new ListItem(objXmlQuality["id"].InnerText, objXmlQuality["translate"]?.InnerText ?? objXmlQuality["name"]?.InnerText));
+                    if (blnTerminateAfterFirst)
+                        break;
                 }
             }
             if (blnDoUIUpdate)
             {
                 lstLifestyleQuality.Sort(CompareListItems.CompareNames);
+
+                string strOldSelectedQuality = lstLifestyleQualities.SelectedValue?.ToString();
+                _blnLoading = true;
                 lstLifestyleQualities.BeginUpdate();
-                lstLifestyleQualities.DataSource = null;
                 lstLifestyleQualities.ValueMember = "Value";
                 lstLifestyleQualities.DisplayMember = "Name";
                 lstLifestyleQualities.DataSource = lstLifestyleQuality;
+                _blnLoading = false;
+                if (string.IsNullOrEmpty(strOldSelectedQuality))
+                    lstLifestyleQualities.SelectedIndex = -1;
+                else
+                    lstLifestyleQualities.SelectedValue = strOldSelectedQuality;
+
                 lstLifestyleQualities.EndUpdate();
             }
 
@@ -397,10 +422,11 @@ namespace Chummer
         /// </summary>
         private void AcceptForm()
         {
-            if (string.IsNullOrEmpty(lstLifestyleQualities.Text))
+            string strSelectedQualityId = lstLifestyleQualities.SelectedValue?.ToString();
+            if (string.IsNullOrEmpty(strSelectedQualityId))
                 return;
-            XmlNode objNode = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + lstLifestyleQualities.SelectedValue + "\"]");
-            _strSelectedQuality = objNode["name"].InnerText;
+            XmlNode objNode = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[id = \"" + strSelectedQualityId + "\"]");
+            _strSelectedQuality = strSelectedQualityId;
             s_StrSelectCategory = (_objCharacter.Options.SearchInCategoryOnly || txtSearch.TextLength == 0) ? cboCategory.SelectedValue?.ToString() : objNode["category"].InnerText;
 
             if (!RequirementMet(objNode, true))
@@ -420,13 +446,7 @@ namespace Chummer
                 return true;
 
             // See if the character already has this Quality and whether or not multiple copies are allowed.
-            bool blnAllowMultiple = false;
-            if (objXmlQuality["limit"] != null)
-            {
-                if (objXmlQuality["limit"].InnerText == "no")
-                    blnAllowMultiple = true;
-            }
-            if (!blnAllowMultiple)
+            if (objXmlQuality["limit"]?.InnerText != bool.FalseString)
             {
                 // Multiples aren't allowed, so make sure the character does not already have it.
                 foreach (LifestyleQuality objQuality in _objCharacter.LifestyleQualities)
@@ -486,9 +506,7 @@ namespace Chummer
                                     blnRequirementForbidden = true;
                                     XmlNode objNode = _objMetatypeDocument.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + objXmlForbidden.InnerText + "\"]") ??
                                                       _objCritterDocument.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + objXmlForbidden.InnerText + "\"]");
-                                    strForbidden += objNode["translate"] != null
-                                        ? "\n\t" + objNode["translate"].InnerText
-                                        : "\n\t" + objXmlForbidden.InnerText;
+                                    strForbidden += "\n\t" + (objNode["translate"]?.InnerText ?? objXmlForbidden.InnerText);
                                 }
                                 break;
                             case "metatypecategory":
@@ -498,9 +516,7 @@ namespace Chummer
                                     blnRequirementForbidden = true;
                                     XmlNode objNode = _objMetatypeDocument.SelectSingleNode("/chummer/categories/category[. = \"" + objXmlForbidden.InnerText + "\"]") ??
                                                       _objCritterDocument.SelectSingleNode("/chummer/categories/category[. = \"" + objXmlForbidden.InnerText + "\"]");
-                                    strForbidden += objNode.Attributes["translate"] != null
-                                        ? "\n\t" + objNode.Attributes["translate"].InnerText
-                                        : "\n\t" + objXmlForbidden.InnerText;
+                                    strForbidden += "\n\t" + (objNode.Attributes["translate"]?.InnerText ?? objXmlForbidden.InnerText);
                                 }
                                 break;
                             case "metavariant":
@@ -510,24 +526,19 @@ namespace Chummer
                                     blnRequirementForbidden = true;
                                     XmlNode objNode = _objMetatypeDocument.SelectSingleNode("/chummer/metatypes/metatype/metavariants/metavariant[name = \"" + objXmlForbidden.InnerText + "\"]") ??
                                                       _objCritterDocument.SelectSingleNode("/chummer/metatypes/metatype/metavariants/metavariant[name = \"" + objXmlForbidden.InnerText + "\"]");
-                                    strForbidden += objNode["translate"] != null
-                                        ? "\n\t" + objNode["translate"].InnerText
-                                        : "\n\t" + objXmlForbidden.InnerText;
+                                    strForbidden += "\n\t" + (objNode["translate"]?.InnerText ?? objXmlForbidden.InnerText);
                                 }
                                 break;
                             case "metagenetic":
                                 // Check to see if the character has a Metagenetic Quality.
                                 foreach (Quality objQuality in _objCharacter.Qualities)
                                 {
-                                    XmlNode objXmlCheck = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + objQuality.Name + "\"]");
-                                    if (objXmlCheck["metagenetic"] != null)
+                                    XmlNode objXmlCheck = objQuality.GetNode();
+                                    if (objXmlCheck["metagenetic"]?.InnerText == bool.TrueString)
                                     {
-                                        if (objXmlCheck["metagenetic"].InnerText.ToLower() == "yes")
-                                        {
-                                            blnRequirementForbidden = true;
-                                            strForbidden += "\n\t" + objQuality.DisplayName(GlobalOptions.Language);
-                                            break;
-                                        }
+                                        blnRequirementForbidden = true;
+                                        strForbidden += "\n\t" + objQuality.DisplayName(GlobalOptions.Language);
+                                        break;
                                     }
                                 }
                                 break;
@@ -850,10 +861,8 @@ namespace Chummer
 
                                 if (!blnFound)
                                 {
-                                    XmlNode objNode = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + objXmlRequired.InnerText + "\"]");
-                                    strThisRequirement += objNode["translate"] != null
-                                        ? "\n\t" + objNode["translate"].InnerText
-                                        : "\n\t" + objXmlRequired.InnerText;
+                                    XmlNode objNode = _objXmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"" + objXmlRequired.InnerText + "\"]/translate");
+                                    strThisRequirement += "\n\t" + (objNode?.InnerText ?? objXmlRequired.InnerText);
                                 }
                                 break;
                             case "metatype":
@@ -864,9 +873,7 @@ namespace Chummer
                                 {
                                     XmlNode objNode = _objMetatypeDocument.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + objXmlRequired.InnerText + "\"]") ??
                                                       _objCritterDocument.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + objXmlRequired.InnerText + "\"]");
-                                    strThisRequirement += objNode["translate"] != null
-                                        ? "\n\t" + objNode["translate"].InnerText
-                                        : "\n\t" + objXmlRequired.InnerText;
+                                    strThisRequirement += "\n\t" + (objNode["translate"]?.InnerText ?? objXmlRequired.InnerText);
                                 }
                                 break;
                             case "metatypecategory":
@@ -877,9 +884,7 @@ namespace Chummer
                                 {
                                     XmlNode objNode = _objMetatypeDocument.SelectSingleNode("/chummer/categories/category[. = \"" + objXmlRequired.InnerText + "\"]") ??
                                                       _objCritterDocument.SelectSingleNode("/chummer/categories/category[. = \"" + objXmlRequired.InnerText + "\"]");
-                                    strThisRequirement += objNode["translate"] != null
-                                        ? "\n\t" + objNode["translate"].InnerText
-                                        : "\n\t" + objXmlRequired.InnerText;
+                                    strThisRequirement += "\n\t" + (objNode["translate"]?.InnerText ?? objXmlRequired.InnerText);
                                 }
                                 break;
                             case "metavariant":
@@ -890,9 +895,7 @@ namespace Chummer
                                 {
                                     XmlNode objNode = _objMetatypeDocument.SelectSingleNode("/chummer/metatypes/metatype/metavariants/metavariant[name = \"" + objXmlRequired.InnerText + "\"]") ??
                                                       _objCritterDocument.SelectSingleNode("/chummer/metatypes/metatype/metavariants/metavariant[name = \"" + objXmlRequired.InnerText + "\"]");
-                                    strThisRequirement += objNode["translate"] != null
-                                        ? "\n\t" + objNode["translate"].InnerText
-                                        : "\n\t" + objXmlRequired.InnerText;
+                                    strThisRequirement += "\n\t" + (objNode["translate"]?.InnerText ?? objXmlRequired.InnerText);
                                 }
                                 break;
                             case "inherited":
@@ -980,77 +983,65 @@ namespace Chummer
                                 // Check to see if the character has a number of the required Cyberware/Bioware items.
                                 int intTotal = 0;
 
-                                // Check Cyberware.
-                                foreach (XmlNode objXmlCyberware in objXmlRequired.SelectNodes("cyberware"))
-                                {
-                                    foreach (Cyberware objCyberware in _objCharacter.Cyberware)
+                                    // Check Cyberware.
+                                    foreach (XmlNode objXmlCyberware in objXmlRequired.SelectNodes("cyberware"))
                                     {
-                                        if (objCyberware.Name == objXmlCyberware.InnerText)
+                                        foreach (Cyberware objCyberware in _objCharacter.Cyberware)
                                         {
-                                            if (objXmlCyberware.Attributes["select"] == null)
+                                            if (objCyberware.Name == objXmlCyberware.InnerText)
                                             {
-                                                intTotal++;
-                                                break;
-                                            }
-                                            if (objXmlCyberware.Attributes["select"].InnerText == objCyberware.Extra)
-                                            {
-                                                intTotal++;
-                                                break;
+                                                string strSelect = objXmlCyberware.Attributes["select"]?.InnerText;
+                                                if (string.IsNullOrEmpty(strSelect) || strSelect == objCyberware.Extra)
+                                                {
+                                                    intTotal++;
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
-                                }
 
-                                // Check Bioware.
-                                foreach (XmlNode objXmlBioware in objXmlRequired.SelectNodes("bioware"))
-                                {
-                                    if (_objCharacter.Cyberware.Any(objCyberware => objCyberware.Name == objXmlBioware.InnerText))
+                                    // Check Bioware.
+                                    foreach (XmlNode objXmlBioware in objXmlRequired.SelectNodes("bioware"))
                                     {
-                                        intTotal++;
-                                    }
-                                }
-
-                                // Check Cyberware name that contain a straing.
-                                foreach (XmlNode objXmlCyberware in objXmlRequired.SelectNodes("cyberwarecontains"))
-                                {
-                                    foreach (Cyberware objCyberware in _objCharacter.Cyberware)
-                                    {
-                                        if (objCyberware.Name.Contains(objXmlCyberware.InnerText))
+                                        if (_objCharacter.Cyberware.Any(objCyberware => objCyberware.Name == objXmlBioware.InnerText))
                                         {
-                                            if (objXmlCyberware.Attributes["select"] == null)
+                                            intTotal++;
+                                        }
+                                    }
+
+                                    // Check Cyberware name that contain a straing.
+                                    foreach (XmlNode objXmlCyberware in objXmlRequired.SelectNodes("cyberwarecontains"))
+                                    {
+                                        foreach (Cyberware objCyberware in _objCharacter.Cyberware)
+                                        {
+                                            if (objCyberware.Name.Contains(objXmlCyberware.InnerText))
                                             {
-                                                intTotal++;
-                                                break;
-                                            }
-                                            if (objXmlCyberware.Attributes["select"].InnerText == objCyberware.Extra)
-                                            {
-                                                intTotal++;
-                                                break;
+                                                string strSelect = objXmlCyberware.Attributes["select"]?.InnerText;
+                                                if (string.IsNullOrEmpty(strSelect) || strSelect == objCyberware.Extra)
+                                                {
+                                                    intTotal++;
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
-                                }
 
-                                // Check Bioware name that contain a straing.
-                                foreach (XmlNode objXmlCyberware in objXmlRequired.SelectNodes("biowarecontains"))
-                                {
-                                    foreach (Cyberware objCyberware in _objCharacter.Cyberware)
+                                    // Check Bioware name that contain a straing.
+                                    foreach (XmlNode objXmlCyberware in objXmlRequired.SelectNodes("biowarecontains"))
                                     {
-                                        if (objCyberware.Name.Contains(objXmlCyberware.InnerText))
+                                        foreach (Cyberware objCyberware in _objCharacter.Cyberware)
                                         {
-                                            if (objXmlCyberware.Attributes["select"] == null)
+                                            if (objCyberware.Name.Contains(objXmlCyberware.InnerText))
                                             {
-                                                intTotal++;
-                                                break;
-                                            }
-                                            if (objXmlCyberware.Attributes["select"].InnerText == objCyberware.Extra)
-                                            {
-                                                intTotal++;
-                                                break;
+                                                string strSelect = objXmlCyberware.Attributes["select"]?.InnerText;
+                                                if (string.IsNullOrEmpty(strSelect) || strSelect == objCyberware.Extra)
+                                                {
+                                                    intTotal++;
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
-                                }
 
                                 // Check for Cyberware Plugins.
                                 foreach (XmlNode objXmlCyberware in objXmlRequired.SelectNodes("cyberwareplugin"))

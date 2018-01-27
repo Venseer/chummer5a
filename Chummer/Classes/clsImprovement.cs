@@ -30,6 +30,7 @@ using Chummer.Backend.Equipment;
 using Chummer.Classes;
 using Chummer.Backend.Skills;
 using Chummer.Backend.Attributes;
+using System.Drawing;
 
 namespace Chummer
 {
@@ -38,7 +39,7 @@ namespace Chummer
     {
         private string DisplayDebug()
         {
-            return $"{_objImprovementType} ({_intVal}, {_intRating}) <- {_objImprovementSource}, {_strSourceName}, {_strImprovedName}";
+            return $"{_objImprovementType} ({_intVal}, {_intRating}) 🡐 {_objImprovementSource}, {_strSourceName}, {_strImprovedName}";
         }
 
         public enum ImprovementType
@@ -161,7 +162,6 @@ namespace Chummer
             TechSchool,
             TrustFund,
             ExCon,
-            BlackMarket,
             ContactMadeMan,
             SelectArmor,
             Attributelevel,
@@ -300,7 +300,7 @@ namespace Chummer
             ContactForceLoyalty,
             FreeWare,
             WeaponAccuracy,
-            NumImprovementTypes // <- This one should always be the last defined enum
+            NumImprovementTypes // 🡐 This one should always be the last defined enum
         }
 
         public enum ImprovementSource
@@ -316,7 +316,6 @@ namespace Chummer
             ArmorEncumbrance,
             Gear,
             Spell,
-            MartialArtAdvantage,
             Initiation,
             Submersion,
             Metamagic,
@@ -324,6 +323,7 @@ namespace Chummer
             Armor,
             ArmorMod,
             EssenceLoss,
+            EssenceLossChargen,
             ConditionMonitor,
             CritterPower,
             ComplexForm,
@@ -337,10 +337,11 @@ namespace Chummer
             Custom,
             Heritage,
             MartialArt,
+            MartialArtTechnique,
             AIProgram,
             SpiritFettering,
             MentorSpirit,
-            NumImprovementSources // <- This one should always be the last defined enum
+            NumImprovementSources // 🡐 This one should always be the last defined enum
         }
 
         private readonly Character _objCharacter = null;
@@ -388,6 +389,8 @@ namespace Chummer
         /// <param name="strValue">String value to convert.</param>
         public static ImprovementSource ConvertToImprovementSource(string strValue)
         {
+            if (strValue == "MartialArtAdvantage")
+                strValue = "MartialArtTechnique";
             return (ImprovementSource) Enum.Parse(typeof (ImprovementSource), strValue);
         }
 
@@ -709,6 +712,32 @@ namespace Chummer
             set { _intOrder = value; }
         }
 
+        #endregion
+
+        #region UI Methods
+        public TreeNode CreateTreeNode(ContextMenuStrip cmsImprovement)
+        {
+            TreeNode nodImprovement = new TreeNode
+            {
+                Tag = SourceName,
+                Text = CustomName,
+                ToolTipText = Notes.WordWrap(100),
+                ContextMenuStrip = cmsImprovement
+            };
+            if (!string.IsNullOrEmpty(Notes))
+            {
+                if (Enabled)
+                    nodImprovement.ForeColor = Color.SaddleBrown;
+                else
+                    nodImprovement.ForeColor = Color.SandyBrown;
+            }
+            else if (Enabled)
+                nodImprovement.ForeColor = SystemColors.WindowText;
+            else
+                nodImprovement.ForeColor = SystemColors.GrayText;
+
+            return nodImprovement;
+        }
         #endregion
     }
 
@@ -1057,7 +1086,7 @@ namespace Chummer
                         s_StrSelectedValue = frmPickText.SelectedValue;
                     }
                     if (blnConcatSelectedValue)
-                        strSourceName += " (" + SelectedValue + ")";
+                        strSourceName += " (" + SelectedValue + ')';
                     Log.Info("_strSelectedValue = " + SelectedValue);
                     Log.Info("strSourceName = " + strSourceName);
 
@@ -1154,7 +1183,7 @@ namespace Chummer
         /// <param name="objCharacter">Character from which improvements should be deleted.</param>
         /// <param name="objImprovementSource">Type of object that granted these Improvements.</param>
         /// <param name="strSourceName">Name of the item that granted these Improvements.</param>
-        public static void RemoveImprovements(Character objCharacter, Improvement.ImprovementSource objImprovementSource, string strSourceName)
+        public static void RemoveImprovements(Character objCharacter, Improvement.ImprovementSource objImprovementSource, string strSourceName = "")
         {
             // If there is no character object, don't try to remove any Improvements.
             if (objCharacter == null)
@@ -1165,7 +1194,9 @@ namespace Chummer
             Log.Info("objImprovementSource = " + objImprovementSource.ToString());
             Log.Info("strSourceName = " + strSourceName);
             // A List of Improvements to hold all of the items that will eventually be deleted.
-            List<Improvement> objImprovementList = objCharacter.Improvements.Where(objImprovement => objImprovement.ImproveSource == objImprovementSource && objImprovement.SourceName == strSourceName).ToList();
+            List<Improvement> objImprovementList = string.IsNullOrEmpty(strSourceName)
+                ? objCharacter.Improvements.Where(objImprovement => objImprovement.ImproveSource == objImprovementSource).ToList()
+                : objCharacter.Improvements.Where(objImprovement => objImprovement.ImproveSource == objImprovementSource && objImprovement.SourceName == strSourceName).ToList();
             RemoveImprovements(objCharacter, objImprovementList);
         }
 
@@ -1174,8 +1205,9 @@ namespace Chummer
         /// </summary>
         /// <param name="objCharacter">Character from which improvements should be deleted.</param>
         /// <param name="objImprovementList">List of improvements to delete.</param>
-        /// <param name="reapplyImprovements">Whether we're reapplying Improvements.</param>
-        public static void RemoveImprovements(Character objCharacter, List<Improvement> objImprovementList, bool reapplyImprovements = false)
+        /// <param name="blnReapplyImprovements">Whether we're reapplying Improvements.</param>
+        /// <param name="blnAllowDuplicatesFromSameSource">If we ignore checking whether a potential duplicate improvement has the same SourceName</param>
+        public static void RemoveImprovements(Character objCharacter, List<Improvement> objImprovementList, bool blnReapplyImprovements = false, bool blnAllowDuplicatesFromSameSource = false)
         {
             Log.Enter("RemoveImprovements");
 
@@ -1201,7 +1233,7 @@ namespace Chummer
             foreach (Improvement objImprovement in objImprovementList)
             {
                 // See if the character has anything else that is granting them the same bonus as this improvement
-                bool blnHasDuplicate = objCharacter.Improvements.Any(objLoopImprovement => objLoopImprovement.UniqueName == objImprovement.UniqueName && objLoopImprovement.ImprovedName == objImprovement.ImprovedName && objLoopImprovement.ImproveType == objImprovement.ImproveType && objLoopImprovement.SourceName != objImprovement.SourceName);
+                bool blnHasDuplicate = objCharacter.Improvements.Any(objLoopImprovement => objLoopImprovement.UniqueName == objImprovement.UniqueName && objLoopImprovement.ImprovedName == objImprovement.ImprovedName && objLoopImprovement.ImproveType == objImprovement.ImproveType && (blnAllowDuplicatesFromSameSource || objLoopImprovement.SourceName != objImprovement.SourceName));
 
                 switch (objImprovement.ImproveType)
                 {
@@ -1238,9 +1270,8 @@ namespace Chummer
                         objCharacter.SkillsSection.KnowledgeSkills.RemoveAll(objCharacter.SkillsSection.KnowsoftSkills.Contains);
                         break;
                     case Improvement.ImprovementType.SkillKnowledgeForced:
-                        Guid guid = Guid.Parse(objImprovement.ImprovedName);
-                        objCharacter.SkillsSection.KnowledgeSkills.RemoveAll(skill => skill.Id == guid);
-                        ((List<KnowledgeSkill>)objCharacter.SkillsSection.KnowsoftSkills).RemoveAll(skill => skill.Id == guid);
+                        objCharacter.SkillsSection.KnowledgeSkills.RemoveAll(skill => skill.InternalId == objImprovement.ImprovedName);
+                        ((List<KnowledgeSkill>)objCharacter.SkillsSection.KnowsoftSkills).RemoveAll(skill => skill.InternalId == objImprovement.ImprovedName);
                         break;
                     case Improvement.ImprovementType.Attribute:
                         // Determine if access to any Special Attributes have been lost.
@@ -1303,52 +1334,7 @@ namespace Chummer
                         break;
                     case Improvement.ImprovementType.BlackMarketDiscount:
                         if (!blnHasDuplicate)
-                        {
                             objCharacter.BlackMarketDiscount = false;
-                            if (!objCharacter.Created)
-                            {
-                                foreach (Vehicle objVehicle in objCharacter.Vehicles)
-                                {
-                                    objVehicle.BlackMarketDiscount = false;
-                                    foreach (Weapon objWeapon in objVehicle.Weapons.GetAllDescendants(x => x.Children))
-                                    {
-                                        objWeapon.DiscountCost = false;
-                                        foreach (WeaponAccessory objWeaponAccessory in objWeapon.WeaponAccessories)
-                                        {
-                                            objWeaponAccessory.DiscountCost = false;
-                                            foreach (Gear objLoopGear in objWeaponAccessory.Gear.GetAllDescendants(x => x.Children))
-                                            {
-                                                objLoopGear.DiscountCost = false;
-                                            }
-                                        }
-                                    }
-                                    foreach (Gear objLoopGear in objVehicle.Gear.GetAllDescendants(x => x.Children))
-                                    {
-                                        objLoopGear.DiscountCost = false;
-                                    }
-                                    foreach (VehicleMod objMod in objVehicle.Mods)
-                                    {
-                                        objMod.DiscountCost = false;
-                                    }
-                                }
-                                foreach (Weapon objWeapon in objCharacter.Weapons.GetAllDescendants(x => x.Children))
-                                {
-                                    objWeapon.DiscountCost = false;
-                                    foreach (WeaponAccessory objWeaponAccessory in objWeapon.WeaponAccessories)
-                                    {
-                                        objWeaponAccessory.DiscountCost = false;
-                                        foreach (Gear objLoopGear in objWeaponAccessory.Gear.GetAllDescendants(x => x.Children))
-                                        {
-                                            objLoopGear.DiscountCost = false;
-                                        }
-                                    }
-                                }
-                                foreach (Gear objLoopGear in objCharacter.Gear.GetAllDescendants(x => x.Children))
-                                {
-                                    objLoopGear.DiscountCost = false;
-                                }
-                            }
-                        }
                         break;
                     case Improvement.ImprovementType.FriendsInHighPlaces:
                         if (!blnHasDuplicate)
@@ -1478,16 +1464,16 @@ namespace Chummer
                         {
                             RemoveImprovements(objCharacter, Improvement.ImprovementSource.MartialArt, objMartialArt.InternalId);
                             // Remove the Improvements for any Advantages for the Martial Art that is being removed.
-                            foreach (MartialArtAdvantage objAdvantage in objMartialArt.Advantages)
+                            foreach (MartialArtTechnique objAdvantage in objMartialArt.Techniques)
                             {
-                                RemoveImprovements(objCharacter, Improvement.ImprovementSource.MartialArtAdvantage, objAdvantage.InternalId);
+                                RemoveImprovements(objCharacter, Improvement.ImprovementSource.MartialArtTechnique, objAdvantage.InternalId);
                             }
                             objCharacter.MartialArts.Remove(objMartialArt);
                         }
                         break;
                     case Improvement.ImprovementType.SpecialSkills:
                         if (!blnHasDuplicate)
-                            objCharacter.SkillsSection.RemoveSkills((SkillsSection.FilterOptions)Enum.Parse(typeof(SkillsSection.FilterOptions), objImprovement.ImprovedName), !reapplyImprovements);
+                            objCharacter.SkillsSection.RemoveSkills((SkillsSection.FilterOptions)Enum.Parse(typeof(SkillsSection.FilterOptions), objImprovement.ImprovedName), !blnReapplyImprovements);
                         break;
                     case Improvement.ImprovementType.SpecificQuality:
                         Quality objQuality = objCharacter.Qualities.FirstOrDefault(objLoopQuality => objLoopQuality.InternalId == objImprovement.ImprovedName);
@@ -1670,9 +1656,6 @@ namespace Chummer
         }
 
         #endregion
-
-
-
 }
 
     public static class ImprovementExtensions
