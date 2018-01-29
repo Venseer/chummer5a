@@ -37,7 +37,7 @@ namespace Chummer
 
         private readonly XmlDocument _objXmlDocument = null;
 
-        private bool _blnSkipRefresh = false;
+        private bool _blnSkipRefresh = true;
 
         #region Control Events
         public frmSelectLifestyle(Character objCharacter)
@@ -53,14 +53,6 @@ namespace Chummer
 
         private void frmSelectLifestyle_Load(object sender, EventArgs e)
         {
-            _blnSkipRefresh = true;
-
-            foreach (Label objLabel in Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
             string strSelectedId = string.Empty;
             // Populate the Lifestyle ComboBoxes.
             List<ListItem> lstLifestyle = new List<ListItem>();
@@ -268,7 +260,7 @@ namespace Chummer
                 _objLifestyle.Source = objXmlLifestyle["source"].InnerText;
                 _objLifestyle.Page = objXmlLifestyle["page"].InnerText;
                 _objLifestyle.Name = txtLifestyleName.Text;
-                _objLifestyle.BaseLifestyle = objXmlLifestyle["name"].ToString();
+                _objLifestyle.BaseLifestyle = objXmlLifestyle["name"].InnerText.ToString();
                 _objLifestyle.Cost = Convert.ToDecimal(objXmlLifestyle["cost"].InnerText, GlobalOptions.InvariantCultureInfo);
                 _objLifestyle.Roommates = _objLifestyle.TrustFund ? 0 : decimal.ToInt32(nudRoommates.Value);
                 _objLifestyle.Percentage = nudPercentage.Value;

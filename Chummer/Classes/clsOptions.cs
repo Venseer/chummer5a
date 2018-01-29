@@ -101,7 +101,8 @@ namespace Chummer
                     Uri uriPath = new Uri(Path);
                     if (File.Exists(uriPath.LocalPath))
                     {
-                        _objPdfReader = new PdfReader(uriPath.LocalPath);
+                        // using the "partial" param it runs much faster and I couldnt find any downsides to it
+                        _objPdfReader = new PdfReader(uriPath.LocalPath, null, true);
                     }
                 }
                 return _objPdfReader;
@@ -185,9 +186,9 @@ namespace Chummer
     /// </summary>
     public static class GlobalOptions
     {
-        static readonly CultureInfo _objSystemCultureInfo = CultureInfo.CurrentCulture;
-        static readonly CultureInfo _objInvariantCultureInfo = CultureInfo.InvariantCulture;
-        static CultureInfo _objLanguageCultureInfo = CultureInfo.CurrentCulture;
+        private static readonly CultureInfo s_ObjSystemCultureInfo = CultureInfo.CurrentCulture;
+        private static readonly CultureInfo s_ObjInvariantCultureInfo = CultureInfo.InvariantCulture;
+        private static CultureInfo s_ObjLanguageCultureInfo = CultureInfo.CurrentCulture;
 
         public static Action MRUChanged { get; set; }
 
@@ -630,11 +631,11 @@ namespace Chummer
                     _strLanguage = value;
                     try
                     {
-                        _objLanguageCultureInfo = CultureInfo.GetCultureInfo(value);
+                        s_ObjLanguageCultureInfo = CultureInfo.GetCultureInfo(value);
                     }
                     catch (CultureNotFoundException)
                     {
-                        _objLanguageCultureInfo = SystemCultureInfo;
+                        s_ObjLanguageCultureInfo = SystemCultureInfo;
                     }
                 }
             }
@@ -677,7 +678,7 @@ namespace Chummer
         {
             get
             {
-                return _objLanguageCultureInfo;
+                return s_ObjLanguageCultureInfo;
             }
         }
 
@@ -688,7 +689,7 @@ namespace Chummer
         {
             get
             {
-                return _objInvariantCultureInfo;
+                return s_ObjInvariantCultureInfo;
             }
         }
 
@@ -699,7 +700,7 @@ namespace Chummer
         {
             get
             {
-                return _objSystemCultureInfo;
+                return s_ObjSystemCultureInfo;
             }
         }
 

@@ -85,7 +85,7 @@ namespace Chummer
                     }
                 }
                 achrNewChars[intCurrent++] = chrLoop;
-                SkipChar:;
+            SkipChar:;
             }
             // ... then we create a new string from the new CharArray, but only up to the number of characters that actually ended up getting copied
             return new string(achrNewChars, 0, intCurrent);
@@ -96,8 +96,9 @@ namespace Chummer
         /// </summary>
         /// <param name="strInput">Input textblock</param>
         /// <param name="chrWhiteSpace">Whitespace character to use</param>
+        /// <param name="keepLineBreaks">Keep line breaks or consider them whitespace</param>
         /// <returns>New string with any excess whitespace removed</returns>
-        public static string NormalizeWhiteSpace(this string strInput, char chrWhiteSpace = ' ')
+        public static string NormalizeWhiteSpace(this string strInput, char chrWhiteSpace = ' ', bool keepLineBreaks = false)
         {
             int intLength = strInput?.Length ?? 0;
             if (intLength == 0)
@@ -111,7 +112,7 @@ namespace Chummer
             {
                 char chrLoop = strInput[i];
                 // If we encounter a block of whitespace chars, we replace the first instance with chrWhiteSpace, then skip over the rest until we encounter a char that isn't whitespace
-                if (char.IsWhiteSpace(chrLoop))
+                if (char.IsWhiteSpace(chrLoop) && !(keepLineBreaks && chrLoop=='\n'))
                 {
                     if (!blnLastCharWasWhiteSpace)
                         achrNewChars[intCurrent++] = chrWhiteSpace;
@@ -181,6 +182,8 @@ namespace Chummer
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string TrimStart(this string strInput, params string[] astrStringToTrim)
         {
+            // without that we could trim a smaller string just because it was found first, this makes sure we found the largest one
+            int intHowMuchToTrim = 0;
             if (!string.IsNullOrEmpty(strInput))
             {
                 int intLength = astrStringToTrim.Length;
@@ -188,14 +191,13 @@ namespace Chummer
                 {
                     string strStringToTrim = astrStringToTrim[i];
                     // Need to make sure string actually starts with the substring, otherwise we don't want to be cutting out the beginning of the string
-                    if (strInput.StartsWith(strStringToTrim))
+                    if (strStringToTrim.Length > intHowMuchToTrim && strInput.StartsWith(strStringToTrim))
                     {
-                        int intTrimLength = strStringToTrim.Length;
-                        return strInput.Substring(intTrimLength, strInput.Length - intTrimLength);
+                        intHowMuchToTrim = strStringToTrim.Length;
                     }
                 }
             }
-            return strInput;
+            return strInput.Substring(intHowMuchToTrim);
         }
 
         /// <summary>
@@ -207,6 +209,8 @@ namespace Chummer
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string TrimEnd(this string strInput, params string[] astrStringToTrim)
         {
+            // without that we could trim a smaller string just because it was found first, this makes sure we found the largest one
+            int intHowMuchToTrim = 0;
             if (!string.IsNullOrEmpty(strInput))
             {
                 int intLength = astrStringToTrim.Length;
@@ -214,13 +218,13 @@ namespace Chummer
                 {
                     string strStringToTrim = astrStringToTrim[i];
                     // Need to make sure string actually ends with the substring, otherwise we don't want to be cutting out the end of the string
-                    if (strInput.EndsWith(strStringToTrim))
+                    if (strStringToTrim.Length > intHowMuchToTrim && strInput.EndsWith(strStringToTrim))
                     {
-                        return strInput.Substring(0, strInput.Length - strStringToTrim.Length);
+                        intHowMuchToTrim = strStringToTrim.Length;
                     }
                 }
             }
-            return strInput;
+            return strInput.Substring(0, strInput.Length - intHowMuchToTrim);
         }
 
         /// <summary>

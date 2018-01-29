@@ -48,11 +48,9 @@ namespace Chummer
         private bool _blnReapplyImprovements = false;
         private bool _blnFreestyle = false;
         private int _intDragLevel = 0;
-        private MouseButtons _objDragButton = new MouseButtons();
+        private MouseButtons _eDragButton = MouseButtons.None;
         private bool _blnDraggingGear = false;
         private StoryBuilder _objStoryBuilder;
-        private readonly ObservableCollection<CharacterAttrib> lstPrimaryAttributes = new ObservableCollection<CharacterAttrib>();
-        private readonly ObservableCollection<CharacterAttrib> lstSpecialAttributes = new ObservableCollection<CharacterAttrib>();
         private readonly Stopwatch PowerPropertyChanged_StopWatch = Stopwatch.StartNew();
         private readonly Stopwatch SkillPropertyChanged_StopWatch = Stopwatch.StartNew();
 
@@ -88,14 +86,13 @@ namespace Chummer
             CharacterObject.CyberwareTabDisabledChanged += objCharacter_CyberwareTabDisabledChanged;
             CharacterObject.InitiationTabEnabledChanged += objCharacter_InitiationTabEnabledChanged;
             CharacterObject.CritterTabEnabledChanged += objCharacter_CritterTabEnabledChanged;
-            CharacterObject.BlackMarketEnabledChanged += objCharacter_BlackMarketDiscountChanged;
             CharacterObject.ExConChanged += objCharacter_ExConChanged;
             CharacterObject.RestrictedGearChanged += objCharacter_RestrictedGearChanged;
             CharacterObject.MadeManChanged += objCharacter_MadeManChanged;
             CharacterObject.BornRichChanged += objCharacter_BornRichChanged;
 
-            tabPowerUc.ChildPropertyChanged += PowerPropertyChanged;
-            tabSkillUc.ChildPropertyChanged += SkillPropertyChanged;
+            tabPowerUc.MakeDirtyWithCharacterUpdate += MakeDirtyWithCharacterUpdate;
+            tabSkillUc.MakeDirtyWithCharacterUpdate += MakeDirtyWithCharacterUpdate;
             //TODO: Can't bind visibility to the IsMysticAdept property for some reason.
             nudMysticAdeptMAGMagician.DataBindings.Add("Maximum", this.CharacterObject.MAG, nameof(CharacterObject.MAG.TotalValue), false,
                             DataSourceUpdateMode.OnPropertyChanged);
@@ -220,8 +217,7 @@ namespace Chummer
                 {
                     CharacterObject.GameplayOption = "Standard";
                 }
-                XmlDocument objXmlDocumentGameplayOptions = XmlManager.Load("gameplayoptions.xml");
-                XmlNode objXmlGameplayOption = objXmlDocumentGameplayOptions.SelectSingleNode("/chummer/gameplayoptions/gameplayoption[name = \"" + CharacterObject.GameplayOption + "\"]");
+                XmlNode objXmlGameplayOption = XmlManager.Load("gameplayoptions.xml").SelectSingleNode("/chummer/gameplayoptions/gameplayoption[name = \"" + CharacterObject.GameplayOption + "\"]");
                 string strKarma = objXmlGameplayOption["karma"].InnerText;
                 string strNuyen = objXmlGameplayOption["maxnuyen"].InnerText;
                 if (!CharacterObjectOptions.FreeContactsMultiplierEnabled)
@@ -341,9 +337,9 @@ namespace Chummer
             RefreshQualities(treQualities, cmsQuality);
 
             // Populate the Magician Traditions list.
-            XmlDocument objXmlDocument = XmlManager.Load("traditions.xml");
+            XmlDocument xmlTraditionsDocument = XmlManager.Load("traditions.xml");
             List<ListItem> lstTraditions = new List<ListItem>();
-            foreach (XmlNode objXmlTradition in objXmlDocument.SelectNodes("/chummer/traditions/tradition[" + CharacterObjectOptions.BookXPath() + "]"))
+            foreach (XmlNode objXmlTradition in xmlTraditionsDocument.SelectNodes("/chummer/traditions/tradition[" + CharacterObjectOptions.BookXPath() + "]"))
             {
                 string strName = objXmlTradition["name"].InnerText;
                 lstTraditions.Add(new ListItem(strName, objXmlTradition["translate"]?.InnerText ?? strName));
@@ -357,12 +353,11 @@ namespace Chummer
             cboTradition.EndUpdate();
 
             // Populate the Magician Custom Drain Options list.
-            objXmlDocument = XmlManager.Load("traditions.xml");
             List<ListItem> lstDrainAttributes = new List<ListItem>
             {
                 ListItem.Blank
             };
-            foreach (XmlNode objXmlDrain in objXmlDocument.SelectNodes("/chummer/drainattributes/drainattribute"))
+            foreach (XmlNode objXmlDrain in xmlTraditionsDocument.SelectNodes("/chummer/drainattributes/drainattribute"))
             {
                 string strName = objXmlDrain["name"].InnerText;
                 lstDrainAttributes.Add(new ListItem(strName, objXmlDrain["translate"]?.InnerText ?? strName));
@@ -381,12 +376,11 @@ namespace Chummer
             }
 
             // Populate the Magician Custom Spirits lists - Combat.
-            objXmlDocument = XmlManager.Load("traditions.xml");
             List<ListItem> lstSpirit = new List<ListItem>
             {
                 ListItem.Blank
             };
-            foreach (XmlNode objXmlSpirit in objXmlDocument.SelectNodes("/chummer/spirits/spirit"))
+            foreach (XmlNode objXmlSpirit in xmlTraditionsDocument.SelectNodes("/chummer/spirits/spirit"))
             {
                 string strSpiritName = objXmlSpirit["name"].InnerText;
                 if (limit.Count == 0 || limit.Contains(strSpiritName))
@@ -431,6 +425,26 @@ namespace Chummer
             cboSpiritManipulation.DataSource = lstManip;
             cboSpiritManipulation.EndUpdate();
 
+            /*
+            // Populate the Technomancer Streams list.
+            xmlTraditionsDocument = XmlManager.Load("streams.xml");
+            List<ListItem> lstStreams = new List<ListItem>
+            {
+                ListItem.Blank
+            };
+            foreach (XmlNode objXmlTradition in xmlTraditionsDocument.SelectNodes("/chummer/traditions/tradition[" + CharacterObjectOptions.BookXPath() + "]"))
+            {
+                string strName = objXmlTradition["name"].InnerText;
+                lstStreams.Add(new ListItem(strName, objXmlTradition["translate"]?.InnerText ?? strName));
+            }
+            lstStreams.Sort(CompareListItems.CompareNames);
+            cboStream.BeginUpdate();
+            cboStream.ValueMember = "Value";
+            cboStream.DisplayMember = "Name";
+            cboStream.DataSource = lstStreams;
+            cboStream.EndUpdate();
+            */
+
             // If the character is a Mystic Adept, set the values for the Mystic Adept NUD.
             if (CharacterObject.IsMysticAdept && !CharacterObjectOptions.MysAdeptSecondMAGAttribute)
             {
@@ -453,75 +467,14 @@ namespace Chummer
             if (CharacterObject.BornRich) nudNuyen.Maximum += 30;
             nudNuyen.Value = CharacterObject.NuyenBP;
 
-            // Load the Skills information.
-            objXmlDocument = XmlManager.Load("skills.xml");
-
-            // Populate Contacts and Enemies.
-            int intContact = -1;
-            int intEnemy = -1;
-            foreach (Contact objContact in CharacterObject.Contacts)
-            {
-                if (objContact.EntityType == ContactType.Contact)
-                {
-                    intContact++;
-                    ContactControl objContactControl = new ContactControl(objContact);
-                    // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
-                    objContactControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-                    objContactControl.DeleteContact += DeleteContact;
-                    objContactControl.MouseDown += panContactControl_MouseDown;
-
-                    objContactControl.Top = intContact * objContactControl.Height;
-
-                    panContacts.Controls.Add(objContactControl);
-                }
-                if (objContact.EntityType == ContactType.Enemy)
-                {
-                    intEnemy++;
-                    ContactControl objContactControl = new ContactControl(objContact);
-                    // Attach an EventHandler for the ConnectioNRatingChanged, LoyaltyRatingChanged, DeleteContact, and FileNameChanged Events.
-                    objContactControl.ContactDetailChanged += EnemyChanged;
-                    objContactControl.DeleteContact += DeleteEnemy;
-
-                    objContactControl.Top = intEnemy * objContactControl.Height;
-                    panEnemies.Controls.Add(objContactControl);
-                }
-                if (objContact.EntityType == ContactType.Pet)
-                {
-                    PetControl objPetControl = new PetControl(objContact);
-                    // Attach an EventHandler for the DeleteContact and FileNameChanged Events.
-                    objPetControl.DeleteContact += DeletePet;
-                    objPetControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-
-                    panPets.Controls.Add(objPetControl);
-                }
-            }
-
-            // Populate Magician Spirits and Technomancer Sprites.
-            for (int i = 0; i < CharacterObject.Spirits.Count; ++i)
-            {
-                Spirit objSpirit = CharacterObject.Spirits[i];
-                bool blnIsSpirit = objSpirit.EntityType == SpiritType.Spirit;
-                SpiritControl objSpiritControl = new SpiritControl(objSpirit);
-
-                // Attach an EventHandler for the ServicesOwedChanged Event.
-                objSpiritControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-                objSpiritControl.DeleteSpirit += DeleteSpirit;
-
-                objSpiritControl.RebuildSpiritList(blnIsSpirit ? CharacterObject.MagicTradition : CharacterObject.TechnomancerStream);
-
-                objSpiritControl.Top = i * objSpiritControl.Height;
-                if (blnIsSpirit)
-                    panSpirits.Controls.Add(objSpiritControl);
-                else
-                    panSprites.Controls.Add(objSpiritControl);
-            }
-
+            RefreshSpirits(panSpirits, panSprites);
             RefreshSpells(treSpells, cmsSpell);
             RefreshComplexForms(treComplexForms, cmsComplexForm);
             RefreshAIPrograms(treAIPrograms, cmsAdvancedProgram);
             RefreshCritterPowers(treCritterPowers, cmsCritterPowers);
             RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
             RefreshLifestyles(treLifestyles, cmsLifestyleNotes, cmsAdvancedLifestyle);
+            RefreshContacts(panContacts, panEnemies, panPets);
 
             PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
             PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
@@ -591,16 +544,20 @@ namespace Chummer
             // Directly calling here so that we can properly unset the dirty flag after the update
             UpdateCharacterInfo();
 
-            lstPrimaryAttributes.CollectionChanged += AttributeCollectionChanged;
-            lstSpecialAttributes.CollectionChanged += AttributeCollectionChanged;
-            BuildAttributePanel();
+            RefreshAttributes(pnlAttributes);
 
+            PrimaryAttributes.CollectionChanged += AttributeCollectionChanged;
+            SpecialAttributes.CollectionChanged += AttributeCollectionChanged;
             CharacterObject.Spells.CollectionChanged += SpellCollectionChanged;
             CharacterObject.ComplexForms.CollectionChanged += ComplexFormCollectionChanged;
             CharacterObject.AIPrograms.CollectionChanged += AIProgramCollectionChanged;
             CharacterObject.CritterPowers.CollectionChanged += CritterPowerCollectionChanged;
             CharacterObject.Qualities.CollectionChanged += QualityCollectionChanged;
+            CharacterObject.MartialArts.CollectionChanged += MartialArtCollectionChanged;
             CharacterObject.Lifestyles.CollectionChanged += LifestyleCollectionChanged;
+            CharacterObject.Contacts.CollectionChanged += ContactCollectionChanged;
+            CharacterObject.Spirits.CollectionChanged += SpiritCollectionChanged;
+
             // Hacky, but necessary
             // UpdateCharacterInfo() needs to be run before BuildAttributesPanel() so that it can properly regenerate Essence Loss improvements based on options...
             // ...but BuildAttributePanel() ends up requesting a character update when it sets up the values of attribute NumericalUpDowns
@@ -670,14 +627,17 @@ namespace Chummer
                     ToolStripManager.RevertMerge("toolStrip");
 
                 // Unsubscribe from events.
-                lstPrimaryAttributes.CollectionChanged -= AttributeCollectionChanged;
-                lstSpecialAttributes.CollectionChanged -= AttributeCollectionChanged;
+                PrimaryAttributes.CollectionChanged -= AttributeCollectionChanged;
+                SpecialAttributes.CollectionChanged -= AttributeCollectionChanged;
                 CharacterObject.Spells.CollectionChanged -= SpellCollectionChanged;
                 CharacterObject.ComplexForms.CollectionChanged -= ComplexFormCollectionChanged;
                 CharacterObject.AIPrograms.CollectionChanged -= AIProgramCollectionChanged;
                 CharacterObject.CritterPowers.CollectionChanged -= CritterPowerCollectionChanged;
                 CharacterObject.Qualities.CollectionChanged -= QualityCollectionChanged;
+                CharacterObject.MartialArts.CollectionChanged -= MartialArtCollectionChanged;
                 CharacterObject.Lifestyles.CollectionChanged -= LifestyleCollectionChanged;
+                CharacterObject.Contacts.CollectionChanged -= ContactCollectionChanged;
+                CharacterObject.Spirits.CollectionChanged -= SpiritCollectionChanged;
                 CharacterObject.MAGEnabledChanged -= objCharacter_MAGEnabledChanged;
                 CharacterObject.RESEnabledChanged -= objCharacter_RESEnabledChanged;
                 CharacterObject.DEPEnabledChanged -= objCharacter_DEPEnabledChanged;
@@ -689,7 +649,6 @@ namespace Chummer
                 CharacterObject.CyberwareTabDisabledChanged -= objCharacter_CyberwareTabDisabledChanged;
                 CharacterObject.InitiationTabEnabledChanged -= objCharacter_InitiationTabEnabledChanged;
                 CharacterObject.CritterTabEnabledChanged -= objCharacter_CritterTabEnabledChanged;
-                CharacterObject.BlackMarketEnabledChanged -= objCharacter_BlackMarketDiscountChanged;
                 CharacterObject.ExConChanged -= objCharacter_ExConChanged;
                 CharacterObject.RestrictedGearChanged -= objCharacter_RestrictedGearChanged;
                 CharacterObject.MadeManChanged -= objCharacter_MadeManChanged;
@@ -722,6 +681,7 @@ namespace Chummer
                 {
                     objContactControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
                     objContactControl.DeleteContact -= DeleteContact;
+                    objContactControl.MouseDown -= DragContactControl;
                 }
 
                 foreach (ContactControl objContactControl in panEnemies.Controls.OfType<ContactControl>())
@@ -767,85 +727,6 @@ namespace Chummer
 
         private void frmCreate_Shown(object sender, EventArgs e)
         {
-            // Clear all of the placeholder Labels.
-            foreach (Label objLabel in tabCommon.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabMartialArts.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabMagician.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabTechnomancer.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabAdvancedPrograms.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabCyberware.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabLifestyle.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabArmor.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabWeapons.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabGear.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabVehicles.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabInitiation.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
-            foreach (Label objLabel in tabCritter.Controls.OfType<Label>())
-            {
-                if (objLabel.Text.StartsWith('['))
-                    objLabel.Text = string.Empty;
-            }
-
             frmCreate_Resize(sender, e);
         }
 
@@ -900,27 +781,33 @@ namespace Chummer
                     cmdAddMetamagic.Enabled = CharacterObjectOptions.AllowInitiationInCreateMode;
                 }
 
-                if (!lstSpecialAttributes.Contains(CharacterObject.MAG))
+                if (!SpecialAttributes.Contains(CharacterObject.MAG))
                 {
-                    lstSpecialAttributes.Add(CharacterObject.MAG);
+                    SpecialAttributes.Add(CharacterObject.MAG);
                 }
-                if (CharacterObjectOptions.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept && !lstSpecialAttributes.Contains(CharacterObject.MAGAdept))
+                if (CharacterObjectOptions.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept && !SpecialAttributes.Contains(CharacterObject.MAGAdept))
                 {
-                    lstSpecialAttributes.Add(CharacterObject.MAGAdept);
+                    SpecialAttributes.Add(CharacterObject.MAGAdept);
                 }
             }
             else
             {
-                ClearInitiationTab();
+                CharacterObject.ClearInitiations();
+                
                 tabCharacterTabs.TabPages.Remove(tabInitiation);
-                if (lstSpecialAttributes.Contains(CharacterObject.MAG))
+
+                if (SpecialAttributes.Contains(CharacterObject.MAG))
                 {
-                    lstSpecialAttributes.Remove(CharacterObject.MAG);
+                    SpecialAttributes.Remove(CharacterObject.MAG);
                 }
-                if (lstSpecialAttributes.Contains(CharacterObject.MAGAdept))
+                if (SpecialAttributes.Contains(CharacterObject.MAGAdept))
                 {
-                    lstSpecialAttributes.Remove(CharacterObject.MAGAdept);
+                    SpecialAttributes.Remove(CharacterObject.MAGAdept);
                 }
+                
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
             }
         }
 
@@ -951,19 +838,25 @@ namespace Chummer
                     chkInitiationSchooling.Visible = false;
                     cmdAddMetamagic.Enabled = CharacterObjectOptions.AllowInitiationInCreateMode;
                 }
-                if (!lstSpecialAttributes.Contains(CharacterObject.RES))
+                if (!SpecialAttributes.Contains(CharacterObject.RES))
                 {
-                    lstSpecialAttributes.Add(CharacterObject.RES);
+                    SpecialAttributes.Add(CharacterObject.RES);
                 }
             }
             else
             {
-                ClearInitiationTab();
+                CharacterObject.ClearInitiations();
+
                 tabCharacterTabs.TabPages.Remove(tabInitiation);
-                if (lstSpecialAttributes.Contains(CharacterObject.RES))
+
+                if (SpecialAttributes.Contains(CharacterObject.RES))
                 {
-                    lstSpecialAttributes.Remove(CharacterObject.RES);
+                    SpecialAttributes.Remove(CharacterObject.RES);
                 }
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
             }
         }
 
@@ -971,18 +864,19 @@ namespace Chummer
         {
             if (_blnReapplyImprovements)
                 return;
+
             if (CharacterObject.DEPEnabled)
             {
-                if (!lstSpecialAttributes.Contains(CharacterObject.DEP))
+                if (!SpecialAttributes.Contains(CharacterObject.DEP))
                 {
-                    lstSpecialAttributes.Add(CharacterObject.DEP);
+                    SpecialAttributes.Add(CharacterObject.DEP);
                 }
             }
             else
             {
-                if (lstSpecialAttributes.Contains(CharacterObject.DEP))
+                if (SpecialAttributes.Contains(CharacterObject.DEP))
                 {
-                    lstSpecialAttributes.Remove(CharacterObject.DEP);
+                    SpecialAttributes.Remove(CharacterObject.DEP);
                 }
             }
         }
@@ -997,19 +891,25 @@ namespace Chummer
             {
                 if (!tabCharacterTabs.TabPages.Contains(tabAdept))
                     tabCharacterTabs.TabPages.Insert(3, tabAdept);
-                if (CharacterObjectOptions.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept && !lstSpecialAttributes.Contains(CharacterObject.MAGAdept))
+                if (CharacterObjectOptions.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept && !SpecialAttributes.Contains(CharacterObject.MAGAdept))
                 {
-                    lstSpecialAttributes.Add(CharacterObject.MAGAdept);
+                    SpecialAttributes.Add(CharacterObject.MAGAdept);
                 }
             }
             else
             {
-                ClearAdeptTab();
+                CharacterObject.ClearAdeptPowers();
+                
                 tabCharacterTabs.TabPages.Remove(tabAdept);
-                if (lstSpecialAttributes.Contains(CharacterObject.MAGAdept))
+
+                if (SpecialAttributes.Contains(CharacterObject.MAGAdept))
                 {
-                    lstSpecialAttributes.Remove(CharacterObject.MAGAdept);
+                    SpecialAttributes.Remove(CharacterObject.MAGAdept);
                 }
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
             }
             //TODO: Can't bind visibility to the IsMysticAdept property for some reason.
             lblMysticAdeptAssignment.Visible = !CharacterObjectOptions.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept;
@@ -1060,19 +960,25 @@ namespace Chummer
             {
                 if (!tabCharacterTabs.TabPages.Contains(tabMagician))
                     tabCharacterTabs.TabPages.Insert(3, tabMagician);
-                if (CharacterObjectOptions.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept && !lstSpecialAttributes.Contains(CharacterObject.MAGAdept))
+                if (CharacterObjectOptions.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept && !SpecialAttributes.Contains(CharacterObject.MAGAdept))
                 {
-                    lstSpecialAttributes.Add(CharacterObject.MAGAdept);
+                    SpecialAttributes.Add(CharacterObject.MAGAdept);
                 }
             }
             else
             {
-                ClearSpellTab();
+                CharacterObject.ClearMagic();
+
                 tabCharacterTabs.TabPages.Remove(tabMagician);
-                if (lstSpecialAttributes.Contains(CharacterObject.MAGAdept))
+
+                if (SpecialAttributes.Contains(CharacterObject.MAGAdept))
                 {
-                    lstSpecialAttributes.Remove(CharacterObject.MAGAdept);
+                    SpecialAttributes.Remove(CharacterObject.MAGAdept);
                 }
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
             }
 
             //TODO: Can't bind visibility to the IsMysticAdept property for some reason.
@@ -1093,8 +999,13 @@ namespace Chummer
             }
             else
             {
-                ClearTechnomancerTab();
+                CharacterObject.ClearResonance();
+
                 tabCharacterTabs.TabPages.Remove(tabTechnomancer);
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
             }
         }
 
@@ -1111,8 +1022,13 @@ namespace Chummer
             }
             else
             {
-                ClearAdvancedProgramsTab();
+                CharacterObject.ClearAdvancedPrograms();
+
                 tabCharacterTabs.TabPages.Remove(tabAdvancedPrograms);
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
             }
         }
 
@@ -1124,7 +1040,18 @@ namespace Chummer
             // Change to the status of Advanced Programs being enabled.
             if (CharacterObject.CyberwareDisabled)
             {
-                ClearCyberwareTab();
+                CharacterObject.ClearCyberwareTab(treWeapons, treVehicles);
+
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
             }
         }
 
@@ -1145,8 +1072,13 @@ namespace Chummer
             }
             else
             {
-                ClearInitiationTab();
+                CharacterObject.ClearInitiations();
+
                 tabCharacterTabs.TabPages.Remove(tabInitiation);
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
             }
         }
 
@@ -1164,23 +1096,13 @@ namespace Chummer
             else
             {
                 // Remove all Critter Powers.
-                ClearCritterTab();
+                CharacterObject.ClearCritterPowers();
+
                 tabCharacterTabs.TabPages.Remove(tabCritter);
-            }
-        }
 
-        private void objCharacter_BlackMarketDiscountChanged(object sender)
-        {
-            if (_blnReapplyImprovements)
-                return;
+                IsCharacterUpdateRequested = true;
 
-            if (CharacterObject.BlackMarketDiscount)
-            {
-
-            }
-            else
-            {
-
+                IsDirty = true;
             }
         }
 
@@ -1207,13 +1129,8 @@ namespace Chummer
                 }
                 foreach (Cyberware objCyberware in CharacterObject.Cyberware.DeepWhere(x => x.Children, funcExConIneligibleWare))
                 {
-                    string strAvail = objCyberware.Avail;
-                    if (strAvail.StartsWith("FixedValues("))
-                    {
-                        string[] strValues = strAvail.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
-                        strAvail = strValues[Math.Min(objCyberware.Rating, strValues.Length) - 1];
-                    }
-                    if (strAvail.EndsWith('R', 'F'))
+                    char chrAvail = objCyberware.TotalAvailTuple(false).Suffix;
+                    if (chrAvail == 'R' || chrAvail == 'F')
                     {
                         objCyberware.DeleteCyberware(treWeapons, treVehicles);
                         if (objCyberware.Parent != null)
@@ -1279,10 +1196,9 @@ namespace Chummer
             {
                 nudNuyen.Maximum -= 30;
             }
-
-
         }
 
+        /*
         //TODO: UpdatePowerRelatedInfo method? Powers hook into so much stuff that it may need to wait for outbound improvement events?
         private void PowerPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
@@ -1304,6 +1220,7 @@ namespace Chummer
 
             IsDirty = true;
         }
+        */
         #endregion
 
         #region Menu Events
@@ -2034,9 +1951,12 @@ namespace Chummer
             if (blnDEPEnabled != CharacterObject.DEPEnabled)
                 objCharacter_DEPEnabledChanged(this);
 
-            RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
+            PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+            PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
             PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
-            RefreshContacts();
+            PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+            PopulateFocusList(treFoci, cmsGear);
 
             IsCharacterUpdateRequested = true;
             // Immediately call character update because it re-applies essence loss improvements
@@ -2902,219 +2822,6 @@ namespace Chummer
         }
         #endregion
 
-        #region ContactControl Events
-        private void DeleteContact(object sender, EventArgs e)
-        {
-            DeleteContact(sender, false);
-        }
-
-        private void DeleteContact(object sender, bool force)
-        {
-            if (!force && !CharacterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteContact", GlobalOptions.Language)))
-                return;
-
-            // Handle the DeleteContact Event for the ContactControl object.
-            ContactControl objSender = (ContactControl)sender;
-            bool blnFound = false;
-            foreach (ContactControl objContactControl in panContacts.Controls)
-            {
-                // Set the flag to show that we have found the Contact.
-                if (objContactControl == objSender)
-                {
-                    blnFound = true;
-                    CharacterObject.Contacts.Remove(objContactControl.ContactObject);
-                }
-
-                // Once the Contact has been found, all of the other ContactControls on the Panel should move up 25 pixels to fill in the gap that deleting this one will cause.
-                if (blnFound)
-                {
-
-                    objContactControl.Top -= 25;
-                }
-            }
-            // Remove the ContactControl that raised the Event.
-            panContacts.Controls.Remove(objSender);
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
-        }
-        #endregion
-
-        #region EnemyControl Events
-        private void EnemyChanged(object sender, EventArgs e)
-        {
-            // Handle the ConnectionRatingChanged Event for the ContactControl object.
-            int intNegativeQualityBP = 0;
-            // Calculate the BP used for Negative Qualities.
-            foreach (Quality objQuality in CharacterObject.Qualities)
-            {
-                if (objQuality.Type == QualityType.Negative && objQuality.ContributeToLimit)
-                    intNegativeQualityBP += objQuality.BP;
-            }
-            // Include the amount of free Negative Qualities from Improvements.
-            intNegativeQualityBP -= ImprovementManager.ValueOf(CharacterObject, Improvement.ImprovementType.FreeNegativeQualities);
-
-            // Adjust for Karma cost multiplier.
-            intNegativeQualityBP *= CharacterObjectOptions.KarmaQuality;
-
-            // Find current enemy BP total
-            int intBPUsed = 0;
-            foreach (ContactControl objContactControl in panEnemies.Controls)
-            {
-                Contact objLoopEnemy = objContactControl.ContactObject;
-                if (!objLoopEnemy.Free)
-                {
-                    intBPUsed -= (objLoopEnemy.Connection + objLoopEnemy.Loyalty) * CharacterObjectOptions.KarmaEnemy;
-                }
-            }
-
-            int intEnemyMax = 0;
-            int intQualityMax = 0;
-            string strQualityPoints = string.Empty;
-            string strEnemyPoints = string.Empty;
-            intEnemyMax = CharacterObject.GameplayOptionQualityLimit;
-            intQualityMax = CharacterObject.GameplayOptionQualityLimit;
-            strEnemyPoints = intEnemyMax.ToString() + ' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
-            strQualityPoints = intQualityMax.ToString() + ' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
-
-            if (intBPUsed < (intEnemyMax * -1) && !CharacterObject.IgnoreRules)
-            {
-                MessageBox.Show(LanguageManager.GetString("Message_EnemyLimit", GlobalOptions.Language).Replace("{0}", strEnemyPoints), LanguageManager.GetString("MessageTitle_EnemyLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                Contact objSenderContact = ((ContactControl)sender).ContactObject;
-                int intTotal = (intEnemyMax * -1) - intBPUsed;
-                if (e is TextEventArgs objTextArgument)
-                {
-                    switch (objTextArgument.Text)
-                    {
-                        case "Connection":
-                            objSenderContact.Connection -= intTotal;
-                            break;
-                        case "Loyalty":
-                            objSenderContact.Loyalty -= intTotal;
-                            break;
-                    }
-                }
-                return;
-            }
-
-            if (!CharacterObjectOptions.ExceedNegativeQualities)
-            {
-                if (intBPUsed + intNegativeQualityBP < (intQualityMax * -1) && !CharacterObject.IgnoreRules)
-                {
-                    MessageBox.Show(LanguageManager.GetString("Message_NegativeQualityLimit", GlobalOptions.Language).Replace("{0}", strQualityPoints), LanguageManager.GetString("MessageTitle_NegativeQualityLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Contact objSenderContact = ((ContactControl)sender).ContactObject;
-                    if (e is TextEventArgs objTextArgument)
-                    {
-                        switch (objTextArgument.Text)
-                        {
-                            case "Connection":
-                                objSenderContact.Connection -= (((intQualityMax * -1) - (intBPUsed + intNegativeQualityBP)) /
-                                                               CharacterObjectOptions.KarmaQuality);
-                                break;
-                            case "Loyalty":
-                                objSenderContact.Loyalty -= (((intQualityMax * -1) - (intBPUsed + intNegativeQualityBP)) /
-                                                            CharacterObjectOptions.KarmaQuality);
-                                break;
-                        }
-                    }
-                }
-            }
-
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
-        }
-
-        private void DeleteEnemy(object sender, EventArgs e)
-        {
-            if (!CharacterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteEnemy", GlobalOptions.Language)))
-                return;
-
-            // Handle the DeleteCOntact Event for the ContactControl object.
-            ContactControl objSender = (ContactControl)sender;
-            bool blnFound = false;
-            foreach (ContactControl objContactControl in panEnemies.Controls)
-            {
-                // Set the flag to show that we have found the contact.
-                if (objContactControl == objSender)
-                    blnFound = true;
-
-                // Once the Enemy has been found, all of the other ContactControls on the Panel should move up 25 pixels to fill in the gap that deleting this one will cause.
-                if (blnFound)
-                {
-                    CharacterObject.Contacts.Remove(objContactControl.ContactObject);
-                    objContactControl.Top -= 25;
-                }
-            }
-            // Remove the ContactControl that raised the Event.
-            panEnemies.Controls.Remove(objSender);
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
-        }
-        #endregion
-
-        #region PetControl Events
-        private void DeletePet(object sender, EventArgs e)
-        {
-            if (!CharacterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteContact", GlobalOptions.Language)))
-                return;
-
-            // Handle the DeleteContact Event for the ContactControl object.
-            PetControl objSender = (PetControl)sender;
-            bool blnFound = false;
-            foreach (PetControl objContactControl in panPets.Controls)
-            {
-                // Set the flag to show that we have found the Contact.
-                if (objContactControl == objSender)
-                    blnFound = true;
-
-                // Once the Contact has been found, all of the other ContactControls on the Panel should move up 25 pixels to fill in the gap that deleting this one will cause.
-                if (blnFound)
-                    CharacterObject.Contacts.Remove(objContactControl.ContactObject);
-            }
-            // Remove the ContactControl that raised the Event.
-            panPets.Controls.Remove(objSender);
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
-        }
-        #endregion
-
-        #region SpiritControl Events
-        private void DeleteSpirit(object sender, EventArgs e)
-        {
-            SpiritControl objSender = (SpiritControl)sender;
-            Spirit objSpirit = objSender.SpiritObject;
-            bool blnIsSpirit = objSpirit.EntityType == SpiritType.Spirit;
-            if (!CharacterObject.ConfirmDelete(LanguageManager.GetString(blnIsSpirit ? "Message_DeleteSpirit" : "Message_DeleteSprite", GlobalOptions.Language)))
-                return;
-
-            Panel panControlContainer = blnIsSpirit ? panSpirits : panSprites;
-            int intRemovedControlHeight = 0;
-            foreach (SpiritControl objSpiritControl in panControlContainer.Controls)
-            {
-                // Set the flag to show that we have found the Spirit.
-                if (objSpiritControl == objSender)
-                {
-                    CharacterObject.Spirits.Remove(objSpiritControl.SpiritObject);
-                    intRemovedControlHeight = objSpiritControl.Height;
-                }
-
-                // Once the Spirit has been found, all of the other SpiritControls on the Panel should move up 25 pixels to fill in the gap that deleting this one will cause.
-                if (intRemovedControlHeight != 0)
-                {
-                    objSpiritControl.Top -= intRemovedControlHeight;
-                }
-            }
-            // Remove the SpiritControl that raised the Event.
-            panControlContainer.Controls.Remove(objSender);
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
-        }
-        #endregion
-
         #region Martial Tab Control Events
         private void treMartialArts_AfterSelect(object sender, TreeViewEventArgs e)
         {
@@ -3144,6 +2851,7 @@ namespace Chummer
                     }
                     else
                     {
+                        #if LEGACY
                         // Display the Maneuver information.
                         MartialArtManeuver objManeuver = CharacterObject.MartialArtManeuvers.FindById(strSelectedId);
                         if (objManeuver != null)
@@ -3154,6 +2862,7 @@ namespace Chummer
                             tipTooltip.SetToolTip(lblMartialArtSource, CommonFunctions.LanguageBookLong(objManeuver.Source, GlobalOptions.Language) + ' ' + LanguageManager.GetString("String_Page", GlobalOptions.Language) + ' ' + strPage);
                         }
                         else
+                        #endif
                         {
                             cmdDeleteMartialArt.Enabled = false;
                             lblMartialArtSource.Text = string.Empty;
@@ -3170,108 +2879,15 @@ namespace Chummer
             }
             _blnSkipRefresh = false;
         }
-        #endregion
+#endregion
 
-        #region Button Events
+#region Button Events
         private void treLimit_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
             {
                 cmdDeleteLimitModifier_Click(sender, e);
             }
-        }
-
-        private void cmdAddContact_Click(object sender, EventArgs e)
-        {
-            Contact objContact = new Contact(CharacterObject)
-            {
-                EntityType = ContactType.Contact
-            };
-            CharacterObject.Contacts.Add(objContact);
-
-            int i = panContacts.Controls.Count;
-            ContactControl objContactControl = new ContactControl(objContact);
-
-            // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChangedEvent
-            objContactControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-            objContactControl.DeleteContact += DeleteContact;
-            objContactControl.MouseDown += panContactControl_MouseDown;
-
-            panContacts.Controls.Add(objContactControl);
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
-        }
-
-        private void cmdAddEnemy_Click(object sender, EventArgs e)
-        {
-            // Handle the ConnectionRatingChanged Event for the ContactControl object.
-            int intNegativeQualityBP = 0;
-            // Calculate the BP used for Negative Qualities.
-            foreach (Quality objQuality in CharacterObject.Qualities)
-            {
-                if (objQuality.Type == QualityType.Negative && objQuality.ContributeToLimit)
-                    intNegativeQualityBP += objQuality.BP;
-            }
-            // Include the amount of free Negative Qualities from Improvements.
-            intNegativeQualityBP -= ImprovementManager.ValueOf(CharacterObject, Improvement.ImprovementType.FreeNegativeQualities);
-
-            // Adjust for Karma build method.
-            if (CharacterObject.BuildMethod == CharacterBuildMethod.Karma)
-                intNegativeQualityBP *= CharacterObjectOptions.KarmaQuality;
-
-            int intBPUsed = 0;
-            int intEnemyMax = 0;
-            int intQualityMax = 0;
-            string strEnemyPoints = string.Empty;
-            string strQualityPoints = string.Empty;
-            intBPUsed = -2 * CharacterObjectOptions.KarmaQuality;
-            intEnemyMax = CharacterObject.GameplayOptionQualityLimit;
-            intQualityMax = CharacterObject.GameplayOptionQualityLimit;
-            strEnemyPoints = CharacterObject.GameplayOptionQualityLimit + ' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
-            strQualityPoints = CharacterObject.GameplayOptionQualityLimit + ' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
-
-            foreach (ContactControl objEnemyControl in panEnemies.Controls)
-            {
-                Contact objLoopEnemy = objEnemyControl.ContactObject;
-                intBPUsed -= (objLoopEnemy.Connection + objLoopEnemy.Loyalty) * CharacterObjectOptions.KarmaEnemy;
-            }
-
-            if (intBPUsed < (intEnemyMax * -1) && !CharacterObject.IgnoreRules)
-            {
-                MessageBox.Show(LanguageManager.GetString("Message_EnemyLimit", GlobalOptions.Language).Replace("{0}", strEnemyPoints), LanguageManager.GetString("MessageTitle_EnemyLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            if (!CharacterObjectOptions.ExceedNegativeQualities)
-            {
-                if (intBPUsed + intNegativeQualityBP < (intQualityMax * -1) && !CharacterObject.IgnoreRules)
-                {
-                    MessageBox.Show(LanguageManager.GetString("Message_NegativeQualityLimit", GlobalOptions.Language).Replace("{0}", strQualityPoints), LanguageManager.GetString("MessageTitle_NegativeQualityLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-            }
-
-            Contact objContact = new Contact(CharacterObject)
-            {
-                EntityType = ContactType.Enemy
-            };
-            CharacterObject.Contacts.Add(objContact);
-
-            int i = panEnemies.Controls.Count;
-            ContactControl objContactControl = new ContactControl(objContact);
-
-            // Attach an EventHandler for the ConnectioNRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged and OtherCostChanged(hackish) Events
-            objContactControl.ContactDetailChanged += EnemyChanged;
-            objContactControl.DeleteContact += DeleteEnemy;
-
-            // Set the ContactControl's Location since scrolling the Panel causes it to actually change the child Controls' Locations.
-            objContactControl.Location = new Point(0, objContactControl.Height * i + panEnemies.AutoScrollPosition.Y);
-            panEnemies.Controls.Add(objContactControl);
-
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
         }
 
         private void cmdAddSpell_Click(object sender, EventArgs e)
@@ -3338,79 +2954,25 @@ namespace Chummer
                 IsDirty = true;
             }
         }
-
-        private void cmdAddSpirit_Click(object sender, EventArgs e)
-        {
-            int i = panSpirits.Controls.Count;
-
-            // The number of bound Spirits cannot exeed the character's CHA.
-            if (i >= CharacterObject.CHA.Value && !CharacterObject.IgnoreRules)
-            {
-                MessageBox.Show(LanguageManager.GetString("Message_BoundSpiritLimit", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_BoundSpiritLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            Spirit objSpirit = new Spirit(CharacterObject)
-            {
-                EntityType = SpiritType.Spirit,
-                Force = CharacterObject.MaxSpiritForce
-            };
-            CharacterObject.Spirits.Add(objSpirit);
-
-            SpiritControl objSpiritControl = new SpiritControl(objSpirit);
-
-            // Attach an EventHandler for the ServicesOwedChanged Event.
-            objSpiritControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-            objSpiritControl.DeleteSpirit += DeleteSpirit;
-
-            objSpiritControl.RebuildSpiritList(CharacterObject.MagicTradition);
-
-            objSpiritControl.Top = i * objSpiritControl.Height;
-            panSpirits.Controls.Add(objSpiritControl);
-
-            IsDirty = true;
-        }
-
-        private void cmdAddSprite_Click(object sender, EventArgs e)
-        {
-            int i = panSprites.Controls.Count;
-
-            // The number of registered Sprites cannot exceed the character's LOG.
-            if (i >= CharacterObject.LOG.Value && !CharacterObject.IgnoreRules)
-            {
-                MessageBox.Show(LanguageManager.GetString("Message_RegisteredSpriteLimit", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_RegisteredSpriteLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            Spirit objSprite = new Spirit(CharacterObject)
-            {
-                EntityType = SpiritType.Sprite,
-                Force = CharacterObject.MaxSpriteLevel
-            };
-            CharacterObject.Spirits.Add(objSprite);
-
-            SpiritControl objSpriteControl = new SpiritControl(objSprite);
-
-            // Attach an EventHandler for the ServicesOwedChanged Event.
-            objSpriteControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-            objSpriteControl.DeleteSpirit += DeleteSpirit;
-
-            objSpriteControl.RebuildSpiritList(CharacterObject.TechnomancerStream);
-
-            objSpriteControl.Top = i * objSpriteControl.Height;
-            panSprites.Controls.Add(objSpriteControl);
-
-            IsDirty = true;
-        }
+        
         private void cmdAddCyberware_Click(object sender, EventArgs e)
         {
-            treCyberware.SelectedNode = null;
             bool blnAddAgain = false;
             do
             {
-                blnAddAgain = PickCyberware(Improvement.ImprovementSource.Cyberware);
+                blnAddAgain = PickCyberware(null, Improvement.ImprovementSource.Cyberware);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void cmdDeleteCyberware_Click(object sender, EventArgs e)
@@ -3478,7 +3040,12 @@ namespace Chummer
                 }
             }
 
+            PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+            PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
             PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+            PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+            PopulateFocusList(treFoci, cmsGear);
 
             IsCharacterUpdateRequested = true;
 
@@ -3671,13 +3238,22 @@ namespace Chummer
 
         private void cmdAddBioware_Click(object sender, EventArgs e)
         {
-            treCyberware.SelectedNode = null;
             bool blnAddAgain = false;
             do
             {
-                blnAddAgain = PickCyberware(Improvement.ImprovementSource.Bioware);
+                blnAddAgain = PickCyberware(null, Improvement.ImprovementSource.Bioware);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void cmdAddWeapon_Click(object sender, EventArgs e)
@@ -3685,12 +3261,22 @@ namespace Chummer
             bool blnAddAgain = false;
             do
             {
-                blnAddAgain = AddWeapon(treWeapons.Nodes[0]);
+                blnAddAgain = AddWeapon(null);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
-        private bool AddWeapon(TreeNode objParentNode)
+        private bool AddWeapon(TreeNode nodParentNode)
         {
             frmSelectWeapon frmPickWeapon = new frmSelectWeapon(CharacterObject);
             frmPickWeapon.ShowDialog(this);
@@ -3708,6 +3294,7 @@ namespace Chummer
             Weapon objWeapon = new Weapon(CharacterObject);
             objWeapon.Create(objXmlWeapon, lstWeapons);
             objWeapon.DiscountCost = frmPickWeapon.BlackMarketDiscount;
+            objWeapon.Location = nodParentNode?.Tag.ToString() ?? string.Empty;
 
             if (frmPickWeapon.FreeCost)
             {
@@ -3715,16 +3302,10 @@ namespace Chummer
             }
             CharacterObject.Weapons.Add(objWeapon);
 
-            TreeNode objNode = objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
-            objParentNode.Nodes.Add(objNode);
-
             foreach (Weapon objExtraWeapon in lstWeapons)
             {
                 CharacterObject.Weapons.Add(objExtraWeapon);
-                objParentNode.Nodes.Add(objExtraWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
             }
-            objParentNode.Expand();
-            treWeapons.SelectedNode = objNode;
 
             IsCharacterUpdateRequested = true;
 
@@ -3754,20 +3335,9 @@ namespace Chummer
                     if (objWeapon != null)
                         objWeapon.Location = string.Empty;
                 }
-
-                List<TreeNode> lstMoveNodes = new List<TreeNode>();
-                foreach (TreeNode objNode in treWeapons.SelectedNode.Nodes)
-                    lstMoveNodes.Add(objNode);
-
-                foreach (TreeNode objNode in lstMoveNodes)
-                {
-                    treWeapons.SelectedNode.Nodes.Remove(objNode);
-                    treWeapons.Nodes[0].Nodes.Add(objNode);
-                }
-
+                
                 // Remove the Weapon Location from the character, then remove the selected node.
                 CharacterObject.WeaponLocations.Remove(treWeapons.SelectedNode.Text);
-                treWeapons.SelectedNode.Remove();
             }
             else if (treWeapons.SelectedNode.Level > 0)
             {
@@ -3802,7 +3372,6 @@ namespace Chummer
                         objWeapon.Parent.Children.Remove(objWeapon);
                     else
                         CharacterObject.Weapons.Remove(objWeapon);
-                    treWeapons.SelectedNode.Remove();
                 }
                 else
                 {
@@ -3813,7 +3382,6 @@ namespace Chummer
                         foreach (Gear objGear in objAccessory.Gear)
                             objGear.DeleteGear(treWeapons, treVehicles);
                         objAccessory.Parent.WeaponAccessories.Remove(objAccessory);
-                        treWeapons.SelectedNode.Remove();
                     }
                     else
                     {
@@ -3829,11 +3397,20 @@ namespace Chummer
                                 objGear.Parent.Children.Remove(objGear);
                                 objGear.Parent.RefreshMatrixAttributeArray();
                             }
-                            treWeapons.SelectedNode.Remove();
                         }
+                        else
+                            return;
                     }
                 }
             }
+
+            PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+            PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+            PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+            PopulateFocusList(treFoci, cmsGear);
+
             IsCharacterUpdateRequested = true;
 
             IsDirty = true;
@@ -3892,14 +3469,19 @@ namespace Chummer
             bool blnAddAgain = false;
             do
             {
-                // Select the root Gear node then open the Select Gear window.
-                treGear.SelectedNode = treGear.Nodes[0];
-                blnAddAgain = PickGear(treGear.SelectedNode);
+                blnAddAgain = PickGear(treGear.Nodes[0]);
             }
             while (blnAddAgain);
 
             if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
                 PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void cmdDeleteGear_Click(object sender, EventArgs e)
@@ -3924,19 +3506,8 @@ namespace Chummer
                         objGear.Location = string.Empty;
                 }
 
-                List<TreeNode> lstMoveNodes = new List<TreeNode>();
-                foreach (TreeNode objNode in treGear.SelectedNode.Nodes)
-                    lstMoveNodes.Add(objNode);
-
-                foreach (TreeNode objNode in lstMoveNodes)
-                {
-                    treGear.SelectedNode.Nodes.Remove(objNode);
-                    treGear.Nodes[0].Nodes.Add(objNode);
-                }
-
                 // Remove the Location from the character, then remove the selected node.
                 CharacterObject.GearLocations.Remove(treGear.SelectedNode.Text);
-                treGear.SelectedNode.Remove();
             }
             else if (treGear.SelectedNode.Level > 0)
             {
@@ -3951,7 +3522,6 @@ namespace Chummer
                     objGear.DeleteGear(treWeapons, treVehicles);
 
                     CharacterObject.Gear.Remove(objGear);
-                    treGear.SelectedNode.Remove();
 
                     // If the Parent is populated, remove the item from its Parent.
                     if (objParent != null)
@@ -3960,8 +3530,15 @@ namespace Chummer
                         objParent.RefreshMatrixAttributeArray();
                     }
                 }
+                else
+                    return;
             }
 
+            PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+            PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+            PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
             PopulateFocusList(treFoci, cmsGear);
 
             IsCharacterUpdateRequested = true;
@@ -3969,7 +3546,7 @@ namespace Chummer
             IsDirty = true;
         }
 
-        private bool AddVehicle(TreeNode objParentNode)
+        private bool AddVehicle(TreeNode nodParentNode)
         {
             frmSelectVehicle frmPickVehicle = new frmSelectVehicle(CharacterObject);
             frmPickVehicle.ShowDialog(this);
@@ -3996,12 +3573,10 @@ namespace Chummer
             {
                 objVehicle.Cost = "0";
             }
-            CharacterObject.Vehicles.Add(objVehicle);
 
-            TreeNode objNode = objVehicle.CreateTreeNode(cmsVehicle, cmsVehicleLocation, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
-            objParentNode.Nodes.Add(objNode);
-            objParentNode.Expand();
-            treVehicles.SelectedNode = objNode;
+            objVehicle.Location = nodParentNode?.Tag.ToString() ?? string.Empty;
+
+            CharacterObject.Vehicles.Add(objVehicle);
 
             IsCharacterUpdateRequested = true;
 
@@ -4015,9 +3590,19 @@ namespace Chummer
             bool blnAddAgain = false;
             do
             {
-                blnAddAgain = AddVehicle(treVehicles.Nodes[0]);
+                blnAddAgain = AddVehicle(null);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void cmdDeleteVehicle_Click(object sender, EventArgs e)
@@ -4045,28 +3630,14 @@ namespace Chummer
                     if (!CharacterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteVehicleLocationBase", GlobalOptions.Language)))
                         return;
 
-                    List<TreeNode> lstMoveNodes = new List<TreeNode>();
-                    foreach (TreeNode objNode in objSelectedNode.Nodes)
+                    foreach (Vehicle objVehicle in CharacterObject.Vehicles)
                     {
-                        string strId = objNode.Tag.ToString();
-                        Vehicle objLoopVehicle = CharacterObject.Vehicles.FirstOrDefault(x => x.InternalId == strId);
-
-                        // Change the Location for the Vehicle.
-                        objLoopVehicle.Location = string.Empty;
-                        // Move all of the child nodes in the current parent to the Selected Vehicle parent node.
-                        lstMoveNodes.Add(objNode);
-                    }
-
-                    TreeNode objSelectedVehiclesNode = treVehicles.Nodes[0];
-                    foreach (TreeNode objNode in lstMoveNodes)
-                    {
-                        objNode.Remove();
-                        objSelectedVehiclesNode.Nodes.Add(objNode);
+                        if (objVehicle.Location == strSelectedId)
+                            objVehicle.Location = string.Empty;
                     }
 
                     // Remove the Location from the character, then remove the selected node.
                     CharacterObject.VehicleLocations.Remove(objSelectedNode.Text);
-                    objSelectedNode.Remove();
                 }
                 else
                 {
@@ -4339,6 +3910,13 @@ namespace Chummer
                 IsCharacterUpdateRequested = true;
             }
 
+            PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+            PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+            PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+            PopulateFocusList(treFoci, cmsGear);
+
             IsDirty = true;
         }
 
@@ -4358,13 +3936,7 @@ namespace Chummer
             MartialArt objMartialArt = new MartialArt(CharacterObject);
             objMartialArt.Create(objXmlArt);
             CharacterObject.MartialArts.Add(objMartialArt);
-
-            RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
-
-            TreeNode objSelectedNode = treMartialArts.FindNode(objMartialArt.InternalId);
-            if (objSelectedNode != null)
-                treMartialArts.SelectedNode = objSelectedNode;
-
+            
             IsCharacterUpdateRequested = true;
 
             IsDirty = true;
@@ -4414,9 +3986,7 @@ namespace Chummer
                     }
 
                     CharacterObject.MartialArts.Remove(objMartialArt);
-
-                    RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
-
+                    
                     IsCharacterUpdateRequested = true;
 
                     IsDirty = true;
@@ -4433,9 +4003,7 @@ namespace Chummer
                         ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.MartialArtTechnique, objSelectedAdvantage.InternalId);
 
                         objMartialArt.Techniques.Remove(objSelectedAdvantage);
-
-                        RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
-
+                        
                         IsCharacterUpdateRequested = true;
 
                         IsDirty = true;
@@ -4444,6 +4012,7 @@ namespace Chummer
             }
         }
 
+#if LEGACY
         private void cmdAddManeuver_Click(object sender, EventArgs e)
         {
             // Characters may only have 2 Maneuvers per Martial Art Rating.
@@ -4472,8 +4041,6 @@ namespace Chummer
             objManeuver.Create(objXmlManeuver);
             CharacterObject.MartialArtManeuvers.Add(objManeuver);
 
-            RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
-
             TreeNode objSelectedNode = treMartialArts.FindNode(objManeuver.InternalId);
             if (objSelectedNode != null)
                 treMartialArts.SelectedNode = objSelectedNode;
@@ -4482,6 +4049,7 @@ namespace Chummer
 
             IsDirty = true;
         }
+#endif
 
         private void cmdAddMugshot_Click(object sender, EventArgs e)
         {
@@ -4657,186 +4225,195 @@ namespace Chummer
 
         private void cmdDeleteMetamagic_Click(object sender, EventArgs e)
         {
-            if (treMetamagic.SelectedNode.Level == 0)
+            string strSelectedId = treMetamagic.SelectedNode?.Tag.ToString();
+            if (!string.IsNullOrEmpty(strSelectedId))
             {
-                // Locate the selected Grade.
-                InitiationGrade objGrade = CharacterObject.InitiationGrades.FindById(treMetamagic.SelectedNode.Tag.ToString());
-                if (objGrade == null)
-                    return;
-
-                // Stop if this isn't the highest grade
-
-                if (CharacterObject.MAGEnabled)
-                {
-                    if (objGrade.Grade != CharacterObject.InitiateGrade)
-                    {
-                        MessageBox.Show(LanguageManager.GetString("Message_DeleteGrade", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_DeleteGrade", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-                }
-                else if (CharacterObject.RESEnabled)
-                {
-                    if (objGrade.Grade != CharacterObject.SubmersionGrade)
-                    {
-                        MessageBox.Show(LanguageManager.GetString("Message_DeleteGrade", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_DeleteGrade", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-                }
-
                 // We're deleting an entire grade
-                string strMessage = string.Empty;
-                if (CharacterObject.MAGEnabled)
-                    strMessage = LanguageManager.GetString("Message_DeleteInitiateGrade", GlobalOptions.Language);
-                else if (CharacterObject.RESEnabled)
-                    strMessage = LanguageManager.GetString("Message_DeleteSubmersionGrade", GlobalOptions.Language);
-                if (!CharacterObject.ConfirmDelete(strMessage))
-                    return;
-
-                // Remove the child objects (arts, metamagics, enhancements, enchantments, rituals)
-                // Arts
-                List<Art> lstRemoveArts = new List<Art>();
-                foreach (Art objArt in CharacterObject.Arts)
-                {
-                    if (objArt.Grade == objGrade.Grade)
-                    {
-                        lstRemoveArts.Add(objArt);
-                    }
-                }
-                foreach (Art objArt in lstRemoveArts)
-                    CharacterObject.Arts.Remove(objArt);
-
-                // Metamagics
-                List<Metamagic> lstRemoveMetamagics = new List<Metamagic>();
-                foreach (Metamagic objMetamagic in CharacterObject.Metamagics)
-                {
-                    if (objMetamagic.Grade == objGrade.Grade)
-                    {
-                        lstRemoveMetamagics.Add(objMetamagic);
-                    }
-                }
-                foreach (Metamagic objMetamagic in lstRemoveMetamagics)
-                {
-                    CharacterObject.Metamagics.Remove(objMetamagic);
-                    ImprovementManager.RemoveImprovements(CharacterObject, objMetamagic.SourceType, objMetamagic.InternalId);
-                }
-
-                // Enhancements
-                List<Enhancement> lstRemoveEnhancements = new List<Enhancement>();
-                foreach (Enhancement objEnhancement in CharacterObject.Enhancements)
-                {
-                    if (objEnhancement.Grade == objGrade.Grade)
-                    {
-                        lstRemoveEnhancements.Add(objEnhancement);
-                    }
-                }
-                foreach (Enhancement objEnhancement in lstRemoveEnhancements)
-                    CharacterObject.Enhancements.Remove(objEnhancement);
-
-                // Spells
-                List<Spell> lstRemoveSpells = new List<Spell>();
-                foreach (Spell objSpell in CharacterObject.Spells)
-                {
-                    if (objSpell.Grade == objGrade.Grade)
-                    {
-                        lstRemoveSpells.Add(objSpell);
-                    }
-                }
-                foreach (Spell objSpell in lstRemoveSpells)
-                    CharacterObject.Spells.Remove(objSpell);
-
-                // Grade
-                CharacterObject.InitiationGrades.Remove(objGrade);
-
-                if (CharacterObject.MAGEnabled)
-                {
-                    CharacterObject.InitiateGrade = objGrade.Grade - 1;
-                    // Remove any existing Initiation Improvements.
-                    ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Initiation);
-
-                    // Create the replacement Improvement.
-                    ImprovementManager.CreateImprovement(CharacterObject, "MAG", Improvement.ImprovementSource.Initiation, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.InitiateGrade);
-                    ImprovementManager.CreateImprovement(CharacterObject, "MAGAdept", Improvement.ImprovementSource.Initiation, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.InitiateGrade);
-                    ImprovementManager.Commit(CharacterObject);
-                }
-                else if (CharacterObject.RESEnabled)
-                {
-                    CharacterObject.SubmersionGrade = objGrade.Grade - 1;
-
-                    // Remove any existing Initiation Improvements.
-                    ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Submersion);
-
-                    // Create the replacement Improvement.
-                    ImprovementManager.CreateImprovement(CharacterObject, "RES", Improvement.ImprovementSource.Submersion, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.SubmersionGrade);
-                    ImprovementManager.Commit(CharacterObject);
-                }
-            }
-            else
-            {
-                // We're deleting a single bonus attached to a grade
-                string strItemId = treMetamagic.SelectedNode.Tag.ToString();
-                Art objArt = CharacterObject.Arts.FindById(strItemId);
-                if (objArt != null)
+                InitiationGrade objGrade = CharacterObject.InitiationGrades.FindById(strSelectedId);
+                if (objGrade != null)
                 {
                     string strMessage = string.Empty;
-                    strMessage = LanguageManager.GetString("Message_DeleteArt", GlobalOptions.Language);
-                    if (!CharacterObject.ConfirmDelete(strMessage))
-                        return;
-
-                    CharacterObject.Arts.Remove(objArt);
-                    return;
-                }
-
-                Metamagic objMetamagic = CharacterObject.Metamagics.FindById(strItemId);
-                if (objMetamagic != null)
-                {
-                    string strMessage = string.Empty;
+                    // Stop if this isn't the highest grade
                     if (CharacterObject.MAGEnabled)
-                        strMessage = LanguageManager.GetString("Message_DeleteMetamagic", GlobalOptions.Language);
-                    else if (CharacterObject.RESEnabled)
-                        strMessage = LanguageManager.GetString("Message_DeleteEcho", GlobalOptions.Language);
-                    if (!CharacterObject.ConfirmDelete(strMessage))
-                        return;
-
-                    CharacterObject.Metamagics.Remove(objMetamagic);
-                    ImprovementManager.RemoveImprovements(CharacterObject, objMetamagic.SourceType, objMetamagic.InternalId);
-                    return;
-                }
-
-                Enhancement objEnhancement = CharacterObject.FindEnhancement(strItemId);
-                if (objEnhancement != null)
-                {
-                    string strMessage = string.Empty;
-                    strMessage = LanguageManager.GetString("Message_DeleteEnhancement", GlobalOptions.Language);
-                    if (!CharacterObject.ConfirmDelete(strMessage))
-                        return;
-
-                    CharacterObject.Enhancements.Remove(objEnhancement);
-                    foreach (Power objPower in CharacterObject.Powers)
                     {
-                        if (objPower.Enhancements.Contains(objEnhancement))
-                            objPower.Enhancements.Remove(objEnhancement);
+                        if (objGrade.Grade != CharacterObject.InitiateGrade)
+                        {
+                            MessageBox.Show(LanguageManager.GetString("Message_DeleteGrade", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_DeleteGrade", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+                        strMessage = LanguageManager.GetString("Message_DeleteInitiateGrade", GlobalOptions.Language);
                     }
-                    return;
-                }
-
-                Spell objSpell = CharacterObject.Spells.FindById(strItemId);
-                if (objSpell != null)
-                {
-                    string strMessage = string.Empty;
-                    strMessage = LanguageManager.GetString("Message_DeleteSpell", GlobalOptions.Language);
+                    else if (CharacterObject.RESEnabled)
+                    {
+                        if (objGrade.Grade != CharacterObject.SubmersionGrade)
+                        {
+                            MessageBox.Show(LanguageManager.GetString("Message_DeleteGrade", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_DeleteGrade", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+                        strMessage = LanguageManager.GetString("Message_DeleteSubmersionGrade", GlobalOptions.Language);
+                    }
+                    else
+                        return;
+                    
                     if (!CharacterObject.ConfirmDelete(strMessage))
                         return;
 
-                    CharacterObject.Spells.Remove(objSpell);
+                    // Remove the child objects (arts, metamagics, enhancements, enchantments, rituals)
+                    // Arts
+                    List<Art> lstRemoveArts = new List<Art>();
+                    foreach (Art objArt in CharacterObject.Arts)
+                    {
+                        if (objArt.Grade == objGrade.Grade)
+                        {
+                            lstRemoveArts.Add(objArt);
+                        }
+                    }
+                    foreach (Art objArt in lstRemoveArts)
+                        CharacterObject.Arts.Remove(objArt);
 
-                    treSpells.FindNode(objSpell.InternalId)?.Remove();
-                    return;
+                    // Metamagics
+                    List<Metamagic> lstRemoveMetamagics = new List<Metamagic>();
+                    foreach (Metamagic objMetamagic in CharacterObject.Metamagics)
+                    {
+                        if (objMetamagic.Grade == objGrade.Grade)
+                        {
+                            lstRemoveMetamagics.Add(objMetamagic);
+                        }
+                    }
+                    foreach (Metamagic objMetamagic in lstRemoveMetamagics)
+                    {
+                        CharacterObject.Metamagics.Remove(objMetamagic);
+                        ImprovementManager.RemoveImprovements(CharacterObject, objMetamagic.SourceType, objMetamagic.InternalId);
+                    }
+
+                    // Enhancements
+                    List<Enhancement> lstRemoveEnhancements = new List<Enhancement>();
+                    foreach (Enhancement objEnhancement in CharacterObject.Enhancements)
+                    {
+                        if (objEnhancement.Grade == objGrade.Grade)
+                        {
+                            lstRemoveEnhancements.Add(objEnhancement);
+                        }
+                    }
+                    foreach (Enhancement objEnhancement in lstRemoveEnhancements)
+                        CharacterObject.Enhancements.Remove(objEnhancement);
+
+                    // Spells
+                    List<Spell> lstRemoveSpells = new List<Spell>();
+                    foreach (Spell objSpell in CharacterObject.Spells)
+                    {
+                        if (objSpell.Grade == objGrade.Grade)
+                        {
+                            lstRemoveSpells.Add(objSpell);
+                        }
+                    }
+                    foreach (Spell objSpell in lstRemoveSpells)
+                        CharacterObject.Spells.Remove(objSpell);
+
+                    // Grade
+                    CharacterObject.InitiationGrades.Remove(objGrade);
+
+                    if (CharacterObject.MAGEnabled)
+                    {
+                        CharacterObject.InitiateGrade = objGrade.Grade - 1;
+                        // Remove any existing Initiation Improvements.
+                        ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Initiation);
+
+                        // Create the replacement Improvement.
+                        ImprovementManager.CreateImprovement(CharacterObject, "MAG", Improvement.ImprovementSource.Initiation, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.InitiateGrade);
+                        ImprovementManager.CreateImprovement(CharacterObject, "MAGAdept", Improvement.ImprovementSource.Initiation, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.InitiateGrade);
+                        ImprovementManager.Commit(CharacterObject);
+                    }
+                    else if (CharacterObject.RESEnabled)
+                    {
+                        CharacterObject.SubmersionGrade = objGrade.Grade - 1;
+
+                        // Remove any existing Initiation Improvements.
+                        ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Submersion);
+
+                        // Create the replacement Improvement.
+                        ImprovementManager.CreateImprovement(CharacterObject, "RES", Improvement.ImprovementSource.Submersion, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.SubmersionGrade);
+                        ImprovementManager.Commit(CharacterObject);
+                    }
                 }
+                else
+                {
+                    // We're deleting a single bonus attached to a grade
+                    Art objArt = CharacterObject.Arts.FindById(strSelectedId);
+                    if (objArt != null)
+                    {
+                        if (objArt.Grade <= 0)
+                            return;
+                        string strMessage = LanguageManager.GetString("Message_DeleteArt", GlobalOptions.Language);
+                        if (!CharacterObject.ConfirmDelete(strMessage))
+                            return;
+
+                        CharacterObject.Arts.Remove(objArt);
+                    }
+                    else
+                    {
+                        Metamagic objMetamagic = CharacterObject.Metamagics.FindById(strSelectedId);
+                        if (objMetamagic != null)
+                        {
+                            if (objMetamagic.Grade <= 0)
+                                return;
+                            string strMessage = string.Empty;
+                            if (CharacterObject.MAGEnabled)
+                                strMessage = LanguageManager.GetString("Message_DeleteMetamagic", GlobalOptions.Language);
+                            else if (CharacterObject.RESEnabled)
+                                strMessage = LanguageManager.GetString("Message_DeleteEcho", GlobalOptions.Language);
+                            else
+                                return;
+                            if (!CharacterObject.ConfirmDelete(strMessage))
+                                return;
+
+                            CharacterObject.Metamagics.Remove(objMetamagic);
+                            ImprovementManager.RemoveImprovements(CharacterObject, objMetamagic.SourceType, objMetamagic.InternalId);
+                        }
+                        else
+                        {
+                            Enhancement objEnhancement = CharacterObject.FindEnhancement(strSelectedId);
+                            if (objEnhancement != null)
+                            {
+                                if (objEnhancement.Grade <= 0)
+                                    return;
+                                string strMessage = LanguageManager.GetString("Message_DeleteEnhancement", GlobalOptions.Language);
+                                if (!CharacterObject.ConfirmDelete(strMessage))
+                                    return;
+
+                                CharacterObject.Enhancements.Remove(objEnhancement);
+                                foreach (Power objPower in CharacterObject.Powers)
+                                {
+                                    if (objPower.Enhancements.Contains(objEnhancement))
+                                        objPower.Enhancements.Remove(objEnhancement);
+                                }
+                            }
+                            else
+                            {
+                                Spell objSpell = CharacterObject.Spells.FindById(strSelectedId);
+                                if (objSpell != null)
+                                {
+                                    if (objSpell.Grade <= 0)
+                                        return;
+                                    string strMessage = LanguageManager.GetString("Message_DeleteSpell", GlobalOptions.Language);
+                                    if (!CharacterObject.ConfirmDelete(strMessage))
+                                        return;
+
+                                    CharacterObject.Spells.Remove(objSpell);
+
+                                    treSpells.FindNode(objSpell.InternalId)?.Remove();
+                                }
+                                else
+                                    return;
+                            }
+                        }
+                    }
+                }
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
             }
-
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
         }
 
         private void cmdAddCritterPower_Click(object sender, EventArgs e)
@@ -5003,8 +4580,6 @@ namespace Chummer
                     foreach (Weapon objWeapon in lstWeapons)
                     {
                         CharacterObject.Weapons.Add(objWeapon);
-                        treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                        treWeapons.Nodes[0].Expand();
                     }
                 }
                 else
@@ -5025,7 +4600,12 @@ namespace Chummer
 
             if (IsCharacterUpdateRequested)
             {
-                RefreshContacts();
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
             }
         }
 
@@ -5089,13 +4669,10 @@ namespace Chummer
                     // Include the BP used by Enemies.
                     if (CharacterObjectOptions.EnemyKarmaQualityLimit)
                     {
-                        //TODO: What the hell is this string comparison for?
-                        if (lblEnemiesBP.Text.Contains(LanguageManager.GetString("String_BP", GlobalOptions.Language)))
-                            intBP += int.Parse(lblEnemiesBP.Text.Replace(
-                                LanguageManager.GetString("String_Karma", GlobalOptions.Language), string.Empty));
-                        else
-                            intBP += int.Parse(lblEnemiesBP.Text.Replace(
-                                ' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language), string.Empty));
+                        // Include the BP used by Enemies.
+                        string strEnemiesBPText = lblEnemiesBP.Text.Replace(LanguageManager.GetString("String_Karma", GlobalOptions.Language), string.Empty).NormalizeWhiteSpace();
+                        if (int.TryParse(strEnemiesBPText, out int intTemp))
+                            intBP += intTemp;
                     }
 
                     // Include the amount from Free Negative Quality BP cost Improvements.
@@ -5160,8 +4737,6 @@ namespace Chummer
                     foreach (Weapon objWeapon in lstWeapons)
                     {
                         CharacterObject.Weapons.Add(objWeapon);
-                        treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                        treWeapons.Nodes[0].Expand();
                     }
 
                     IsCharacterUpdateRequested = true;
@@ -5180,10 +4755,12 @@ namespace Chummer
 
             if (IsCharacterUpdateRequested)
             {
-                RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
-                RefreshContacts();
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
                 PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
                 PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
             }
         }
 
@@ -5215,8 +4792,6 @@ namespace Chummer
                 foreach (Weapon objWeapon in objAddWeapons)
                 {
                     _objCharacter.Weapons.Add(objWeapon);
-                    treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                    treWeapons.Nodes[0].Expand();
                 }
 
                 return objAddQuality;
@@ -5363,10 +4938,15 @@ namespace Chummer
                 // Only refresh if at least one quality was removed
                 if (!blnFirstRemoval)
                 {
-                    IsCharacterUpdateRequested = true;
-                    RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
+                    PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                    PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                    PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
                     PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
-                    RefreshContacts();
+                    PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                    PopulateFocusList(treFoci, cmsGear);
+
+                    IsCharacterUpdateRequested = true;
+
                     IsDirty = true;
                 }
             }
@@ -5544,7 +5124,6 @@ namespace Chummer
             {
                 decCost += objGear.TotalCost;
                 CharacterObject.Gear.Remove(objGear);
-                treGear.FindNode(objGear.InternalId)?.Remove();
             }
 
             Gear objStackItem = new Gear(CharacterObject)
@@ -5559,12 +5138,15 @@ namespace Chummer
                 Avail = "0"
             };
 
-            treGear.Nodes[0].Nodes.Add(objStackItem.CreateTreeNode(cmsGear));
-
             CharacterObject.Gear.Add(objStackItem);
 
             objStack.GearId = objStackItem.InternalId;
 
+            PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+            PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+            PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
             PopulateFocusList(treFoci, cmsGear);
 
             IsCharacterUpdateRequested = true;
@@ -5577,12 +5159,22 @@ namespace Chummer
             bool blnAddAgain = false;
             do
             {
-                blnAddAgain = AddArmor(treArmor.Nodes[0]);
+                blnAddAgain = AddArmor(null);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
-        private bool AddArmor(TreeNode objParentNode)
+        private bool AddArmor(TreeNode nodParentNode)
         {
             frmSelectArmor frmPickArmor = new frmSelectArmor(CharacterObject);
             frmPickArmor.ShowDialog(this);
@@ -5603,23 +5195,17 @@ namespace Chummer
             objArmor.DiscountCost = frmPickArmor.BlackMarketDiscount;
             if (objArmor.InternalId.IsEmptyGuid())
                 return frmPickArmor.AddAgain;
-
+            objArmor.Location = nodParentNode?.Tag.ToString() ?? string.Empty;
             if (frmPickArmor.FreeCost)
             {
                 objArmor.Cost = "0";
             }
 
             CharacterObject.Armor.Add(objArmor);
-            TreeNode objNode = objArmor.CreateTreeNode(cmsArmor, cmsArmorMod, cmsArmorGear);
-            objParentNode.Nodes.Add(objNode);
-            objParentNode.Expand();
-            treArmor.SelectedNode = objNode;
 
             foreach (Weapon objWeapon in lstWeapons)
             {
                 CharacterObject.Weapons.Add(objWeapon);
-                treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                treWeapons.Nodes[0].Expand();
             }
 
             IsCharacterUpdateRequested = true;
@@ -5781,30 +5367,9 @@ namespace Chummer
 
             IsDirty = true;
         }
+#endregion
 
-        private void cmdAddPet_Click(object sender, EventArgs e)
-        {
-            Contact objContact = new Contact(CharacterObject)
-            {
-                EntityType = ContactType.Pet
-            };
-            CharacterObject.Contacts.Add(objContact);
-
-            PetControl objPetControl = new PetControl(objContact);
-
-            // Attach an EventHandler for the DeleteContact and FileNameChanged Events.
-            objPetControl.DeleteContact += DeletePet;
-            objPetControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-
-            // Add the control to the Panel.
-            panPets.Controls.Add(objPetControl);
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
-        }
-        #endregion
-
-        #region ContextMenu Events
+#region ContextMenu Events
         private void tsCyberwareAddAsPlugin_Click(object sender, EventArgs e)
         {
             TreeNode objSelectedNode = treCyberware.SelectedNode;
@@ -5818,11 +5383,19 @@ namespace Chummer
             bool blnAddAgain = false;
             do
             {
-                blnAddAgain = PickCyberware(objSelectedNode.GetTopParent()?.Tag.ToString() == "Node_SelectedBioware" ? Improvement.ImprovementSource.Bioware : Improvement.ImprovementSource.Cyberware);
-                if (blnAddAgain)
-                    treCyberware.SelectedNode = objSelectedNode;
+                blnAddAgain = PickCyberware(objSelectedNode, objSelectedNode.GetTopParent()?.Tag.ToString() == "Node_SelectedBioware" ? Improvement.ImprovementSource.Bioware : Improvement.ImprovementSource.Cyberware);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsWeaponAddAccessory_Click(object sender, EventArgs e)
@@ -5984,7 +5557,6 @@ namespace Chummer
 
                 ArmorMod objMod = new ArmorMod(CharacterObject);
                 List<Weapon> lstWeapons = new List<Weapon>();
-                List<TreeNode> lstWeaponNodes = new List<TreeNode>();
                 int intRating = 0;
                 if (Convert.ToInt32(objXmlArmor["maxrating"].InnerText) > 1)
                     intRating = frmPickArmorMod.SelectedRating;
@@ -5998,17 +5570,11 @@ namespace Chummer
                 }
 
                 objArmor.ArmorMods.Add(objMod);
-                TreeNode objNode = objMod.CreateTreeNode(cmsArmorMod, cmsArmorGear);
-                objSelectedNode.Nodes.Add(objNode);
-                objSelectedNode.Expand();
-                treArmor.SelectedNode = objNode;
 
                 // Add any Weapons created by the Mod.
                 foreach (Weapon objWeapon in lstWeapons)
                 {
                     CharacterObject.Weapons.Add(objWeapon);
-                    treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                    treWeapons.Nodes[0].Expand();
                 }
 
                 IsCharacterUpdateRequested = true;
@@ -6018,6 +5584,16 @@ namespace Chummer
                 frmPickArmorMod.Dispose();
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsGearAddAsPlugin_Click(object sender, EventArgs e)
@@ -6033,11 +5609,19 @@ namespace Chummer
             bool blnAddAgain = false;
             do
             {
-                blnAddAgain = PickGear(treGear.SelectedNode);
-                if (blnAddAgain)
-                    treGear.SelectedNode = objSelectedNode;
+                blnAddAgain = PickGear(objSelectedNode);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsVehicleAddWeaponMount_Click(object sender, EventArgs e)
@@ -6169,10 +5753,10 @@ namespace Chummer
                     // Multiply the cost if applicable.
                     decimal decOldCost = objMod.TotalCost;
                     decimal decCost = decOldCost;
-                    string strAvail = objMod.TotalAvail(GlobalOptions.DefaultLanguage);
-                    if (strAvail.EndsWith(LanguageManager.GetString("String_AvailRestricted", GlobalOptions.DefaultLanguage)) && CharacterObjectOptions.MultiplyRestrictedCost)
+                    char chrAvail = objMod.TotalAvailTuple().Suffix;
+                    if (chrAvail == 'R' && CharacterObjectOptions.MultiplyRestrictedCost)
                         decCost *= CharacterObjectOptions.RestrictedCostMultiplier;
-                    if (strAvail.EndsWith(LanguageManager.GetString("String_AvailForbidden", GlobalOptions.DefaultLanguage)) && CharacterObjectOptions.MultiplyForbiddenCost)
+                    if (chrAvail == 'F' && CharacterObjectOptions.MultiplyForbiddenCost)
                         decCost *= CharacterObjectOptions.ForbiddenCostMultiplier;
                     decCost -= decOldCost;
                     objMod.Markup = decCost;
@@ -6476,14 +6060,9 @@ namespace Chummer
                 return;
 
             objMartialArt.Techniques.Add(objAdvantage);
-
-            RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
-
-            TreeNode objSelectedNode = treMartialArts.FindNode(objAdvantage.InternalId);
-            if (objSelectedNode != null)
-                treMartialArts.SelectedNode = objSelectedNode;
-
+            
             IsCharacterUpdateRequested = true;
+
             IsDirty = true;
         }
 
@@ -6923,26 +6502,6 @@ namespace Chummer
             IsDirty = true;
         }
 
-        private void tsGearAddNexus_Click(object sender, EventArgs e)
-        {
-            treGear.SelectedNode = treGear.Nodes[0];
-
-            frmSelectNexus frmPickNexus = new frmSelectNexus(CharacterObject);
-            frmPickNexus.ShowDialog(this);
-
-            if (frmPickNexus.DialogResult == DialogResult.Cancel)
-                return;
-
-            Gear objGear = frmPickNexus.SelectedNexus;
-
-            treGear.Nodes[0].Nodes.Add(objGear.CreateTreeNode(cmsGear));
-            treGear.Nodes[0].Expand();
-
-            CharacterObject.Gear.Add(objGear);
-
-            IsCharacterUpdateRequested = true;
-        }
-
         private void tsGearButtonAddAccessory_Click(object sender, EventArgs e)
         {
             tsGearAddAsPlugin_Click(sender, e);
@@ -6961,6 +6520,27 @@ namespace Chummer
             objGear.Extra = frmPickText.SelectedValue;
             treGear.SelectedNode.Text = objGear.DisplayName(GlobalOptions.Language);
             IsDirty = true;
+        }
+
+        #if LEGACY
+        private void tsGearAddNexus_Click(object sender, EventArgs e)
+        {
+            treGear.SelectedNode = treGear.Nodes[0];
+
+            frmSelectNexus frmPickNexus = new frmSelectNexus(CharacterObject);
+            frmPickNexus.ShowDialog(this);
+
+            if (frmPickNexus.DialogResult == DialogResult.Cancel)
+                return;
+
+            Gear objGear = frmPickNexus.SelectedNexus;
+
+            treGear.Nodes[0].Nodes.Add(objGear.CreateTreeNode(cmsGear));
+            treGear.Nodes[0].Expand();
+
+            CharacterObject.Gear.Add(objGear);
+
+            IsCharacterUpdateRequested = true;
         }
 
         private void tsVehicleAddNexus_Click(object sender, EventArgs e)
@@ -7000,6 +6580,7 @@ namespace Chummer
 
             IsDirty = true;
         }
+        #endif
 
         private void tsArmorLocationAddArmor_Click(object sender, EventArgs e)
         {
@@ -7026,11 +6607,19 @@ namespace Chummer
             do
             {
                 // Select the root Gear node then open the Select Gear window.
-                blnAddAgain = PickArmorGear(true);
-                if (blnAddAgain)
-                    treArmor.SelectedNode = objSelectedNode;
+                blnAddAgain = PickArmorGear(objSelectedNode, true);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsArmorGearAddAsPlugin_Click(object sender, EventArgs e)
@@ -7059,11 +6648,19 @@ namespace Chummer
             bool blnAddAgain = false;
             do
             {
-                blnAddAgain = PickArmorGear(objMod != null);
-                if (blnAddAgain)
-                    treArmor.SelectedNode = objSelectedNode;
+                blnAddAgain = PickArmorGear(objSelectedNode, objMod != null);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsArmorNotes_Click(object sender, EventArgs e)
@@ -7397,6 +6994,7 @@ namespace Chummer
             }
         }
 
+#if LEGACY
         private void tsMartialArtManeuverNotes_Click(object sender, EventArgs e)
         {
             if (treMartialArts.SelectedNode == null)
@@ -7428,6 +7026,7 @@ namespace Chummer
                 }
             }
         }
+#endif
 
         private void tsSpellNotes_Click(object sender, EventArgs e)
         {
@@ -7971,25 +7570,19 @@ namespace Chummer
                     objCyberware.Cost = "0";
                 objCyberware.PrototypeTranshuman = frmPickCyberware.PrototypeTranshuman;
                 objCyberware.DiscountCost = frmPickCyberware.BlackMarketDiscount;
-
-                objSelectedNode.Nodes.Add(objCyberware.CreateTreeNode(cmsCyberware, cmsCyberwareGear));
-                objSelectedNode.Expand();
+                
                 objMod.Cyberware.Add(objCyberware);
 
                 foreach (Weapon objWeapon in lstWeapons)
                 {
                     objWeapon.ParentVehicle = objVehicle;
                     objMod.Weapons.Add(objWeapon);
-                    objSelectedNode.Parent.Nodes.Add(objWeapon.CreateTreeNode(cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear));
-                    objSelectedNode.Parent.Expand();
                 }
 
                 // Create the Weapon Node if one exists.
                 foreach (Vehicle objLoopVehicle in lstVehicles)
                 {
                     CharacterObject.Vehicles.Add(objLoopVehicle);
-                    treVehicles.Nodes[0].Nodes.Add(objLoopVehicle.CreateTreeNode(cmsVehicle, cmsVehicleLocation, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear));
-                    treVehicles.Nodes[0].Expand();
                 }
 
                 IsCharacterUpdateRequested = true;
@@ -7999,6 +7592,16 @@ namespace Chummer
                 frmPickCyberware.Dispose();
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsArmorName_Click(object sender, EventArgs e)
@@ -8285,20 +7888,25 @@ namespace Chummer
                 foreach (Weapon objWeapon in lstWeapons)
                 {
                     CharacterObject.Weapons.Add(objWeapon);
-                    treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                    treWeapons.Nodes[0].Expand();
                 }
 
                 objCyberware.Gear.Add(objNewGear);
-
-                objSelectedNode.Nodes.Add(objNewGear.CreateTreeNode(cmsCyberwareGear));
-                objSelectedNode.Expand();
 
                 IsCharacterUpdateRequested = true;
 
                 IsDirty = true;
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsCyberwareGearAddAsPlugin_Click(object sender, EventArgs e)
@@ -8379,9 +7987,6 @@ namespace Chummer
                 }
                 frmPickGear.Dispose();
 
-                objSelectedNode.Nodes.Add(objGear.CreateTreeNode(cmsCyberwareGear));
-                objSelectedNode.Expand();
-
                 objGear.Parent = objSensor;
                 objSensor.Children.Add(objGear);
                 objSensor.RefreshMatrixAttributeArray();
@@ -8389,8 +7994,6 @@ namespace Chummer
                 foreach (Weapon objWeapon in lstWeapons)
                 {
                     CharacterObject.Weapons.Add(objWeapon);
-                    treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                    treWeapons.Nodes[0].Expand();
                 }
 
                 IsCharacterUpdateRequested = true;
@@ -8398,6 +8001,16 @@ namespace Chummer
                 IsDirty = true;
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsCyberwareGearMenuAddAsPlugin_Click(object sender, EventArgs e)
@@ -8478,9 +8091,6 @@ namespace Chummer
                 }
                 frmPickGear.Dispose();
 
-                objSelectedNode.Nodes.Add(objGear.CreateTreeNode(cmsCyberwareGear));
-                objSelectedNode.Expand();
-
                 objGear.Parent = objSensor;
                 objSensor.Children.Add(objGear);
                 objSensor.RefreshMatrixAttributeArray();
@@ -8488,8 +8098,6 @@ namespace Chummer
                 foreach (Weapon objWeapon in lstWeapons)
                 {
                     CharacterObject.Weapons.Add(objWeapon);
-                    treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                    treWeapons.Nodes[0].Expand();
                 }
 
                 IsCharacterUpdateRequested = true;
@@ -8497,6 +8105,16 @@ namespace Chummer
                 IsDirty = true;
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsCyberwarePluginGearAddAsPlugin_Click(object sender, EventArgs e)
@@ -8570,15 +8188,10 @@ namespace Chummer
 
                 objAccessory.Gear.Add(objGear);
 
-                objSelectedNode.Nodes.Add(objGear.CreateTreeNode(cmsWeaponAccessoryGear));
-                objSelectedNode.Expand();
-
                 // Create any Weapons that came with this Gear.
                 foreach (Weapon objWeapon in lstWeapons)
                 {
                     CharacterObject.Weapons.Add(objWeapon);
-                    treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                    treWeapons.Nodes[0].Expand();
                 }
 
                 IsCharacterUpdateRequested = true;
@@ -8586,6 +8199,16 @@ namespace Chummer
                 IsDirty = true;
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsWeaponAccessoryGearMenuAddAsPlugin_Click(object sender, EventArgs e)
@@ -8659,10 +8282,7 @@ namespace Chummer
                     objGear.Cost = "0";
                 }
                 frmPickGear.Dispose();
-
-                objSelectedNode.Nodes.Add(objGear.CreateTreeNode(cmsWeaponAccessoryGear));
-                objSelectedNode.Expand();
-
+                
                 objGear.Parent = objSensor;
                 objSensor.Children.Add(objGear);
                 objSensor.RefreshMatrixAttributeArray();
@@ -8671,8 +8291,6 @@ namespace Chummer
                 foreach (Weapon objWeapon in lstWeapons)
                 {
                     CharacterObject.Weapons.Add(objWeapon);
-                    treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                    treWeapons.Nodes[0].Expand();
                 }
 
                 IsCharacterUpdateRequested = true;
@@ -8680,6 +8298,16 @@ namespace Chummer
                 IsDirty = true;
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsVehicleRenameLocation_Click(object sender, EventArgs e)
@@ -8759,10 +8387,17 @@ namespace Chummer
 
             Weapon objWeapon = frmCreateNaturalWeapon.SelectedWeapon;
             CharacterObject.Weapons.Add(objWeapon);
-            treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
+
+            PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+            PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+            PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+            PopulateFocusList(treFoci, cmsGear);
+            
+            IsCharacterUpdateRequested = true;
 
             IsDirty = true;
-            IsCharacterUpdateRequested = true;
         }
 
         private void tsVehicleWeaponAccessoryNotes_Click(object sender, EventArgs e)
@@ -8968,9 +8603,9 @@ namespace Chummer
             }
             while (blnAddAgain);
         }
-        #endregion
+#endregion
 
-        #region Additional Common Tab Control Events
+#region Additional Common Tab Control Events
         private void treQualities_AfterSelect(object sender, TreeViewEventArgs e)
         {
             // Locate the selected Quality.
@@ -9068,10 +8703,13 @@ namespace Chummer
                         }
 
                         // Include the BP used by Enemies.
-                        if (lblEnemiesBP.Text.Contains(LanguageManager.GetString("String_BP", GlobalOptions.Language)))
-                            intBP += int.Parse(lblEnemiesBP.Text.Replace(LanguageManager.GetString("String_Karma", GlobalOptions.Language), string.Empty));
-                        else
-                            intBP += int.Parse(lblEnemiesBP.Text.Replace(' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language), string.Empty));
+                        if (CharacterObjectOptions.EnemyKarmaQualityLimit)
+                        {
+                            // Include the BP used by Enemies.
+                            string strEnemiesBPText = lblEnemiesBP.Text.Replace(LanguageManager.GetString("String_Karma", GlobalOptions.Language), string.Empty).NormalizeWhiteSpace();
+                            if (int.TryParse(strEnemiesBPText, out int intTemp))
+                                intBP += intTemp;
+                        }
 
                         // Include the amount from Free Negative Quality BP cost Improvements.
                         intBP -= (ImprovementManager.ValueOf(CharacterObject, Improvement.ImprovementType.FreeNegativeQualities) * CharacterObjectOptions.KarmaQuality);
@@ -9136,8 +8774,6 @@ namespace Chummer
                         foreach (Weapon objWeapon in lstWeapons)
                         {
                             CharacterObject.Weapons.Add(objWeapon);
-                            treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                            treWeapons.Nodes[0].Expand();
                         }
                     }
                     else
@@ -9170,17 +8806,22 @@ namespace Chummer
 
                 if (blnRequireUpdate)
                 {
-                    IsCharacterUpdateRequested = true;
-                    RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
+                    PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                    PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                    PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
                     PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
-                    RefreshContacts();
+                    PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                    PopulateFocusList(treFoci, cmsGear);
+
+                    IsCharacterUpdateRequested = true;
+
                     IsDirty = true;
                 }
             }
         }
-        #endregion
+#endregion
 
-        #region Additional Cyberware Tab Control Events
+#region Additional Cyberware Tab Control Events
         private void treCyberware_AfterSelect(object sender, TreeViewEventArgs e)
         {
             RefreshSelectedCyberware();
@@ -9308,9 +8949,9 @@ namespace Chummer
                 IsDirty = true;
             }
         }
-        #endregion
+#endregion
 
-        #region Additional Street Gear Tab Control Events
+#region Additional Street Gear Tab Control Events
         private void treWeapons_AfterSelect(object sender, TreeViewEventArgs e)
         {
             RefreshSelectedWeapon();
@@ -9625,8 +9266,13 @@ namespace Chummer
                             ImprovementManager.CreateImprovements(CharacterObject, Improvement.ImprovementSource.Gear, objGear.InternalId, objGear.WirelessBonus, false, objGear.Rating, objGear.DisplayNameShort(GlobalOptions.Language));
                     }
 
+                    PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                    PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                    PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                    PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                    PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
                 }
-
+                
                 PopulateFocusList(treFoci, cmsGear);
 
                 IsCharacterUpdateRequested = true;
@@ -9852,13 +9498,13 @@ namespace Chummer
             {
                 if (treGear.SelectedNode.Level > 1 || treGear.SelectedNode.Level < 0)
                     return;
-                _objDragButton = MouseButtons.Left;
+                _eDragButton = MouseButtons.Left;
             }
             else
             {
                 if (treGear.SelectedNode.Level == 0)
                     return;
-                _objDragButton = MouseButtons.Right;
+                _eDragButton = MouseButtons.Right;
             }
 
             // Do not allow the root element to be moved.
@@ -9891,20 +9537,20 @@ namespace Chummer
             }
 
             // If the item was moved using the left mouse button, change the order of things.
-            if (_objDragButton == MouseButtons.Left)
+            if (_eDragButton == MouseButtons.Left)
             {
                 if (treGear.SelectedNode.Level == 1)
                     CommonFunctions.MoveGearNode(CharacterObject, intNewIndex, nodDestination, treGear);
                 else
                     CommonFunctions.MoveGearRoot(CharacterObject, intNewIndex, nodDestination, treGear);
             }
-            if (_objDragButton == MouseButtons.Right)
+            if (_eDragButton == MouseButtons.Right)
                 CommonFunctions.MoveGearParent(CharacterObject, nodDestination, treGear);
 
             // Clear the background color for all Nodes.
             treGear.ClearNodeBackground(null);
 
-            _objDragButton = MouseButtons.None;
+            _eDragButton = MouseButtons.None;
 
             IsDirty = true;
         }
@@ -9918,7 +9564,7 @@ namespace Chummer
                 return;
 
             // Highlight the Node that we're currently dragging over, provided it is of the same level or higher.
-            if (_objDragButton == MouseButtons.Left)
+            if (_eDragButton == MouseButtons.Left)
             {
                 if (objNode.Level <= _intDragLevel)
                     objNode.BackColor = SystemColors.ControlDark;
@@ -10239,9 +9885,9 @@ namespace Chummer
 
             _blnLoading = false;
         }
-        #endregion
+#endregion
 
-        #region Additional Vehicle Tab Control Events
+#region Additional Vehicle Tab Control Events
         private void treVehicles_AfterSelect(object sender, TreeViewEventArgs e)
         {
             RefreshSelectedVehicle();
@@ -10256,7 +9902,7 @@ namespace Chummer
                 Gear objGear = CharacterObject.Vehicles.FindVehicleGear(treVehicles.SelectedNode.Tag.ToString());
                 if (objGear != null)
                 {
-                    _objDragButton = e.Button;
+                    _eDragButton = e.Button;
                     _blnDraggingGear = true;
                     _intDragLevel = treVehicles.SelectedNode.Level;
                     DoDragDrop(e.Item, DragDropEffects.Move);
@@ -10289,7 +9935,7 @@ namespace Chummer
                 CommonFunctions.MoveVehicleNode(CharacterObject, intNewIndex, nodDestination, treVehicles);
             else
             {
-                if (_objDragButton == MouseButtons.Left)
+                if (_eDragButton == MouseButtons.Left)
                     return;
                 else
                     CommonFunctions.MoveVehicleGearParent(CharacterObject, nodDestination, treVehicles);
@@ -10312,7 +9958,7 @@ namespace Chummer
                 return;
 
             // Highlight the Node that we're currently dragging over, provided it is of the same level or higher.
-            if (_objDragButton == MouseButtons.Left)
+            if (_eDragButton == MouseButtons.Left)
             {
                 if (objNode.Level <= _intDragLevel)
                     objNode.BackColor = SystemColors.ControlDark;
@@ -10447,9 +10093,9 @@ namespace Chummer
                 }
             }
         }
-        #endregion
+#endregion
 
-        #region Additional Spells and Spirits Tab Control Events
+#region Additional Spells and Spirits Tab Control Events
         private void treSpells_AfterSelect(object sender, TreeViewEventArgs e)
         {
             _blnSkipRefresh = true;
@@ -10631,6 +10277,12 @@ namespace Chummer
                                 return;
                             }
                         }
+
+                        PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                        PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                        PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                        PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                        PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
                     }
                 }
                 CharacterObject.Foci.Add(objFocus);
@@ -10755,10 +10407,8 @@ namespace Chummer
         {
             if (cboTradition.IsInitalized(_blnLoading))
                 return;
-
-            XmlDocument objXmlDocument = XmlManager.Load("traditions.xml");
-
-            XmlNode objXmlTradition = objXmlDocument.SelectSingleNode("/chummer/traditions/tradition[name = \"" + cboTradition.SelectedValue + "\"]");
+            
+            XmlNode objXmlTradition = XmlManager.Load("traditions.xml").SelectSingleNode("/chummer/traditions/tradition[name = \"" + cboTradition.SelectedValue + "\"]");
 
             if (objXmlTradition == null)
             {
@@ -10835,9 +10485,6 @@ namespace Chummer
                 CharacterObject.TraditionDrain = objXmlTradition["drain"].InnerText;
 
                 CalculateTraditionDrain(CharacterObject.TraditionDrain, Improvement.ImprovementType.DrainResistance, lblDrainAttributes, lblDrainAttributesValue, tipTooltip);
-                foreach (SpiritControl objSpiritControl in panSpirits.Controls)
-                    objSpiritControl.RebuildSpiritList(cboTradition.SelectedValue.ToString());
-
             }
             IsCharacterUpdateRequested = true;
 
@@ -10872,10 +10519,9 @@ namespace Chummer
                 return;
 
             CharacterObject.SpiritCombat = cboSpiritCombat.SelectedValue.ToString();
-            foreach (SpiritControl objSpiritControl in panSpirits.Controls)
-                objSpiritControl.RebuildSpiritList(cboTradition.SelectedValue.ToString());
 
             IsCharacterUpdateRequested = true;
+
             IsDirty = true;
         }
 
@@ -10887,10 +10533,9 @@ namespace Chummer
                 return;
 
             CharacterObject.SpiritDetection = cboSpiritDetection.SelectedValue.ToString();
-            foreach (SpiritControl objSpiritControl in panSpirits.Controls)
-                objSpiritControl.RebuildSpiritList(cboTradition.SelectedValue.ToString());
 
             IsCharacterUpdateRequested = true;
+
             IsDirty = true;
         }
 
@@ -10902,10 +10547,9 @@ namespace Chummer
                 return;
 
             CharacterObject.SpiritHealth = cboSpiritHealth.SelectedValue.ToString();
-            foreach (SpiritControl objSpiritControl in panSpirits.Controls)
-                objSpiritControl.RebuildSpiritList(cboTradition.SelectedValue.ToString());
 
             IsCharacterUpdateRequested = true;
+
             IsDirty = true;
         }
 
@@ -10916,10 +10560,9 @@ namespace Chummer
             if (cboSpiritIllusion.SelectedValue == null)
                 return;
             CharacterObject.SpiritIllusion = cboSpiritIllusion.SelectedValue.ToString();
-            foreach (SpiritControl objSpiritControl in panSpirits.Controls)
-                objSpiritControl.RebuildSpiritList(cboTradition.SelectedValue.ToString());
 
             IsCharacterUpdateRequested = true;
+
             IsDirty = true;
         }
 
@@ -10931,15 +10574,14 @@ namespace Chummer
                 return;
 
             CharacterObject.SpiritManipulation = cboSpiritManipulation.SelectedValue.ToString();
-            foreach (SpiritControl objSpiritControl in panSpirits.Controls)
-                objSpiritControl.RebuildSpiritList(cboTradition.SelectedValue.ToString());
 
             IsCharacterUpdateRequested = true;
+
             IsDirty = true;
         }
-        #endregion
+#endregion
 
-        #region Additional Sprites and Complex Forms Tab Control Events
+#region Additional Sprites and Complex Forms Tab Control Events
         private void treComplexForms_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (_blnSkipRefresh)
@@ -10977,9 +10619,9 @@ namespace Chummer
                 cmdDeleteComplexForm_Click(sender, e);
             }
         }
-        #endregion
+#endregion
 
-        #region Additional AI Advanced Programs Tab Control Events
+#region Additional AI Advanced Programs Tab Control Events
         private void treAIPrograms_AfterSelect(object sender, TreeViewEventArgs e)
         {
             // Locate the Program that is selected in the tree.
@@ -11008,9 +10650,9 @@ namespace Chummer
                 cmdDeleteAIProgram_Click(sender, e);
             }
         }
-        #endregion
+#endregion
 
-        #region Additional Initiation Tab Control Events
+#region Additional Initiation Tab Control Events
         private void chkInitiationGroup_CheckedChanged(object sender, EventArgs e)
         {
             IsCharacterUpdateRequested = true;
@@ -11083,9 +10725,9 @@ namespace Chummer
                 tipTooltip.SetToolTip(lblMetamagicSource, string.Empty);
             }
         }
-        #endregion
+#endregion
 
-        #region Additional Critter Powers Tab Control Events
+#region Additional Critter Powers Tab Control Events
         private void treCritterPowers_AfterSelect(object sender, TreeViewEventArgs e)
         {
             // Look for the selected Critter Power.
@@ -11147,60 +10789,9 @@ namespace Chummer
                 IsDirty = true;
             }
         }
-        #endregion
-        #region Additional Relationships Tab Control Events
-        private void tsAddFromFile_Click(object sender, EventArgs e)
-        {
-            // Displays an OpenFileDialog so the user can select the XML to read.  
-            OpenFileDialog openFileDialog1 = new OpenFileDialog
-            {
-                Filter = "XML Files|*.xml"
-            };
+#endregion
 
-            // Show the Dialog.  
-            // If the user cancels out, return early.
-            if (openFileDialog1.ShowDialog() == DialogResult.Cancel)
-                return;
-            XmlDocument doc = new XmlDocument();
-            doc.Load(openFileDialog1.FileName);
-            XmlNodeList contactXmlList = doc.SelectNodes("/chummer/contacts/contact");
-            // Couldn't find any valid contacts, so return early. 
-            if (contactXmlList == null) return;
-            foreach (XmlNode n in contactXmlList)
-            {
-                Contact c = new Contact(CharacterObject);
-                c.Load(n);
-                if (c.EntityType == ContactType.Contact)
-                {
-                    ContactControl cc = new ContactControl(c);
-                    // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
-                    cc.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-                    cc.DeleteContact += DeleteContact;
-                    cc.MouseDown += panContactControl_MouseDown;
-
-                    panContacts.Controls.Add(cc);
-                }
-                if (c.EntityType == ContactType.Enemy)
-                {
-                    ContactControl cc = new ContactControl(c);
-                    // Attach an EventHandler for the ConnectioNRatingChanged, LoyaltyRatingChanged, DeleteContact, and FileNameChanged Events.
-                    cc.ContactDetailChanged += EnemyChanged;
-                    cc.DeleteContact += DeleteEnemy;
-                    panEnemies.Controls.Add(cc);
-                }
-                if (c.EntityType == ContactType.Pet)
-                {
-                    PetControl cc = new PetControl(c);
-                    // Attach an EventHandler for the DeleteContact and FileNameChanged Events.
-                    cc.DeleteContact += DeletePet;
-                    cc.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-
-                    panPets.Controls.Add(cc);
-                }
-            }
-        }
-        #endregion
-        #region Character Info Tab Event
+#region Character Info Tab Event
         private void txtSex_TextChanged(object sender, EventArgs e)
         {
             CharacterObject.Sex = txtSex.Text;
@@ -11278,9 +10869,9 @@ namespace Chummer
             CharacterObject.Alias = txtAlias.Text;
             IsDirty = true;
         }
-        #endregion
+#endregion
 
-        #region Tree KeyDown Events
+#region Tree KeyDown Events
         private void treQualities_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
@@ -11368,15 +10959,17 @@ namespace Chummer
                 cmdDeleteMetamagic_Click(sender, e);
             }
         }
-        #endregion
+#endregion
 
-        #region Other Control Events
+#region Other Control Events
         private void nudNuyen_ValueChanged(object sender, EventArgs e)
         {
-            if (_blnLoading) return;
+            if (_blnLoading)
+                return;
 
             // Calculate the amount of Nuyen for the selected BP cost.
             CharacterObject.NuyenBP = nudNuyen.Value;
+
             IsCharacterUpdateRequested = true;
 
             IsDirty = true;
@@ -11397,100 +10990,9 @@ namespace Chummer
         {
             RefreshPasteStatus();
         }
-        #endregion
+#endregion
 
-        #region Clear Tab Contents
-        /// <summary>
-        /// Clear the contents of the Spells and Spirits Tab.
-        /// </summary>
-        private void ClearSpellTab()
-        {
-            CharacterObject.ClearMagic();
-
-            // Remove the Spirits.
-            panSpirits.Controls.Clear();
-
-            IsDirty = true;
-            IsCharacterUpdateRequested = true;
-        }
-
-        /// <summary>
-        /// Clear the contents of the Adept Powers Tab.
-        /// </summary>
-        private void ClearAdeptTab()
-        {
-            CharacterObject.ClearAdeptPowers();
-
-            // Remove all of the Adept Powers from the panel.
-            // TODO: Remove adept powers.
-
-            IsDirty = true;
-            IsCharacterUpdateRequested = true;
-        }
-
-        /// <summary>
-        /// Clear the contents of the Sprites and Complex Forms Tab.
-        /// </summary>
-        private void ClearTechnomancerTab()
-        {
-            CharacterObject.ClearResonance();
-
-            // Remove the Sprites.
-            panSprites.Controls.Clear();
-
-            IsDirty = true;
-            IsCharacterUpdateRequested = true;
-        }
-
-        /// <summary>
-        /// Clear the contents of the Advanced Programs Tab.
-        /// </summary>
-        private void ClearAdvancedProgramsTab()
-        {
-            CharacterObject.ClearAdvancedPrograms();
-
-            IsCharacterUpdateRequested = true;
-
-            IsDirty = true;
-        }
-
-        /// <summary>
-        /// Clear the contents of the Cyberware Tab.
-        /// </summary>
-        private void ClearCyberwareTab()
-        {
-            CharacterObject.ClearCyberwareTab(treWeapons, treVehicles);
-
-            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
-
-            IsDirty = true;
-            IsCharacterUpdateRequested = true;
-        }
-
-        /// <summary>
-        /// Clear the conents of the Critter Powers Tab.
-        /// </summary>
-        private void ClearCritterTab()
-        {
-            CharacterObject.ClearCritterPowers();
-
-            IsDirty = true;
-            IsCharacterUpdateRequested = true;
-        }
-
-        /// <summary>
-        /// Clear the content of the Initiation Tab.
-        /// </summary>
-        private void ClearInitiationTab()
-        {
-            CharacterObject.ClearInitiations();
-
-            IsDirty = true;
-            IsCharacterUpdateRequested = true;
-        }
-        #endregion
-
-        #region Sourcebook Label Events
+#region Sourcebook Label Events
         private void txtNotes_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Control && e.KeyCode == Keys.A)
@@ -11500,9 +11002,9 @@ namespace Chummer
                     ((TextBox)sender).SelectAll();
             }
         }
-        #endregion
+#endregion
 
-        #region Custom Methods
+#region Custom Methods
         /// <summary>
         /// Refresh the fields related to the character's metatype.
         /// </summary>
@@ -11649,18 +11151,19 @@ namespace Chummer
             int intContactPointsLeft = intContactPoints;
             int intGroupContacts = 0;
             int intHighPlacesFriends = 0;
-            foreach (ContactControl objContactControl in panContacts.Controls)
+            foreach (Contact objContact in CharacterObject.Contacts)
             {
-                //Don't care about free contacts
-                if (objContactControl.ContactObject.Free) continue;
+                // Don't care about free contacts
+                if (objContact.EntityType != ContactType.Contact || objContact.Free)
+                    continue;
 
-                if (objContactControl.ContactObject.Connection >= 8 && CharacterObject.FriendsInHighPlaces)
+                if (objContact.Connection >= 8 && CharacterObject.FriendsInHighPlaces)
                 {
-                    intHighPlacesFriends += (objContactControl.ContactObject.Connection + objContactControl.ContactObject.Loyalty);
+                    intHighPlacesFriends += (objContact.Connection + objContact.Loyalty);
                 }
-                else if (objContactControl.ContactObject.IsGroup == false)
+                else if (objContact.IsGroup == false)
                 {
-                    int over = intContactPointsLeft - objContactControl.ContactObject.ContactPoints;
+                    int over = intContactPointsLeft - objContact.ContactPoints;
 
                     //Prefers to eat 0, we went over
                     if (over < 0)
@@ -11679,7 +11182,7 @@ namespace Chummer
                 else
                 {
                     //save this for later, as a group contract is counted as a positive quality
-                    if (objContactControl.ContactObject.MadeMan)
+                    if (objContact.MadeMan)
                     {
                         //Made man is free, contact (No i don't see any reason for not to have con4)
                         //per RAW. We keep it that way, can always create a house rule for it later
@@ -11687,7 +11190,7 @@ namespace Chummer
                     }
                     else
                     {
-                        intGroupContacts += objContactControl.ContactObject.ContactPoints;
+                        intGroupContacts += objContact.ContactPoints;
                     }
                 }
             }
@@ -11705,10 +11208,9 @@ namespace Chummer
             // Calculate the BP used by Enemies. These are added to the BP since they are technically
             // a Negative Quality.
             int intEnemyPoints = 0;
-            foreach (ContactControl objContactControl in panEnemies.Controls)
+            foreach (Contact objLoopEnemy in CharacterObject.Contacts)
             {
-                Contact objLoopEnemy = objContactControl.ContactObject;
-                if (!objLoopEnemy.Free)
+                if (objLoopEnemy.EntityType == ContactType.Enemy && !objLoopEnemy.Free)
                 {
                     // The Enemy's Karma cost = their (Connection + Loyalty Rating) x Karma multiplier.
                     intEnemyPoints -= (objLoopEnemy.Connection + objLoopEnemy.Loyalty) * CharacterObjectOptions.KarmaEnemy;
@@ -12060,36 +11562,31 @@ namespace Chummer
             intFreestyleBP += intFociPointsUsed;
 
             // ------------------------------------------------------------------------------
-            // Calculate the BP used by Spirits.
+            // Calculate the BP used by Spirits and Sprites.
             int intSpiritPointsUsed = 0;
-            foreach (SpiritControl objSpiritControl in panSpirits.Controls)
+            int intSpritePointsUsed = 0;
+            foreach (Spirit objSpirit in CharacterObject.Spirits)
             {
-                Spirit objLoopSpirit = objSpiritControl.SpiritObject;
-                // Each Spirit costs KarmaSpirit x Services Owed.
-                intKarmaPointsRemain -= objLoopSpirit.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
-                intSpiritPointsUsed += objLoopSpirit.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
-
-                // Each Fettered Spirit costs 3 x Force.
-                //TODO: Bind the 3 to an option.
-                if (objLoopSpirit.Fettered)
+                int intLoopKarma = objSpirit.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
+                // Each Sprite costs KarmaSpirit x Services Owed.
+                intKarmaPointsRemain -= intLoopKarma;
+                if (objSpirit.EntityType == SpiritType.Spirit)
                 {
-                    intKarmaPointsRemain -= objLoopSpirit.Force * 3;
-                    intSpiritPointsUsed += objLoopSpirit.Force * 3;
+                    intSpiritPointsUsed += intLoopKarma;
+                    // Each Fettered Spirit costs 3 x Force.
+                    //TODO: Bind the 3 to an option.
+                    if (objSpirit.Fettered)
+                    {
+                        intKarmaPointsRemain -= objSpirit.Force * 3;
+                        intSpiritPointsUsed += objSpirit.Force * 3;
+                    }
+                }
+                else
+                {
+                    intSpritePointsUsed += intLoopKarma;
                 }
             }
-            intFreestyleBP += intSpiritPointsUsed;
-
-            // ------------------------------------------------------------------------------
-            // Calculate the BP used by Sprites.
-            int intSpritePointsUsed = 0;
-            foreach (SpiritControl objSpriteControl in panSprites.Controls)
-            {
-                Spirit objLoopSprite = objSpriteControl.SpiritObject;
-                // Each Sprite costs KarmaSpirit x Services Owed.
-                intKarmaPointsRemain -= objLoopSprite.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
-                intSpritePointsUsed += objLoopSprite.ServicesOwed * CharacterObjectOptions.KarmaSpirit;
-            }
-            intFreestyleBP += intSpritePointsUsed;
+            intFreestyleBP += intSpiritPointsUsed + intSpritePointsUsed;
 
             // ------------------------------------------------------------------------------
             // Calculate the BP used by Complex Forms.
@@ -12135,12 +11632,14 @@ namespace Chummer
             intKarmaPointsRemain -= intKarmaCost;
             intFreestyleBP += intAIAdvancedProgramPointsUsed + intAINormalProgramPointsUsed + intNumAdvancedProgramPointsAsNormalPrograms;
 
+#if LEGACY
             // ------------------------------------------------------------------------------
             // Calculate the BP used by Martial Art Maneuvers.
             // Each Maneuver costs KarmaManeuver.
             int intManeuverPointsUsed = CharacterObject.MartialArtManeuvers.Count * CharacterObjectOptions.KarmaManeuver;
             intFreestyleBP += intManeuverPointsUsed;
             intKarmaPointsRemain -= intManeuverPointsUsed;
+#endif
 
             // ------------------------------------------------------------------------------
             // Calculate the BP used by Initiation.
@@ -12239,8 +11738,6 @@ namespace Chummer
 
                 lblAINormalProgramsBP.Text = string.Format("{0} " + strPoints, ((intAINormalProgramPointsUsed - CharacterObject.AINormalProgramLimit) * CharacterObject.AIProgramKarmaCost).ToString());
                 lblAIAdvancedProgramsBP.Text = string.Format("{0} " + strPoints, ((intAIAdvancedProgramPointsUsed - CharacterObject.AIAdvancedProgramLimit) * CharacterObject.AIAdvancedProgramKarmaCost).ToString());
-
-                lblManeuversBP.Text = string.Format("{0} " + strPoints, intManeuverPointsUsed.ToString());
 
                 lblInitiationBP.Text = string.Format("{0} " + strPoints, intInitiationPoints.ToString());
                 // ------------------------------------------------------------------------------
@@ -12342,13 +11839,10 @@ namespace Chummer
             RefreshMetatypeFields();
 
             // Update various lists
-            RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
-            RefreshContacts();
-
-            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
-            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
             PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
             PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
             PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
             PopulateFocusList(treFoci, cmsGear);
 
@@ -12577,16 +12071,14 @@ namespace Chummer
             foreach (SpiritControl objSpiritControl in panSpirits.Controls)
             {
                 Spirit objLoopSpirit = objSpiritControl.SpiritObject;
-                if (objLoopSpirit.EntityType == SpiritType.Spirit)
-                {
-                    objLoopSpirit.Force = CharacterObject.MaxSpiritForce;
-                    objSpiritControl.RebuildSpiritList(CharacterObject.MagicTradition);
-                }
-                else
-                {
-                    objLoopSpirit.Force = CharacterObject.MaxSpriteLevel;
-                    objSpiritControl.RebuildSpiritList(CharacterObject.TechnomancerStream);
-                }
+                objLoopSpirit.Force = CharacterObject.MaxSpiritForce;
+                objSpiritControl.RebuildSpiritList(CharacterObject.MagicTradition);
+            }
+            foreach (SpiritControl objSpiritControl in panSprites.Controls)
+            {
+                Spirit objLoopSpirit = objSpiritControl.SpiritObject;
+                objLoopSpirit.Force = CharacterObject.MaxSpriteLevel;
+                objSpiritControl.RebuildSpiritList(CharacterObject.TechnomancerStream);
             }
 
             // Update the Drain CharacterAttribute Value.
@@ -12655,30 +12147,7 @@ namespace Chummer
             if (intINTAttributeModifiers > 0 || intREAAttributeModifiers > 0)
                 strInit += $"{strModifiers} ({intREAAttributeModifiers + intINTAttributeModifiers})";
             tipTooltip.SetToolTip(lblRiggingINI, strInitText.Replace("{0}", strInit).Replace("{1}", CharacterObject.InitiativeDice.ToString()));
-
-            //// Matrix Initiative.
-            //int intCommlinkResponse = 0;
-
-            //// Retrieve the highest Response in case the Character has more than 1 Commlink.
-            //foreach (Commlink objCommlink in _objCharacter.Gear.OfType<Commlink>())
-            //{
-            //    if (objCommlink.TotalResponse > intCommlinkResponse)
-            //        intCommlinkResponse = objCommlink.TotalResponse;
-            //}
-
-            //lblMatrixINI.Text = _objCharacter.MatrixInitiative;
-            //if (!_objCharacter.TechnomancerEnabled)
-            //{
-            //    tipTooltip.SetToolTip(lblMatrixINI, "INT (" + dicAttributeTotalValues["INT"].ToString() + ") + " + LanguageManager.GetString("Tip_CommlinkResponse") + " (" + intCommlinkResponse.ToString() + ')');
-            //}
-            //else
-            //{
-            //    strInit = "INT x 2 (" + dicAttributeTotalValues["INT"].ToString() + ") + 1";
-            //    if (ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.LivingPersonaResponse) > 0)
-            //        strInit += " + " + LanguageManager.GetString("Tip_Modifiers") + " (" + ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.LivingPersonaResponse).ToString() + ')';
-            //    tipTooltip.SetToolTip(lblMatrixINI, strInit);
-            //}
-
+            
             // Calculate the number of Build Points remaining.
             CalculateBP();
             CalculateNuyen();
@@ -12743,6 +12212,11 @@ namespace Chummer
             UpdateInitiationCost();
             UpdateMentorSpirits();
             UpdateQualityLevelValue(treQualities.SelectedNode?.Tag as Quality);
+
+            foreach (Contact objContact in CharacterObject.Contacts)
+            {
+                objContact.RefreshForControl(); //Force refresh
+            }
 
             txtCharacterName.Text = CharacterObject.Name;
             txtSex.Text = CharacterObject.Sex;
@@ -12972,7 +12446,7 @@ namespace Chummer
 
                 chkPrototypeTranshuman.Checked = objCyberware.PrototypeTranshuman;
 
-                lblCyberwareAvail.Text = objCyberware.TotalAvail(GlobalOptions.Language);
+                lblCyberwareAvail.Text = objCyberware.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                 lblCyberwareCost.Text = objCyberware.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                 lblCyberwareCapacity.Text =
                     $"{objCyberware.CalculatedCapacity} ({objCyberware.CapacityRemaining.ToString("#,0.##", GlobalOptions.CultureInfo)} {LanguageManager.GetString("String_Remaining", GlobalOptions.Language)})";
@@ -12991,7 +12465,7 @@ namespace Chummer
                         cmdDeleteCyberware.Enabled = false;
                     lblCyberwareName.Text = objGear.DisplayNameShort(GlobalOptions.Language);
                     lblCyberwareCategory.Text = objGear.DisplayCategory(GlobalOptions.Language);
-                    lblCyberwareAvail.Text = objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language, true);
+                    lblCyberwareAvail.Text = objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                     lblCyberwareCost.Text =
                         objGear.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                     lblCyberwareCapacity.Text = objGear.CalculatedCapacity + " (" +
@@ -13056,39 +12530,7 @@ namespace Chummer
             }
             _blnSkipRefresh = false;
         }
-
-        public void RefreshContacts()
-        {
-            HashSet<Contact> existing = new HashSet<Contact>();
-
-            for (int i = panContacts.Controls.Count - 1; i >= 0; i--)
-            {
-                if (panContacts.Controls[i] is ContactControl contactControl)
-                {
-                    Contact objLoopContact = contactControl.ContactObject;
-                    if (CharacterObject.Contacts.Contains(objLoopContact))
-                    {
-                        objLoopContact.RefreshForControl(); //Force refresh
-                        existing.Add(contactControl.ContactObject);
-                    }
-                    else
-                    {
-                        DeleteContact(contactControl, true);
-                    }
-                }
-            }
-
-            foreach (Contact contact in CharacterObject.Contacts.Where(x => x.EntityType == ContactType.Contact && !existing.Contains(x)))
-            {
-                ContactControl ctrl = new ContactControl(contact);
-
-                ctrl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-                ctrl.DeleteContact += DeleteContact;
-
-                panContacts.Controls.Add(ctrl);
-            }
-        }
-
+        
         /// <summary>
         /// Refresh the information for the currently displayed Weapon.
         /// </summary>
@@ -13163,7 +12605,7 @@ namespace Chummer
                 chkIncludedInWeapon.Enabled = false;
                 chkIncludedInWeapon.Checked = objWeapon.IncludedInWeapon;
 
-                lblWeaponAvail.Text = objWeapon.TotalAvail(GlobalOptions.Language);
+                lblWeaponAvail.Text = objWeapon.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                 lblWeaponCost.Text = objWeapon.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                 lblWeaponConceal.Text = objWeapon.CalculatedConcealability(GlobalOptions.CultureInfo);
                 lblWeaponDamage.Text = objWeapon.CalculatedDamage(GlobalOptions.CultureInfo, GlobalOptions.Language);
@@ -13225,9 +12667,9 @@ namespace Chummer
                     objWeapon = objSelectedAccessory.Parent;
                     lblWeaponName.Text = objSelectedAccessory.DisplayNameShort(GlobalOptions.Language);
                     lblWeaponCategory.Text = LanguageManager.GetString("String_WeaponAccessory", GlobalOptions.Language);
-                    lblWeaponAvail.Text = objSelectedAccessory.TotalAvail(GlobalOptions.Language);
+                    lblWeaponAvail.Text = objSelectedAccessory.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                     lblWeaponCost.Text = objSelectedAccessory.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
-                    lblWeaponConceal.Text = objSelectedAccessory.Concealability.ToString();
+                    lblWeaponConceal.Text = objSelectedAccessory.TotalConcealability.ToString();
                     lblWeaponDamage.Text = string.Empty;
                     lblWeaponAccuracy.Text = objSelectedAccessory.Accuracy.ToString();
                     lblWeaponRC.Text = objSelectedAccessory.RC;
@@ -13303,7 +12745,7 @@ namespace Chummer
 
                         lblWeaponName.Text = objGear.DisplayNameShort(GlobalOptions.Language);
                         lblWeaponCategory.Text = objGear.DisplayCategory(GlobalOptions.Language);
-                        lblWeaponAvail.Text = objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language, true);
+                        lblWeaponAvail.Text = objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                         lblWeaponCost.Text = objGear.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                         lblWeaponConceal.Text = string.Empty;
                         lblWeaponDamage.Text = string.Empty;
@@ -13465,7 +12907,7 @@ namespace Chummer
                 lblArmorFirewall.Visible = false;
 
                 lblArmorValue.Text = objArmor.DisplayArmorValue;
-                lblArmorAvail.Text = objArmor.TotalAvail(GlobalOptions.Language);
+                lblArmorAvail.Text = objArmor.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                 lblArmorCapacity.Text = objArmor.CalculatedCapacity + " (" + objArmor.CapacityRemaining.ToString("#,0.##", GlobalOptions.CultureInfo) + ' ' + LanguageManager.GetString("String_Remaining", GlobalOptions.Language) + ')';
                 if (objArmor.MaxRating == 0)
                 {
@@ -13506,7 +12948,7 @@ namespace Chummer
                     if (objArmorMod.IncludedInArmor)
                         cmdDeleteArmor.Enabled = false;
                     lblArmorValue.Text = objArmorMod.Armor.ToString("+0;-0;0");
-                    lblArmorAvail.Text = objArmorMod.TotalAvail(GlobalOptions.Language);
+                    lblArmorAvail.Text = objArmorMod.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                     if (objArmor.CapacityDisplayStyle == CapacityStyle.Zero)
                         lblArmorCapacity.Text = "[0]";
                     else
@@ -13544,7 +12986,7 @@ namespace Chummer
                         if (objSelectedGear.IncludedInParent)
                             cmdDeleteArmor.Enabled = false;
                         lblArmorValue.Text = string.Empty;
-                        lblArmorAvail.Text = objSelectedGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language, true);
+                        lblArmorAvail.Text = objSelectedGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
 
                         if (objArmorMod != null)
                             lblArmorCapacity.Text = objSelectedGear.CalculatedCapacity;
@@ -13732,7 +13174,7 @@ namespace Chummer
                     cmdDeleteGear.Enabled = false;
                 lblGearName.Text = objGear.DisplayNameShort(GlobalOptions.Language);
                 lblGearCategory.Text = objGear.DisplayCategory(GlobalOptions.Language);
-                lblGearAvail.Text = objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language, true);
+                lblGearAvail.Text = objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                 nudGearQty.Enabled = !objGear.IncludedInParent;
                 nudGearQty.Increment = objGear.CostFor;
                 try
@@ -13838,11 +13280,9 @@ namespace Chummer
                     // If this is a Program, determine if its parent Gear (if any) is a Commlink. If so, show the Equipped checkbox.
                     if (objGear.IsProgram && CharacterObjectOptions.CalculateCommlinkResponse)
                     {
-                        Gear objParent = objGear.Parent;
-                        if (!string.IsNullOrEmpty(objParent?.Category))
+                        if (objGear.Parent?.IsCommlink == true)
                         {
-                            if (objParent.Category == "Commlinks" || objParent.Category == "Cyberdecks" || objParent.Category == "Nexus")
-                                chkGearEquipped.Text = LanguageManager.GetString("Checkbox_SoftwareRunning", GlobalOptions.Language);
+                            chkGearEquipped.Text = LanguageManager.GetString("Checkbox_SoftwareRunning", GlobalOptions.Language);
                         }
                     }
                 }
@@ -13957,13 +13397,13 @@ namespace Chummer
         /// <summary>
         /// Open the Select Cyberware window and handle adding to the Tree and Character.
         /// </summary>
-        private bool PickCyberware(Improvement.ImprovementSource objSource)
+        private bool PickCyberware(TreeNode nodParentNode, Improvement.ImprovementSource objSource)
         {
             Cyberware objSelectedCyberware = null;
 
             // Attempt to locate the selected piece of Cyberware.
-            string strSelectedId = treCyberware.SelectedNode?.Tag.ToString();
-            if (!string.IsNullOrEmpty(strSelectedId) && treCyberware.SelectedNode.Level > 0)
+            string strSelectedId = nodParentNode?.Tag.ToString();
+            if (!string.IsNullOrEmpty(strSelectedId) && nodParentNode.Level > 0)
                 objSelectedCyberware = CharacterObject.Cyberware.DeepFindById(strSelectedId);
 
             frmSelectCyberware frmPickCyberware = new frmSelectCyberware(CharacterObject, objSource, objSelectedCyberware?.GetNode());
@@ -14078,19 +13518,7 @@ namespace Chummer
                 }
                 frmPickCyberware.GenetechCostMultiplier = decMultiplier;
             }
-
-            // Transgenics Cost multiplier.
-            if (ImprovementManager.ValueOf(CharacterObject, Improvement.ImprovementType.TransgenicsBiowareCost) != 0 && objSource == Improvement.ImprovementSource.Bioware)
-            {
-                decMultiplier = 1.0m;
-                foreach (Improvement objImprovement in CharacterObject.Improvements)
-                {
-                    if (objImprovement.ImproveType == Improvement.ImprovementType.TransgenicsBiowareCost && objImprovement.Enabled)
-                        decMultiplier -= (1.0m - (Convert.ToDecimal(objImprovement.Value, GlobalOptions.InvariantCultureInfo) / 100.0m));
-                }
-                frmPickCyberware.TransgenicsBiowareCostMultiplier = decMultiplier;
-            }
-
+            
             if (objSelectedCyberware != null)
             {
                 frmPickCyberware.SetGrade = objSelectedCyberware.Grade;
@@ -14161,9 +13589,6 @@ namespace Chummer
                 return false;
             objCyberware.DiscountCost = frmPickCyberware.BlackMarketDiscount;
             objCyberware.PrototypeTranshuman = frmPickCyberware.PrototypeTranshuman;
-            // Force the item to be Transgenic if selected.
-            if (frmPickCyberware.ForceTransgenic)
-                objCyberware.Category = "Genetech: Transgenics";
 
             // Apply the ESS discount if applicable.
             if (CharacterObjectOptions.AllowCyberwareESSDiscounts)
@@ -14180,49 +13605,21 @@ namespace Chummer
             {
                 CharacterObject.Cyberware.Add(objCyberware);
             }
-
-            foreach (Weapon objWeapon in lstWeapons)
-            {
-                CharacterObject.Weapons.Add(objWeapon);
-                treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                treWeapons.Nodes[0].Expand();
-            }
-
-            foreach (Vehicle objVehicle in lstVehicles)
-            {
-                CharacterObject.Vehicles.Add(objVehicle);
-                treVehicles.Nodes[0].Nodes.Add(objVehicle.CreateTreeNode(cmsVehicle, cmsVehicleLocation, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear));
-                treVehicles.Nodes[0].Expand();
-            }
-
-            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
-            _blnSkipRefresh = true;
-            PopulateCyberwareGradeList();
-            _blnSkipRefresh = false;
-
-            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
-
+            
             IsCharacterUpdateRequested = true;
 
             IsDirty = true;
-
-            if (!frmPickCyberware.AddAgain)
-            {
-                TreeNode objSelectedNode = treCyberware.FindNode(objCyberware.InternalId);
-                if (objSelectedNode != null)
-                    treCyberware.SelectedNode = objSelectedNode;
-            }
-
+            
             return frmPickCyberware.AddAgain;
         }
 
         /// <summary>
         /// Select a piece of Gear to be added to the character.
         /// </summary>
-        private bool PickGear(TreeNode objParentNode)
+        private bool PickGear(TreeNode nodParentNode)
         {
             bool blnNullParent = false;
-            Gear objSelectedGear = CharacterObject.Gear.DeepFindById(objParentNode?.Tag.ToString());
+            Gear objSelectedGear = CharacterObject.Gear.DeepFindById(nodParentNode?.Tag.ToString());
             if (objSelectedGear == null)
             {
                 objSelectedGear = new Gear(CharacterObject);
@@ -14234,7 +13631,7 @@ namespace Chummer
 
             Cursor = Cursors.WaitCursor;
             frmSelectGear frmPickGear = new frmSelectGear(CharacterObject, objSelectedGear.ChildAvailModifier, objSelectedGear.ChildCostMultiplier, objXmlGear);
-            if (objParentNode.Level > 0)
+            if (nodParentNode.Level > 0)
             {
                 if (objXmlGear != null && objXmlGear.InnerXml.Contains("<addoncategory>"))
                 {
@@ -14296,25 +13693,19 @@ namespace Chummer
             foreach (Weapon objWeapon in lstWeapons)
             {
                 CharacterObject.Weapons.Add(objWeapon);
-                treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                treWeapons.Nodes[0].Expand();
             }
 
             objGear.Parent = objSelectedGear;
             if (blnNullParent)
                 objGear.Parent = null;
 
-            if (objParentNode.Level > 0 && !blnNullParent)
+            if (!blnNullParent)
             {
-                objParentNode.Nodes.Add(objGear.CreateTreeNode(objGear.AllowRename ? cmsGearAllowRename : cmsGear));
-                objParentNode.Expand();
                 objSelectedGear.Children.Add(objGear);
                 objSelectedGear.RefreshMatrixAttributeArray();
             }
             else
             {
-                objParentNode.Nodes.Add(objGear.CreateTreeNode(objGear.AllowRename ? cmsGearAllowRename : cmsGear));
-                objParentNode.Expand();
                 CharacterObject.Gear.Add(objGear);
             }
 
@@ -14329,17 +13720,17 @@ namespace Chummer
         /// Select a piece of Gear and add it to a piece of Armor.
         /// </summary>
         /// <param name="blnShowArmorCapacityOnly">Whether or not only items that consume capacity should be shown.</param>
-        private bool PickArmorGear(bool blnShowArmorCapacityOnly = false)
+        private bool PickArmorGear(TreeNode nodParentNode, bool blnShowArmorCapacityOnly = false)
         {
+            string strSelectedId = nodParentNode?.Tag.ToString();
             Gear objSelectedGear = null;
-            Armor objSelectedArmor = CharacterObject.Armor.FindById(treArmor.SelectedNode.Tag.ToString());
             ArmorMod objSelectedMod = null;
-
-            if (treArmor.SelectedNode.Level > 1)
+            Armor objSelectedArmor = CharacterObject.Armor.FindById(strSelectedId);
+            if (objSelectedArmor == null)
             {
-                objSelectedGear = CharacterObject.Armor.FindArmorGear(treArmor.SelectedNode.Tag.ToString(), out objSelectedArmor, out objSelectedMod);
+                objSelectedGear = CharacterObject.Armor.FindArmorGear(strSelectedId, out objSelectedArmor, out objSelectedMod);
                 if (objSelectedGear == null)
-                    objSelectedMod = CharacterObject.Armor.FindArmorMod(treArmor.SelectedNode.Tag.ToString());
+                    objSelectedMod = CharacterObject.Armor.FindArmorMod(strSelectedId);
             }
 
             // Open the Gear XML file and locate the selected Gear.
@@ -14362,7 +13753,7 @@ namespace Chummer
                 frmPickGear.CapacityDisplayStyle = CapacityStyle.Standard;
             else
                 frmPickGear.CapacityDisplayStyle = objSelectedArmor.CapacityDisplayStyle;
-            if (treArmor.SelectedNode != null)
+            if (!string.IsNullOrEmpty(strSelectedId))
             {
                 if (objXmlParent?.InnerXml.Contains("<addoncategory>") == true)
                 {
@@ -14420,8 +13811,6 @@ namespace Chummer
             foreach (Weapon objWeapon in lstWeapons)
             {
                 CharacterObject.Weapons.Add(objWeapon);
-                treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                treWeapons.Nodes[0].Expand();
             }
 
             bool blnMatchFound = false;
@@ -14435,17 +13824,6 @@ namespace Chummer
                         // A match was found, so increase the quantity instead.
                         objCharacterGear.Quantity += objGear.Quantity;
                         blnMatchFound = true;
-
-                        foreach (TreeNode objGearNode in treGear.Nodes[0].Nodes)
-                        {
-                            if (objCharacterGear.InternalId == objGearNode.Tag.ToString())
-                            {
-                                objGearNode.Text = objCharacterGear.DisplayName(GlobalOptions.Language);
-                                treGear.SelectedNode = objGearNode;
-                                break;
-                            }
-                        }
-
                         break;
                     }
                 }
@@ -14454,9 +13832,6 @@ namespace Chummer
             // Add the Gear.
             if (!blnMatchFound)
             {
-                TreeNode objNode = objGear.CreateTreeNode(cmsArmorGear);
-                treArmor.SelectedNode.Nodes.Add(objNode);
-                treArmor.SelectedNode.Expand();
                 if (!string.IsNullOrEmpty(objSelectedGear?.Name))
                 {
                     objSelectedGear.Children.Add(objGear);
@@ -14470,9 +13845,6 @@ namespace Chummer
                 {
                     objSelectedArmor.Gear.Add(objGear);
                 }
-
-                // Select the node that was just added.
-                treGear.SelectedNode = objNode;
             }
 
             IsCharacterUpdateRequested = true;
@@ -14772,7 +14144,7 @@ namespace Chummer
                 lblVehicleCategory.Text = objVehicle.DisplayCategory(GlobalOptions.Language);
                 lblVehicleCategoryLabel.Visible = true;
                 lblVehicleAvailLabel.Visible = true;
-                lblVehicleAvail.Text = objVehicle.CalculatedAvail(GlobalOptions.Language);
+                lblVehicleAvail.Text = objVehicle.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                 lblVehicleCostLabel.Visible = true;
                 lblVehicleCost.Text = objVehicle.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                 lblVehicleHandling.Text = objVehicle.TotalHandling;
@@ -14866,7 +14238,7 @@ namespace Chummer
                     lblVehicleNameLabel.Visible = true;
                     lblVehicleName.Text = objWeaponMount.DisplayNameShort(GlobalOptions.Language);
                     lblVehicleAvailLabel.Visible = true;
-                    lblVehicleAvail.Text = objWeaponMount.TotalAvail(GlobalOptions.Language);
+                    lblVehicleAvail.Text = objWeaponMount.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                     lblVehicleCostLabel.Visible = true;
                     lblVehicleCost.Text = objWeaponMount.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo);
                     
@@ -14946,7 +14318,7 @@ namespace Chummer
                         lblVehicleCategoryLabel.Visible = true;
                         lblVehicleCategory.Text = LanguageManager.GetString("String_VehicleModification", GlobalOptions.Language);
                         lblVehicleAvailLabel.Visible = true;
-                        lblVehicleAvail.Text = objMod.TotalAvail(GlobalOptions.DefaultLanguage);
+                        lblVehicleAvail.Text = objMod.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                         lblVehicleCostLabel.Visible = true;
                         lblVehicleCost.Text = objMod.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
 
@@ -14996,7 +14368,7 @@ namespace Chummer
 
                             lblVehicleName.Text = objWeapon.DisplayNameShort(GlobalOptions.Language);
                             lblVehicleCategory.Text = LanguageManager.GetString("String_VehicleWeapon", GlobalOptions.Language);
-                            lblVehicleAvail.Text = objWeapon.TotalAvail(GlobalOptions.Language);
+                            lblVehicleAvail.Text = objWeapon.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                             lblVehicleCost.Text = objWeapon.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                             DisplayVehicleStats(false);
                             string strPage = objWeapon.DisplayPage(GlobalOptions.Language);
@@ -15033,7 +14405,7 @@ namespace Chummer
                                     cmdDeleteVehicle.Enabled = false;
                                 lblVehicleName.Text = objAccessory.DisplayNameShort(GlobalOptions.Language);
                                 lblVehicleCategory.Text = LanguageManager.GetString("String_VehicleWeaponAccessory", GlobalOptions.Language);
-                                lblVehicleAvail.Text = objAccessory.TotalAvail(GlobalOptions.Language);
+                                lblVehicleAvail.Text = objAccessory.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                                 lblVehicleCost.Text = objAccessory.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
 
                                 DisplayVehicleWeaponStats(false);
@@ -15097,7 +14469,7 @@ namespace Chummer
 
                                     lblVehicleName.Text = objCyberware.DisplayNameShort(GlobalOptions.Language);
                                     lblVehicleCategory.Text = LanguageManager.GetString("String_VehicleModification", GlobalOptions.Language);
-                                    lblVehicleAvail.Text = objCyberware.TotalAvail(GlobalOptions.Language);
+                                    lblVehicleAvail.Text = objCyberware.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                                     lblVehicleCost.Text = objCyberware.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                                     string strPage = objCyberware.Page(GlobalOptions.Language);
                                     lblVehicleSource.Text = CommonFunctions.LanguageBookShort(objCyberware.Source, GlobalOptions.Language) + ' ' + strPage;
@@ -15179,7 +14551,7 @@ namespace Chummer
 
                                         lblVehicleName.Text = objGear.DisplayNameShort(GlobalOptions.Language);
                                         lblVehicleCategory.Text = objGear.DisplayCategory(GlobalOptions.Language);
-                                        lblVehicleAvail.Text = objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language, true);
+                                        lblVehicleAvail.Text = objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language);
                                         lblVehicleCost.Text = objGear.TotalCost.ToString(CharacterObjectOptions.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                                         lblVehicleSlotsLabel.Visible = true;
                                         lblVehicleSlots.Visible = true;
@@ -15310,10 +14682,9 @@ namespace Chummer
             int intContactPointsUsed = 0;
             int intGroupContacts = 0;
             int intHighPlaces = 0;
-            foreach (ContactControl objContactControl in panContacts.Controls)
+            foreach (Contact objLoopContact in CharacterObject.Contacts)
             {
-                Contact objLoopContact = objContactControl.ContactObject;
-                if (!objLoopContact.Free)
+                if (objLoopContact.EntityType == ContactType.Contact && !objLoopContact.Free)
                 {
                     if (objLoopContact.IsGroup)
                     {
@@ -15327,7 +14698,6 @@ namespace Chummer
                     {
                         intContactPointsUsed += objLoopContact.Connection + objLoopContact.Loyalty;
                     }
-
                 }
             }
 
@@ -15353,10 +14723,9 @@ namespace Chummer
             int intPointsUsed = 0;
             int intNegativePoints = 0;
             int intEnemyPoints = 0;
-            foreach (ContactControl objContactControl in panEnemies.Controls)
+            foreach (Contact objLoopEnemy in CharacterObject.Contacts)
             {
-                Contact objLoopEnemy = objContactControl.ContactObject;
-                if (!objLoopEnemy.Free)
+                if (objLoopEnemy.EntityType == ContactType.Enemy && !objLoopEnemy.Free)
                 {
                     intEnemyPoints -= (objLoopEnemy.Connection + objLoopEnemy.Loyalty) * CharacterObjectOptions.KarmaEnemy;
                 }
@@ -15591,10 +14960,10 @@ namespace Chummer
                 if (CharacterObject.BannedWareGrades.Any(s => objCyberware.Grade.Name.Contains(s)))
                     strCyberwareGrade += "\n\t\t" + objCyberware.DisplayNameShort(GlobalOptions.Language);
 
-                string strTotalAvail = objCyberware.TotalAvail(GlobalOptions.Language);
-                if (!strTotalAvail.StartsWith('+'))
+                AvailabilityValue objTotalAvail = objCyberware.TotalAvailTuple();
+                if (!objTotalAvail.AddToParent)
                 {
-                    int intAvailInt = GetAvailInt(strTotalAvail);
+                    int intAvailInt = objTotalAvail.Value;
                     if (intAvailInt > CharacterObject.MaximumAvailability)
                     {
                         if (intAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
@@ -15634,7 +15003,7 @@ namespace Chummer
             // Armor Availability.
             foreach (Armor objArmor in CharacterObject.Armor)
             {
-                int intAvailInt = GetAvailInt(objArmor.TotalAvail(GlobalOptions.Language));
+                int intAvailInt = objArmor.TotalAvailTuple().Value;
                 if (intAvailInt > CharacterObject.MaximumAvailability)
                 {
                     if (intAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
@@ -15651,10 +15020,10 @@ namespace Chummer
 
                 foreach (ArmorMod objMod in objArmor.ArmorMods.Where(objMod => !objMod.IncludedInArmor))
                 {
-                    string strTotalAvail = objMod.TotalAvail(GlobalOptions.Language);
-                    if (!strTotalAvail.StartsWith('+'))
+                    AvailabilityValue objTotalAvail = objMod.TotalAvailTuple();
+                    if (!objTotalAvail.AddToParent)
                     {
-                        int intModAvailInt = GetAvailInt(strTotalAvail);
+                        int intModAvailInt = objTotalAvail.Value;
                         if (intModAvailInt > CharacterObject.MaximumAvailability)
                         {
                             if (intModAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
@@ -15684,26 +15053,30 @@ namespace Chummer
             // Weapon Availability.
             foreach (Weapon objWeapon in CharacterObject.Weapons.GetAllDescendants(x => x.Children))
             {
-                int intAvailInt = GetAvailInt(objWeapon.TotalAvail(GlobalOptions.Language));
-                if (intAvailInt > CharacterObject.MaximumAvailability)
+                AvailabilityValue objWeaponAvail = objWeapon.TotalAvailTuple();
+                if (!objWeaponAvail.AddToParent)
                 {
-                    if (intAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
+                    int intAvailInt = objWeaponAvail.Value;
+                    if (intAvailInt > CharacterObject.MaximumAvailability)
                     {
-                        blnRestrictedGearUsed = true;
-                        strRestrictedItem = objWeapon.DisplayName(GlobalOptions.Language);
-                    }
-                    else
-                    {
-                        intRestrictedCount++;
-                        strAvailItems += "\n\t\t" + objWeapon.DisplayNameShort(GlobalOptions.Language);
+                        if (intAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
+                        {
+                            blnRestrictedGearUsed = true;
+                            strRestrictedItem = objWeapon.DisplayName(GlobalOptions.Language);
+                        }
+                        else
+                        {
+                            intRestrictedCount++;
+                            strAvailItems += "\n\t\t" + objWeapon.DisplayNameShort(GlobalOptions.Language);
+                        }
                     }
                 }
                 foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories.Where(objAccessory => !objAccessory.IncludedInWeapon))
                 {
-                    string strAccessoryAvail = objAccessory.TotalAvail(GlobalOptions.Language);
-                    if (!strAccessoryAvail.StartsWith('+'))
+                    AvailabilityValue objAccessoryAvail = objAccessory.TotalAvailTuple();
+                    if (!objAccessoryAvail.AddToParent)
                     {
-                        int intAccessoryAvailInt = GetAvailInt(strAccessoryAvail);
+                        int intAccessoryAvailInt = objAccessoryAvail.Value;
                         if (intAccessoryAvailInt > CharacterObject.MaximumAvailability)
                         {
                             if (intAccessoryAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
@@ -15729,7 +15102,7 @@ namespace Chummer
             // Vehicle Availability.
             foreach (Vehicle objVehicle in CharacterObject.Vehicles)
             {
-                int intAvailInt = GetAvailInt(objVehicle.CalculatedAvail(GlobalOptions.Language));
+                int intAvailInt = objVehicle.TotalAvailTuple().Value;
                 if (intAvailInt > CharacterObject.MaximumAvailability)
                 {
                     if (intAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
@@ -15745,10 +15118,10 @@ namespace Chummer
                 }
                 foreach (VehicleMod objVehicleMod in objVehicle.Mods.Where((objVehicleMod => !objVehicleMod.IncludedInVehicle)))
                 {
-                    string strModAvail = objVehicleMod.TotalAvail(GlobalOptions.Language);
-                    if (!strModAvail.StartsWith('+'))
+                    AvailabilityValue objModAvail = objVehicleMod.TotalAvailTuple();
+                    if (!objModAvail.AddToParent)
                     {
-                        int intModAvailInt = GetAvailInt(strModAvail);
+                        int intModAvailInt = objModAvail.Value;
                         if (intModAvailInt > CharacterObject.MaximumAvailability)
                         {
                             if (intModAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
@@ -15764,26 +15137,30 @@ namespace Chummer
                         }
                         foreach (Weapon objWeapon in objVehicleMod.Weapons.GetAllDescendants(x => x.Children))
                         {
-                            int intWeaponAvailInt = GetAvailInt(objWeapon.TotalAvail(GlobalOptions.Language));
-                            if (intWeaponAvailInt > CharacterObject.MaximumAvailability)
+                            AvailabilityValue objWeaponAvail = objWeapon.TotalAvailTuple();
+                            if (!objWeaponAvail.AddToParent)
                             {
-                                if (intWeaponAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
+                                int intWeaponAvailInt = objWeaponAvail.Value;
+                                if (intWeaponAvailInt > CharacterObject.MaximumAvailability)
                                 {
-                                    blnRestrictedGearUsed = true;
-                                    strRestrictedItem = objWeapon.DisplayName(GlobalOptions.Language);
-                                }
-                                else
-                                {
-                                    intRestrictedCount++;
-                                    strAvailItems += "\n\t\t" + objWeapon.DisplayNameShort(GlobalOptions.Language);
+                                    if (intWeaponAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
+                                    {
+                                        blnRestrictedGearUsed = true;
+                                        strRestrictedItem = objWeapon.DisplayName(GlobalOptions.Language);
+                                    }
+                                    else
+                                    {
+                                        intRestrictedCount++;
+                                        strAvailItems += "\n\t\t" + objWeapon.DisplayNameShort(GlobalOptions.Language);
+                                    }
                                 }
                             }
                             foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories.Where((objAccessory => !objAccessory.IncludedInWeapon)))
                             {
-                                string strAccessoryAvail = objAccessory.TotalAvail(GlobalOptions.Language);
-                                if (!strAccessoryAvail.StartsWith('+'))
+                                AvailabilityValue objAccessoryAvail = objAccessory.TotalAvailTuple();
+                                if (!objAccessoryAvail.AddToParent)
                                 {
-                                    int intAccessoryAvailInt = GetAvailInt(strAccessoryAvail);
+                                    int intAccessoryAvailInt = objAccessoryAvail.Value;
                                     if (intAccessoryAvailInt > CharacterObject.MaximumAvailability)
                                     {
                                         if (intAccessoryAvailInt <= 24 && CharacterObject.RestrictedGear && !blnRestrictedGearUsed)
@@ -16073,10 +15450,10 @@ namespace Chummer
         /// <param name="strOutAvailItems"></param>
         private void CheckRestrictedGear(Gear objGear, bool blnRestrictedGearUsed, int intRestrictedCount, string strAvailItems, string strRestrictedItem, out bool blnOutRestrictedGearUsed, out int intoutRestrictedCount, out string strOutAvailItems, out string strOutRestrictedItem)
         {
-            string strTotalAvail = objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language, true);
-            if (!strTotalAvail.StartsWith('+'))
+            AvailabilityValue objTotalAvail = objGear.TotalAvailTuple();
+            if (!objTotalAvail.AddToParent)
             {
-                int intAvailInt = GetAvailInt(objGear.TotalAvail(GlobalOptions.CultureInfo, GlobalOptions.Language, true));
+                int intAvailInt = objTotalAvail.Value;
                 //TODO: Make this dynamically update without having to validate the character.
                 if (intAvailInt > CharacterObject.MaximumAvailability)
                 {
@@ -16273,15 +15650,11 @@ namespace Chummer
             foreach (Weapon objWeapon in lstWeapons)
             {
                 CharacterObject.Weapons.Add(objWeapon);
-                treWeapons.Nodes[0].Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                treWeapons.Nodes[0].Expand();
             }
 
             foreach (Vehicle objVehicle in lstVehicles)
             {
                 CharacterObject.Vehicles.Add(objVehicle);
-                treVehicles.Nodes[0].Nodes.Add(objVehicle.CreateTreeNode(cmsVehicle, cmsVehicleLocation, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear));
-                treVehicles.Nodes[0].Expand();
             }
 
             string strType = objSource == Improvement.ImprovementSource.Cyberware ? "cyberware" : "bioware";
@@ -16317,9 +15690,6 @@ namespace Chummer
             //if (frmPickPACKSKit.SelectedCategory == "Custom")
             //blnCreateChildren = false;
 
-            TreeNode objWeaponTreeNodes = treWeapons.Nodes[0];
-            TreeNode objVehicleTreeNodes = treVehicles.Nodes[0];
-
             XmlNode objXmlKit = objXmlDocument.SelectSingleNode("/chummer/packs/pack[name = \"" + frmPickPACKSKit.SelectedKit + "\" and category = \"" + frmSelectPACKSKit.SelectedCategory + "\"]");
             // Update Qualities.
             XmlNode xmlQualities = objXmlKit["qualities"];
@@ -16346,8 +15716,6 @@ namespace Chummer
                         foreach (Weapon objWeapon in lstWeapons)
                         {
                             CharacterObject.Weapons.Add(objWeapon);
-                            objWeaponTreeNodes.Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                            objWeaponTreeNodes.Expand();
                         }
                     }
                 }
@@ -16370,8 +15738,6 @@ namespace Chummer
                         foreach (Weapon objWeapon in lstWeapons)
                         {
                             CharacterObject.Weapons.Add(objWeapon);
-                            objWeaponTreeNodes.Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                            objWeaponTreeNodes.Expand();
                         }
                     }
                 }
@@ -16434,10 +15800,7 @@ namespace Chummer
                     }
                 }
             }
-
-            if (xmlMartialArts != null || xmlSelectMartialArt != null)
-                RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
-
+            
             // Update Adept Powers.
             if (objXmlKit["powers"] != null)
             {
@@ -16524,8 +15887,6 @@ namespace Chummer
             {
                 foreach (XmlNode objXmlSpirit in xmlSpirits.SelectNodes("spirit"))
                 {
-                    int i = panSpirits.Controls.Count;
-
                     Spirit objSpirit = new Spirit(CharacterObject)
                     {
                         EntityType = SpiritType.Spirit,
@@ -16534,15 +15895,6 @@ namespace Chummer
                         ServicesOwed = Convert.ToInt32(objXmlSpirit["services"].InnerText)
                     };
                     CharacterObject.Spirits.Add(objSpirit);
-
-                    SpiritControl objSpiritControl = new SpiritControl(objSpirit);
-
-                    // Attach an EventHandler for the ServicesOwedChanged Event.
-                    objSpiritControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
-                    objSpiritControl.DeleteSpirit += DeleteSpirit;
-
-                    objSpiritControl.Top = i * objSpiritControl.Height;
-                    panSpirits.Controls.Add(objSpiritControl);
                 }
             }
 
@@ -16616,7 +15968,6 @@ namespace Chummer
             if (xmlArmors != null)
             {
                 XmlDocument objXmlArmorDocument = XmlManager.Load("armor.xml");
-                TreeNode objArmorsNode = treArmor.Nodes[0];
                 foreach (XmlNode objXmlArmor in xmlArmors.SelectNodes("armor"))
                 {
                     XmlNode objXmlArmorNode = objXmlArmorDocument.SelectSingleNode("/chummer/armors/armor[(" + CharacterObjectOptions.BookXPath() + ") and name = \"" + objXmlArmor["name"].InnerText + "\"]");
@@ -16651,31 +16002,12 @@ namespace Chummer
                         foreach (Weapon objWeapon in lstWeapons)
                         {
                             CharacterObject.Weapons.Add(objWeapon);
-                            TreeNode objParent = objWeaponTreeNodes;
-                            // If this is not an Underbarrel Weapon and it has a Location, find the Location Node that this should be attached to instead.
-                            if (!objWeapon.IsUnderbarrelWeapon && !string.IsNullOrEmpty(objWeapon.Location))
-                            {
-                                foreach (TreeNode objLocationNode in treWeapons.Nodes)
-                                {
-                                    if (objLocationNode.Text == objWeapon.Location)
-                                    {
-                                        objParent = objLocationNode;
-                                        break;
-                                    }
-                                }
-                            }
-                            objParent.Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
-                            objParent.Expand();
                         }
 
                         foreach (XmlNode objXmlGear in objXmlArmor.SelectNodes("gears/gear"))
                             AddPACKSGear(objXmlGearDocument, objXmlGear, objArmor, blnCreateChildren);
-
-                        objArmorsNode.Nodes.Add(objArmor.CreateTreeNode(cmsArmor, cmsArmorMod, cmsArmorGear));
                     }
                 }
-
-                objArmorsNode.Expand();
             }
 
             // Update Weapons.
@@ -16766,10 +16098,8 @@ namespace Chummer
                         foreach (Weapon objLoopWeapon in lstWeapons)
                         {
                             CharacterObject.Weapons.Add(objLoopWeapon);
-                            objWeaponTreeNodes.Nodes.Add(objLoopWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
                         }
                     }
-                    objWeaponTreeNodes.Expand();
 
                     Application.DoEvents();
                 }
@@ -16798,8 +16128,6 @@ namespace Chummer
 
                     Application.DoEvents();
                 }
-
-                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
             }
 
             // Update Bioware.
@@ -16822,8 +16150,6 @@ namespace Chummer
 
                     Application.DoEvents();
                 }
-
-                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
             }
 
             // Update Gear.
@@ -16999,19 +16325,23 @@ namespace Chummer
                                 }
                             }
                         }
-
-                        objVehicleTreeNodes.Nodes.Add(objVehicle.CreateTreeNode(cmsVehicle, cmsVehicleLocation, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear));
-
+                        
                         Application.DoEvents();
                     }
                 }
-                objVehicleTreeNodes.Expand();
             }
 
             pgbProgress.Visible = false;
 
+            PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+            PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+            PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
             PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+            PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+            PopulateFocusList(treFoci, cmsGear);
+
             IsCharacterUpdateRequested = true;
+
             IsDirty = true;
 
             return frmPickPACKSKit.AddAgain;
@@ -17171,18 +16501,7 @@ namespace Chummer
 
             if (CharacterObject.BuildMethod == CharacterBuildMethod.Priority || CharacterObject.BuildMethod == CharacterBuildMethod.SumtoTen)
             {
-                frmPriorityMetatype frmSelectMetatype = new frmPriorityMetatype(CharacterObject)
-                {
-                    Attributes = CharacterObject.AttributesPriority[0].ToString(),
-                    Skills = CharacterObject.SkillsPriority[0].ToString(),
-                    Resources = CharacterObject.ResourcesPriority[0].ToString(),
-                    Special = CharacterObject.SpecialPriority[0].ToString(),
-                    Metatype = CharacterObject.MetatypePriority[0].ToString(),
-                    SelectedMetatype = CharacterObject.Metatype,
-                    SelectedMetavariant = CharacterObject.Metavariant,
-                    SelectedMetatypeCategory = CharacterObject.MetatypeCategory,
-                    SelectedTalent = CharacterObject.TalentPriority,
-                };
+                frmPriorityMetatype frmSelectMetatype = new frmPriorityMetatype(CharacterObject);
                 frmSelectMetatype.ShowDialog(this);
                 if (frmSelectMetatype.DialogResult == DialogResult.Cancel)
                     return;
@@ -17236,19 +16555,6 @@ namespace Chummer
                                    LanguageManager.GetString("Label_SelectMetamagic_Disadvantage", GlobalOptions.Language) + ' ' +
                                    objMentor.Disadvantage;
             }
-        }
-
-        /// <summary>
-        /// Determine the integer portion of an item's Availability.
-        /// </summary>
-        /// <param name="strAvail">Availability string to parse.</param>
-        private static int GetAvailInt(string strAvail)
-        {
-            string strReturn = strAvail.TrimStart('+');
-            strReturn = strReturn.TrimEnd(LanguageManager.GetString("String_AvailRestricted", GlobalOptions.Language));
-            strReturn = strReturn.TrimEnd(LanguageManager.GetString("String_AvailForbidden", GlobalOptions.Language));
-
-            return Convert.ToInt32(strReturn);
         }
 
         /// <summary>
@@ -18089,7 +17395,12 @@ namespace Chummer
                 CharacterObject.Cyberware.Add(objCyberware);
             }
 
+            PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+            PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
             PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+            PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+            PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+            PopulateFocusList(treFoci, cmsGear);
 
             IsCharacterUpdateRequested = true;
 
@@ -18155,13 +17466,10 @@ namespace Chummer
             // Add any Weapons created by the Gear.
             if (lstWeapons.Count > 0)
             {
-                TreeNode objWeaponsNode = treWeapons.Nodes[0];
                 foreach (Weapon objWeapon in lstWeapons)
                 {
                     CharacterObject.Weapons.Add(objWeapon);
-                    objWeaponsNode.Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
                 }
-                objWeaponsNode.Expand();
             }
 
             return objNewGear;
@@ -18205,29 +17513,23 @@ namespace Chummer
 
             if (lstWeapons.Count > 0)
             {
-                TreeNode objWeaponsNode = treWeapons.Nodes[0];
                 foreach (Weapon objWeapon in lstWeapons)
                 {
                     CharacterObject.Weapons.Add(objWeapon);
-                    objWeaponsNode.Nodes.Add(objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear));
                 }
-                objWeaponsNode.Expand();
             }
 
             if (lstVehicles.Count > 0)
             {
-                TreeNode objVehiclesNode = treVehicles.Nodes[0];
                 foreach (Vehicle objVehicle in lstVehicles)
                 {
                     CharacterObject.Vehicles.Add(objVehicle);
-                    objVehiclesNode.Nodes.Add(objVehicle.CreateTreeNode(cmsVehicle, cmsVehicleLocation, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear));
                 }
-                objVehiclesNode.Expand();
             }
 
             return objCyberware;
         }
-        #endregion
+#endregion
 
         private void tabVehicles_Click(object sender, EventArgs e)
         {
@@ -18606,13 +17908,7 @@ namespace Chummer
         {
             e.Effect = DragDropEffects.Move;
         }
-
-        private void panContactControl_MouseDown(object sender, MouseEventArgs e)
-        {
-            Control source = (Control)sender;
-            source.DoDragDrop(new TransportWrapper(source), DragDropEffects.Move);
-        }
-
+        
         private void panEnemies_Click(object sender, EventArgs e)
         {
             panEnemies.Focus();
@@ -18712,72 +18008,10 @@ namespace Chummer
                 return;
             CharacterObject.PrimaryArm = cboPrimaryArm.SelectedValue.ToString();
         }
-        private void BuildAttributePanel()
-        {
-            pnlAttributes.Controls.Clear();
-            lstPrimaryAttributes.Clear();
-            lstSpecialAttributes.Clear();
-            lstPrimaryAttributes.Add(CharacterObject.BOD);
-            lstPrimaryAttributes.Add(CharacterObject.AGI);
-            lstPrimaryAttributes.Add(CharacterObject.REA);
-            lstPrimaryAttributes.Add(CharacterObject.STR);
-            lstPrimaryAttributes.Add(CharacterObject.CHA);
-            lstPrimaryAttributes.Add(CharacterObject.INT);
-            lstPrimaryAttributes.Add(CharacterObject.LOG);
-            lstPrimaryAttributes.Add(CharacterObject.WIL);
 
-            lstSpecialAttributes.Add(CharacterObject.EDG);
-            if (CharacterObject.MAGEnabled)
-            {
-                lstSpecialAttributes.Add(CharacterObject.MAG);
-                if (CharacterObjectOptions.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept)
-                    lstSpecialAttributes.Add(CharacterObject.MAGAdept);
-            }
-            if (CharacterObject.RESEnabled)
-            {
-                lstSpecialAttributes.Add(CharacterObject.RES);
-            }
-            if (CharacterObject.DEPEnabled)
-            {
-                lstSpecialAttributes.Add(CharacterObject.DEP);
-            }
-        }
         private void AttributeCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
-            switch (notifyCollectionChangedEventArgs.Action)
-            {
-                case NotifyCollectionChangedAction.Add:
-                    foreach (CharacterAttrib objAttrib in notifyCollectionChangedEventArgs.NewItems)
-                    {
-                        AttributeControl objControl = new AttributeControl(objAttrib);
-                        objControl.ValueChanged += MakeDirtyWithCharacterUpdate;
-                        pnlAttributes.Controls.Add(objControl);
-                    }
-                    break;
-                case NotifyCollectionChangedAction.Remove:
-                    foreach (CharacterAttrib objAttrib in notifyCollectionChangedEventArgs.OldItems)
-                    {
-                        foreach (AttributeControl objControl in pnlAttributes.Controls)
-                        {
-                            if (objControl.AttributeName == objAttrib.Abbrev)
-                            {
-                                objControl.ValueChanged -= MakeDirtyWithCharacterUpdate;
-                                pnlAttributes.Controls.Remove(objControl);
-                                objControl.Dispose();
-                            }
-                        }
-                        objAttrib.Base = 0;
-                        objAttrib.Karma = 0;
-                    }
-                    break;
-                case NotifyCollectionChangedAction.Reset:
-                    foreach (AttributeControl objControl in pnlAttributes.Controls)
-                    {
-                        objControl.ValueChanged -= MakeDirtyWithCharacterUpdate;
-                    }
-                    pnlAttributes.Controls.Clear();
-                    break;
-            }
+            RefreshAttributes(pnlAttributes, notifyCollectionChangedEventArgs);
         }
 
         private void SpellCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
@@ -18805,9 +18039,24 @@ namespace Chummer
             RefreshQualities(treQualities, cmsQuality, notifyCollectionChangedEventArgs);
         }
 
+        private void MartialArtCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+        {
+            RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique, notifyCollectionChangedEventArgs);
+        }
+
         private void LifestyleCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
         {
             RefreshLifestyles(treLifestyles, cmsLifestyleNotes, cmsAdvancedLifestyle, notifyCollectionChangedEventArgs);
+        }
+
+        private void ContactCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+        {
+            RefreshContacts(panContacts, panEnemies, panPets, notifyCollectionChangedEventArgs);
+        }
+
+        private void SpiritCollectionChanged(object sender, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+        {
+            RefreshSpirits(panSpirits, panSprites, notifyCollectionChangedEventArgs);
         }
 
         private void picMugshot_SizeChanged(object sender, EventArgs e)
@@ -19021,10 +18270,18 @@ namespace Chummer
             do
             {
                 blnAddAgain = AddWeapon(objSelectedNode);
-                if (blnAddAgain)
-                    treWeapons.SelectedNode = objSelectedNode;
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsGearLocationAddGear_Click(object sender, EventArgs e)
@@ -19033,15 +18290,19 @@ namespace Chummer
             bool blnAddAgain = false;
             do
             {
-                // Select the root Gear node then open the Select Gear window.
                 blnAddAgain = PickGear(objSelectedNode);
-                if (blnAddAgain)
-                    treGear.SelectedNode = objSelectedNode;
             }
             while (blnAddAgain);
 
             if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
                 PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsVehicleLocationAddVehicle_Click(object sender, EventArgs e)
@@ -19053,6 +18314,16 @@ namespace Chummer
                 blnAddAgain = AddVehicle(objSelectedNode);
             }
             while (blnAddAgain);
+
+            if (IsCharacterUpdateRequested)
+            {
+                PopulateArmorList(treArmor, cmsArmorLocation, cmsArmor, cmsArmorMod, cmsArmorGear);
+                PopulateWeaponList(treWeapons, cmsWeaponLocation, cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
+                PopulateCyberwareList(treCyberware, cmsCyberware, cmsCyberwareGear);
+                PopulateGearList(treGear, cmsGearLocation, cmsGear, chkCommlinks.Checked);
+                PopulateVehicleList(treVehicles, cmsVehicleLocation, cmsVehicle, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsWeaponMount, cmsCyberware, cmsCyberwareGear);
+                PopulateFocusList(treFoci, cmsGear);
+            }
         }
 
         private void tsEditWeaponMount_Click(object sender, EventArgs e)

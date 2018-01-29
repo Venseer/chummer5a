@@ -34,6 +34,9 @@ using System.Xml.XPath;
 using Chummer.Backend.Attributes;
 using TheArtOfDev.HtmlRenderer.WinForms;
 using System.Text;
+using System.ComponentModel;
+using Chummer.UI.Attributes;
+using System.Collections.ObjectModel;
 
 namespace Chummer
 {
@@ -44,6 +47,8 @@ namespace Chummer
     public class CharacterShared : Form, IDisposable
     {
         private readonly Character _objCharacter;
+        private readonly ObservableCollection<CharacterAttrib> _lstPrimaryAttributes;
+        private readonly ObservableCollection<CharacterAttrib> _lstSpecialAttributes;
         private readonly CharacterOptions _objOptions;
         private bool _blnIsDirty = false;
         private bool _blnRequestCharacterUpdate = false;
@@ -54,6 +59,37 @@ namespace Chummer
             _objCharacter = objCharacter;
             _objOptions = _objCharacter.Options;
             _objCharacter.CharacterNameChanged += ForceUpdateWindowTitle;
+
+            _lstPrimaryAttributes = new ObservableCollection<CharacterAttrib>
+            {
+                CharacterObject.BOD,
+                CharacterObject.AGI,
+                CharacterObject.REA,
+                CharacterObject.STR,
+                CharacterObject.CHA,
+                CharacterObject.INT,
+                CharacterObject.LOG,
+                CharacterObject.WIL
+            };
+
+            _lstSpecialAttributes = new ObservableCollection<CharacterAttrib>
+            {
+                CharacterObject.EDG
+            };
+            if (CharacterObject.MAGEnabled)
+            {
+                _lstSpecialAttributes.Add(CharacterObject.MAG);
+                if (CharacterObjectOptions.MysAdeptSecondMAGAttribute && CharacterObject.IsMysticAdept)
+                    _lstSpecialAttributes.Add(CharacterObject.MAGAdept);
+            }
+            if (CharacterObject.RESEnabled)
+            {
+                _lstSpecialAttributes.Add(CharacterObject.RES);
+            }
+            if (CharacterObject.DEPEnabled)
+            {
+                _lstSpecialAttributes.Add(CharacterObject.DEP);
+            }
         }
 
         [Obsolete("This constructor is for use by form designers only.", true)]
@@ -285,26 +321,112 @@ namespace Chummer
                 MessageBox.Show(LanguageManager.GetString("Warning_NoLimitFound", GlobalOptions.Language));
                 return;
             }
-            frmSelectLimitModifier frmPickLimitModifier = new frmSelectLimitModifier(objLimitModifier);
-            frmPickLimitModifier.ShowDialog(this);
+            using (frmSelectLimitModifier frmPickLimitModifier = new frmSelectLimitModifier(objLimitModifier))
+            {
+                frmPickLimitModifier.ShowDialog(this);
 
-            if (frmPickLimitModifier.DialogResult == DialogResult.Cancel)
-                return;
+                if (frmPickLimitModifier.DialogResult == DialogResult.Cancel)
+                    return;
 
-            //Remove the old LimitModifier to ensure we don't double up.
-            _objCharacter.LimitModifiers.Remove(objLimitModifier);
-            // Create the new limit modifier.
-            objLimitModifier = new LimitModifier(_objCharacter);
-            string strLimit = treLimit.SelectedNode.Parent.Text;
-            string strCondition = frmPickLimitModifier.SelectedCondition;
-            objLimitModifier.Create(frmPickLimitModifier.SelectedName, frmPickLimitModifier.SelectedBonus, strLimit, strCondition);
-            objLimitModifier.Guid = new Guid(strGuid);
+                //Remove the old LimitModifier to ensure we don't double up.
+                _objCharacter.LimitModifiers.Remove(objLimitModifier);
+                // Create the new limit modifier.
+                objLimitModifier = new LimitModifier(_objCharacter);
+                string strLimit = treLimit.SelectedNode.Parent.Text;
+                string strCondition = frmPickLimitModifier.SelectedCondition;
+                objLimitModifier.Create(frmPickLimitModifier.SelectedName, frmPickLimitModifier.SelectedBonus, strLimit, strCondition);
+                objLimitModifier.Guid = new Guid(strGuid);
 
-            _objCharacter.LimitModifiers.Add(objLimitModifier);
+                _objCharacter.LimitModifiers.Add(objLimitModifier);
 
-            //Add the new treeview node for the LimitModifier.
-            objSelectedNode.Parent.Nodes.Add(objLimitModifier.CreateTreeNode(cmsLimitModifier));
-            objSelectedNode.Remove();
+                //Add the new treeview node for the LimitModifier.
+                objSelectedNode.Parent.Nodes.Add(objLimitModifier.CreateTreeNode(cmsLimitModifier));
+                objSelectedNode.Remove();
+            }
+        }
+
+        protected void RefreshAttributes(FlowLayoutPanel pnlAttributes, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs = null)
+        {
+            if (notifyCollectionChangedEventArgs == null)
+            {
+                pnlAttributes.Controls.Clear();
+
+                foreach (CharacterAttrib objAttrib in _lstPrimaryAttributes.Concat(_lstSpecialAttributes))
+                {
+                    AttributeControl objControl = new AttributeControl(objAttrib);
+                    objControl.ValueChanged += MakeDirtyWithCharacterUpdate;
+                    pnlAttributes.Controls.Add(objControl);
+                }
+            }
+            else
+            {
+                switch (notifyCollectionChangedEventArgs.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        {
+                            foreach (CharacterAttrib objAttrib in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                AttributeControl objControl = new AttributeControl(objAttrib);
+                                objControl.ValueChanged += MakeDirtyWithCharacterUpdate;
+                                pnlAttributes.Controls.Add(objControl);
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Remove:
+                        {
+                            foreach (CharacterAttrib objAttrib in notifyCollectionChangedEventArgs.OldItems)
+                            {
+                                foreach (AttributeControl objControl in pnlAttributes.Controls)
+                                {
+                                    if (objControl.AttributeName == objAttrib.Abbrev)
+                                    {
+                                        objControl.ValueChanged -= MakeDirtyWithCharacterUpdate;
+                                        pnlAttributes.Controls.Remove(objControl);
+                                        objControl.Dispose();
+                                    }
+                                }
+                                if (!_objCharacter.Created)
+                                {
+                                    objAttrib.Base = 0;
+                                    objAttrib.Karma = 0;
+                                }
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Replace:
+                        {
+                            foreach (CharacterAttrib objAttrib in notifyCollectionChangedEventArgs.OldItems)
+                            {
+                                foreach (AttributeControl objControl in pnlAttributes.Controls)
+                                {
+                                    if (objControl.AttributeName == objAttrib.Abbrev)
+                                    {
+                                        objControl.ValueChanged -= MakeDirtyWithCharacterUpdate;
+                                        pnlAttributes.Controls.Remove(objControl);
+                                        objControl.Dispose();
+                                    }
+                                }
+                                if (!_objCharacter.Created)
+                                {
+                                    objAttrib.Base = 0;
+                                    objAttrib.Karma = 0;
+                                }
+                            }
+                            foreach (CharacterAttrib objAttrib in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                AttributeControl objControl = new AttributeControl(objAttrib);
+                                objControl.ValueChanged += MakeDirtyWithCharacterUpdate;
+                                pnlAttributes.Controls.Add(objControl);
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Reset:
+                        {
+                            RefreshAttributes(pnlAttributes);
+                        }
+                        break;
+                }
+            }
         }
 
         /// <summary>
@@ -376,17 +498,23 @@ namespace Chummer
                         }
                     case NotifyCollectionChangedAction.Replace:
                         {
+                            List<TreeNode> lstOldParents = new List<TreeNode>();
                             foreach (Spell objSpell in notifyCollectionChangedEventArgs.OldItems)
                             {
-                                TreeNode objOldParent = null;
                                 TreeNode objNode = treSpells.FindNode(objSpell.InternalId);
                                 if (objNode != null)
                                 {
-                                    objOldParent = objNode.Parent;
+                                    lstOldParents.Add(objNode.Parent);
                                     objNode.Remove();
                                 }
+                            }
+                            foreach (Spell objSpell in notifyCollectionChangedEventArgs.NewItems)
+                            {
                                 AddToTree(objSpell);
-                                if (objOldParent != null && objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
+                            }
+                            foreach (TreeNode objOldParent in lstOldParents)
+                            {
+                                if (objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
                                     objOldParent.Remove();
                             }
                             break;
@@ -574,17 +702,23 @@ namespace Chummer
                         }
                     case NotifyCollectionChangedAction.Replace:
                         {
+                            List<TreeNode> lstOldParents = new List<TreeNode>();
                             foreach (AIProgram objAIProgram in notifyCollectionChangedEventArgs.OldItems)
                             {
-                                TreeNode objOldParent = null;
                                 TreeNode objNode = treAIPrograms.FindNode(objAIProgram.InternalId);
                                 if (objNode != null)
                                 {
-                                    objOldParent = objNode.Parent;
+                                    lstOldParents.Add(objNode.Parent);
                                     objNode.Remove();
                                 }
+                            }
+                            foreach (AIProgram objAIProgram in notifyCollectionChangedEventArgs.NewItems)
+                            {
                                 AddToTree(objAIProgram);
-                                if (objOldParent != null && objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
+                            }
+                            foreach (TreeNode objOldParent in lstOldParents)
+                            {
+                                if (objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
                                     objOldParent.Remove();
                             }
                             break;
@@ -677,17 +811,23 @@ namespace Chummer
                         }
                     case NotifyCollectionChangedAction.Replace:
                         {
+                            List<TreeNode> lstOldParents = new List<TreeNode>();
                             foreach (ComplexForm objComplexForm in notifyCollectionChangedEventArgs.OldItems)
                             {
-                                TreeNode objOldParent = null;
                                 TreeNode objNode = treComplexForms.FindNode(objComplexForm.InternalId);
                                 if (objNode != null)
                                 {
-                                    objOldParent = objNode.Parent;
+                                    lstOldParents.Add(objNode.Parent);
                                     objNode.Remove();
                                 }
+                            }
+                            foreach (ComplexForm objComplexForm in notifyCollectionChangedEventArgs.NewItems)
+                            {
                                 AddToTree(objComplexForm);
-                                if (objOldParent != null && objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
+                            }
+                            foreach (TreeNode objOldParent in lstOldParents)
+                            {
+                                if (objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
                                     objOldParent.Remove();
                             }
                             break;
@@ -749,14 +889,21 @@ namespace Chummer
             foreach (Improvement objImprovement in CharacterObject.Improvements.Where(objImprovement => objImprovement.ImproveSource == Improvement.ImprovementSource.Custom))
             {
                 int intTargetLimit = -1;
-                if (objImprovement.ImproveType == Improvement.ImprovementType.LimitModifier)
-                    intTargetLimit = (int)Enum.Parse(typeof(LimitType), objImprovement.ImprovedName);
-                else if (objImprovement.ImproveType == Improvement.ImprovementType.PhysicalLimit)
-                    intTargetLimit = (int)LimitType.Physical;
-                else if (objImprovement.ImproveType == Improvement.ImprovementType.MentalLimit)
-                    intTargetLimit = (int)LimitType.Mental;
-                else if (objImprovement.ImproveType == Improvement.ImprovementType.SocialLimit)
-                    intTargetLimit = (int)LimitType.Social;
+                switch (objImprovement.ImproveType)
+                {
+                    case Improvement.ImprovementType.LimitModifier:
+                        intTargetLimit = (int)Enum.Parse(typeof(LimitType), objImprovement.ImprovedName);
+                        break;
+                    case Improvement.ImprovementType.PhysicalLimit:
+                        intTargetLimit = (int)LimitType.Physical;
+                        break;
+                    case Improvement.ImprovementType.MentalLimit:
+                        intTargetLimit = (int)LimitType.Mental;
+                        break;
+                    case Improvement.ImprovementType.SocialLimit:
+                        intTargetLimit = (int)LimitType.Social;
+                        break;
+                }
                 if (intTargetLimit != -1)
                 {
                     TreeNode objParentNode = GetLimitModifierParentNode(intTargetLimit);
@@ -789,7 +936,6 @@ namespace Chummer
                         }
 
                         objParentNode.Nodes.Add(newNode);
-                        objParentNode.Expand();
                     }
                 }
             }
@@ -955,17 +1101,23 @@ namespace Chummer
                         }
                     case NotifyCollectionChangedAction.Replace:
                         {
+                            List<TreeNode> lstOldParents = new List<TreeNode>();
                             foreach (CritterPower objPower in notifyCollectionChangedEventArgs.OldItems)
                             {
-                                TreeNode objOldParent = null;
                                 TreeNode objNode = treCritterPowers.FindNode(objPower.InternalId);
                                 if (objNode != null)
                                 {
-                                    objOldParent = objNode.Parent;
+                                    lstOldParents.Add(objNode.Parent);
                                     objNode.Remove();
                                 }
+                            }
+                            foreach (CritterPower objPower in notifyCollectionChangedEventArgs.NewItems)
+                            {
                                 AddToTree(objPower);
-                                if (objOldParent != null && objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
+                            }
+                            foreach (TreeNode objOldParent in lstOldParents)
+                            {
+                                if (objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
                                     objOldParent.Remove();
                             }
                             break;
@@ -1108,30 +1260,37 @@ namespace Chummer
                         }
                     case NotifyCollectionChangedAction.Replace:
                         {
+                            List<TreeNode> lstOldParents = new List<TreeNode>();
                             foreach (Quality objQuality in notifyCollectionChangedEventArgs.OldItems)
                             {
                                 if (objQuality.Levels > 0)
                                     blnDoNameRefresh = true;
                                 else
                                 {
-                                    TreeNode objOldParent = null;
                                     TreeNode objNode = treQualities.FindNodeByTag(objQuality);
                                     if (objNode != null)
                                     {
-                                        objOldParent = objNode.Parent;
+                                        if (objNode.Parent != null)
+                                            lstOldParents.Add(objNode.Parent);
                                         objNode.Remove();
                                     }
                                     else
                                     {
                                         RefreshQualityNames(treQualities);
                                     }
-                                    if (objQuality.Levels > 1)
-                                        RefreshQualityNames(treQualities);
-                                    else
-                                        AddToTree(objQuality);
-                                    if (objOldParent != null && objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
-                                        objOldParent.Remove();
                                 }
+                            }
+                            foreach (Quality objQuality in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                if (objQuality.Levels > 1)
+                                    blnDoNameRefresh = true;
+                                else
+                                    AddToTree(objQuality);
+                            }
+                            foreach (TreeNode objOldParent in lstOldParents)
+                            {
+                                if (objOldParent.Level == 0 && objOldParent.Nodes.Count == 0)
+                                    objOldParent.Remove();
                             }
                             break;
                         }
@@ -1404,7 +1563,7 @@ namespace Chummer
             if (objSelectedNode != null)
                 treArmor.SelectedNode = objSelectedNode;
         }
-
+        
         /// <summary>
         /// Populate the TreeView that contains all of the character's Cyberware and Bioware.
         /// </summary>
@@ -1419,10 +1578,9 @@ namespace Chummer
             TreeNode objModularRoot = null;
             TreeNode objHoleNode = null;
 
-            Guid guidHoleId = Guid.Parse("b57eadaa-7c3b-4b80-8d79-cbbd922c1196");
             foreach (Cyberware objCyberware in CharacterObject.Cyberware)
             {
-                if (objCyberware.SourceID == guidHoleId && objHoleNode == null)
+                if (objCyberware.SourceID == Cyberware.EssenceHoleGUID && objHoleNode == null)
                 {
                     objHoleNode = objCyberware.CreateTreeNode(null, null);
                     treCyberware.Nodes.Insert(3, objHoleNode);
@@ -1620,19 +1778,89 @@ namespace Chummer
             treFoci.SortCustom(strSelectedId);
         }
 
-        protected void RefreshMartialArts(TreeView treMartialArts, ContextMenuStrip cmsMartialArts, ContextMenuStrip cmsTechnique)
+        protected void RefreshMartialArts(TreeView treMartialArts, ContextMenuStrip cmsMartialArts, ContextMenuStrip cmsTechnique, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs = null)
         {
             string strSelectedId = treMartialArts.SelectedNode?.Tag.ToString();
-
-            treMartialArts.Nodes.Clear();
-
+            
             TreeNode objMartialArtsParentNode = null;
             TreeNode objQualityNode = null;
 
-            foreach (MartialArt objMartialArt in CharacterObject.MartialArts)
+            if (notifyCollectionChangedEventArgs == null)
+            {
+                treMartialArts.Nodes.Clear();
+
+                foreach (MartialArt objMartialArt in CharacterObject.MartialArts)
+                {
+                    AddToTree(objMartialArt, false);
+                }
+
+                treMartialArts.SortCustom(strSelectedId);
+            }
+            else
+            {
+                switch (notifyCollectionChangedEventArgs.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        {
+                            foreach (MartialArt objMartialArt in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                AddToTree(objMartialArt);
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Remove:
+                        {
+                            foreach (MartialArt objMartialArt in notifyCollectionChangedEventArgs.OldItems)
+                            {
+                                objMartialArt.Techniques.CollectionChanged -= (x, y) => RefreshMartialArtTechniques(treMartialArts, objMartialArt, cmsTechnique, y);
+                                TreeNode objNode = treMartialArts.FindNode(objMartialArt.InternalId);
+                                if (objNode != null)
+                                {
+                                    TreeNode objParent = objNode.Parent;
+                                    objNode.Remove();
+                                    if (objParent.Nodes.Count == 0)
+                                        objParent.Remove();
+                                }
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Replace:
+                        {
+                            List<TreeNode> lstOldParents = new List<TreeNode>();
+                            foreach (MartialArt objMartialArt in notifyCollectionChangedEventArgs.OldItems)
+                            {
+                                objMartialArt.Techniques.CollectionChanged -= (x, y) => RefreshMartialArtTechniques(treMartialArts, objMartialArt, cmsTechnique, y);
+                                TreeNode objNode = treMartialArts.FindNode(objMartialArt.InternalId);
+                                if (objNode != null)
+                                {
+                                    lstOldParents.Add(objNode.Parent);
+                                    objNode.Remove();
+                                }
+                            }
+                            foreach (MartialArt objMartialArt in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                AddToTree(objMartialArt);
+                            }
+                            foreach (TreeNode objOldParent in lstOldParents)
+                            {
+                                if (objOldParent.Nodes.Count == 0)
+                                    objOldParent.Remove();
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Reset:
+                        {
+                            RefreshMartialArts(treMartialArts, cmsMartialArts, cmsTechnique);
+                        }
+                        break;
+                }
+            }
+
+            void AddToTree(MartialArt objMartialArt, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objMartialArt.CreateTreeNode(cmsMartialArts, cmsTechnique);
 
+                TreeNode objParentNode = null;
                 if (objMartialArt.IsQuality)
                 {
                     if (objQualityNode == null)
@@ -1645,7 +1873,7 @@ namespace Chummer
                         treMartialArts.Nodes.Add(objQualityNode);
                         objQualityNode.Expand();
                     }
-                    objQualityNode.Nodes.Add(objNode);
+                    objParentNode = objQualityNode;
                 }
                 else
                 {
@@ -1659,11 +1887,110 @@ namespace Chummer
                         treMartialArts.Nodes.Insert(0, objMartialArtsParentNode);
                         objMartialArtsParentNode.Expand();
                     }
-                    objMartialArtsParentNode.Nodes.Add(objNode);
+                    objParentNode = objMartialArtsParentNode;
                 }
+
+                if (blnSingleAdd)
+                {
+                    TreeNodeCollection lstParentNodeChildren = objParentNode.Nodes;
+                    int intNodesCount = lstParentNodeChildren.Count;
+                    int intTargetIndex = 0;
+                    for (; intTargetIndex < intNodesCount; ++intTargetIndex)
+                    {
+                        if (CompareTreeNodes.CompareText(lstParentNodeChildren[intTargetIndex], objNode) >= 0)
+                        {
+                            break;
+                        }
+                    }
+                    lstParentNodeChildren.Insert(intTargetIndex, objNode);
+                    treMartialArts.SelectedNode = objNode;
+                }
+                else
+                    objParentNode.Nodes.Add(objNode);
+
+                objParentNode.Expand();
+                objMartialArt.Techniques.CollectionChanged += (x, y) => RefreshMartialArtTechniques(treMartialArts, objMartialArt, cmsTechnique, y);
+            }
+        }
+        
+        protected void RefreshMartialArtTechniques(TreeView treMartialArts, MartialArt objMartialArt, ContextMenuStrip cmsTechnique, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs)
+        {
+            if (notifyCollectionChangedEventArgs == null)
+                return;
+            TreeNode nodMartialArt = treMartialArts.FindNode(objMartialArt.InternalId);
+            if (nodMartialArt == null)
+                return;
+            
+            switch (notifyCollectionChangedEventArgs.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    {
+                        foreach (MartialArtTechnique objTechnique in notifyCollectionChangedEventArgs.NewItems)
+                        {
+                            AddToTree(objTechnique);
+                        }
+                    }
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    {
+                        foreach (MartialArtTechnique objTechnique in notifyCollectionChangedEventArgs.OldItems)
+                        {
+                            nodMartialArt.FindNode(objTechnique.InternalId)?.Remove();
+                        }
+                    }
+                    break;
+                case NotifyCollectionChangedAction.Replace:
+                    {
+                        foreach (MartialArtTechnique objTechnique in notifyCollectionChangedEventArgs.OldItems)
+                        {
+                            nodMartialArt.FindNode(objTechnique.InternalId)?.Remove();
+                        }
+                        foreach (MartialArtTechnique objTechnique in notifyCollectionChangedEventArgs.NewItems)
+                        {
+                            AddToTree(objTechnique);
+                        }
+                    }
+                    break;
+                case NotifyCollectionChangedAction.Reset:
+                    {
+                        string strSelectedId = treMartialArts.SelectedNode?.Tag.ToString();
+
+                        nodMartialArt.Nodes.Clear();
+
+                        foreach (MartialArtTechnique objTechnique in objMartialArt.Techniques)
+                        {
+                            AddToTree(objTechnique, false);
+                        }
+
+                        treMartialArts.SortCustom(strSelectedId);
+                    }
+                    break;
             }
 
-            treMartialArts.SortCustom(strSelectedId);
+            void AddToTree(MartialArtTechnique objTechnique, bool blnSingleAdd = true)
+            {
+                TreeNode objNode = objTechnique.CreateTreeNode(cmsTechnique);
+                
+                if (blnSingleAdd)
+                {
+                    TreeNodeCollection lstParentNodeChildren = nodMartialArt.Nodes;
+                    int intNodesCount = lstParentNodeChildren.Count;
+                    int intTargetIndex = 0;
+                    for (; intTargetIndex < intNodesCount; ++intTargetIndex)
+                    {
+                        if (CompareTreeNodes.CompareText(lstParentNodeChildren[intTargetIndex], objNode) >= 0)
+                        {
+                            break;
+                        }
+                    }
+                    lstParentNodeChildren.Insert(intTargetIndex, objNode);
+                    treMartialArts.SelectedNode = objNode;
+                }
+                else
+                    nodMartialArt.Nodes.Add(objNode);
+
+                nodMartialArt.Expand();
+            }
         }
 
         /// <summary>
@@ -1750,21 +2077,30 @@ namespace Chummer
                         }
                     case NotifyCollectionChangedAction.Replace:
                         {
+                            List<TreeNode> lstOldParents = new List<TreeNode>();
                             foreach (Improvement objImprovement in notifyCollectionChangedEventArgs.OldItems)
                             {
                                 if (objImprovement.ImproveSource == Improvement.ImprovementSource.Custom)
                                 {
-                                    TreeNode objOldParent = null;
                                     TreeNode objNode = treImprovements.FindNode(objImprovement.SourceName);
                                     if (objNode != null)
                                     {
-                                        TreeNode objParent = objNode.Parent;
+                                        lstOldParents.Add(objNode.Parent);
                                         objNode.Remove();
                                     }
-                                    AddToTree(objImprovement);
-                                    if (objOldParent.Tag.ToString() == "Node_SelectedImprovements" && objOldParent.Nodes.Count == 0)
-                                        objOldParent.Remove();
                                 }
+                            }
+                            foreach (Improvement objImprovement in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                if (objImprovement.ImproveSource == Improvement.ImprovementSource.Custom)
+                                {
+                                    AddToTree(objImprovement);
+                                }
+                            }
+                            foreach (TreeNode objOldParent in lstOldParents)
+                            {
+                                if (objOldParent.Tag.ToString() == "Node_SelectedImprovements" && objOldParent.Nodes.Count == 0)
+                                    objOldParent.Remove();
                             }
                             break;
                         }
@@ -1929,35 +2265,862 @@ namespace Chummer
         }
 
         /// <summary>
+        /// Populate the Calendar List.
+        /// </summary>
+        public void RefreshCalendar(ListView lstCalendar, ListChangedEventArgs listChangedEventArgs = null)
+        {
+            if (listChangedEventArgs == null)
+            {
+                lstCalendar.Items.Clear();
+                for (int i = CharacterObject.Calendar.Count - 1; i >= 0; i--)
+                {
+                    CalendarWeek objWeek = CharacterObject.Calendar[i];
+
+                    ListViewItem.ListViewSubItem objNoteItem = new ListViewItem.ListViewSubItem
+                    {
+                        Text = objWeek.Notes
+                    };
+                    ListViewItem.ListViewSubItem objInternalIdItem = new ListViewItem.ListViewSubItem
+                    {
+                        Text = objWeek.InternalId
+                    };
+
+                    ListViewItem objItem = new ListViewItem
+                    {
+                        Text = objWeek.DisplayName(GlobalOptions.Language)
+                    };
+                    objItem.SubItems.Add(objNoteItem);
+                    objItem.SubItems.Add(objInternalIdItem);
+
+                    lstCalendar.Items.Add(objItem);
+                }
+            }
+            else
+            {
+                switch (listChangedEventArgs.ListChangedType)
+                {
+                    case ListChangedType.Reset:
+                        {
+                            RefreshCalendar(lstCalendar);
+                        }
+                        break;
+                    case ListChangedType.ItemAdded:
+                        {
+                            int intInsertIndex = listChangedEventArgs.NewIndex;
+                            CalendarWeek objWeek = CharacterObject.Calendar[intInsertIndex];
+
+                            ListViewItem.ListViewSubItem objNoteItem = new ListViewItem.ListViewSubItem
+                            {
+                                Text = objWeek.Notes
+                            };
+                            ListViewItem.ListViewSubItem objInternalIdItem = new ListViewItem.ListViewSubItem
+                            {
+                                Text = objWeek.InternalId
+                            };
+
+                            ListViewItem objItem = new ListViewItem
+                            {
+                                Text = objWeek.DisplayName(GlobalOptions.Language)
+                            };
+                            objItem.SubItems.Add(objNoteItem);
+                            objItem.SubItems.Add(objInternalIdItem);
+
+                            lstCalendar.Items.Insert(intInsertIndex, objItem);
+                        }
+                        break;
+                    case ListChangedType.ItemDeleted:
+                        {
+                            lstCalendar.Items.RemoveAt(listChangedEventArgs.OldIndex);
+                        }
+                        break;
+                    case ListChangedType.ItemChanged:
+                    case ListChangedType.ItemMoved:
+                        {
+                            lstCalendar.Items.RemoveAt(listChangedEventArgs.NewIndex);
+                            int intInsertIndex = listChangedEventArgs.NewIndex;
+                            CalendarWeek objWeek = CharacterObject.Calendar[intInsertIndex];
+
+                            ListViewItem.ListViewSubItem objNoteItem = new ListViewItem.ListViewSubItem
+                            {
+                                Text = objWeek.Notes
+                            };
+                            ListViewItem.ListViewSubItem objInternalIdItem = new ListViewItem.ListViewSubItem
+                            {
+                                Text = objWeek.InternalId
+                            };
+
+                            ListViewItem objItem = new ListViewItem
+                            {
+                                Text = objWeek.DisplayName(GlobalOptions.Language)
+                            };
+                            objItem.SubItems.Add(objNoteItem);
+                            objItem.SubItems.Add(objInternalIdItem);
+
+                            lstCalendar.Items.Insert(intInsertIndex, objItem);
+                        }
+                        break;
+                }
+            }
+        }
+
+        public void RefreshContacts(FlowLayoutPanel panContacts, FlowLayoutPanel panEnemies, FlowLayoutPanel panPets, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs = null)
+        {
+            if (notifyCollectionChangedEventArgs == null)
+            {
+                panContacts.Controls.Clear();
+                panEnemies.Controls.Clear();
+                panPets.Controls.Clear();
+                int intContacts = -1;
+                int intEnemies = -1;
+                foreach (Contact objContact in CharacterObject.Contacts)
+                {
+                    switch (objContact.EntityType)
+                    {
+                        case ContactType.Contact:
+                            {
+                                intContacts += 1;
+                                ContactControl objContactControl = new ContactControl(objContact);
+                                // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
+                                objContactControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                objContactControl.DeleteContact += DeleteContact;
+                                objContactControl.MouseDown += DragContactControl;
+
+                                objContactControl.Top = intContacts * objContactControl.Height;
+
+                                panContacts.Controls.Add(objContactControl);
+                            }
+                            break;
+                        case ContactType.Enemy:
+                            {
+                                intEnemies += 1;
+                                ContactControl objContactControl = new ContactControl(objContact);
+                                // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
+                                if (_objCharacter.Created)
+                                    objContactControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                else
+                                    objContactControl.ContactDetailChanged += EnemyChanged;
+                                objContactControl.DeleteContact += DeleteEnemy;
+                                objContactControl.MouseDown += DragContactControl;
+
+                                objContactControl.Top = intEnemies * objContactControl.Height;
+
+                                panContacts.Controls.Add(objContactControl);
+                            }
+                            break;
+                        case ContactType.Pet:
+                            {
+                                PetControl objContactControl = new PetControl(objContact);
+                                // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
+                                objContactControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                objContactControl.DeleteContact += DeletePet;
+                                objContactControl.MouseDown += DragContactControl;
+
+                                panContacts.Controls.Add(objContactControl);
+                            }
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                switch (notifyCollectionChangedEventArgs.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        {
+                            int intContacts = panContacts.Controls.Count;
+                            int intEnemies = panEnemies.Controls.Count;
+                            foreach (Contact objLoopContact in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                switch (objLoopContact.EntityType)
+                                {
+                                    case ContactType.Contact:
+                                        {
+                                            intContacts += 1;
+                                            ContactControl objContactControl = new ContactControl(objLoopContact);
+                                            // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
+                                            objContactControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                            objContactControl.DeleteContact += DeleteContact;
+                                            objContactControl.MouseDown += DragContactControl;
+
+                                            objContactControl.Top = intContacts * objContactControl.Height;
+
+                                            panContacts.Controls.Add(objContactControl);
+                                        }
+                                        break;
+                                    case ContactType.Enemy:
+                                        {
+                                            intEnemies += 1;
+                                            ContactControl objContactControl = new ContactControl(objLoopContact);
+                                            // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
+                                            if (_objCharacter.Created)
+                                                objContactControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                            else
+                                                objContactControl.ContactDetailChanged += EnemyChanged;
+                                            objContactControl.DeleteContact += DeleteEnemy;
+                                            //objContactControl.MouseDown += DragContactControl;
+
+                                            objContactControl.Top = intEnemies * objContactControl.Height;
+
+                                            panContacts.Controls.Add(objContactControl);
+                                        }
+                                        break;
+                                    case ContactType.Pet:
+                                        {
+                                            PetControl objPetControl = new PetControl(objLoopContact);
+                                            // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
+                                            objPetControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                            objPetControl.DeleteContact += DeletePet;
+                                            //objPetControl.MouseDown += DragContactControl;
+
+                                            panContacts.Controls.Add(objPetControl);
+                                        }
+                                        break;
+                                }
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Remove:
+                        {
+                            foreach (Contact objLoopContact in notifyCollectionChangedEventArgs.OldItems)
+                            {
+                                switch (objLoopContact.EntityType)
+                                {
+                                    case ContactType.Contact:
+                                        {
+                                            for (int i = panContacts.Controls.Count - 1; i >= 0; i--)
+                                            {
+                                                if (panContacts.Controls[i] is ContactControl objContactControl && objContactControl.ContactObject == objLoopContact)
+                                                {
+                                                    panContacts.Controls.RemoveAt(i);
+                                                    objContactControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                                    objContactControl.DeleteContact -= DeleteContact;
+                                                    objContactControl.MouseDown -= DragContactControl;
+                                                    objContactControl.Dispose();
+                                                }
+                                            }
+                                        }
+                                        break;
+                                    case ContactType.Enemy:
+                                        {
+                                            for (int i = panEnemies.Controls.Count - 1; i >= 0; i--)
+                                            {
+                                                if (panEnemies.Controls[i] is ContactControl objContactControl && objContactControl.ContactObject == objLoopContact)
+                                                {
+                                                    panEnemies.Controls.RemoveAt(i);
+                                                    if (_objCharacter.Created)
+                                                        objContactControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                                    else
+                                                        objContactControl.ContactDetailChanged -= EnemyChanged;
+                                                    objContactControl.DeleteContact -= DeleteEnemy;
+                                                    objContactControl.Dispose();
+                                                }
+                                            }
+                                        }
+                                        break;
+                                    case ContactType.Pet:
+                                        {
+                                            for (int i = panPets.Controls.Count - 1; i >= 0; i--)
+                                            {
+                                                if (panPets.Controls[i] is PetControl objPetControl && objPetControl.ContactObject == objLoopContact)
+                                                {
+                                                    panPets.Controls.RemoveAt(i);
+                                                    objPetControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                                    objPetControl.DeleteContact -= DeletePet;
+                                                    objPetControl.Dispose();
+                                                }
+                                            }
+                                        }
+                                        break;
+                                }
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Replace:
+                        {
+                            foreach (Contact objLoopContact in notifyCollectionChangedEventArgs.OldItems)
+                            {
+                                switch (objLoopContact.EntityType)
+                                {
+                                    case ContactType.Contact:
+                                        {
+                                            for (int i = panContacts.Controls.Count - 1; i >= 0; i--)
+                                            {
+                                                if (panContacts.Controls[i] is ContactControl objContactControl && objContactControl.ContactObject == objLoopContact)
+                                                {
+                                                    panContacts.Controls.RemoveAt(i);
+                                                    objContactControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                                    objContactControl.DeleteContact -= DeleteContact;
+                                                    objContactControl.MouseDown -= DragContactControl;
+                                                    objContactControl.Dispose();
+                                                }
+                                            }
+                                        }
+                                        break;
+                                    case ContactType.Enemy:
+                                        {
+                                            for (int i = panEnemies.Controls.Count - 1; i >= 0; i--)
+                                            {
+                                                if (panEnemies.Controls[i] is ContactControl objContactControl && objContactControl.ContactObject == objLoopContact)
+                                                {
+                                                    panEnemies.Controls.RemoveAt(i);
+                                                    if (_objCharacter.Created)
+                                                        objContactControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                                    else
+                                                        objContactControl.ContactDetailChanged -= EnemyChanged;
+                                                    objContactControl.DeleteContact -= DeleteEnemy;
+                                                    objContactControl.Dispose();
+                                                }
+                                            }
+                                        }
+                                        break;
+                                    case ContactType.Pet:
+                                        {
+                                            for (int i = panPets.Controls.Count - 1; i >= 0; i--)
+                                            {
+                                                if (panPets.Controls[i] is PetControl objPetControl && objPetControl.ContactObject == objLoopContact)
+                                                {
+                                                    panPets.Controls.RemoveAt(i);
+                                                    objPetControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                                    objPetControl.DeleteContact -= DeletePet;
+                                                    objPetControl.Dispose();
+                                                }
+                                            }
+                                        }
+                                        break;
+                                }
+                            }
+                            int intContacts = panContacts.Controls.Count;
+                            int intEnemies = panEnemies.Controls.Count;
+                            foreach (Contact objLoopContact in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                switch (objLoopContact.EntityType)
+                                {
+                                    case ContactType.Contact:
+                                        {
+                                            intContacts += 1;
+                                            ContactControl objContactControl = new ContactControl(objLoopContact);
+                                            // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
+                                            objContactControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                            objContactControl.DeleteContact += DeleteContact;
+                                            objContactControl.MouseDown += DragContactControl;
+
+                                            objContactControl.Top = intContacts * objContactControl.Height;
+
+                                            panContacts.Controls.Add(objContactControl);
+                                        }
+                                        break;
+                                    case ContactType.Enemy:
+                                        {
+                                            intEnemies += 1;
+                                            ContactControl objContactControl = new ContactControl(objLoopContact);
+                                            // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
+                                            if (_objCharacter.Created)
+                                                objContactControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                            else
+                                                objContactControl.ContactDetailChanged += EnemyChanged;
+                                            objContactControl.DeleteContact += DeleteEnemy;
+                                            //objContactControl.MouseDown += DragContactControl;
+
+                                            objContactControl.Top = intEnemies * objContactControl.Height;
+
+                                            panContacts.Controls.Add(objContactControl);
+                                        }
+                                        break;
+                                    case ContactType.Pet:
+                                        {
+                                            PetControl objPetControl = new PetControl(objLoopContact);
+                                            // Attach an EventHandler for the ConnectionRatingChanged, LoyaltyRatingChanged, DeleteContact, FileNameChanged Events and OtherCostChanged
+                                            objPetControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                            objPetControl.DeleteContact += DeletePet;
+                                            //objPetControl.MouseDown += DragContactControl;
+
+                                            panContacts.Controls.Add(objPetControl);
+                                        }
+                                        break;
+                                }
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Reset:
+                        {
+                            RefreshContacts(panContacts, panEnemies, panPets);
+                        }
+                        break;
+                }
+            }
+        }
+
+        #region ContactControl Events
+        protected void DragContactControl(object sender, MouseEventArgs e)
+        {
+            Control source = (Control)sender;
+            source.DoDragDrop(new TransportWrapper(source), DragDropEffects.Move);
+        }
+
+        protected void AddContact(object sender, EventArgs e)
+        {
+            Contact objContact = new Contact(CharacterObject)
+            {
+                EntityType = ContactType.Contact
+            };
+            CharacterObject.Contacts.Add(objContact);
+
+            IsCharacterUpdateRequested = true;
+
+            IsDirty = true;
+        }
+
+        protected void DeleteContact(object sender, EventArgs e)
+        {
+            if (sender is ContactControl objSender)
+            {
+                if (CharacterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteContact", GlobalOptions.Language)))
+                    return;
+
+                CharacterObject.Contacts.Remove(objSender.ContactObject);
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
+            }
+        }
+        #endregion
+
+        #region PetControl Events
+        protected void AddPet(object sender, EventArgs e)
+        {
+            Contact objContact = new Contact(CharacterObject)
+            {
+                EntityType = ContactType.Pet
+            };
+
+            CharacterObject.Contacts.Add(objContact);
+
+            IsCharacterUpdateRequested = true;
+
+            IsDirty = true;
+        }
+
+        protected void DeletePet(object sender, EventArgs e)
+        {
+            if (sender is PetControl objSender)
+            {
+                if (!CharacterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteContact", GlobalOptions.Language)))
+                    return;
+
+                CharacterObject.Contacts.Remove(objSender.ContactObject);
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
+            }
+        }
+        #endregion
+
+        #region EnemyControl Events
+        protected void AddEnemy(object sender, EventArgs e)
+        {
+            // Handle the ConnectionRatingChanged Event for the ContactControl object.
+            Contact objContact = new Contact(CharacterObject)
+            {
+                EntityType = ContactType.Enemy
+            };
+
+            CharacterObject.Contacts.Add(objContact);
+
+            IsCharacterUpdateRequested = true;
+
+            IsDirty = true;
+        }
+
+        protected void EnemyChanged(object sender, EventArgs e)
+        {
+            // Handle the ConnectionRatingChanged Event for the ContactControl object.
+            int intNegativeQualityBP = 0;
+            // Calculate the BP used for Negative Qualities.
+            foreach (Quality objQuality in CharacterObject.Qualities)
+            {
+                if (objQuality.Type == QualityType.Negative && objQuality.ContributeToLimit)
+                    intNegativeQualityBP += objQuality.BP;
+            }
+            // Include the amount of free Negative Qualities from Improvements.
+            intNegativeQualityBP -= ImprovementManager.ValueOf(CharacterObject, Improvement.ImprovementType.FreeNegativeQualities);
+
+            // Adjust for Karma cost multiplier.
+            intNegativeQualityBP *= CharacterObjectOptions.KarmaQuality;
+
+            // Find current enemy BP total
+            int intBPUsed = 0;
+            foreach (Contact objLoopEnemy in CharacterObject.Contacts)
+            {
+                if (objLoopEnemy.EntityType == ContactType.Enemy && !objLoopEnemy.Free)
+                {
+                    intBPUsed -= (objLoopEnemy.Connection + objLoopEnemy.Loyalty) * CharacterObjectOptions.KarmaEnemy;
+                }
+            }
+
+            int intEnemyMax = 0;
+            int intQualityMax = 0;
+            string strQualityPoints = string.Empty;
+            string strEnemyPoints = string.Empty;
+            intEnemyMax = CharacterObject.GameplayOptionQualityLimit;
+            intQualityMax = CharacterObject.GameplayOptionQualityLimit;
+            strEnemyPoints = intEnemyMax.ToString() + ' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
+            strQualityPoints = intQualityMax.ToString() + ' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
+
+            if (intBPUsed < (intEnemyMax * -1) && !CharacterObject.IgnoreRules)
+            {
+                MessageBox.Show(LanguageManager.GetString("Message_EnemyLimit", GlobalOptions.Language).Replace("{0}", strEnemyPoints), LanguageManager.GetString("MessageTitle_EnemyLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Contact objSenderContact = ((ContactControl)sender).ContactObject;
+                int intTotal = (intEnemyMax * -1) - intBPUsed;
+                if (e is TextEventArgs objTextArgument)
+                {
+                    switch (objTextArgument.Text)
+                    {
+                        case "Connection":
+                            objSenderContact.Connection -= intTotal;
+                            break;
+                        case "Loyalty":
+                            objSenderContact.Loyalty -= intTotal;
+                            break;
+                    }
+                }
+                return;
+            }
+
+            if (!CharacterObjectOptions.ExceedNegativeQualities)
+            {
+                if (intBPUsed + intNegativeQualityBP < (intQualityMax * -1) && !CharacterObject.IgnoreRules)
+                {
+                    MessageBox.Show(LanguageManager.GetString("Message_NegativeQualityLimit", GlobalOptions.Language).Replace("{0}", strQualityPoints), LanguageManager.GetString("MessageTitle_NegativeQualityLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Contact objSenderContact = ((ContactControl)sender).ContactObject;
+                    if (e is TextEventArgs objTextArgument)
+                    {
+                        switch (objTextArgument.Text)
+                        {
+                            case "Connection":
+                                objSenderContact.Connection -= (((intQualityMax * -1) - (intBPUsed + intNegativeQualityBP)) /
+                                                               CharacterObjectOptions.KarmaQuality);
+                                break;
+                            case "Loyalty":
+                                objSenderContact.Loyalty -= (((intQualityMax * -1) - (intBPUsed + intNegativeQualityBP)) /
+                                                            CharacterObjectOptions.KarmaQuality);
+                                break;
+                        }
+                    }
+                }
+            }
+
+            IsCharacterUpdateRequested = true;
+
+            IsDirty = true;
+        }
+
+        protected void DeleteEnemy(object sender, EventArgs e)
+        {
+            if (sender is ContactControl objSender)
+            {
+                if (!CharacterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteEnemy", GlobalOptions.Language)))
+                    return;
+
+                CharacterObject.Contacts.Remove(objSender.ContactObject);
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
+            }
+        }
+        #endregion
+
+        #region Additional Relationships Tab Control Events
+        protected void AddContactsFromFile(object sender, EventArgs e)
+        {
+            // Displays an OpenFileDialog so the user can select the XML to read.  
+            OpenFileDialog dlgOpenFileDialog = new OpenFileDialog
+            {
+                Filter = "XML Files|*.xml"
+            };
+
+            // Show the Dialog.  
+            // If the user cancels out, return early.
+            if (dlgOpenFileDialog.ShowDialog() == DialogResult.Cancel)
+                return;
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load(dlgOpenFileDialog.FileName);
+
+            XmlNodeList xmlContactList = xmlDoc.SelectNodes("/chummer/contacts/contact");
+            if (xmlContactList != null)
+            {
+                foreach (XmlNode xmlContact in xmlContactList)
+                {
+                    Contact objContact = new Contact(CharacterObject);
+                    objContact.Load(xmlContact);
+                    CharacterObject.Contacts.Add(objContact);
+                }
+            }
+        }
+        #endregion
+
+        public void RefreshSpirits(Panel panSpirits, Panel panSprites, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs = null)
+        {
+            if (notifyCollectionChangedEventArgs == null)
+            {
+                panSpirits.Controls.Clear();
+                panSprites.Controls.Clear();
+                int intSpirits = -1;
+                int intSprites = -1;
+                foreach (Spirit objSpirit in CharacterObject.Spirits)
+                {
+                    bool blnIsSpirit = objSpirit.EntityType == SpiritType.Spirit;
+                    SpiritControl objSpiritControl = new SpiritControl(objSpirit);
+
+                    // Attach an EventHandler for the ServicesOwedChanged Event.
+                    objSpiritControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                    objSpiritControl.DeleteSpirit += DeleteSpirit;
+
+                    objSpiritControl.RebuildSpiritList(blnIsSpirit ? CharacterObject.MagicTradition : CharacterObject.TechnomancerStream);
+                    
+                    if (blnIsSpirit)
+                    {
+                        intSpirits += 1;
+                        objSpiritControl.Top = intSpirits * objSpiritControl.Height;
+                        panSpirits.Controls.Add(objSpiritControl);
+                    }
+                    else
+                    {
+                        intSprites += 1;
+                        objSpiritControl.Top = intSprites * objSpiritControl.Height;
+                        panSprites.Controls.Add(objSpiritControl);
+                    }
+                }
+            }
+            else
+            {
+                switch (notifyCollectionChangedEventArgs.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        {
+                            int intSpirits = panSpirits.Controls.Count;
+                            int intSprites = panSprites.Controls.Count;
+                            foreach (Spirit objSpirit in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                bool blnIsSpirit = objSpirit.EntityType == SpiritType.Spirit;
+                                SpiritControl objSpiritControl = new SpiritControl(objSpirit);
+
+                                // Attach an EventHandler for the ServicesOwedChanged Event.
+                                objSpiritControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                objSpiritControl.DeleteSpirit += DeleteSpirit;
+
+                                objSpiritControl.RebuildSpiritList(blnIsSpirit ? CharacterObject.MagicTradition : CharacterObject.TechnomancerStream);
+
+                                if (blnIsSpirit)
+                                {
+                                    objSpiritControl.Top = intSpirits * objSpiritControl.Height;
+                                    panSpirits.Controls.Add(objSpiritControl);
+                                    intSpirits += 1;
+                                }
+                                else
+                                {
+                                    objSpiritControl.Top = intSprites * objSpiritControl.Height;
+                                    panSprites.Controls.Add(objSpiritControl);
+                                    intSprites += 1;
+                                }
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Remove:
+                        {
+                            foreach (Spirit objSpirit in notifyCollectionChangedEventArgs.OldItems)
+                            {
+                                if (objSpirit.EntityType == SpiritType.Spirit)
+                                {
+                                    for (int i = panSpirits.Controls.Count - 1; i >= 0; i--)
+                                    {
+                                        if (panSpirits.Controls[i] is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
+                                        {
+                                            panSpirits.Controls.RemoveAt(i);
+                                            objSpiritControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                            objSpiritControl.DeleteSpirit -= DeleteSpirit;
+                                            objSpiritControl.Dispose();
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    for (int i = panSprites.Controls.Count - 1; i >= 0; i--)
+                                    {
+                                        if (panSprites.Controls[i] is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
+                                        {
+                                            panSpirits.Controls.RemoveAt(i);
+                                            objSpiritControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                            objSpiritControl.DeleteSpirit -= DeleteSpirit;
+                                            objSpiritControl.Dispose();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Replace:
+                        {
+                            foreach (Spirit objSpirit in notifyCollectionChangedEventArgs.OldItems)
+                            {
+                                if (objSpirit.EntityType == SpiritType.Spirit)
+                                {
+                                    for (int i = panSpirits.Controls.Count - 1; i >= 0; i--)
+                                    {
+                                        if (panSpirits.Controls[i] is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
+                                        {
+                                            panSpirits.Controls.RemoveAt(i);
+                                            objSpiritControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                            objSpiritControl.DeleteSpirit -= DeleteSpirit;
+                                            objSpiritControl.Dispose();
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    for (int i = panSprites.Controls.Count - 1; i >= 0; i--)
+                                    {
+                                        if (panSprites.Controls[i] is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
+                                        {
+                                            panSpirits.Controls.RemoveAt(i);
+                                            objSpiritControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
+                                            objSpiritControl.DeleteSpirit -= DeleteSpirit;
+                                            objSpiritControl.Dispose();
+                                        }
+                                    }
+                                }
+                            }
+                            int intSpirits = panSpirits.Controls.Count;
+                            int intSprites = panSprites.Controls.Count;
+                            foreach (Spirit objSpirit in notifyCollectionChangedEventArgs.NewItems)
+                            {
+                                bool blnIsSpirit = objSpirit.EntityType == SpiritType.Spirit;
+                                SpiritControl objSpiritControl = new SpiritControl(objSpirit);
+
+                                // Attach an EventHandler for the ServicesOwedChanged Event.
+                                objSpiritControl.ContactDetailChanged += MakeDirtyWithCharacterUpdate;
+                                objSpiritControl.DeleteSpirit += DeleteSpirit;
+
+                                objSpiritControl.RebuildSpiritList(blnIsSpirit ? CharacterObject.MagicTradition : CharacterObject.TechnomancerStream);
+
+                                if (blnIsSpirit)
+                                {
+                                    objSpiritControl.Top = intSpirits * objSpiritControl.Height;
+                                    panSpirits.Controls.Add(objSpiritControl);
+                                    intSpirits += 1;
+                                }
+                                else
+                                {
+                                    objSpiritControl.Top = intSprites * objSpiritControl.Height;
+                                    panSprites.Controls.Add(objSpiritControl);
+                                    intSprites += 1;
+                                }
+                            }
+                        }
+                        break;
+                    case NotifyCollectionChangedAction.Reset:
+                        {
+                            RefreshSpirits(panSpirits, panSprites);
+                        }
+                        break;
+                }
+            }
+        }
+
+        #region SpiritControl Events
+        protected void AddSpirit(object sender, EventArgs e)
+        {
+            // The number of bound Spirits cannot exeed the character's CHA.
+            if (!CharacterObject.IgnoreRules && CharacterObject.Spirits.Count(x => x.EntityType == SpiritType.Spirit) >= CharacterObject.CHA.Value)
+            {
+                MessageBox.Show(LanguageManager.GetString("Message_BoundSpiritLimit", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_BoundSpiritLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            Spirit objSpirit = new Spirit(CharacterObject)
+            {
+                EntityType = SpiritType.Spirit,
+                Force = CharacterObject.MaxSpiritForce
+            };
+            CharacterObject.Spirits.Add(objSpirit);
+
+            IsCharacterUpdateRequested = true;
+
+            IsDirty = true;
+        }
+
+        protected void AddSprite(object sender, EventArgs e)
+        {
+            // The number of registered Sprites cannot exceed the character's LOG.
+            if (!CharacterObject.IgnoreRules && CharacterObject.Spirits.Count(x => x.EntityType == SpiritType.Sprite) >= CharacterObject.LOG.Value)
+            {
+                MessageBox.Show(LanguageManager.GetString("Message_RegisteredSpriteLimit", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_RegisteredSpriteLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            Spirit objSprite = new Spirit(CharacterObject)
+            {
+                EntityType = SpiritType.Sprite,
+                Force = CharacterObject.MaxSpriteLevel
+            };
+            CharacterObject.Spirits.Add(objSprite);
+
+            IsCharacterUpdateRequested = true;
+
+            IsDirty = true;
+        }
+
+        protected void DeleteSpirit(object sender, EventArgs e)
+        {
+            if (sender is SpiritControl objSender)
+            {
+                Spirit objSpirit = objSender.SpiritObject;
+                bool blnIsSpirit = objSpirit.EntityType == SpiritType.Spirit;
+                if (!CharacterObject.ConfirmDelete(LanguageManager.GetString(blnIsSpirit ? "Message_DeleteSpirit" : "Message_DeleteSprite", GlobalOptions.Language)))
+                    return;
+
+                CharacterObject.Spirits.Remove(objSpirit);
+
+                IsCharacterUpdateRequested = true;
+
+                IsDirty = true;
+            }
+        }
+        #endregion
+
+        /// <summary>
         /// Add a mugshot to the character.
         /// </summary>
         protected bool AddMugshot()
         {
             bool blnSuccess = false;
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            if (!string.IsNullOrWhiteSpace(_objOptions.RecentImageFolder) && Directory.Exists(_objOptions.RecentImageFolder))
+            using (OpenFileDialog dlgOpenFileDialog = new OpenFileDialog())
             {
-                openFileDialog.InitialDirectory = _objOptions.RecentImageFolder;
-            }
-            // Prompt the user to select an image to associate with this character.
+                if (!string.IsNullOrWhiteSpace(_objOptions.RecentImageFolder) && Directory.Exists(_objOptions.RecentImageFolder))
+                {
+                    dlgOpenFileDialog.InitialDirectory = _objOptions.RecentImageFolder;
+                }
+                // Prompt the user to select an image to associate with this character.
 
-            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
-            openFileDialog.Filter = string.Format("All image files ({1})|{1}|{0}|All files|*",
-                string.Join("|",
-                    codecs.Select(codec => string.Format("{0} ({1})|{1}", codec.CodecName, codec.FilenameExtension)).ToArray()),
-                string.Join(";", codecs.Select(codec => codec.FilenameExtension).ToArray()));
+                ImageCodecInfo[] lstCodecs = ImageCodecInfo.GetImageEncoders();
+                dlgOpenFileDialog.Filter = string.Format("All image files ({1})|{1}|{0}|All files|*",
+                    string.Join("|", lstCodecs.Select(codec => string.Format("{0} ({1})|{1}", codec.CodecName, codec.FilenameExtension)).ToArray()),
+                    string.Join(";", lstCodecs.Select(codec => codec.FilenameExtension).ToArray()));
 
-            if (openFileDialog.ShowDialog(this) == DialogResult.OK)
-            {
-                blnSuccess = true;
-                // Convert the image to a string usinb Base64.
-                _objOptions.RecentImageFolder = Path.GetDirectoryName(openFileDialog.FileName);
+                if (dlgOpenFileDialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    blnSuccess = true;
+                    // Convert the image to a string usinb Base64.
+                    _objOptions.RecentImageFolder = Path.GetDirectoryName(dlgOpenFileDialog.FileName);
 
-                Bitmap imgMugshot = (new Bitmap(openFileDialog.FileName, true)).ConvertPixelFormat(PixelFormat.Format32bppPArgb);
+                    Bitmap imgMugshot = (new Bitmap(dlgOpenFileDialog.FileName, true)).ConvertPixelFormat(PixelFormat.Format32bppPArgb);
 
-                _objCharacter.Mugshots.Add(imgMugshot);
-                if (_objCharacter.MainMugshotIndex == -1)
-                    _objCharacter.MainMugshotIndex = _objCharacter.Mugshots.Count - 1;
+                    _objCharacter.Mugshots.Add(imgMugshot);
+                    if (_objCharacter.MainMugshotIndex == -1)
+                        _objCharacter.MainMugshotIndex = _objCharacter.Mugshots.Count - 1;
+                }
             }
             return blnSuccess;
         }
@@ -2065,6 +3228,22 @@ namespace Chummer
             get
             {
                 return _objOptions;
+            }
+        }
+
+        public ObservableCollection<CharacterAttrib> PrimaryAttributes
+        {
+            get
+            {
+                return _lstPrimaryAttributes;
+            }
+        }
+
+        public ObservableCollection<CharacterAttrib> SpecialAttributes
+        {
+            get
+            {
+                return _lstSpecialAttributes;
             }
         }
 

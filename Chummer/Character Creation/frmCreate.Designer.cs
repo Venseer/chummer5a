@@ -176,7 +176,6 @@ namespace Chummer
             this.tsWeaponAddModification = new System.Windows.Forms.ToolStripMenuItem();
             this.cmsGearButton = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.tsGearButtonAddAccessory = new System.Windows.Forms.ToolStripMenuItem();
-            this.tsGearAddNexus = new System.Windows.Forms.ToolStripMenuItem();
             this.cmsVehicle = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.tsVehicleAddWeapon = new System.Windows.Forms.ToolStripMenuItem();
             this.tsVehicleAddWeaponWeapon = new System.Windows.Forms.ToolStripMenuItem();
@@ -188,7 +187,6 @@ namespace Chummer
             this.tsVehicleAddSensor = new System.Windows.Forms.ToolStripMenuItem();
             this.tsVehicleAddGear = new System.Windows.Forms.ToolStripMenuItem();
             this.tsVehicleSensorAddAsPlugin = new System.Windows.Forms.ToolStripMenuItem();
-            this.tsVehicleAddNexus = new System.Windows.Forms.ToolStripMenuItem();
             this.tsVehicleName = new System.Windows.Forms.ToolStripMenuItem();
             this.tsVehicleNotes = new System.Windows.Forms.ToolStripMenuItem();
             this.cmsWeaponMount = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -813,7 +811,6 @@ namespace Chummer
             this.lblBuildAINormalPrograms = new System.Windows.Forms.Label();
             this.lblPBuildSpecial = new System.Windows.Forms.Label();
             this.lblSummaryMetatype = new System.Windows.Forms.Label();
-            this.lblManeuversBP = new System.Windows.Forms.Label();
             this.lblInitiationBP = new System.Windows.Forms.Label();
             this.lblBuildPrepsBP = new System.Windows.Forms.Label();
             this.lblBuildInitiation = new System.Windows.Forms.Label();
@@ -1443,7 +1440,6 @@ namespace Chummer
             this.lblRiggingINILabel.TabIndex = 75;
             this.lblRiggingINILabel.Tag = "Label_OtherRiggingInit";
             this.lblRiggingINILabel.Text = "Rigging Initiative (AR):";
-            this.tipTooltip.SetToolTip(this.lblRiggingINILabel, "Matrix Initiative is calculated as Commlink Response + INT.");
             // 
             // lblMatrixINIHotLabel
             // 
@@ -1454,7 +1450,6 @@ namespace Chummer
             this.lblMatrixINIHotLabel.TabIndex = 73;
             this.lblMatrixINIHotLabel.Tag = "Label_OtherMatrixInitVRHot";
             this.lblMatrixINIHotLabel.Text = "Matrix Initiative (Hot):";
-            this.tipTooltip.SetToolTip(this.lblMatrixINIHotLabel, "Matrix Initiative is calculated as Commlink Response + INT.");
             // 
             // lblMatrixINIColdLabel
             // 
@@ -1465,7 +1460,6 @@ namespace Chummer
             this.lblMatrixINIColdLabel.TabIndex = 71;
             this.lblMatrixINIColdLabel.Tag = "Label_OtherMatrixInitVRCold";
             this.lblMatrixINIColdLabel.Text = "Matrix Initiative (Cold):";
-            this.tipTooltip.SetToolTip(this.lblMatrixINIColdLabel, "Matrix Initiative is calculated as Commlink Response + INT.");
             // 
             // lblMemoryLabel
             // 
@@ -1565,7 +1559,6 @@ namespace Chummer
             this.lblMatrixINILabel.TabIndex = 22;
             this.lblMatrixINILabel.Tag = "Label_OtherMatrixInit";
             this.lblMatrixINILabel.Text = "Matrix Initiative (AR):";
-            this.tipTooltip.SetToolTip(this.lblMatrixINILabel, "Matrix Initiative is calculated as Commlink Response + INT.");
             // 
             // lblINILabel
             // 
@@ -2167,8 +2160,7 @@ namespace Chummer
             // cmsGearButton
             // 
             this.cmsGearButton.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsGearButtonAddAccessory,
-            this.tsGearAddNexus});
+            this.tsGearButtonAddAccessory});
             this.cmsGearButton.Name = "cmsGearButton";
             this.cmsGearButton.Size = new System.Drawing.Size(153, 48);
             // 
@@ -2180,16 +2172,6 @@ namespace Chummer
             this.tsGearButtonAddAccessory.Tag = "Menu_AddAccessory";
             this.tsGearButtonAddAccessory.Text = "&Add Accessory";
             this.tsGearButtonAddAccessory.Click += new System.EventHandler(this.tsGearButtonAddAccessory_Click);
-            // 
-            // tsGearAddNexus
-            // 
-            this.tsGearAddNexus.Image = global::Chummer.Properties.Resources.computer_add;
-            this.tsGearAddNexus.Name = "tsGearAddNexus";
-            this.tsGearAddNexus.Size = new System.Drawing.Size(152, 22);
-            this.tsGearAddNexus.Tag = "Menu_AddNexus";
-            this.tsGearAddNexus.Text = "A&dd Nexus";
-            this.tsGearAddNexus.Visible = false;
-            this.tsGearAddNexus.Click += new System.EventHandler(this.tsGearAddNexus_Click);
             // 
             // cmsVehicle
             // 
@@ -2273,8 +2255,7 @@ namespace Chummer
             // 
             this.tsVehicleAddSensor.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tsVehicleAddGear,
-            this.tsVehicleSensorAddAsPlugin,
-            this.tsVehicleAddNexus});
+            this.tsVehicleSensorAddAsPlugin});
             this.tsVehicleAddSensor.Image = global::Chummer.Properties.Resources.camera_add;
             this.tsVehicleAddSensor.Name = "tsVehicleAddSensor";
             this.tsVehicleAddSensor.Size = new System.Drawing.Size(192, 22);
@@ -2298,16 +2279,6 @@ namespace Chummer
             this.tsVehicleSensorAddAsPlugin.Tag = "Menu_AddAsPlugin";
             this.tsVehicleSensorAddAsPlugin.Text = "&Add as Plugin";
             this.tsVehicleSensorAddAsPlugin.Click += new System.EventHandler(this.tsVehicleSensorAddAsPlugin_Click);
-            // 
-            // tsVehicleAddNexus
-            // 
-            this.tsVehicleAddNexus.Image = global::Chummer.Properties.Resources.computer_add;
-            this.tsVehicleAddNexus.Name = "tsVehicleAddNexus";
-            this.tsVehicleAddNexus.Size = new System.Drawing.Size(147, 22);
-            this.tsVehicleAddNexus.Tag = "Menu_AddNexus";
-            this.tsVehicleAddNexus.Text = "A&dd Nexus";
-            this.tsVehicleAddNexus.Visible = false;
-            this.tsVehicleAddNexus.Click += new System.EventHandler(this.tsVehicleAddNexus_Click);
             // 
             // tsVehicleName
             // 
@@ -4339,7 +4310,7 @@ namespace Chummer
             this.cmdAddSpirit.Tag = "Button_AddSpirit";
             this.cmdAddSpirit.Text = "A&dd Spirit";
             this.cmdAddSpirit.UseVisualStyleBackColor = true;
-            this.cmdAddSpirit.Click += new System.EventHandler(this.cmdAddSpirit_Click);
+            this.cmdAddSpirit.Click += new System.EventHandler(this.AddSpirit);
             // 
             // panSpirits
             // 
@@ -4554,7 +4525,7 @@ namespace Chummer
             this.cmdAddSprite.Tag = "Button_AddSprite";
             this.cmdAddSprite.Text = "&Add Sprite";
             this.cmdAddSprite.UseVisualStyleBackColor = true;
-            this.cmdAddSprite.Click += new System.EventHandler(this.cmdAddSprite_Click);
+            this.cmdAddSprite.Click += new System.EventHandler(this.AddSprite);
             // 
             // panSprites
             // 
@@ -7429,7 +7400,7 @@ namespace Chummer
             // 
             // nudLifestyleMonths
             // 
-            this.nudLifestyleMonths.Enabled = false;
+            this.nudLifestyleMonths.Visible = false;
             this.nudLifestyleMonths.Location = new System.Drawing.Point(310, 62);
             this.nudLifestyleMonths.Minimum = new decimal(new int[] {
             1,
@@ -9105,7 +9076,7 @@ namespace Chummer
             this.cmdAddContact.Tag = "Button_AddContact";
             this.cmdAddContact.Text = "&Add Contact";
             this.cmdAddContact.UseVisualStyleBackColor = true;
-            this.cmdAddContact.Click += new System.EventHandler(this.cmdAddContact_Click);
+            this.cmdAddContact.Click += new System.EventHandler(this.AddContact);
             // 
             // cmsAddContact
             // 
@@ -9120,7 +9091,7 @@ namespace Chummer
             this.tsAddFromFile.Size = new System.Drawing.Size(148, 22);
             this.tsAddFromFile.Tag = "Menu_AddFromFile";
             this.tsAddFromFile.Text = "&Add From File";
-            this.tsAddFromFile.Click += new System.EventHandler(this.tsAddFromFile_Click);
+            this.tsAddFromFile.Click += new System.EventHandler(this.AddContactsFromFile);
             // 
             // panContacts
             // 
@@ -9208,7 +9179,7 @@ namespace Chummer
             this.cmdAddEnemy.Tag = "Button_AddEnemy";
             this.cmdAddEnemy.Text = "A&dd Enemy";
             this.cmdAddEnemy.UseVisualStyleBackColor = true;
-            this.cmdAddEnemy.Click += new System.EventHandler(this.cmdAddEnemy_Click);
+            this.cmdAddEnemy.Click += new System.EventHandler(this.AddEnemy);
             // 
             // tabPets
             // 
@@ -9247,7 +9218,7 @@ namespace Chummer
             this.cmdAddPet.Tag = "Button_AddPet";
             this.cmdAddPet.Text = "&Add Pet";
             this.cmdAddPet.UseVisualStyleBackColor = true;
-            this.cmdAddPet.Click += new System.EventHandler(this.cmdAddPet_Click);
+            this.cmdAddPet.Click += new System.EventHandler(this.AddPet);
             // 
             // tabInfo
             // 
@@ -9288,7 +9259,6 @@ namespace Chummer
             this.tlpKarmaSummary.Controls.Add(this.lblBuildRitualsBPLabel, 0, 13);
             this.tlpKarmaSummary.Controls.Add(this.lblPBuildSpecial, 1, 2);
             this.tlpKarmaSummary.Controls.Add(this.lblSummaryMetatype, 0, 0);
-            this.tlpKarmaSummary.Controls.Add(this.lblManeuversBP, 1, 19);
             this.tlpKarmaSummary.Controls.Add(this.lblInitiationBP, 1, 18);
             this.tlpKarmaSummary.Controls.Add(this.lblBuildManeuvers, 0, 19);
             this.tlpKarmaSummary.Controls.Add(this.lblBuildPrepsBP, 1, 12);
@@ -9407,15 +9377,6 @@ namespace Chummer
             this.lblSummaryMetatype.TabIndex = 73;
             this.lblSummaryMetatype.Tag = "Label_SummaryMetatype";
             this.lblSummaryMetatype.Text = "Metatype";
-            // 
-            // lblManeuversBP
-            // 
-            this.lblManeuversBP.AutoSize = true;
-            this.lblManeuversBP.Location = new System.Drawing.Point(115, 380);
-            this.lblManeuversBP.Name = "lblManeuversBP";
-            this.lblManeuversBP.Size = new System.Drawing.Size(30, 13);
-            this.lblManeuversBP.TabIndex = 78;
-            this.lblManeuversBP.Text = "0 BP";
             // 
             // lblInitiationBP
             // 
@@ -10654,7 +10615,6 @@ namespace Chummer
         private System.Windows.Forms.ToolStripStatusLabel tssNuyenRemaining;
         private System.Windows.Forms.Label lblGearDeviceRating;
         private System.Windows.Forms.Label lblGearDeviceRatingLabel;
-        private System.Windows.Forms.Label lblManeuversBP;
         private System.Windows.Forms.Label lblBuildManeuvers;
         private System.Windows.Forms.ToolStripMenuItem tsWeaponAddModification;
         private System.Windows.Forms.Label lblBuildFoci;
@@ -10759,8 +10719,6 @@ namespace Chummer
         private System.Windows.Forms.Label lblWeaponConcealLabel;
         private System.Windows.Forms.ContextMenuStrip cmsGearButton;
         private System.Windows.Forms.ToolStripMenuItem tsGearButtonAddAccessory;
-        private System.Windows.Forms.ToolStripMenuItem tsGearAddNexus;
-        private System.Windows.Forms.ToolStripMenuItem tsVehicleAddNexus;
         private System.Windows.Forms.Button cmdDeleteQuality;
         private System.Windows.Forms.Button cmdAddQuality;
         private System.Windows.Forms.Label lblQualitySource;
