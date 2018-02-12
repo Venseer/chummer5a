@@ -16,7 +16,7 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
+ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
@@ -26,9 +26,9 @@ namespace Chummer
     public partial class frmDiceRoller : Form
     {
         private readonly frmChummerMain _frmMain;
-        private List<ListItem> _lstResults = new List<ListItem>(40);
-        private Random _objRandom = MersenneTwister.SfmtRandom.Create();
-        private int _intModuloTemp = 0;
+        private readonly List<ListItem> _lstResults = new List<ListItem>(40);
+        private readonly Random _objRandom = MersenneTwister.SfmtRandom.Create();
+        private int _intModuloTemp;
 
         #region Control Events
         public frmDiceRoller(frmChummerMain frmMainForm, ICollection<Quality> lstQualities = null, int intDice = 1)
@@ -65,10 +65,9 @@ namespace Chummer
             List<int> lstRandom = new List<int>();
             int intHitCount = 0;
             int intGlitchCount = 0;
-            int intGlitchThreshold = 0;
             int intGlitchMin = 1;
 
-            intGlitchThreshold = decimal.ToInt32(decimal.Ceiling((nudDice.Value + 1.0m) / 2.0m));
+            int intGlitchThreshold = decimal.ToInt32(decimal.Ceiling((nudDice.Value + 1.0m) / 2.0m));
             // Deduct the Gremlins Rating from the Glitch Threshold.
             intGlitchThreshold -= decimal.ToInt32(nudGremlins.Value);
             if (intGlitchThreshold < 1)
@@ -82,7 +81,7 @@ namespace Chummer
             {
                 if (chkRuleOf6.Checked)
                 {
-                    int intResult = 0;
+                    int intResult;
                     do
                     {
                         do
@@ -158,26 +157,22 @@ namespace Chummer
                 {
                     if (nudThreshold.Value > 0)
                     {
-                        if (intHitCount >= nudThreshold.Value)
-                            lblResults.Text += LanguageManager.GetString("String_DiceRoller_Success", GlobalOptions.Language) + " (" + LanguageManager.GetString("String_DiceRoller_Glitch", GlobalOptions.Language).Replace("{0}", intHitCount.ToString()) + ')';
-                        else
-                            lblResults.Text += LanguageManager.GetString("String_DiceRoller_Failure", GlobalOptions.Language) + " (" + LanguageManager.GetString("String_DiceRoller_Glitch", GlobalOptions.Language).Replace("{0}", intHitCount.ToString()) + ')';
+                        lblResults.Text += LanguageManager.GetString(intHitCount >= nudThreshold.Value ? "String_DiceRoller_Success" : "String_DiceRoller_Failure", GlobalOptions.Language) +
+                                           " (" + string.Format(LanguageManager.GetString("String_DiceRoller_Glitch", GlobalOptions.Language), intHitCount.ToString()) + ')';
                     }
                     else
-                        lblResults.Text += LanguageManager.GetString("String_DiceRoller_Glitch", GlobalOptions.Language).Replace("{0}", intHitCount.ToString());
+                        lblResults.Text += string.Format(LanguageManager.GetString("String_DiceRoller_Glitch", GlobalOptions.Language), intHitCount.ToString());
                 }
                 else
                     lblResults.Text += LanguageManager.GetString("String_DiceRoller_CriticalGlitch", GlobalOptions.Language);
             }
             else if (nudThreshold.Value > 0)
             {
-                if (intHitCount >= nudThreshold.Value)
-                    lblResults.Text += LanguageManager.GetString("String_DiceRoller_Success", GlobalOptions.Language) + " (" + LanguageManager.GetString("String_DiceRoller_Hits", GlobalOptions.Language).Replace("{0}", intHitCount.ToString()) + ')';
-                else
-                    lblResults.Text += LanguageManager.GetString("String_DiceRoller_Failure", GlobalOptions.Language) + " (" + LanguageManager.GetString("String_DiceRoller_Hits", GlobalOptions.Language).Replace("{0}", intHitCount.ToString()) + ')';
+                lblResults.Text += LanguageManager.GetString(intHitCount >= nudThreshold.Value ? "String_DiceRoller_Success" : "String_DiceRoller_Failure", GlobalOptions.Language) +
+                                   " (" + string.Format(LanguageManager.GetString("String_DiceRoller_Hits", GlobalOptions.Language), intHitCount.ToString()) + ')';
             }
             else
-                lblResults.Text += LanguageManager.GetString("String_DiceRoller_Hits", GlobalOptions.Language).Replace("{0}", intHitCount.ToString());
+                lblResults.Text += string.Format(LanguageManager.GetString("String_DiceRoller_Hits", GlobalOptions.Language), intHitCount.ToString());
 
             lblResults.Text += "\n\n" + LanguageManager.GetString("Label_DiceRoller_Sum", GlobalOptions.Language) + ' ' + lstRandom.Sum().ToString();
             lstResults.BeginUpdate();
@@ -216,7 +211,7 @@ namespace Chummer
             }
 
             int intKeepSum = 0;
-            int intResult = 0;
+            int intResult;
             // Remove everything that is not a hit
             for (int i = _lstResults.Count - 1; i >= 0; --i)
             {
@@ -233,9 +228,7 @@ namespace Chummer
             if (cboMethod.SelectedValue.ToString() == "ReallyLarge")
                 intHitCount = intKeepSum;
             int intGlitchCount = 0;
-            int intGlitchThreshold = 0;
-
-            intGlitchThreshold = decimal.ToInt32(decimal.Ceiling((nudDice.Value + 1.0m) / 2.0m));
+            int intGlitchThreshold = decimal.ToInt32(decimal.Ceiling((nudDice.Value + 1.0m) / 2.0m));
             // Deduct the Gremlins Rating from the Glitch Threshold.
             intGlitchThreshold -= decimal.ToInt32(nudGremlins.Value);
             if (intGlitchThreshold < 1)
@@ -250,7 +243,6 @@ namespace Chummer
             {
                 if (chkRuleOf6.Checked)
                 {
-                    intResult = 0;
                     do
                     {
                         do
@@ -357,10 +349,7 @@ namespace Chummer
         /// </summary>
         public int Dice
         {
-            set
-            {
-                nudDice.Value = value;
-            }
+            set => nudDice.Value = value;
         }
 
         /// <summary>

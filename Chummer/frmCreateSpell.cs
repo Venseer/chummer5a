@@ -16,19 +16,20 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
+ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
+ using System.Xml.XPath;
 
 namespace Chummer
 {
     public partial class frmCreateSpell : Form
     {
-        private readonly XmlDocument _objXmlDocument = null;
-        private bool _blnLoading = false;
-        private bool _blnSkipRefresh = false;
+        private readonly XmlDocument _objXmlDocument;
+        private bool _blnLoading;
+        private bool _blnSkipRefresh;
         private readonly Spell _objSpell;
 
         #region Control Events
@@ -49,12 +50,13 @@ namespace Chummer
             List<ListItem> lstCategory = new List<ListItem>();
 
             // Populate the list of Spell Categories.
-            XmlNodeList objXmlCategoryList = _objXmlDocument.SelectNodes("/chummer/categories/category");
-            foreach (XmlNode objXmlCategory in objXmlCategoryList)
-            {
-                string strInnerText = objXmlCategory.InnerText;
-                lstCategory.Add(new ListItem(strInnerText, objXmlCategory.Attributes?["translate"]?.InnerText ?? strInnerText));
-            }
+            using (XmlNodeList objXmlCategoryList = _objXmlDocument.SelectNodes("/chummer/categories/category"))
+                if (objXmlCategoryList != null)
+                    foreach (XmlNode objXmlCategory in objXmlCategoryList)
+                    {
+                        string strInnerText = objXmlCategory.InnerText;
+                        lstCategory.Add(new ListItem(strInnerText, objXmlCategory.Attributes?["translate"]?.InnerText ?? strInnerText));
+                    }
             cboCategory.BeginUpdate();
             cboType.BeginUpdate();
             cboRange.BeginUpdate();
@@ -374,10 +376,7 @@ namespace Chummer
 
         private void chkRestricted_CheckedChanged(object sender, EventArgs e)
         {
-            if (chkRestricted.Checked)
-                chkVeryRestricted.Enabled = false;
-            else
-                chkVeryRestricted.Enabled = true;
+            chkVeryRestricted.Enabled = !chkRestricted.Checked;
 
             CalculateDrain();
             txtRestriction.Enabled = chkRestricted.Checked || chkVeryRestricted.Checked;
@@ -387,10 +386,7 @@ namespace Chummer
 
         private void chkVeryRestricted_CheckedChanged(object sender, EventArgs e)
         {
-            if (chkVeryRestricted.Checked)
-                chkRestricted.Enabled = false;
-            else
-                chkRestricted.Enabled = true;
+            chkRestricted.Enabled = !chkVeryRestricted.Checked;
 
             CalculateDrain();
             txtRestriction.Enabled = chkRestricted.Checked || chkVeryRestricted.Checked;
@@ -605,7 +601,7 @@ namespace Chummer
                 }
             }
 
-            string strBase = string.Empty;
+            string strBase;
             if (cboCategory.SelectedValue.ToString() == "Health" && chkModifier1.Checked)
             {
                 // Health Spells use (Damage Value) as their base.
@@ -816,10 +812,7 @@ namespace Chummer
             _objSpell.Limited = chkLimited.Checked;
             if (cboCategory.SelectedValue.ToString() == "Combat")
             {
-                if (chkModifier4.Checked)
-                    _objSpell.Damage = "P";
-                else
-                    _objSpell.Damage = "S";
+                _objSpell.Damage = chkModifier4.Checked ? "P" : "S";
             }
             _objSpell.DV = CalculateDrain();
             if (!string.IsNullOrEmpty(txtRestriction.Text))
@@ -854,13 +847,8 @@ namespace Chummer
         /// <summary>
         /// Spell that was created in the dialogue.
         /// </summary>
-        public Spell SelectedSpell
-        {
-            get
-            {
-                return _objSpell;
-            }
-        }
+        public Spell SelectedSpell => _objSpell;
+
         #endregion
     }
 }

@@ -1,9 +1,24 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 
@@ -12,7 +27,7 @@ namespace Chummer
     /// <summary>
     /// An Initiation Grade.
     /// </summary>
-    public class InitiationGrade : IHasInternalId
+    public class InitiationGrade : IHasInternalId, IComparable
     {
         private Guid _guiID;
         private bool _blnGroup;
@@ -167,25 +182,19 @@ namespace Chummer
         {
             StringBuilder strReturn = new StringBuilder(LanguageManager.GetString("String_Grade", strLanguage));
             strReturn.Append(' ');
-            strReturn.Append(_intGrade.ToString());
+            strReturn.Append(Grade.ToString());
             if (Group || Ordeal)
             {
                 strReturn.Append(" (");
                 if (Group)
                 {
-                    if (_blnTechnomancer)
-                        strReturn.Append(LanguageManager.GetString("String_Network", strLanguage));
-                    else
-                        strReturn.Append(LanguageManager.GetString("String_Group", strLanguage));
+                    strReturn.Append(Technomancer ? LanguageManager.GetString("String_Network", strLanguage) : LanguageManager.GetString("String_Group", strLanguage));
                     if (Ordeal || Schooling)
                         strReturn.Append(", ");
                 }
                 if (Ordeal)
                 {
-                    if (Technomancer)
-                        strReturn.Append(LanguageManager.GetString("String_Task", strLanguage));
-                    else
-                        strReturn.Append(LanguageManager.GetString("String_Ordeal", strLanguage));
+                    strReturn.Append(Technomancer ? LanguageManager.GetString("String_Task", strLanguage) : LanguageManager.GetString("String_Ordeal", strLanguage));
                     if (Schooling)
                         strReturn.Append(", ");
                 }
@@ -225,6 +234,16 @@ namespace Chummer
             }
             objNode.ToolTipText = Notes.WordWrap(100);
             return objNode;
+        }
+
+        public int CompareTo(object obj)
+        {
+            return CompareTo((InitiationGrade)obj);
+        }
+
+        public int CompareTo(InitiationGrade obj)
+        {
+            return Grade.CompareTo(obj.Grade);
         }
         #endregion
     }

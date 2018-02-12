@@ -16,14 +16,9 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-using Chummer.Backend;
+
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using System.Xml;
 
@@ -34,13 +29,13 @@ namespace Chummer
         private string _strSelectedItem = string.Empty;
 
         private bool _blnLoading = true;
-        private Mode _objMode = Mode.Art;
+        private readonly Mode _objMode = Mode.Art;
         private readonly string _strBaseXPath = "/chummer/arts/art";
         private readonly string _strXPathFilter = string.Empty;
         private readonly string _strLocalName = string.Empty;
         private readonly Character _objCharacter;
 
-        private readonly XmlDocument _objXmlDocument = null;
+        private readonly XmlDocument _objXmlDocument;
 
         public enum Mode
         {
@@ -150,13 +145,8 @@ namespace Chummer
         /// <summary>
         /// Name of Metamagic that was selected in the dialogue.
         /// </summary>
-        public string SelectedItem
-        {
-            get
-            {
-                return _strSelectedItem;
-            }
-        }
+        public string SelectedItem => _strSelectedItem;
+
         #endregion
 
         #region Methods

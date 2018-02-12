@@ -19,13 +19,11 @@
 using System;
 using System.Data;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
 using Chummer.Backend.Equipment;
 using System.Text;
-using System.Globalization;
-using System.Collections;
+
 // ReSharper disable LocalizableElement
 
 namespace Chummer
@@ -38,12 +36,11 @@ namespace Chummer
         private bool _blnSkipUpdate;
         private bool _blnAddAgain;
         private bool _blnBlackMarketDiscount;
-        private string[] _strLimitToCategories = new string[0];
+        private HashSet<string> _strLimitToCategories = new HashSet<string>();
         private static string s_StrSelectCategory = string.Empty;
         private readonly Character _objCharacter;
-        private XmlNodeList _objXmlCategoryList;
-        private readonly XmlDocument _objXmlDocument = null;
-        private Weapon _objSelectedWeapon = null;
+        private readonly XmlDocument _objXmlDocument;
+        private Weapon _objSelectedWeapon;
 
         private readonly List<ListItem> _lstCategory = new List<ListItem>();
         private readonly HashSet<string> _setBlackMarketMaps;
@@ -71,8 +68,7 @@ namespace Chummer
                 Format = _objCharacter.Options.NuyenFormat + '¥',
                 NullValue = null
             };
-            dataGridViewTextBoxColumn13.DefaultCellStyle = dataGridViewNuyenCellStyle;
-            Cost.DefaultCellStyle = dataGridViewNuyenCellStyle;
+            dgvc_Cost.DefaultCellStyle = dataGridViewNuyenCellStyle;
             
             if (_objCharacter.Created)
             {
@@ -86,26 +82,18 @@ namespace Chummer
             }
 
             // Populate the Weapon Category list.
-            if (_strLimitToCategories.Length > 0)
-            {
+            
                 // Populate the Category list.
-                foreach (XmlNode objXmlCategory in _objXmlDocument.SelectNodes("/chummer/categories/category"))
-                {
-                    string strInnerText = objXmlCategory.InnerText;
-                    if (_strLimitToCategories.Contains(strInnerText))
-                        _lstCategory.Add(new ListItem(strInnerText, objXmlCategory.Attributes?["translate"]?.InnerText ?? strInnerText));
-                }
-            }
-            else
-            {
-                _objXmlCategoryList = _objXmlDocument.SelectNodes("/chummer/categories/category");
-
-                foreach (XmlNode objXmlCategory in _objXmlCategoryList)
-                {
-                    string strInnerText = objXmlCategory.InnerText;
-                    _lstCategory.Add(new ListItem(strInnerText, objXmlCategory.Attributes?["translate"]?.InnerText ?? strInnerText));
-                }
-            }
+                using (XmlNodeList xmlCategoryList = _objXmlDocument.SelectNodes("/chummer/categories/category"))
+                    if (xmlCategoryList != null)
+                    {
+                        foreach (XmlNode objXmlCategory in xmlCategoryList)
+                        {
+                            string strInnerText = objXmlCategory.InnerText;
+                            if (_strLimitToCategories.Count == 0 || _strLimitToCategories.Contains(strInnerText))
+                                _lstCategory.Add(new ListItem(strInnerText, objXmlCategory.Attributes?["translate"]?.InnerText ?? strInnerText));
+                        }
+                    }
             _lstCategory.Sort(CompareListItems.CompareNames);
 
             if (_lstCategory.Count > 0)
@@ -238,11 +226,11 @@ namespace Chummer
                 tabWeapons.Columns.Add("WeaponName");
                 tabWeapons.Columns.Add("Dice");
                 tabWeapons.Columns.Add("Accuracy");
-                tabWeapons.Columns["Accuracy"].DataType = typeof(Int32);
+                tabWeapons.Columns["Accuracy"].DataType = typeof(int);
                 tabWeapons.Columns.Add("Damage");
                 tabWeapons.Columns.Add("AP");
                 tabWeapons.Columns.Add("RC");
-                tabWeapons.Columns["RC"].DataType = typeof(Int32);
+                tabWeapons.Columns["RC"].DataType = typeof(int);
                 tabWeapons.Columns.Add("Ammo");
                 tabWeapons.Columns.Add("Mode");
                 tabWeapons.Columns.Add("Reach");
@@ -264,7 +252,7 @@ namespace Chummer
                     strTest = objXmlWeapon["extramount"]?.InnerText;
                     if (!string.IsNullOrEmpty(strTest) && !Mounts.Contains(strTest))
                         continue;
-                    if (chkHideOverAvailLimit.Checked && !Backend.SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter))
+                    if (chkHideOverAvailLimit.Checked && !SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter))
                         continue;
 
                     Weapon objWeapon = new Weapon(_objCharacter);
@@ -279,8 +267,8 @@ namespace Chummer
                     if (strAP == "-")
                         strAP = "0";
                     int.TryParse(objWeapon.TotalRC, out int intRC);
-                    string strAmmo = objWeapon.Ammo;
-                    string strMode = objWeapon.Mode;
+                    string strAmmo = objWeapon.CalculatedAmmo(GlobalOptions.CultureInfo, GlobalOptions.Language);
+                    string strMode = objWeapon.CalculatedMode(GlobalOptions.Language);
                     string strReach = objWeapon.TotalReach.ToString();
                     StringBuilder strAccessories = new StringBuilder();
                     foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
@@ -347,7 +335,7 @@ namespace Chummer
                         continue;
                     }
 
-                    if (chkHideOverAvailLimit.Checked && !Backend.SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter))
+                    if (chkHideOverAvailLimit.Checked && !SelectionShared.CheckAvailRestriction(objXmlWeapon, _objCharacter))
                     {
                         continue;
                     }
@@ -452,67 +440,34 @@ namespace Chummer
         /// <summary>
         /// Whether or not the user wants to add another item after this one.
         /// </summary>
-        public bool AddAgain
-        {
-            get
-            {
-                return _blnAddAgain;
-            }
-        }
+        public bool AddAgain => _blnAddAgain;
 
         /// <summary>
         /// Whether or not the selected Vehicle is used.
         /// </summary>
-        public bool BlackMarketDiscount
-        {
-            get
-            {
-                return _blnBlackMarketDiscount;
-            }
-        }
+        public bool BlackMarketDiscount => _blnBlackMarketDiscount;
 
         /// <summary>
         /// Name of Weapon that was selected in the dialogue.
         /// </summary>
-        public string SelectedWeapon
-        {
-            get
-            {
-                return _strSelectedWeapon;
-            }
-        }
+        public string SelectedWeapon => _strSelectedWeapon;
 
         /// <summary>
         /// Whether or not the item should be added for free.
         /// </summary>
-        public bool FreeCost
-        {
-            get
-            {
-                return chkFreeItem.Checked;
-            }
-        }
+        public bool FreeCost => chkFreeItem.Checked;
 
         /// <summary>
         /// Markup percentage.
         /// </summary>
-        public decimal Markup
-        {
-            get
-            {
-                return _decMarkup;
-            }
-        }
+        public decimal Markup => _decMarkup;
 
         /// <summary>
         /// Only the provided Weapon Categories should be shown in the list.
         /// </summary>
         public string LimitToCategories
         {
-            set
-            {
-                _strLimitToCategories = value.Split(',');
-            }
+            set => _strLimitToCategories = new HashSet<string>(value.Split(','));
         }
 
         public bool Underbarrel { get; set; }
@@ -529,13 +484,14 @@ namespace Chummer
             else
             {
                 StringBuilder objCategoryFilter = new StringBuilder();
-                if (_strLimitToCategories.Length > 0)
+                if (_strLimitToCategories.Count > 0)
                 {
-                    objCategoryFilter.Append("category = \"" + _strLimitToCategories[0] + '\"');
-                    for (int i = 1; i < _strLimitToCategories.Length; ++i)
+                    foreach (string strLoopCategory in _strLimitToCategories)
                     {
-                        objCategoryFilter.Append(" or category = \"" + _strLimitToCategories[i] + '\"');
+                        objCategoryFilter.Append("category = \"" + strLoopCategory + "\" or ");
                     }
+
+                    objCategoryFilter.Length -= 4;
                 }
                 else
                 {

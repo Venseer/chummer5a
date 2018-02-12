@@ -3338,7 +3338,7 @@
     </string>
 		<string>
 			<key>Label_MugshotDimensions</key>
-			<text>210 x 310像素</text>
+			<text>210 × 310像素</text>
 		</string>
 		<string>
 			<key>Checkbox_Created</key>
@@ -3526,10 +3526,6 @@
 			<text>启蒙/深潜</text>
 		</string>
 		<string>
-			<key>Label_SummaryManeuvers</key>
-			<text>武技</text>
-		</string>
-		<string>
 			<key>Tip_BuildSpecialAttributes</key>
 			<text>特殊属性为极限、魔法和共鸣。</text>
 		</string>
@@ -3544,10 +3540,6 @@
 		<string>
 			<key>Tip_BuildFoci</key>
 			<text>联结法器需要每强度{0}点业力。</text>
-		</string>
-		<string>
-			<key>Tip_BuildManeuvers</key>
-			<text>每个武技需要{0}点业力。</text>
 		</string>
 		<!-- Other Info Tab -->
 		<string>
@@ -4494,27 +4486,27 @@
 		</string>
 		<string>
 			<key>Label_Options_NewRating</key>
-			<text>x 新等级</text>
+			<text>× 新等级</text>
 		</string>
 		<string>
 			<key>Label_Options_NewRatingPlus</key>
-			<text>x 新等级）+</text>
+			<text>× 新等级）+</text>
 		</string>
 		<string>
 			<key>Label_Options_BPCost</key>
-			<text>x 业力消耗</text>
+			<text>× 业力消耗</text>
 		</string>
 		<string>
 			<key>Label_Options_Rating</key>
-			<text>x 等级</text>
+			<text>× 等级</text>
 		</string>
 		<string>
 			<key>Label_Options_Force</key>
-			<text>x 强度</text>
+			<text>× 强度</text>
 		</string>
 		<string>
 			<key>Label_Options_ServicesOwed</key>
-			<text>x 服务数</text>
+			<text>× 服务数</text>
 		</string>
 		<string>
 			<key>Label_Options_PerKarma</key>
@@ -4522,7 +4514,7 @@
 		</string>
 		<string>
 			<key>Label_Options_ConnectionLoyalty</key>
-			<text>x （联系+忠诚）</text>
+			<text>× （联系+忠诚）</text>
 		</string>
 		<string>
 			<key>Label_Options_Maximum</key>
@@ -4690,7 +4682,7 @@
 		</string>
 		<string>
 			<key>Checkbox_Options_FreeContactPointsKarma</key>
-			<text>免费人脉业力：魅力 x</text>
+			<text>免费人脉业力：魅力 ×</text>
 		</string>
 		<string>
 			<key>Checkbox_Options_FreeContactPointsBP</key>
@@ -5558,7 +5550,7 @@
 		</string>
 		<string>
 			<key>Tip_SelectSpell_ExtendedSpell</key>
-			<text>Extended range Spells have a range of (Force x MAG x 10) meters but have their DV increased by +2.</text>
+			<text>Extended range Spells have a range of (Force × MAG × 10) meters but have their DV increased by +2.</text>
 		</string>
 		<!-- Select Text Window -->
 		<string>
@@ -7231,7 +7223,7 @@
 			<text>泛形态</text>
 		</string>
 		<string>
-			<key>String_No_Update_Found</key>
+			<key>String_Error</key>
 			<text>错误</text>
 		</string>
 		<string>
@@ -7377,10 +7369,6 @@
 		<string>
 			<key>Label_SpellDefenceManipPhysical</key>
 			<text>操纵-物理</text>
-		</string>
-		<string>
-			<key>Label_SpellDicePool</key>
-			<text>骰池：</text>
 		</string>
 		<string>
 			<key>Label_SummaryPreparations</key>
@@ -8254,7 +8242,7 @@
 		</string>
 		<string>
 			<key>String_Up_To_Date</key>
-			<text>Chummer5已更新。当前安装版本为{0}。 Chummer5的最新{1}版本是{2}。</text>
+			<text>Chummer5已更新。</text>
 		</string>
 		<string>
 			<key>String_Stable</key>
@@ -8266,8 +8254,16 @@
 		</string>
 		<string>
 			<key>String_Update_Available</key>
-			<text>已经可以更新到新版本了({0})！当前安装版本为({1})。</text>
+			<text>已经可以更新到新版本了{0}！</text>
 		</string>
+	  <string>
+	    <key>String_Currently_Installed_Version</key>
+	    <text>当前安装版本为{0}。</text>
+	  </string>
+	  <string>
+	    <key>String_Latest_Version</key>
+	    <text>Chummer5的最新{0}版本是{1}。</text>
+	  </string>
 		<string>
 			<key>String_Nightly_Changelog_Warning</key>
 			<text>在每日版本中的更新是暂时的。</text>
@@ -8377,7 +8373,7 @@
 			<text>你无法选择{0}，因为你已经创建了角色。</text>
 		</string>
 		<string>
-			<key>MessageTitle_SelectGeneric_PriorityRestriction</key>
+			<key>Message_SelectGeneric_PriorityRestriction</key>
 			<text>你无法选择{0}，因为你角色的创建方式不允许你购买{0}。</text>
 		</string>
 		<string>

@@ -1,4 +1,4 @@
-/*  This file is part of Chummer5a.
+﻿/*  This file is part of Chummer5a.
  *
  *  Chummer5a is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,15 +16,13 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+ using System;
+ using System.Diagnostics;
 using System.IO;
 using System.Linq;
  using System.Runtime;
- using System.Runtime.InteropServices;
-﻿using System.Threading;
-﻿using System.Windows.Forms;
+ using System.Threading;
+ using System.Windows.Forms;
 ﻿using Chummer.Backend;
 
 [assembly: CLSCompliant(true)]
@@ -76,10 +74,8 @@ namespace Chummer
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
-                // Make sure the default language has been loaded before attempting to open the Main Form.
-                LanguageManager.TranslateWinForm(GlobalOptions.Language, null);
                 sw.TaskEnd("languagefreestartup");
-//#if !DEBUG
+#if !DEBUG
                 AppDomain.CurrentDomain.UnhandledException += (o, e) =>
                 {
                     if (e.ExceptionObject is Exception ex)
@@ -88,11 +84,26 @@ namespace Chummer
                     //main.Hide();
                     //main.ShowInTaskbar = false;
                 };
-//#endif
+#endif
 
                 sw.TaskEnd("Startup");
 
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+
+                if (!string.IsNullOrEmpty(LanguageManager.ManagerErrorMessage))
+                {
+                    MessageBox.Show(LanguageManager.ManagerErrorMessage, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                if (!string.IsNullOrEmpty(GlobalOptions.ErrorMessage))
+                {
+                    MessageBox.Show(GlobalOptions.ErrorMessage, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Make sure the default language has been loaded before attempting to open the Main Form.
+                LanguageManager.TranslateWinForm(GlobalOptions.Language, null);
 
                 s_FrmMainForm = new frmChummerMain();
                 Application.Run(s_FrmMainForm);
@@ -107,14 +118,8 @@ namespace Chummer
         /// </summary>
         public static frmChummerMain MainForm
         {
-            get
-            {
-                return s_FrmMainForm;
-            }
-            set
-            {
-                s_FrmMainForm = value;
-            }
+            get => s_FrmMainForm;
+            set => s_FrmMainForm = value;
         }
 
         static readonly ExceptionHeatMap s_Heatmap = new ExceptionHeatMap();
@@ -136,9 +141,6 @@ namespace Chummer
             Environment.CurrentDirectory = Application.StartupPath;
         }
 
-        public static Mutex GlobalChummerMutex
-        {
-            get { return s_MutexGlobal; }
-        }
+        public static Mutex GlobalChummerMutex => s_MutexGlobal;
     }
 }

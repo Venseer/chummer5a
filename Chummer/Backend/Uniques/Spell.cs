@@ -1,11 +1,27 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using Chummer.Backend.Skills;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.XPath;
@@ -35,7 +51,7 @@ namespace Chummer
         private readonly Character _objCharacter;
         private bool _blnAlchemical;
         private bool _blnFreeBonus;
-        private bool _blnUsesUnarmed = false;
+        private bool _blnUsesUnarmed;
         private int _intGrade;
         private Improvement.ImprovementSource _objImprovementSource = Improvement.ImprovementSource.Spell;
 
@@ -52,6 +68,8 @@ namespace Chummer
         /// <param name="strForcedValue">Value to forcefully select for any ImprovementManager prompts.</param>
         /// <param name="blnLimited">Whether or not the Spell should be marked as Limited.</param>
         /// <param name="blnExtended">Whether or not the Spell should be marked as Extended.</param>
+        /// <param name="blnAlchemical">Whether or not the Spell is one for an alchemical preparation.</param>
+        /// <param name="objSource">Enum representing the actual type of spell this object represents. Used for initiation benefits that would grant spells.</param>
         public void Create(XmlNode objXmlSpellNode, string strForcedValue = "", bool blnLimited = false, bool blnExtended = false, bool blnAlchemical = false, Improvement.ImprovementSource objSource = Improvement.ImprovementSource.Spell)
         {
             if (objXmlSpellNode.TryGetStringFieldQuickly("name", ref _strName))
@@ -85,38 +103,7 @@ namespace Chummer
             objXmlSpellNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlSpellNode.TryGetStringFieldQuickly("page", ref _strPage);
             _objImprovementSource = objSource;
-
-            if (_blnLimited && _strDV.StartsWith('F'))
-            {
-                string strDV = _strDV;
-                int intPos = 0;
-                if (strDV.Contains('-'))
-                {
-                    intPos = strDV.IndexOf('-') + 1;
-                    string strAfter = strDV.Substring(intPos, strDV.Length - intPos);
-                    strDV = strDV.Substring(0, intPos);
-                    int.TryParse(strAfter, out int intAfter);
-                    intAfter += 2;
-                    strDV += intAfter.ToString();
-                }
-                else if (strDV.Contains('+'))
-                {
-                    intPos = strDV.IndexOf('+');
-                    string strAfter = strDV.Substring(intPos, strDV.Length - intPos);
-                    strDV = strDV.Substring(0, intPos);
-                    int.TryParse(strAfter, out int intAfter);
-                    intAfter -= 2;
-                    if (intAfter > 0)
-                        strDV += '+' + intAfter.ToString();
-                    else if (intAfter < 0)
-                        strDV += intAfter.ToString();
-                }
-                else
-                {
-                    strDV += "-2";
-                }
-                _strDV = strDV;
-            }
+            
             /*
             if (_strNotes == string.Empty)
             {
@@ -176,7 +163,10 @@ namespace Chummer
             }
             objNode.TryGetInt32FieldQuickly("grade", ref _intGrade);
             objNode.TryGetStringFieldQuickly("dv", ref _strDV);
-            objNode.TryGetBoolFieldQuickly("limited", ref _blnLimited);
+            if (objNode.TryGetBoolFieldQuickly("limited", ref _blnLimited) && _blnLimited && _objCharacter.LastSavedVersion <= new Version("5.197.30"))
+            {
+                GetNode()?.TryGetStringFieldQuickly("dv", ref _strDV);
+            }
             objNode.TryGetBoolFieldQuickly("extended", ref _blnExtended);
             objNode.TryGetBoolFieldQuickly("freebonus", ref _blnFreeBonus);
             objNode.TryGetBoolFieldQuickly("usesunarmed", ref _blnUsesUnarmed);
@@ -192,6 +182,8 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
+        /// <param name="objCulture">Culture in which to print numbers.</param>
+        /// <param name="strLanguageToPrint">Language in which to print.</param>
         public void Print(XmlTextWriter objWriter, CultureInfo objCulture, string strLanguageToPrint)
         {
             objWriter.WriteStartElement("spell");
@@ -409,19 +401,13 @@ namespace Chummer
         /// </summary>
         public string DisplayType(string strLanguage)
         {
-            string strReturn = string.Empty;
-
             switch (Type)
             {
                 case "M":
-                    strReturn = LanguageManager.GetString("String_SpellTypeMana", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_SpellTypeMana", strLanguage);
                 default:
-                    strReturn = LanguageManager.GetString("String_SpellTypePhysical", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_SpellTypePhysical", strLanguage);
             }
-
-            return strReturn;
         }
 
         /// <summary>
@@ -458,7 +444,7 @@ namespace Chummer
                 for (int i = 1; i <= intMAG * 2; i++)
                 {
                     // Calculate the Spell's Drain for the current Force.
-                    object xprResult = null;
+                    object xprResult;
                     try
                     {
                         xprResult = CommonFunctions.EvaluateInvariantXPath(DV.Replace("F", i.ToString()).Replace("/", " div "));
@@ -483,11 +469,11 @@ namespace Chummer
                         break;
                     }
                 }
-                if (_objCharacter.Improvements.Any(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category)))
+                if (_objCharacter.Improvements.Any(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category) && o.Enabled))
                 {
                     strTip += $"\n {LanguageManager.GetString("Label_Bonus", GlobalOptions.Language)}";
                     strTip = _objCharacter.Improvements
-                        .Where(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category))
+                        .Where(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category) && o.Enabled)
                         .Aggregate(strTip, (current, imp) => current + $"\n {_objCharacter.GetObjectName(imp, GlobalOptions.Language)} ({imp.Value:0;-0;0})");
                 }
 
@@ -534,22 +520,15 @@ namespace Chummer
         /// </summary>
         public string DisplayDamage(string strLanguage)
         {
-            string strReturn = string.Empty;
-
             switch (Damage)
             {
                 case "P":
-                    strReturn = LanguageManager.GetString("String_DamagePhysical", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_DamagePhysical", strLanguage);
                 case "S":
-                    strReturn = LanguageManager.GetString("String_DamageStun", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_DamageStun", strLanguage);
                 default:
-                    strReturn = LanguageManager.GetString("String_None", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_None", strLanguage);
             }
-
-            return strReturn;
         }
 
         /// <summary>
@@ -566,28 +545,19 @@ namespace Chummer
         /// </summary>
         public string DisplayDuration(string strLanguage)
         {
-            string strReturn = string.Empty;
-
             switch (Duration)
             {
                 case "P":
-                    strReturn = LanguageManager.GetString("String_SpellDurationPermanent", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_SpellDurationPermanent", strLanguage);
                 case "S":
-                    strReturn = LanguageManager.GetString("String_SpellDurationSustained", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_SpellDurationSustained", strLanguage);
                 case "I":
-                    strReturn = LanguageManager.GetString("String_SpellDurationInstant", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_SpellDurationInstant", strLanguage);
                 case "Special":
-                    strReturn = LanguageManager.GetString("String_SpellDurationSpecial", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_SpellDurationSpecial", strLanguage);
                 default:
-                    strReturn = LanguageManager.GetString("String_None", strLanguage);
-                    break;
+                    return LanguageManager.GetString("String_None", strLanguage);
             }
-
-            return strReturn;
         }
 
         /// <summary>
@@ -599,7 +569,8 @@ namespace Chummer
             {
                 string strReturn = _strDV;
                 bool force = strReturn.StartsWith('F');
-                if (_objCharacter.Improvements.Any(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category)) || Limited)
+                if (Limited || _objCharacter.Improvements.Any(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) &&
+                                                                   (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category) && o.Enabled))
                 {
                     string dv = strReturn.TrimStart('F');
                     //Navigator can't do math on a single value, so inject a mathable value.
@@ -615,12 +586,8 @@ namespace Chummer
                     {
                         dv = strReturn.Substring(strReturn.IndexOf('+'));
                     }
-                    foreach (
-                        Improvement imp in
-                        _objCharacter.Improvements.Where(
-                            i =>
-                                (i.ImproveType == Improvement.ImprovementType.DrainValue || i.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) &&
-                                (string.IsNullOrEmpty(i.ImprovedName) || i.ImprovedName == Category) && i.Enabled))
+                    foreach (Improvement imp in _objCharacter.Improvements.Where(i => (i.ImproveType == Improvement.ImprovementType.DrainValue || i.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) &&
+                                                                                      (string.IsNullOrEmpty(i.ImprovedName) || i.ImprovedName == Category) && i.Enabled))
                     {
                         dv += $" + {imp.Value:0;-0;0}";
                     }
@@ -802,10 +769,7 @@ namespace Chummer
                 Skill objSkill = Skill;
                 if (objSkill != null)
                 {
-                    if (UsesUnarmed)
-                        intReturn = objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue);
-                    else
-                        intReturn = objSkill.Pool;
+                    intReturn = UsesUnarmed ? objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue) : objSkill.Pool;
                     // Add any Specialization bonus if applicable.
                     if (objSkill.HasSpecialization(Category))
                         intReturn += 2;
@@ -829,11 +793,7 @@ namespace Chummer
                 Skill objSkill = Skill;
                 if (objSkill != null)
                 {
-                    int intPool = 0;
-                    if (UsesUnarmed)
-                        intPool = objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue);
-                    else
-                        intPool = objSkill.Pool;
+                    int intPool = UsesUnarmed ? objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue) : objSkill.Pool;
                     strReturn = objSkill.DisplayNameMethod(GlobalOptions.Language) + " (" + intPool.ToString() + ')';
                     // Add any Specialization bonus if applicable.
                     if (objSkill.HasSpecialization(Category))
@@ -849,7 +809,7 @@ namespace Chummer
             }
         }
 
-        private XmlNode _objCachedMyXmlNode = null;
+        private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
 
         public XmlNode GetNode()

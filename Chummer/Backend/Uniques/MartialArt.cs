@@ -1,11 +1,24 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 
@@ -22,9 +35,9 @@ namespace Chummer
         private int _intKarmaCost = 7;
         private int _intRating = 1;
         private Guid _guiID;
-        private ObservableCollection<MartialArtTechnique> _lstTechniques = new ObservableCollection<MartialArtTechnique>();
+        private readonly TaggedObservableCollection<MartialArtTechnique> _lstTechniques = new TaggedObservableCollection<MartialArtTechnique>();
         private string _strNotes = string.Empty;
-        private Character _objCharacter;
+        private readonly Character _objCharacter;
         private bool _blnIsQuality;
 
         #region Create, Save, Load, and Print Methods
@@ -45,7 +58,7 @@ namespace Chummer
             objXmlArtNode.TryGetInt32FieldQuickly("cost", ref _intKarmaCost);
             if (!objXmlArtNode.TryGetStringFieldQuickly("altnotes", ref _strNotes))
                 objXmlArtNode.TryGetStringFieldQuickly("notes", ref _strNotes);
-            _blnIsQuality = objXmlArtNode["isquality"]?.InnerText == System.Boolean.TrueString;
+            _blnIsQuality = objXmlArtNode["isquality"]?.InnerText == bool.TrueString;
 
             if (objXmlArtNode["bonus"] != null)
             {
@@ -105,18 +118,23 @@ namespace Chummer
             objNode.TryGetInt32FieldQuickly("cost", ref _intKarmaCost);
             objNode.TryGetBoolFieldQuickly("isquality", ref _blnIsQuality);
 
-            foreach (XmlNode nodTechnique in objNode.SelectNodes("martialartadvantages/martialartadvantage"))
-            {
-                MartialArtTechnique objTechnique = new MartialArtTechnique(_objCharacter);
-                objTechnique.Load(nodTechnique);
-                _lstTechniques.Add(objTechnique);
-            }
-            foreach (XmlNode nodTechnique in objNode.SelectNodes("martialarttechniques/martialarttechnique"))
-            {
-                MartialArtTechnique objTechnique = new MartialArtTechnique(_objCharacter);
-                objTechnique.Load(nodTechnique);
-                _lstTechniques.Add(objTechnique);
-            }
+            using (XmlNodeList xmlLegacyTechniqueList = objNode.SelectNodes("martialartadvantages/martialartadvantage"))
+                if (xmlLegacyTechniqueList != null)
+                    foreach (XmlNode nodTechnique in xmlLegacyTechniqueList)
+                    {
+                        MartialArtTechnique objTechnique = new MartialArtTechnique(_objCharacter);
+                        objTechnique.Load(nodTechnique);
+                        _lstTechniques.Add(objTechnique);
+                    }
+
+            using (XmlNodeList xmlTechniqueList = objNode.SelectNodes("martialarttechniques/martialarttechnique"))
+                if (xmlTechniqueList != null)
+                    foreach (XmlNode nodTechnique in xmlTechniqueList)
+                    {
+                        MartialArtTechnique objTechnique = new MartialArtTechnique(_objCharacter);
+                        objTechnique.Load(nodTechnique);
+                        _lstTechniques.Add(objTechnique);
+                    }
 
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
         }
@@ -125,6 +143,8 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
+        /// <param name="objCulture">Culture in which to print.</param>
+        /// <param name="strLanguageToPrint">Language in which to print</param>
         public void Print(XmlTextWriter objWriter, CultureInfo objCulture, string strLanguageToPrint)
         {
             objWriter.WriteStartElement("martialart");
@@ -236,8 +256,8 @@ namespace Chummer
         /// <summary>
         /// Selected Martial Arts Advantages.
         /// </summary>
-        public ObservableCollection<MartialArtTechnique> Techniques => _lstTechniques;
-        public IList<MartialArtTechnique> Children => Techniques;
+        public TaggedObservableCollection<MartialArtTechnique> Techniques => _lstTechniques;
+        public TaggedObservableCollection<MartialArtTechnique> Children => Techniques;
 
         /// <summary>
         /// Notes.
@@ -248,7 +268,7 @@ namespace Chummer
             set => _strNotes = value;
         }
 
-        private XmlNode _objCachedMyXmlNode = null;
+        private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
 
         public XmlNode GetNode()

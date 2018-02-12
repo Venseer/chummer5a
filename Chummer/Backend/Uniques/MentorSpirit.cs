@@ -1,8 +1,22 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 namespace Chummer
@@ -17,13 +31,13 @@ namespace Chummer
         private string _strSource = string.Empty;
         private string _strPage = string.Empty;
         private string _strNotes = string.Empty;
-        private XmlNode _nodBonus = null;
-        private XmlNode _nodChoice1 = null;
-        private XmlNode _nodChoice2 = null;
+        private XmlNode _nodBonus;
+        private XmlNode _nodChoice1;
+        private XmlNode _nodChoice2;
         private Improvement.ImprovementType _eMentorType;
         private Guid _sourceID;
         private readonly Character _objCharacter;
-        private bool _blnMentorMask = false;
+        private bool _blnMentorMask;
 
         #region Constructor
         public MentorSpirit(Character objCharacter)
@@ -38,13 +52,11 @@ namespace Chummer
         /// </summary>
         /// <param name="xmlMentor">XmlNode to create the object from.</param>
         /// <param name="eMentorType">Whether this is a Mentor or a Paragon.</param>
-        /// <param name="objXmlChoice1">Bonus node from Choice 1.</param>
-        /// <param name="objXmlChoice2">Bonus node from Choice 2.</param>
         /// <param name="strForceValueChoice1">Name/Text for Choice 1.</param>
         /// <param name="strForceValueChoice2">Name/Text for Choice 2.</param>
         /// <param name="strForceValue">Force a value to be selected for the Mentor Spirit.</param>
         /// <param name="blnMentorMask">Whether the Mentor's Mask is enabled.</param>
-        public void Create(XmlNode xmlMentor, Improvement.ImprovementType eMentorType, XmlNode objXmlChoice1, XmlNode objXmlChoice2, string strForceValue = "", string strForceValueChoice1 = "", string strForceValueChoice2 = "", bool blnMentorMask = false)
+        public void Create(XmlNode xmlMentor, Improvement.ImprovementType eMentorType, string strForceValue = "", string strForceValueChoice1 = "", string strForceValueChoice2 = "", bool blnMentorMask = false)
         {
             _blnMentorMask = blnMentorMask;
             _eMentorType = eMentorType;
@@ -54,7 +66,7 @@ namespace Chummer
             xmlMentor.TryGetStringFieldQuickly("page", ref _strPage);
             if (!xmlMentor.TryGetStringFieldQuickly("altnotes", ref _strNotes))
                 xmlMentor.TryGetStringFieldQuickly("notes", ref _strNotes);
-            if (xmlMentor["id"] != null && Guid.TryParse(xmlMentor["id"].InnerText, out Guid guiTemp))
+            if (xmlMentor.TryGetField("id", Guid.TryParse, out Guid guiTemp))
                 _sourceID = guiTemp;
 
             // Build the list of advantages gained through the Mentor Spirit.
@@ -86,7 +98,7 @@ namespace Chummer
             {
                 _strExtra = strForceValue;
             }
-            _nodChoice1 = objXmlChoice1;
+            _nodChoice1 = xmlMentor.SelectSingleNode("choices/choice[name = \"" + strForceValueChoice1 + "\"]/bonus");
             if (_nodChoice1 != null)
             {
                 string strOldForce = ImprovementManager.ForcedValue;
@@ -108,7 +120,7 @@ namespace Chummer
             {
                 _strExtra = strForceValueChoice1;
             }
-            _nodChoice2 = objXmlChoice2;
+            _nodChoice2 = xmlMentor.SelectSingleNode("choices/choice[name = \"" + strForceValueChoice2 + "\"]/bonus");
             if (_nodChoice2 != null)
             {
                 string strOldForce = ImprovementManager.ForcedValue;
@@ -215,8 +227,7 @@ namespace Chummer
             if (!objNode.TryGetField("id", Guid.TryParse, out _sourceID))
             {
                 XmlNode objNewNode = XmlManager.Load("qualities.xml").SelectSingleNode("/chummer/mentors/mentor[name = \"" + Name + "\"]");
-                if (objNewNode != null)
-                    objNewNode.TryGetField("id", Guid.TryParse, out _sourceID);
+                objNewNode?.TryGetField("id", Guid.TryParse, out _sourceID);
             }
         }
 
@@ -224,7 +235,8 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
-        public void Print(XmlTextWriter objWriter, int intRating, string strLanguageToPrint)
+        /// <param name="strLanguageToPrint">Language in which to print</param>
+        public void Print(XmlTextWriter objWriter, string strLanguageToPrint)
         {
             objWriter.WriteStartElement("mentorspirit");
             objWriter.WriteElementString("name", DisplayNameShort(strLanguageToPrint));
@@ -336,15 +348,9 @@ namespace Chummer
         /// <summary>
         /// Guid of the Xml Node containing data on this Mentor Spirit or Paragon.
         /// </summary>
-        public string SourceID
-        {
-            get
-            {
-                return _sourceID.Equals(Guid.Empty) ? string.Empty : _sourceID.ToString("D");
-            }
-        }
+        public string SourceID => _sourceID.Equals(Guid.Empty) ? string.Empty : _sourceID.ToString("D");
 
-        private XmlNode _objCachedMyXmlNode = null;
+        private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
 
         public XmlNode GetNode()
@@ -362,13 +368,8 @@ namespace Chummer
             return _objCachedMyXmlNode;
         }
 
-        public string InternalId
-        {
-            get
-            {
-                return _guiID.ToString("D");
-            }
-        }
+        public string InternalId => _guiID.ToString("D");
+
         #endregion
     }
 }

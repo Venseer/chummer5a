@@ -16,14 +16,8 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
+ using System;
+ using System.Windows.Forms;
 
 namespace Chummer
 {
@@ -37,15 +31,7 @@ namespace Chummer
         /// <summary>
         /// The singleton instance of this object.
         /// </summary>
-        public static frmPlayerDashboard Instance
-        {
-            get
-            {
-                if (_instance == null)
-                    _instance = new frmPlayerDashboard();
-                return _instance;
-            }
-        }
+        public static frmPlayerDashboard Instance => _instance ?? (_instance = new frmPlayerDashboard());
 
         protected frmPlayerDashboard()
         {
@@ -68,10 +54,8 @@ namespace Chummer
             set;
         }
 
-        public DiceRollerControl DiceRoller
-        {
-            get { return tabControl.TabPages[(int)DashBoardPages.Dice].Controls[0] as DiceRollerControl; }
-        }
+        public DiceRollerControl DiceRoller => tabControl.TabPages[(int)DashBoardPages.Dice].Controls[0] as DiceRollerControl;
+
         #endregion
 
         #region Events

@@ -22,7 +22,6 @@ using System.Windows.Forms;
 using System.Xml;
 using Chummer.Backend.Skills;
 using System.Linq;
-using Chummer.Classes;
 using System.Text;
 
 namespace Chummer
@@ -37,14 +36,14 @@ namespace Chummer
         private string _strLimitToSkill = string.Empty;
         private string _strLimitToCategories = string.Empty;
         private string _strForceSkill = string.Empty;
-        private readonly string _strSourceName = string.Empty;
-        private bool _blnKnowledgeSkill = false;
-        private int _intMinimumRating = 0;
+        private readonly string _strSourceName;
+        private bool _blnKnowledgeSkill;
+        private int _intMinimumRating;
         private int _intMaximumRating = int.MaxValue;
 
         public string LinkedAttribute { get; set; } = string.Empty;
 
-        private readonly XmlDocument _objXmlDocument = null;
+        private readonly XmlDocument _objXmlDocument;
         private readonly Character _objCharacter;
 
         #region Control Events
@@ -205,10 +204,16 @@ namespace Chummer
                     Dictionary<string, bool> dicSkillXmlFound = new Dictionary<string, bool>(strValue.Length);
                     foreach (string strLoop in strValue)
                     {
-                        if (!_objCharacter.SkillsSection.KnowledgeSkills.Any(objSkill => objSkill.Name == strLoop && objSkill.Rating >= _intMinimumRating))
+                        // We only care about looking for skills if we're looking for a minimum or maximum rating. 
+                        if (_intMinimumRating > 0)
                         {
-                            continue;
+                            if (!_objCharacter.SkillsSection.KnowledgeSkills.Any(objSkill =>
+                                objSkill.Name == strLoop && objSkill.Rating >= _intMinimumRating))
+                            {
+                                continue;
+                            }
                         }
+
                         if (_objCharacter.SkillsSection.KnowledgeSkills.Any(objSkill => objSkill.Name == strLoop && objSkill.Rating > _intMaximumRating))
                         {
                             continue;
@@ -286,10 +291,7 @@ namespace Chummer
         /// </summary>
         public string OnlyCategory
         {
-            set
-            {
-                _strIncludeCategory = value;
-            }
+            set => _strIncludeCategory = value;
         }
 
         /// <summary>
@@ -299,17 +301,24 @@ namespace Chummer
         {
             set
             {
-                StringBuilder objLimitToCategories = new StringBuilder();
-                foreach (XmlNode objNode in value?.SelectNodes("category"))
+                using (XmlNodeList xmlCategoryList = value?.SelectNodes("category"))
                 {
-                    objLimitToCategories.Append("category = ");
-                    objLimitToCategories.Append('\"' + objNode.InnerText + '\"');
-                    objLimitToCategories.Append(" or ");
+                    if (xmlCategoryList != null)
+                    {
+                        StringBuilder objLimitToCategories = new StringBuilder();
+                        foreach (XmlNode objNode in xmlCategoryList)
+                        {
+                            objLimitToCategories.Append("category = ");
+                            objLimitToCategories.Append('\"' + objNode.InnerText + '\"');
+                            objLimitToCategories.Append(" or ");
+                        }
+
+                        // Remove the last " or "
+                        if (objLimitToCategories.Length > 0)
+                            objLimitToCategories.Length -= 4;
+                        _strLimitToCategories = objLimitToCategories.ToString();
+                    }
                 }
-                // Remove the last " or "
-                if (objLimitToCategories.Length > 0)
-                    objLimitToCategories.Length -= 4;
-                _strLimitToCategories = objLimitToCategories.ToString();
             }
         }
 
@@ -318,10 +327,7 @@ namespace Chummer
         /// </summary>
         public string ExcludeCategory
         {
-            set
-            {
-                _strExcludeCategory = value;
-            }
+            set => _strExcludeCategory = value;
         }
 
         /// <summary>
@@ -329,10 +335,7 @@ namespace Chummer
         /// </summary>
         public string OnlySkillGroup
         {
-            set
-            {
-                _strIncludeSkillGroup = value;
-            }
+            set => _strIncludeSkillGroup = value;
         }
 
         /// <summary>
@@ -340,10 +343,7 @@ namespace Chummer
         /// </summary>
         public string OnlySkill
         {
-            set
-            {
-                _strForceSkill = value;
-            }
+            set => _strForceSkill = value;
         }
 
         /// <summary>
@@ -351,10 +351,7 @@ namespace Chummer
         /// </summary>
         public string ExcludeSkillGroup
         {
-            set
-            {
-                _strExcludeSkillGroup = value;
-            }
+            set => _strExcludeSkillGroup = value;
         }
 
         /// <summary>
@@ -362,32 +359,20 @@ namespace Chummer
         /// </summary>
         public string LimitToSkill
         {
-            set
-            {
-                _strLimitToSkill = value;
-            }
+            set => _strLimitToSkill = value;
         }
 
         /// <summary>
         /// Skill that was selected in the dialogue.
         /// </summary>
-        public string SelectedSkill
-        {
-            get
-            {
-                return _strReturnValue;
-            }
-        }
+        public string SelectedSkill => _strReturnValue;
 
         /// <summary>
         /// Description to show in the window.
         /// </summary>
         public string Description
         {
-            set
-            {
-                lblDescription.Text = value;
-            }
+            set => lblDescription.Text = value;
         }
 
         /// <summary>
@@ -395,10 +380,7 @@ namespace Chummer
         /// </summary>
         public bool ShowKnowledgeSkills
         {
-            set
-            {
-                _blnKnowledgeSkill = value;
-            }
+            set => _blnKnowledgeSkill = value;
         }
 
         /// <summary>
@@ -406,10 +388,7 @@ namespace Chummer
         /// </summary>
         public int MinimumRating
         {
-            set
-            {
-                _intMinimumRating = value;
-            }
+            set => _intMinimumRating = value;
         }
 
         /// <summary>
@@ -417,10 +396,7 @@ namespace Chummer
         /// </summary>
         public int MaximumRating
         {
-            set
-            {
-                _intMaximumRating = value;
-            }
+            set => _intMaximumRating = value;
         }
         #endregion
 

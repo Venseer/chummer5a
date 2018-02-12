@@ -98,26 +98,6 @@ namespace Chummer
         {
             AcceptForm();
         }
-
-        private void cboAmmo_DropDown(object sender, EventArgs e)
-        {
-            // Resize the width of the DropDown so that the longest name fits.
-            ComboBox objSender = (ComboBox)sender;
-            int intWidth = objSender.DropDownWidth;
-            Graphics objGraphics = objSender.CreateGraphics();
-            Font objFont = objSender.Font;
-            int intScrollWidth = (objSender.Items.Count > objSender.MaxDropDownItems) ? SystemInformation.VerticalScrollBarWidth : 0;
-            int intNewWidth;
-            foreach (ListItem objItem in objSender.Items)
-            {
-                intNewWidth = (int)objGraphics.MeasureString(objItem.Name, objFont).Width + intScrollWidth;
-                if (intWidth < intNewWidth)
-                {
-                    intWidth = intNewWidth;
-                }
-            }
-            objSender.DropDownWidth = intWidth;
-        }
         #endregion
 
         #region Properties
@@ -126,10 +106,7 @@ namespace Chummer
         /// </summary>
         public List<Gear> Ammo
         {
-            set
-            {
-                _lstAmmo = value;
-            }
+            set => _lstAmmo = value;
         }
         
         /// <summary>
@@ -137,33 +114,19 @@ namespace Chummer
         /// </summary>
         public List<string> Count
         {
-            set
-            {
-                _lstCount = value;
-            }
+            set => _lstCount = value;
         }
 
         /// <summary>
         /// Name of the ammunition that was selected.
         /// </summary>
-        public string SelectedAmmo
-        {
-            get
-            {
-                return cboAmmo.SelectedValue?.ToString() ?? string.Empty;
-            }
-        }
+        public string SelectedAmmo => cboAmmo.SelectedValue?.ToString() ?? string.Empty;
 
         /// <summary>
         /// Number of rounds that were selected to be loaded.
         /// </summary>
-        public int SelectedCount
-        {
-            get
-            {
-                return Convert.ToInt32(cboType.Text);
-            }
-        }
+        public int SelectedCount => Convert.ToInt32(cboType.Text);
+
         #endregion
 
         #region Methods

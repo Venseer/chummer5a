@@ -1,19 +1,36 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 namespace Chummer
 {
-    public class CalendarWeek : IHasInternalId
+    public class CalendarWeek : IHasInternalId, IComparable, INotifyPropertyChanged
     {
         private Guid _guiID;
         private int _intYear = 2072;
         private int _intWeek = 1;
         private string _strNotes = string.Empty;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         #region Constructor, Save, Load, and Print Methods
         public CalendarWeek()
@@ -50,16 +67,18 @@ namespace Chummer
         /// <param name="objNode">XmlNode to load.</param>
         public void Load(XmlNode objNode)
         {
-            Guid.TryParse(objNode["guid"].InnerText, out _guiID);
-            _intYear = Convert.ToInt32(objNode["year"].InnerText);
-            _intWeek = Convert.ToInt32(objNode["week"].InnerText);
-            _strNotes = objNode["notes"].InnerText;
+            objNode.TryGetField("guid", Guid.TryParse, out _guiID);
+            objNode.TryGetInt32FieldQuickly("year", ref _intYear);
+            objNode.TryGetInt32FieldQuickly("week", ref _intWeek);
+            objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
         }
 
         /// <summary>
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
+        /// <param name="objCulture">Culture in which to print numbers.</param>
+        /// <param name="blnPrintNotes">Whether to print notes attached to the CalendarWeek.</param>
         public void Print(XmlTextWriter objWriter, CultureInfo objCulture, bool blnPrintNotes = true)
         {
             objWriter.WriteStartElement("week");
@@ -84,7 +103,14 @@ namespace Chummer
         public int Year
         {
             get => _intYear;
-            set => _intYear = value;
+            set
+            {
+                if (_intYear != value)
+                {
+                    _intYear = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Year)));
+                }
+            }
         }
 
         /// <summary>
@@ -236,13 +262,33 @@ namespace Chummer
             return strReturn;
         }
 
+        public int CompareTo(object obj)
+        {
+            if (obj is CalendarWeek objWeek)
+            {
+                int intReturn = Year.CompareTo(objWeek.Year);
+                if (intReturn == 0)
+                    intReturn = Week.CompareTo(objWeek.Week);
+                return intReturn;
+            }
+            else
+                return DisplayName(GlobalOptions.Language).CompareTo(obj);
+        }
+
         /// <summary>
         /// Week.
         /// </summary>
         public int Week
         {
             get => _intWeek;
-            set => _intWeek = value;
+            set
+            {
+                if (_intWeek != value)
+                {
+                    _intWeek = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Week)));
+                }
+            }
         }
 
         /// <summary>
@@ -251,7 +297,14 @@ namespace Chummer
         public string Notes
         {
             get => _strNotes;
-            set => _strNotes = value;
+            set
+            {
+                if (_strNotes != value)
+                {
+                    _strNotes = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Notes)));
+                }
+            }
         }
         #endregion
     }

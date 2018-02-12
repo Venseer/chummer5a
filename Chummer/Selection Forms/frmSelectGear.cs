@@ -18,7 +18,7 @@
  */
  using System;
 using System.Collections.Generic;
-using System.Linq;
+ using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.XPath;
@@ -32,32 +32,31 @@ namespace Chummer
     {
         private bool _blnLoading = true;
         private string _strSelectedGear = string.Empty;
-        private int _intSelectedRating = 0;
+        private int _intSelectedRating;
         private decimal _decSelectedQty = 1;
-        private decimal _decMarkup = 0;
+        private decimal _decMarkup;
 
-        private int _intAvailModifier = 0;
-        private int _intCostMultiplier = 1;
+        private readonly int _intAvailModifier;
+        private readonly int _intCostMultiplier;
 
-        private string _strAllowedCategories = string.Empty;
-        private readonly XmlNode _objParentNode = null;
+        private readonly XPathNavigator _objParentNode;
         private decimal _decMaximumCapacity = -1;
-        private bool _blnAddAgain = false;
         private static string s_StrSelectCategory = string.Empty;
-        private bool _blnShowPositiveCapacityOnly = false;
-        private bool _blnShowNegativeCapacityOnly = false;
-        private bool _blnShowArmorCapacityOnly = false;
+        private bool _blnShowPositiveCapacityOnly;
+        private bool _blnShowNegativeCapacityOnly;
+        private bool _blnShowArmorCapacityOnly;
         private bool _blnBlackMarketDiscount;
         private CapacityStyle _eCapacityStyle = CapacityStyle.Standard;
 
-        private readonly XmlDocument _objXmlDocument = null;
+        private readonly XPathNavigator _xmlBaseGearDataNode;
         private readonly Character _objCharacter;
 
         private readonly List<ListItem> _lstCategory = new List<ListItem>();
+        private readonly HashSet<string> _setAllowedCategories = new HashSet<string>();
         private readonly HashSet<string> _setBlackMarketMaps;
 
         #region Control Events
-        public frmSelectGear(Character objCharacter, int intAvailModifier = 0, int intCostMultiplier = 1, XmlNode objParentNode = null)
+        public frmSelectGear(Character objCharacter, int intAvailModifier = 0, int intCostMultiplier = 1, XmlNode objParentNode = null, string strAllowedCategories = "")
         {
             InitializeComponent();
             LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
@@ -67,7 +66,7 @@ namespace Chummer
             _intAvailModifier = intAvailModifier;
             _intCostMultiplier = intCostMultiplier;
             _objCharacter = objCharacter;
-            _objParentNode = objParentNode;
+            _objParentNode = objParentNode?.CreateNavigator();
             // Stack Checkbox is only available in Career Mode.
             if (!_objCharacter.Created)
             {
@@ -77,8 +76,14 @@ namespace Chummer
 
             MoveControls();
             // Load the Gear information.
-            _objXmlDocument = XmlManager.Load("gear.xml");
-            _setBlackMarketMaps = _objCharacter.GenerateBlackMarketMappings(_objXmlDocument);
+            _xmlBaseGearDataNode = XmlManager.Load("gear.xml").GetFastNavigator().SelectSingleNode("/chummer");
+            _setBlackMarketMaps = _objCharacter.GenerateBlackMarketMappings(_xmlBaseGearDataNode);
+            foreach (string strCategory in strAllowedCategories.TrimEnd(',').Split(','))
+            {
+                string strLoop = strCategory.Trim();
+                if (!string.IsNullOrEmpty(strLoop))
+                    _setAllowedCategories.Add(strLoop);
+            }
         }
 
         private void frmSelectGear_Load(object sender, EventArgs e)
@@ -94,40 +99,37 @@ namespace Chummer
                 chkHideOverAvailLimit.Checked = _objCharacter.Options.HideItemsOverAvailLimit;
             }
 
-            XmlNodeList objXmlCategoryList;
-
+            XPathNodeIterator objXmlCategoryList;
+            
             // Populate the Gear Category list.
-            if (!string.IsNullOrEmpty(_strAllowedCategories))
+            if (_setAllowedCategories.Count > 0)
             {
-                _strAllowedCategories = _strAllowedCategories.TrimEnd(',');
-                string[] strAllowed = _strAllowedCategories.Split(',');
                 StringBuilder strMount = new StringBuilder();
-                foreach (string strAllowedMount in strAllowed)
+                foreach (string strAllowedMount in _setAllowedCategories)
                 {
                     if (!string.IsNullOrEmpty(strAllowedMount))
                         strMount.Append(". = \"" + strAllowedMount + "\" or ");
                 }
                 strMount.Append("category = \"General\"");
-                objXmlCategoryList = _objXmlDocument.SelectNodes("/chummer/categories/category[" + strMount.ToString() + "]");
+                objXmlCategoryList = _xmlBaseGearDataNode.Select("categories/category[" + strMount.ToString() + "]");
             }
             else
             {
-                objXmlCategoryList = _objXmlDocument.SelectNodes("/chummer/categories/category");
+                objXmlCategoryList = _xmlBaseGearDataNode.Select("categories/category");
             }
 
-            foreach (XmlNode objXmlCategory in objXmlCategoryList)
+            foreach (XPathNavigator objXmlCategory in objXmlCategoryList)
             {
-                string strCategory = objXmlCategory.InnerText;
+                string strCategory = objXmlCategory.Value;
                 // Make sure the Category isn't in the exclusion list.
-                if (objXmlCategory.Attributes["show"]?.InnerText == bool.FalseString)
+                if (!_setAllowedCategories.Contains(strCategory) && objXmlCategory.SelectSingleNode("@show")?.Value == bool.FalseString)
                 {
-                    if (!_strAllowedCategories.Split(',').Contains(strCategory))
-                        continue;
+                    continue;
                 }
                 if (!_lstCategory.Select(x => x.Value).Contains(strCategory) && RefreshList(strCategory, false, true).Count > 0)
                 {
                     string strInnerText = strCategory;
-                    _lstCategory.Add(new ListItem(strInnerText, objXmlCategory.Attributes?["translate"]?.InnerText ?? strCategory));
+                    _lstCategory.Add(new ListItem(strInnerText, objXmlCategory.SelectSingleNode("@translate")?.Value ?? strCategory));
                 }
             }
             
@@ -194,11 +196,11 @@ namespace Chummer
             if (!string.IsNullOrEmpty(strSelectedId))
             {
                 // Retireve the information for the selected piece of Gear.
-                XmlNode objXmlGear = _objXmlDocument.SelectSingleNode("/chummer/gears/gear[id = \"" + strSelectedId + "\"]");
+                XPathNavigator objXmlGear = _xmlBaseGearDataNode.SelectSingleNode("gears/gear[id = \"" + strSelectedId + "\"]");
 
                 if (objXmlGear != null)
                 {
-                    string strName = objXmlGear["name"]?.InnerText ?? string.Empty;
+                    string strName = objXmlGear.SelectSingleNode("name")?.Value ?? string.Empty;
                     // If a Grenade is selected, show the Aerodynamic checkbox.
                     if (strName.StartsWith("Grenade:"))
                         chkAerodynamic.Visible = true;
@@ -211,7 +213,7 @@ namespace Chummer
                     // Quantity.
                     nudGearQty.Enabled = true;
                     nudGearQty.Minimum = 1;
-                    string strCostFor = objXmlGear["costfor"]?.InnerText;
+                    string strCostFor = objXmlGear.SelectSingleNode("costfor")?.Value;
                     if (!string.IsNullOrEmpty(strCostFor))
                     {
                         nudGearQty.Value = Convert.ToDecimal(strCostFor, GlobalOptions.InvariantCultureInfo);
@@ -240,7 +242,7 @@ namespace Chummer
                             nudGearQty.Minimum = decMinimum;
                         }
                     }
-                    else if (objXmlGear["category"].InnerText == "Currency")
+                    else if (objXmlGear.SelectSingleNode("category")?.Value == "Currency")
                     {
                         nudGearQty.DecimalPlaces = 2;
                         nudGearQty.Minimum = 0.01m;
@@ -306,7 +308,7 @@ namespace Chummer
 
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
-            _blnAddAgain = true;
+            AddAgain = true;
             cmdOK_Click(sender, e);
         }
 
@@ -379,13 +381,7 @@ namespace Chummer
         /// <summary>
         /// Whether or not the user wants to add another item after this one.
         /// </summary>
-        public bool AddAgain
-        {
-            get
-            {
-                return _blnAddAgain;
-            }
-        }
+        public bool AddAgain { get; private set; }
 
         /// <summary>
         /// Only items that grant Capacity should be shown.
@@ -418,10 +414,7 @@ namespace Chummer
         /// </summary>
         public bool ShowArmorCapacityOnly
         {
-            set
-            {
-                _blnShowArmorCapacityOnly = value;
-            }
+            set => _blnShowArmorCapacityOnly = value;
         }
 
         /// <summary>
@@ -429,37 +422,19 @@ namespace Chummer
         /// </summary>
         public string SelectedGear
         {
-            get
-            {
-                return _strSelectedGear;
-            }
-            set
-            {
-                _strSelectedGear = value;
-            }
+            get => _strSelectedGear;
+            set => _strSelectedGear = value;
         }
 
         /// <summary>
         /// Rating that was selected in the dialogue.
         /// </summary>
-        public int SelectedRating
-        {
-            get
-            {
-                return _intSelectedRating;
-            }
-        }
+        public int SelectedRating => _intSelectedRating;
 
         /// <summary>
         /// Quantity that was selected in the dialogue.
         /// </summary>
-        public decimal SelectedQty
-        {
-            get
-            {
-                return _decSelectedQty;
-            }
-        }
+        public decimal SelectedQty => _decSelectedQty;
 
         /// <summary>
         /// Set the maximum Capacity the piece of Gear is allowed to be.
@@ -474,63 +449,24 @@ namespace Chummer
         }
 
         /// <summary>
-        /// Categories that the Gear allows to be used.
-        /// </summary>
-        public string AllowedCategories
-        {
-            get
-            {
-                return _strAllowedCategories;
-            }
-            set
-            {
-                _strAllowedCategories = value;
-            }
-        }
-
-        /// <summary>
         /// Whether or not the item should be added for free.
         /// </summary>
-        public bool FreeCost
-        {
-            get
-            {
-                return chkFreeItem.Checked;
-            }
-        }
+        public bool FreeCost => chkFreeItem.Checked;
 
         /// <summary>
         /// Whether or not the item's cost should be cut in half for being a Do It Yourself component/upgrade.
         /// </summary>
-        public bool DoItYourself
-        {
-            get
-            {
-                return chkDoItYourself.Checked;
-            }
-        }
+        public bool DoItYourself => chkDoItYourself.Checked;
 
         /// <summary>
         /// Markup percentage.
         /// </summary>
-        public decimal Markup
-        {
-            get
-            {
-                return _decMarkup;
-            }
-        }
+        public decimal Markup => _decMarkup;
 
         /// <summary>
         /// Whether or not the Gear should stack with others if possible.
         /// </summary>
-        public bool Stack
-        {
-            get
-            {
-                return chkStack.Checked;
-            }
-        }
+        public bool Stack => chkStack.Checked;
 
         /// <summary>
         /// Whether or not the Stack Checkbox should be shown (default true).
@@ -550,38 +486,28 @@ namespace Chummer
         /// </summary>
         public CapacityStyle CapacityDisplayStyle
         {
-            set
-            {
-                _eCapacityStyle = value;
-            }
+            set => _eCapacityStyle = value;
         }
 
         /// <summary>
         /// Whether or not a Grenade is Aerodynamic.
         /// </summary>
-        public bool Aerodynamic
-        {
-            get
-            {
-                return chkAerodynamic.Checked;
-            }
-        }
+        public bool Aerodynamic => chkAerodynamic.Checked;
 
         /// <summary>
         /// Whether or not the selected Vehicle is used.
         /// </summary>
-        public bool BlackMarketDiscount
-        {
-            get
-            {
-                return _blnBlackMarketDiscount;
-            }
-        }
+        public bool BlackMarketDiscount => _blnBlackMarketDiscount;
 
         /// <summary>
         /// Default text string to filter by.
         /// </summary>
         public string DefaultSearchText { get; set; }
+
+        /// <summary>
+        /// What prefixes is our gear allowed to have
+        /// </summary>
+        public List<string> ForceItemPrefixStrings { get; } = new List<string>();
         #endregion
 
         #region Methods
@@ -608,7 +534,7 @@ namespace Chummer
             }
 
             // Retireve the information for the selected piece of Gear.
-            XmlNode objXmlGear = _objXmlDocument.SelectSingleNode("/chummer/gears/gear[id = \"" + strSelectedId + "\"]");
+            XPathNavigator objXmlGear = _xmlBaseGearDataNode.SelectSingleNode("gears/gear[id = \"" + strSelectedId + "\"]");
 
             if (objXmlGear == null)
             {
@@ -627,10 +553,10 @@ namespace Chummer
             }
 
             // Retrieve the information for the selected piece of Cyberware.
-            lblGearDeviceRating.Text = objXmlGear["devicerating"]?.InnerText ?? string.Empty;
+            lblGearDeviceRating.Text = objXmlGear.SelectSingleNode("devicerating")?.Value ?? string.Empty;
 
-            string strSource = objXmlGear["source"].InnerText;
-            string strPage = objXmlGear["altpage"]?.InnerText ?? objXmlGear["page"].InnerText;
+            string strSource = objXmlGear.SelectSingleNode("source")?.Value ?? LanguageManager.GetString("String_Unknown", GlobalOptions.Language);
+            string strPage = objXmlGear.SelectSingleNode("altpage")?.Value ?? objXmlGear.SelectSingleNode("page")?.Value ?? LanguageManager.GetString("String_Unknown", GlobalOptions.Language);
             lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + ' ' + strPage;
             tipTooltip.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + ' ' + LanguageManager.GetString("String_Page", GlobalOptions.Language) + ' ' + strPage);
 
@@ -641,25 +567,25 @@ namespace Chummer
             // If avail contains "F" or "R", remove it from the string so we can use the expression.
             string strAvail = string.Empty;
             string strPrefix = string.Empty;
-            XmlNode objAvailNode = objXmlGear["avail"];
+            XPathNavigator objAvailNode = objXmlGear.SelectSingleNode("avail");
             if (objAvailNode == null)
             {
                 int intHighestAvailNode = 0;
-                foreach (XmlNode objLoopNode in objXmlGear.ChildNodes)
+                foreach (XPathNavigator objLoopNode in objXmlGear.SelectChildren(XPathNodeType.Element))
                 {
-                    if (objLoopNode.NodeType == XmlNodeType.Element && objLoopNode.Name.StartsWith("avail"))
+                    if (objLoopNode.Name.StartsWith("avail"))
                     {
-                        string strLoopCostString = objLoopNode.Name.Substring(4);
+                        string strLoopCostString = objLoopNode.Name.Substring(5);
                         if (int.TryParse(strLoopCostString, out int intTmp))
                         {
                             intHighestAvailNode = Math.Max(intHighestAvailNode, intTmp);
                         }
                     }
                 }
-                objAvailNode = objXmlGear["avail" + intHighestAvailNode];
+                objAvailNode = objXmlGear.SelectSingleNode("avail" + intHighestAvailNode);
                 for (int i = decimal.ToInt32(nudRating.Value); i <= intHighestAvailNode; ++i)
                 {
-                    XmlNode objLoopNode = objXmlGear["avail" + i.ToString(GlobalOptions.InvariantCultureInfo)];
+                    XPathNavigator objLoopNode = objXmlGear.SelectSingleNode("avail" + i.ToString(GlobalOptions.InvariantCultureInfo));
                     if (objLoopNode != null)
                     {
                         objAvailNode = objLoopNode;
@@ -667,7 +593,7 @@ namespace Chummer
                     }
                 }
             }
-            string strAvailExpr = objAvailNode.InnerText;
+            string strAvailExpr = objAvailNode?.Value ?? string.Empty;
 
             if (!string.IsNullOrEmpty(strAvailExpr))
             {
@@ -705,7 +631,7 @@ namespace Chummer
                 decMultiplier *= 0.5m;
 
             // Cost.
-            chkBlackMarketDiscount.Checked = _setBlackMarketMaps.Contains(objXmlGear["category"]?.InnerText);
+            chkBlackMarketDiscount.Checked = _setBlackMarketMaps.Contains(objXmlGear.SelectSingleNode("category")?.Value);
 
             decimal decItemCost = 0.0m;
             if (chkFreeItem.Checked)
@@ -714,13 +640,13 @@ namespace Chummer
             }
             else
             {
-                XmlNode objCostNode = objXmlGear["cost"];
+                XPathNavigator objCostNode = objXmlGear.SelectSingleNode("cost");
                 if (objCostNode == null)
                 {
                     int intHighestCostNode = 0;
-                    foreach (XmlNode objLoopNode in objXmlGear.ChildNodes)
+                    foreach (XmlNode objLoopNode in objXmlGear.SelectChildren(XPathNodeType.Element))
                     {
-                        if (objLoopNode.NodeType == XmlNodeType.Element && objLoopNode.Name.StartsWith("cost"))
+                        if (objLoopNode.Name.StartsWith("cost"))
                         {
                             string strLoopCostString = objLoopNode.Name.Substring(4);
                             if (int.TryParse(strLoopCostString, out int intTmp))
@@ -729,10 +655,10 @@ namespace Chummer
                             }
                         }
                     }
-                    objCostNode = objXmlGear["cost" + intHighestCostNode];
+                    objCostNode = objXmlGear.SelectSingleNode("cost" + intHighestCostNode);
                     for (int i = decimal.ToInt32(nudRating.Value); i <= intHighestCostNode; ++i)
                     {
-                        XmlNode objLoopNode = objXmlGear["cost" + i.ToString(GlobalOptions.InvariantCultureInfo)];
+                        XPathNavigator objLoopNode = objXmlGear.SelectSingleNode("cost" + i.ToString(GlobalOptions.InvariantCultureInfo));
                         if (objLoopNode != null)
                         {
                             objCostNode = objLoopNode;
@@ -744,7 +670,7 @@ namespace Chummer
                 {
                     try
                     {
-                        decimal decCost = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(objCostNode.InnerText.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))), GlobalOptions.InvariantCultureInfo) * decMultiplier;
+                        decimal decCost = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(objCostNode.Value.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))), GlobalOptions.InvariantCultureInfo) * decMultiplier;
                         decCost *= 1 + (nudMarkup.Value / 100.0m);
                         if (chkBlackMarketDiscount.Checked)
                             decCost *= 0.9m;
@@ -753,17 +679,17 @@ namespace Chummer
                     }
                     catch (XPathException)
                     {
-                        lblCost.Text = objCostNode.InnerText;
-                        if (decimal.TryParse(objCostNode.InnerText, NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decimal decTemp))
+                        lblCost.Text = objCostNode.Value;
+                        if (decimal.TryParse(objCostNode.Value, NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decimal decTemp))
                         {
                             decItemCost = decTemp;
                             lblCost.Text = (decItemCost * _intCostMultiplier).ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                         }
                     }
 
-                    if (objCostNode.InnerText.StartsWith("FixedValues("))
+                    if (objCostNode.Value.StartsWith("FixedValues("))
                     {
-                        string[] strValues = objCostNode.InnerText.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                        string[] strValues = objCostNode.Value.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
                         string strCost = "0";
                         if (nudRating.Value > 0)
                             strCost = strValues[decimal.ToInt32(nudRating.Value) - 1].Trim('[', ']');
@@ -774,11 +700,11 @@ namespace Chummer
                         lblCost.Text = (decCost * _intCostMultiplier).ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + "¥+";
                         decItemCost = decCost;
                     }
-                    else if (objCostNode.InnerText.StartsWith("Variable("))
+                    else if (objCostNode.Value.StartsWith("Variable("))
                     {
-                        decimal decMin = 0;
+                        decimal decMin;
                         decimal decMax = decimal.MaxValue;
-                        string strCost = objCostNode.InnerText.TrimStart("Variable(", true).TrimEnd(')');
+                        string strCost = objCostNode.Value.TrimStart("Variable(", true).TrimEnd(')');
                         if (strCost.Contains('-'))
                         {
                             string[] strValues = strCost.Split('-');
@@ -803,22 +729,19 @@ namespace Chummer
 
             // Capacity.
             // XPathExpression cannot evaluate while there are square brackets, so remove them if necessary.
-            string strCapacity = "0";
-            string strCapacityField = "capacity";
-            if (_blnShowArmorCapacityOnly)
-                strCapacityField = "armorcapacity";
-            bool blnSquareBrackets = false;
+            string strCapacityField = _blnShowArmorCapacityOnly ? "armorcapacity" : "capacity";
 
             if (_eCapacityStyle == CapacityStyle.Zero)
-                lblCapacity.Text = "[0]";
+                lblCapacity.Text = '[' + 0.ToString(GlobalOptions.CultureInfo) + ']';
             else
             {
-                string strCapacityText = objXmlGear[strCapacityField]?.InnerText;
+                string strCapacityText = objXmlGear.SelectSingleNode(strCapacityField)?.Value;
                 if (!string.IsNullOrEmpty(strCapacityText))
                 {
-                    if (strCapacityText.Contains("/["))
+                    int intPos = strCapacityText.IndexOf("/[", StringComparison.Ordinal);
+                    string strCapacity;
+                    if (intPos != -1)
                     {
-                        int intPos = strCapacityText.IndexOf("/[");
                         string strFirstHalf = strCapacityText.Substring(0, intPos);
                         string strSecondHalf = strCapacityText.Substring(intPos + 1, strCapacityText.Length - intPos - 1);
 
@@ -826,7 +749,7 @@ namespace Chummer
                             lblCapacity.Text = "*";
                         else
                         {
-                            blnSquareBrackets = strFirstHalf.Contains('[');
+                            bool blnSquareBrackets = strFirstHalf.Contains('[');
                             strCapacity = strFirstHalf;
                             if (blnSquareBrackets && strCapacity.Length > 2)
                                 strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
@@ -886,17 +809,14 @@ namespace Chummer
                         lblCapacity.Text = "*";
                     else
                     {
-                        blnSquareBrackets = strCapacityText.Contains('[');
+                        bool blnSquareBrackets = strCapacityText.Contains('[');
                         strCapacity = strCapacityText;
                         if (blnSquareBrackets && strCapacity.Length > 2)
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacityText.StartsWith("FixedValues("))
                         {
                             string[] strValues = strCapacityText.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
-                            if (strValues.Length >= decimal.ToInt32(nudRating.Value))
-                                lblCapacity.Text = strValues[decimal.ToInt32(nudRating.Value) - 1];
-                            else
-                                lblCapacity.Text = "0";
+                            lblCapacity.Text = strValues[Math.Max(Math.Min(decimal.ToInt32(nudRating.Value), strValues.Length) - 1, 0)];
                         }
                         else
                         {
@@ -926,18 +846,20 @@ namespace Chummer
                 }
                 else
                 {
-                    lblCapacity.Text = "0";
+                    lblCapacity.Text = 0.ToString(GlobalOptions.CultureInfo);
                 }
             }
 
             // Rating.
-            if (Convert.ToInt32(objXmlGear["rating"].InnerText) > 0)
+            int intRating = Convert.ToInt32(objXmlGear.SelectSingleNode("rating")?.Value);
+            if (intRating > 0)
             {
-                nudRating.Maximum = Convert.ToInt32(objXmlGear["rating"].InnerText);
-                if (objXmlGear["minrating"] != null)
+                nudRating.Maximum = intRating;
+                XPathNavigator xmlMinRatingNode = objXmlGear.SelectSingleNode("minrating");
+                if (xmlMinRatingNode != null)
                 {
                     decimal decOldMinimum = nudRating.Minimum;
-                    nudRating.Minimum = Convert.ToInt32(objXmlGear["minrating"].InnerText);
+                    nudRating.Minimum = Convert.ToInt32(xmlMinRatingNode.Value);
                     if (decOldMinimum > nudRating.Minimum)
                     {
                         nudRating.Value -= decOldMinimum - nudRating.Minimum;
@@ -949,16 +871,13 @@ namespace Chummer
                 }
                 if (chkHideOverAvailLimit.Checked)
                 {
-                    while (nudRating.Maximum > nudRating.Minimum && !Backend.SelectionShared.CheckAvailRestriction(objXmlGear, _objCharacter, decimal.ToInt32(nudRating.Maximum), _intAvailModifier))
+                    while (nudRating.Maximum > nudRating.Minimum && !SelectionShared.CheckAvailRestriction(objXmlGear, _objCharacter, decimal.ToInt32(nudRating.Maximum), _intAvailModifier))
                     {
                         nudRating.Maximum -= 1;
                     }
                 }
 
-                if (nudRating.Minimum == nudRating.Maximum)
-                    nudRating.Enabled = false;
-                else
-                    nudRating.Enabled = true;
+                nudRating.Enabled = nudRating.Minimum != nudRating.Maximum;
             }
             else
             {
@@ -970,10 +889,10 @@ namespace Chummer
 
         private IList<ListItem> RefreshList(string strCategory, bool blnDoUIUpdate = true, bool blnTerminateAfterFirst = false)
         {
-            string strFilter = "(" + _objCharacter.Options.BookXPath() + ')';
+            StringBuilder strFilter = new StringBuilder("(" + _objCharacter.Options.BookXPath() + ')');
             if (!string.IsNullOrEmpty(strCategory) && strCategory != "Show All" && (_objCharacter.Options.SearchInCategoryOnly || txtSearch.TextLength == 0))
-                strFilter += " and category = \"" + strCategory + '\"';
-            else if (!string.IsNullOrEmpty(_strAllowedCategories))
+                strFilter.Append(" and category = \"" + strCategory + '\"');
+            else if (_setAllowedCategories.Count > 0)
             {
                 StringBuilder objCategoryFilter = new StringBuilder();
                 foreach (string strItem in _lstCategory.Select(x => x.Value))
@@ -983,29 +902,31 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ')';
+                    strFilter.Append(" and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ')');
                 }
             }
             if (_blnShowArmorCapacityOnly)
-                strFilter += " and contains(armorcapacity, \"[\")";
+                strFilter.Append(" and contains(armorcapacity, \"[\")");
             else if (_blnShowPositiveCapacityOnly)
-                strFilter += " and not(contains(capacity, \"[\"))";
+                strFilter.Append(" and not(contains(capacity, \"[\"))");
             else if (_blnShowNegativeCapacityOnly)
-                strFilter += " and contains(capacity, \"[\")";
+                strFilter.Append(" and contains(capacity, \"[\")");
             if (_objParentNode == null)
-                strFilter += " and not(requireparent)";
+                strFilter.Append(" and not(requireparent)");
+            foreach (string strPrefix in ForceItemPrefixStrings)
+                strFilter.Append(" and starts-with(name,\"" + strPrefix + "\")");
 
-            strFilter += CommonFunctions.GenerateSearchXPath(txtSearch.Text);
-
-            return BuildGearList(_objXmlDocument.SelectNodes("/chummer/gears/gear[" + strFilter + "]"), blnDoUIUpdate, blnTerminateAfterFirst);
+            strFilter.Append(CommonFunctions.GenerateSearchXPath(txtSearch.Text));
+            
+            return BuildGearList(_xmlBaseGearDataNode.Select("gears/gear[" + strFilter + "]"), blnDoUIUpdate, blnTerminateAfterFirst);
         }
 
-        private IList<ListItem> BuildGearList(XmlNodeList objXmlGearList, bool blnDoUIUpdate = true, bool blnTerminateAfterFirst = false)
+        private IList<ListItem> BuildGearList(XPathNodeIterator objXmlGearList, bool blnDoUIUpdate = true, bool blnTerminateAfterFirst = false)
         {
             List<ListItem> lstGears = new List<ListItem>();
-            foreach (XmlNode objXmlGear in objXmlGearList)
+            foreach (XPathNavigator objXmlGear in objXmlGearList)
             {
-                XmlNode xmlTestNode = objXmlGear.SelectSingleNode("forbidden/parentdetails");
+                XPathNavigator xmlTestNode = objXmlGear.SelectSingleNode("forbidden/parentdetails");
                 if (xmlTestNode != null)
                 {
                     // Assumes topmost parent is an AND node
@@ -1054,15 +975,15 @@ namespace Chummer
                 if (chkBlackMarketDiscount.Checked)
                     decCostMultiplier *= 0.9m;
                 if (!blnDoUIUpdate ||
-                    ((!chkHideOverAvailLimit.Checked || Backend.SelectionShared.CheckAvailRestriction(objXmlGear, _objCharacter, 1, _intAvailModifier) &&
+                    ((!chkHideOverAvailLimit.Checked || SelectionShared.CheckAvailRestriction(objXmlGear, _objCharacter, 1, _intAvailModifier) &&
                     (chkFreeItem.Checked || !chkShowOnlyAffordItems.Checked ||
-                    Backend.SelectionShared.CheckNuyenRestriction(objXmlGear, _objCharacter, _objCharacter.Nuyen, decCostMultiplier)))))
+                    SelectionShared.CheckNuyenRestriction(objXmlGear, _objCharacter.Nuyen, decCostMultiplier)))))
                 {
-                    string strDisplayName = objXmlGear["translate"]?.InnerText ?? objXmlGear["name"].InnerText;
+                    string strDisplayName = objXmlGear.SelectSingleNode("translate")?.Value ?? objXmlGear.SelectSingleNode("name")?.Value ?? LanguageManager.GetString("String_Unknown", GlobalOptions.Language);
 
                     if (!_objCharacter.Options.SearchInCategoryOnly && txtSearch.TextLength != 0)
                     {
-                        string strCategory = objXmlGear["category"]?.InnerText;
+                        string strCategory = objXmlGear.SelectSingleNode("category")?.Value;
                         if (!string.IsNullOrEmpty(strCategory))
                         {
                             ListItem objFoundItem = _lstCategory.Find(objFind => objFind.Value.ToString() == strCategory);
@@ -1071,7 +992,7 @@ namespace Chummer
                         }
                     }
                     // When searching, Category needs to be added to the Value so we can identify the English Category name.
-                    lstGears.Add(new ListItem(objXmlGear["id"].InnerText, strDisplayName));
+                    lstGears.Add(new ListItem(objXmlGear.SelectSingleNode("id")?.Value ?? string.Empty, strDisplayName));
 
                     if (blnTerminateAfterFirst)
                         break;
@@ -1097,26 +1018,7 @@ namespace Chummer
 
             return lstGears;
         }
-
-        /// <summary>
-        /// Add a Category to the Category list.
-        /// </summary>
-        public void AddCategory(string strCategories)
-        {
-            string[] strCategoryList = strCategories.Split(',');
-            XmlNode objXmlCategoryList = _objXmlDocument.SelectSingleNode("/chummer/categories");
-            foreach (string strCategory in strCategoryList)
-            {
-                _lstCategory.Add(new ListItem(strCategory, objXmlCategoryList.SelectSingleNode("category[text() = \"" + strCategory + "\"]/@translate")?.InnerText ?? strCategory));
-            }
-            cboCategory.BeginUpdate();
-            cboCategory.DataSource = null;
-            cboCategory.ValueMember = "Value";
-            cboCategory.DisplayMember = "Name";
-            cboCategory.DataSource = _lstCategory;
-            cboCategory.EndUpdate();
-        }
-
+        
         /// <summary>
         /// Accept the selected item and close the form.
         /// </summary>
@@ -1126,7 +1028,9 @@ namespace Chummer
             if (!string.IsNullOrEmpty(strSelectedId))
             {
                 _strSelectedGear = strSelectedId;
-                s_StrSelectCategory = (_objCharacter.Options.SearchInCategoryOnly || txtSearch.TextLength == 0) ? cboCategory.SelectedValue?.ToString() : _objXmlDocument.SelectSingleNode("/chummer/gears/gear[id = \"" + strSelectedId + "\"]/category")?.InnerText;
+                s_StrSelectCategory = (_objCharacter.Options.SearchInCategoryOnly || txtSearch.TextLength == 0)
+                    ? cboCategory.SelectedValue?.ToString()
+                    : _xmlBaseGearDataNode.SelectSingleNode("gears/gear[id = \"" + strSelectedId + "\"]/category")?.Value;
                 _blnBlackMarketDiscount = chkBlackMarketDiscount.Checked;
                 _intSelectedRating = decimal.ToInt32(nudRating.Value);
                 _decSelectedQty = nudGearQty.Value;

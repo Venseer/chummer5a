@@ -16,7 +16,7 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
+ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
@@ -29,12 +29,12 @@ namespace Chummer
     public partial class frmSelectPACKSKit : Form
     {
         private string _strSelectedKit = string.Empty;
-        private bool _blnAddAgain = false;
+        private bool _blnAddAgain;
         private static string s_StrSelectCategory = string.Empty;
         private readonly Character _objCharacter;
 
         // Not readonly because content can change while form is up
-        private XmlDocument _objXmlDocument = null;
+        private XmlDocument _objXmlDocument;
 
         private readonly List<ListItem> _lstCategory = new List<ListItem>();
 
@@ -134,8 +134,6 @@ namespace Chummer
             XmlNode objXmlPack = _objXmlDocument.SelectSingleNode("/chummer/packs/pack[name = \"" + strIdentifiers[0] + "\" and category = \"" + strIdentifiers[1] + "\"]");
             cmdDelete.Visible = strIdentifiers[1] == "Custom";
 
-            XmlDocument objXmlItemDocument = null;
-
             XmlDocument objXmlGearDocument = XmlManager.Load("gear.xml");
             XmlDocument objXmlWeaponDocument = XmlManager.Load("weapons.xml");
 
@@ -144,6 +142,7 @@ namespace Chummer
                 if (objXmlItem["hide"] != null)
                     continue;
                 TreeNode objParent = new TreeNode();
+                XmlDocument objXmlItemDocument;
                 switch (objXmlItem.Name)
                 {
                     case "attributes":
@@ -885,16 +884,44 @@ namespace Chummer
             string strCustomPath = Path.Combine(Application.StartupPath, "data");
             foreach (string strFile in Directory.GetFiles(strCustomPath, "custom*_packs.xml"))
             {
-                objXmlDocument.Load(strFile);
+                try
+                {
+                    using (StreamReader objStreamReader = new StreamReader(strFile, Encoding.UTF8, true))
+                    {
+                        objXmlDocument.Load(objStreamReader);
+                    }
+                }
+                catch (IOException)
+                {
+                    continue;
+                }
+                catch (XmlException)
+                {
+                    continue;
+                }
                 XmlNodeList objXmlPACKSList = objXmlDocument.SelectNodes("/chummer/packs/pack[name = \"" + strSelectedKit + "\" and category = \"Custom\"]");
                 if (objXmlPACKSList.Count > 0)
                 {
                     // Read in the entire file.
                     XmlDocument objXmlCurrentDocument = new XmlDocument();
-                    objXmlCurrentDocument.Load(strFile);
+                    try
+                    {
+                        using (StreamReader objStreamReader = new StreamReader(strFile, Encoding.UTF8, true))
+                        {
+                            objXmlCurrentDocument.Load(objStreamReader);
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        continue;
+                    }
+                    catch (XmlException)
+                    {
+                        continue;
+                    }
 
                     FileStream objStream = new FileStream(strFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-                    XmlTextWriter objWriter = new XmlTextWriter(objStream, Encoding.Unicode)
+                    XmlTextWriter objWriter = new XmlTextWriter(objStream, Encoding.UTF8)
                     {
                         Formatting = Formatting.Indented,
                         Indentation = 1,
@@ -941,35 +968,18 @@ namespace Chummer
         /// <summary>
         /// Whether or not the user wants to add another item after this one.
         /// </summary>
-        public bool AddAgain
-        {
-            get
-            {
-                return _blnAddAgain;
-            }
-        }
+        public bool AddAgain => _blnAddAgain;
 
         /// <summary>
         /// Name of Kit that was selected in the dialogue.
         /// </summary>
-        public string SelectedKit
-        {
-            get
-            {
-                return _strSelectedKit;
-            }
-        }
+        public string SelectedKit => _strSelectedKit;
 
         /// <summary>
         /// Category that was selected in the dialogue.
         /// </summary>
-        public static string SelectedCategory
-        {
-            get
-            {
-                return s_StrSelectCategory;
-            }
-        }
+        public static string SelectedCategory => s_StrSelectCategory;
+
         #endregion
 
         #region Methods
@@ -989,14 +999,12 @@ namespace Chummer
 
         private void WriteGear(XmlDocument objXmlItemDocument, XmlNode objXmlGear, TreeNode objParent)
         {
-            XmlNode objNode;
             XmlNode xmlNameNode = objXmlGear["name"];
             string strName = xmlNameNode.InnerText;
             string strCategory = objXmlGear["category"]?.InnerText;
-            if (!string.IsNullOrEmpty(strCategory))
-                objNode = objXmlItemDocument.SelectSingleNode("/chummer/gears/gear[(" + _objCharacter.Options.BookXPath() + ") and name = \"" + strName + "\" and category = \"" + strCategory + "\"]");
-            else
-                objNode = objXmlItemDocument.SelectSingleNode("/chummer/gears/gear[(" + _objCharacter.Options.BookXPath() + ") and name = \"" + strName + "\"]");
+            XmlNode objNode = !string.IsNullOrEmpty(strCategory)
+                ? objXmlItemDocument.SelectSingleNode("/chummer/gears/gear[(" + _objCharacter.Options.BookXPath() + ") and name = \"" + strName + "\" and category = \"" + strCategory + "\"]")
+                : objXmlItemDocument.SelectSingleNode("/chummer/gears/gear[(" + _objCharacter.Options.BookXPath() + ") and name = \"" + strName + "\"]");
 
             if (objNode != null)
             {

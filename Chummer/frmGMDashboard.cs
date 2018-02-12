@@ -16,16 +16,8 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Windows.Forms;
-using Chummer.Backend.Skills;
+ using System;
+ using System.Windows.Forms;
 
 namespace Chummer
 {
@@ -40,15 +32,7 @@ namespace Chummer
         /// <summary>
         /// The singleton instance of this object.
         /// </summary>
-        public static frmGMDashboard Instance
-        {
-            get
-            {
-                if (_instance == null)
-                    _instance = new frmGMDashboard();
-                return _instance;
-            }
-        }
+        public static frmGMDashboard Instance => _instance ?? (_instance = new frmGMDashboard());
 
         protected frmGMDashboard()
         {
@@ -82,10 +66,8 @@ namespace Chummer
         /// <summary>
         /// The dice roller for applying skill checks
         /// </summary>
-        public DiceRollerControl DiceRoller
-        {
-            get { return tabControl.TabPages[(int)DashBoardPages.Dice].Controls[0] as DiceRollerControl; }
-        }
+        public DiceRollerControl DiceRoller => tabControl.TabPages[(int)DashBoardPages.Dice].Controls[0] as DiceRollerControl;
+
         #endregion
 
         #region Events

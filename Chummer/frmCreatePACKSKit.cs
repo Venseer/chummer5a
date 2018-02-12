@@ -67,7 +67,23 @@ namespace Chummer
             string strCustomPath = Path.Combine(Application.StartupPath, "data");
             foreach (string strFile in Directory.GetFiles(strCustomPath, "custom*_packs.xml"))
             {
-                objXmlDocument.Load(strFile);
+                try
+                {
+                    using (StreamReader objStreamReader = new StreamReader(strFile, Encoding.UTF8, true))
+                    {
+                        objXmlDocument.Load(objStreamReader);
+                    }
+                }
+                catch (IOException ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                    return;
+                }
+                catch (XmlException ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                    return;
+                }
                 XmlNodeList objXmlPACKSList = objXmlDocument.SelectNodes("/chummer/packs/pack[name = \"" + txtName.Text + "\" and category = \"Custom\"]");
                 if (objXmlPACKSList.Count > 0)
                 {
@@ -82,10 +98,28 @@ namespace Chummer
             // If this is not a new file, read in the existing contents.
             XmlDocument objXmlCurrentDocument = new XmlDocument();
             if (!blnNewFile)
-                objXmlCurrentDocument.Load(strPath);
+            {
+                try
+                {
+                    using (StreamReader objStreamReader = new StreamReader(strPath, Encoding.UTF8, true))
+                    {
+                        objXmlCurrentDocument.Load(objStreamReader);
+                    }
+                }
+                catch (IOException ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                    return;
+                }
+                catch (XmlException ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                    return;
+                }
+            }
 
             FileStream objStream = new FileStream(strPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            XmlTextWriter objWriter = new XmlTextWriter(objStream, Encoding.Unicode)
+            XmlTextWriter objWriter = new XmlTextWriter(objStream, Encoding.UTF8)
             {
                 Formatting = Formatting.Indented,
                 Indentation = 1,

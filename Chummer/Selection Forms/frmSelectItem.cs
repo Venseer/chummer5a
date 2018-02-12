@@ -21,17 +21,16 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.XPath;
  using Chummer.Backend.Equipment;
 
 namespace Chummer
 {
     public partial class frmSelectItem : Form
     {
-        private List<Gear> _lstGear = new List<Gear>();
-        private List<Vehicle> _lstVehicles = new List<Vehicle>();
-        private List<VehicleMod> _lstVehicleMods = new List<VehicleMod>();
-        private List<ListItem> _lstGeneralItems = new List<ListItem>();
+        private IList<Gear> _lstGear = new List<Gear>();
+        private IList<Vehicle> _lstVehicles = new List<Vehicle>();
+        private IList<VehicleMod> _lstVehicleMods = new List<VehicleMod>();
+        private IList<ListItem> _lstGeneralItems = new List<ListItem>();
         private string _strMode = "Gear";
         private Character _objCharacter;
         private bool _blnAllowAutoSelect = true;
@@ -47,7 +46,7 @@ namespace Chummer
 
         private void frmSelectItem_Load(object sender, EventArgs e)
         {
-            List<ListItem> lstItems = new List<ListItem>();
+            IList<ListItem> lstItems = new List<ListItem>();
 
             if (_strMode == "Gear")
             {
@@ -105,14 +104,13 @@ namespace Chummer
 
                 if (!_objCharacter.Options.LicenseRestricted)
                 {
-                    XmlDocument objXmlDocument = XmlManager.Load("licenses.xml");
-                    XmlNodeList objXmlList = objXmlDocument.SelectNodes("/chummer/licenses/license");
-
-                    foreach (XmlNode objNode in objXmlList)
-                    {
-                        string strInnerText = objNode.InnerText;
-                        lstItems.Add(new ListItem(strInnerText, objNode.Attributes?["translate"]?.InnerText ?? strInnerText));
-                    }
+                    using (XmlNodeList objXmlList = XmlManager.Load("licenses.xml").SelectNodes("/chummer/licenses/license"))
+                        if (objXmlList != null)
+                            foreach (XmlNode objNode in objXmlList)
+                            {
+                                string strInnerText = objNode.InnerText;
+                                lstItems.Add(new ListItem(strInnerText, objNode.Attributes?["translate"]?.InnerText ?? strInnerText));
+                            }
                 }
                 else
                 {
@@ -272,26 +270,6 @@ namespace Chummer
         {
             AcceptForm();
         }
-
-        private void cboAmmo_DropDown(object sender, EventArgs e)
-        {
-            // Resize the width of the DropDown so that the longest name fits.
-            ComboBox objSender = (ComboBox)sender;
-            int intWidth = objSender.DropDownWidth;
-            Graphics objGraphics = objSender.CreateGraphics();
-            Font objFont = objSender.Font;
-            int intScrollWidth = (objSender.Items.Count > objSender.MaxDropDownItems) ? SystemInformation.VerticalScrollBarWidth : 0;
-            int intNewWidth;
-            foreach (ListItem objItem in ((ComboBox)sender).Items)
-            {
-                intNewWidth = (int)objGraphics.MeasureString(objItem.Name, objFont).Width + intScrollWidth;
-                if (intWidth < intNewWidth)
-                {
-                    intWidth = intNewWidth;
-                }
-            }
-            objSender.DropDownWidth = intWidth;
-        }
         #endregion
 
         #region Properties
@@ -302,7 +280,7 @@ namespace Chummer
         {
             set
             {
-                _lstGear = (List<Gear>)value;
+                _lstGear = value;
                 _strMode = "Gear";
             }
         }
@@ -314,7 +292,7 @@ namespace Chummer
         {
             set
             {
-                _lstVehicles = (List<Vehicle>)value;
+                _lstVehicles = value;
                 _strMode = "Vehicles";
             }
         }
@@ -326,7 +304,7 @@ namespace Chummer
         {
             set
             {
-                _lstVehicleMods = (List<VehicleMod>)value;
+                _lstVehicleMods = value;
                 _strMode = "VehicleMods";
             }
         }
@@ -338,7 +316,7 @@ namespace Chummer
         {
             set
             {
-                _lstGeneralItems = (List<ListItem>)value;
+                _lstGeneralItems = value;
                 _strMode = "General";
             }
         }
@@ -350,7 +328,7 @@ namespace Chummer
         {
             set
             {
-                _lstGeneralItems = (List<ListItem>)value;
+                _lstGeneralItems = value;
                 _strMode = "Dropdown";
             }
         }
@@ -383,27 +361,15 @@ namespace Chummer
         /// <summary>
         /// Name of the item that was selected.
         /// </summary>
-        public string SelectedName
-        {
-            get
-            {
-                return cboAmmo.Text;
-            }
-        }
+        public string SelectedName => cboAmmo.Text;
 
         /// <summary>
         /// Whether or not the Form should be accepted if there is only one item left in the list.
         /// </summary>
         public bool AllowAutoSelect
         {
-            get
-            {
-                return _blnAllowAutoSelect;
-            }
-            set
-            {
-                _blnAllowAutoSelect = value;
-            }
+            get => _blnAllowAutoSelect;
+            set => _blnAllowAutoSelect = value;
         }
 
         /// <summary>
@@ -411,10 +377,7 @@ namespace Chummer
         /// </summary>
         public string Description
         {
-            set
-            {
-                lblDescription.Text = value;
-            }
+            set => lblDescription.Text = value;
         }
 
         /// <summary>
@@ -422,10 +385,7 @@ namespace Chummer
         /// </summary>
         public string ForceItem
         {
-            set
-            {
-                _strForceItem = value;
-            }
+            set => _strForceItem = value;
         }
         #endregion
 

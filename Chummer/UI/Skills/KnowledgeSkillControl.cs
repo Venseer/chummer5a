@@ -18,6 +18,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -32,7 +33,7 @@ namespace Chummer.UI.Skills
         {
             _skill = skill;
             InitializeComponent();
-
+            
             //Display
             lblModifiedRating.DataBindings.Add("Text", skill, nameof(KnowledgeSkill.DisplayPool), false, DataSourceUpdateMode.OnPropertyChanged);
 
@@ -62,7 +63,8 @@ namespace Chummer.UI.Skills
                 lblName.DataBindings.Add("Text", skill, nameof(KnowledgeSkill.WriteableName), false, DataSourceUpdateMode.OnPropertyChanged);
 
                 lblSpec.Visible = true;
-                lblSpec.Text = string.Join(", ", skill.Specializations.Select(x => x.Name));
+                lblSpec.DataBindings.Add("Text", skill, nameof(Skill.DisplaySpecialization), false, DataSourceUpdateMode.OnPropertyChanged);
+
                 cboSkill.Visible = false;
                 chkKarma.Visible = false;
                 cboSpec.Visible = false;
@@ -74,7 +76,6 @@ namespace Chummer.UI.Skills
                 btnCareerIncrease.Visible = true;
                 btnCareerIncrease.DataBindings.Add("Enabled", skill, nameof(Skill.CanUpgradeCareer), false,
                     DataSourceUpdateMode.OnPropertyChanged);
-                lblSpec.DataBindings.Add("Text", skill, nameof(Skill.DisplaySpecialization), false, DataSourceUpdateMode.OnPropertyChanged);
             }
             else
             {
@@ -105,21 +106,13 @@ namespace Chummer.UI.Skills
                 cboSpec.DataBindings.Add("Enabled", skill, nameof(Skill.Leveled), false, DataSourceUpdateMode.OnPropertyChanged);
                 cboSpec.DataBindings.Add("Text", skill, nameof(Skill.Specialization), false, DataSourceUpdateMode.OnPropertyChanged);
 
-                skill.PropertyChanged += (sender, args) =>
-                {
-                    if (args.PropertyName == nameof(Skill.CGLSpecializations))
-                    {
-                        cboSpec.DataSource = null;
-                        cboSpec.DisplayMember = nameof(ListItem.Name);
-                        cboSpec.ValueMember = nameof(ListItem.Value);
-                        cboSpec.DataSource = skill.CGLSpecializations;
-                        cboSpec.MaxDropDownItems = Math.Max(1, skill.CGLSpecializations.Count);
-                    }
-                };
+                skill.PropertyChanged += RefreshSpecializationComboBox;
             }
 
             if (skill.ForcedName)
             {
+                DataBindings.Add("Enabled", skill, nameof(KnowledgeSkill.Enabled), false, DataSourceUpdateMode.OnPropertyChanged);
+
                 nudKarma.Visible = false;
                 nudSkill.Visible = false;
                 cboSkill.Enabled = false;
@@ -135,11 +128,36 @@ namespace Chummer.UI.Skills
             }
             else
             {
-                cmdDelete.Click += (sender, args) => { skill.CharacterObject.SkillsSection.KnowledgeSkills.Remove(skill); };
+                cmdDelete.Click += (sender, args) =>
+                {
+                    skill.UnbindSkill();
+                    skill.CharacterObject.SkillsSection.KnowledgeSkills.Remove(skill);
+                };
             }
             cboType.EndUpdate();
             cboSkill.EndUpdate();
             cboSpec.EndUpdate();
+        }
+
+        public void RefreshSpecializationComboBox(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(Skill.CGLSpecializations))
+            {
+                cboSpec.DataSource = null;
+                cboSpec.DisplayMember = nameof(ListItem.Name);
+                cboSpec.ValueMember = nameof(ListItem.Value);
+                cboSpec.DataSource = _skill.CGLSpecializations;
+                cboSpec.MaxDropDownItems = Math.Max(1, _skill.CGLSpecializations.Count);
+            }
+        }
+
+        public void UnbindKnowledgeSkillControl()
+        {
+            _skill.PropertyChanged -= RefreshSpecializationComboBox;
+            foreach (Control objControl in Controls)
+            {
+                objControl.DataBindings.Clear();
+            }
         }
 
         private void btnCareerIncrease_Click(object sender, EventArgs e)
@@ -198,18 +216,14 @@ namespace Chummer.UI.Skills
             if (selectForm.DialogResult != DialogResult.OK) return;
 
             _skill.AddSpecialization(selectForm.SelectedItem);
-
-            //TODO turn this into a databinding, but i don't care enough right now
-            lblSpec.Text = string.Join(", ", _skill.Specializations.Select(x => x.Name));
-
+            
             if (ParentForm is CharacterShared frmParent)
                 frmParent.IsCharacterUpdateRequested = true;
         }
 
         private void cboSpec_TextChanged(object sender, EventArgs e)
         {
-            if (!_skill.CharacterObject.Options.AllowPointBuySpecializationsOnKarmaSkills &&
-                nudSkill.Value == 0 && !string.IsNullOrWhiteSpace(cboSpec.Text))
+            if (!_skill.CharacterObject.Options.AllowPointBuySpecializationsOnKarmaSkills && nudSkill.Value == 0 && !string.IsNullOrWhiteSpace(cboSpec.Text))
             {
                 chkKarma.Checked = true;
             }

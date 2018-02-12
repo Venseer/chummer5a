@@ -43,7 +43,7 @@ namespace Chummer
             try
             {
                 string strFile = Path.Combine(Application.StartupPath, "chummerlog.txt");
-                report.AddData("chummerlog.txt", new StreamReader(strFile).BaseStream);
+                report.AddData("chummerlog.txt", new StreamReader(strFile, Encoding.UTF8, true).BaseStream);
             }
             catch(Exception ex)
             {
@@ -59,7 +59,7 @@ namespace Chummer
             try
             {
                 string strFilePath = Path.Combine(Application.StartupPath, "settings", "default.xml");
-                report.AddData("default.xml", new StreamReader(strFilePath).BaseStream);
+                report.AddData("default.xml", new StreamReader(strFilePath, Encoding.UTF8, true).BaseStream);
             }
             catch (Exception ex)
             {
@@ -88,10 +88,7 @@ namespace Chummer
 
                 return _subject;
             }
-            set
-            {
-                _subject = value;
-            }
+            set => _subject = value;
         }
 
         public CrashReportData(Guid repordGuid)
@@ -134,13 +131,17 @@ namespace Chummer
                         {
                             //on 32 bit builds?
                             //cv = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion");
-
+                            cv.Close();
                             cv = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
                         }
 
-                        String[] keys = cv.GetValueNames();
-                        report.AppendFormat("Machine ID Primary= {0}", cv.GetValue("ProductId"));
-                        report.AppendLine();
+                        if (cv != null)
+                        {
+                            string[] keys = cv.GetValueNames();
+                            report.AppendFormat("Machine ID Primary= {0}", cv.GetValue("ProductId"));
+                            report.AppendLine();
+                            cv.Close();
+                        }
                     }
                 }
 
@@ -149,13 +150,15 @@ namespace Chummer
 
                 report.AppendFormat("Version={0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
             }
-            finally
+            catch (Exception ex)
             {
+                report.AppendLine();
+                report.AppendFormat("CrashHandlerException={0}", ex);
             }
             return report.ToString();
         }
 
-        public CrashReportData AddData(String title, String contents)
+        public CrashReportData AddData(string title, string contents)
         {
             //Convert string to stream
             MemoryStream stream = new MemoryStream();
@@ -167,7 +170,7 @@ namespace Chummer
             return AddData(title, stream);
         }
 
-        public CrashReportData AddData(String title, Stream contents)
+        public CrashReportData AddData(string title, Stream contents)
         {
             values.Add(new KeyValuePair<string, Stream>(title, contents));
             return this;
@@ -179,7 +182,7 @@ namespace Chummer
             {
                 //Not worried about password, but don't want to place it in clear. Not that this is going to stop anybody
                 //But hopefully this barrier keeps it above the lowest hanging fruits
-                String password = Encoding.ASCII.GetString(Convert.FromBase64String("Y3Jhc2hkdW1wd29yZHBhc3M="));
+                string password = Encoding.ASCII.GetString(Convert.FromBase64String("Y3Jhc2hkdW1wd29yZHBhc3M="));
 
                 MailAddress address = new MailAddress("chummercrashdumps@gmail.com");
                 SmtpClient client = new SmtpClient

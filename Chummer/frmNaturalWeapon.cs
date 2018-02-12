@@ -18,8 +18,7 @@
  */
  using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Windows.Forms;
+ using System.Windows.Forms;
 using System.Xml;
  using Chummer.Backend.Equipment;
 
@@ -133,7 +132,7 @@ namespace Chummer
             strDamage += cboDVType.SelectedValue.ToString();
 
             // Create the AP value.
-            string strAP = string.Empty;
+            string strAP;
             if (nudAP.Value == 0)
                 strAP = "0";
             else if (nudAP.Value > 0)
@@ -171,13 +170,8 @@ namespace Chummer
         /// <summary>
         /// Weapon that was created as a result of the dialogue.
         /// </summary>
-        public Weapon SelectedWeapon
-        {
-            get
-            {
-                return _objWeapon;
-            }
-        }
+        public Weapon SelectedWeapon => _objWeapon;
+
         #endregion
     }
 }

@@ -13,9 +13,10 @@ namespace Chummer
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                components?.Dispose();
+                tipTooltip?.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -293,7 +294,7 @@ namespace Chummer
             this.chkExtended.TabIndex = 21;
             this.chkExtended.Tag = "Checkbox_SelectSpell_ExtendedSpell";
             this.chkExtended.Text = "Extended Spell";
-            this.tipTooltip.SetToolTip(this.chkExtended, "Extended range Spells have a range of (Force x MAG x 10) meters but have their DV" +
+            this.tipTooltip.SetToolTip(this.chkExtended, "Extended range Spells have a range of (Force × MAG × 10) meters but have their DV" +
         " increased by +2.");
             this.chkExtended.UseVisualStyleBackColor = true;
             this.chkExtended.Visible = false;
@@ -308,7 +309,7 @@ namespace Chummer
             this.chkAlchemical.TabIndex = 15;
             this.chkAlchemical.Tag = "Checkbox_SelectSpell_Alchemical";
             this.chkAlchemical.Text = "Alchemical Preparation";
-            this.tipTooltip.SetToolTip(this.chkAlchemical, "Extended range Spells have a range of (Force x MAG x 10) meters but have their DV" +
+            this.tipTooltip.SetToolTip(this.chkAlchemical, "Extended range Spells have a range of (Force × MAG × 10) meters but have their DV" +
         " increased by +2.");
             this.chkAlchemical.UseVisualStyleBackColor = true;
             // 

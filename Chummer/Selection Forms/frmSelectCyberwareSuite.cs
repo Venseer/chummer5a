@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.XPath;
  using Chummer.Backend.Equipment;
 
 namespace Chummer
@@ -33,11 +32,11 @@ namespace Chummer
         private readonly Improvement.ImprovementSource _objSource = Improvement.ImprovementSource.Cyberware;
         private readonly string _strType = "cyberware";
         private readonly Character _objCharacter;
-        private decimal _decCost = 0;
+        private decimal _decCost;
 
         private readonly List<Cyberware> _lstCyberware = new List<Cyberware>();
 
-        private readonly XmlDocument _objXmlDocument = null;
+        private readonly XmlDocument _objXmlDocument;
 
         #region Control events
         public frmSelectCyberwareSuite(Improvement.ImprovementSource objSource, Character objCharacter)
@@ -85,7 +84,7 @@ namespace Chummer
             foreach (XmlNode objXmlSuite in objXmlSuiteList)
             {
                 string strGrade = objXmlSuite["grade"]?.InnerText ?? string.Empty;
-                if (string.IsNullOrEmpty(strGrade) && (!lstGrades.Any(x => x.Name == strGrade) ||
+                if (string.IsNullOrEmpty(strGrade) && (lstGrades.All(x => x.Name != strGrade) ||
                     _objCharacter.Improvements.Any(x => ((_objSource == Improvement.ImprovementSource.Cyberware && x.ImproveType == Improvement.ImprovementType.DisableBiowareGrade) || (_objSource == Improvement.ImprovementSource.Bioware && x.ImproveType == Improvement.ImprovementType.DisableCyberwareGrade))
                     && strGrade.Contains(x.ImprovedName) && x.Enabled)))
                     continue;
@@ -133,33 +132,19 @@ namespace Chummer
         /// </summary>
         public decimal CharacterESSMultiplier
         {
-            set
-            {
-                _decCharacterESSModifier = value;
-            }
+            set => _decCharacterESSModifier = value;
         }
 
         /// <summary>
         /// Name of Suite that was selected in the dialogue.
         /// </summary>
-        public string SelectedSuite
-        {
-            get
-            {
-                return _strSelectedSuite;
-            }
-        }
+        public string SelectedSuite => _strSelectedSuite;
 
         /// <summary>
         /// Total cost of the Cyberware Suite. This is done to make it easier to obtain the actual cost in Career Mode.
         /// </summary>
-        public decimal TotalCost
-        {
-            get
-            {
-                return _decCost;
-            }
-        }
+        public decimal TotalCost => _decCost;
+
         #endregion
 
         #region Methods

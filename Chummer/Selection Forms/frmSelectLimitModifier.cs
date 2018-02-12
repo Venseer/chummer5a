@@ -1,4 +1,4 @@
-/*  This file is part of Chummer5a.
+﻿/*  This file is part of Chummer5a.
  *
  *  Chummer5a is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,14 +16,8 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
+ using System;
+ using System.Windows.Forms;
 
 namespace Chummer
 {
@@ -73,14 +67,8 @@ namespace Chummer
         /// </summary>
         public string SelectedName
         {
-            get
-            {
-                return _strReturnName;
-            }
-            set
-            {
-                txtName.Text = value;
-            }
+            get => _strReturnName;
+            set => txtName.Text = value;
         }
 
         /// <summary>
@@ -88,14 +76,8 @@ namespace Chummer
         /// </summary>
         public string SelectedCondition
         {
-            get
-            {
-                return _strCondition;
-            }
-            set
-            {
-                txtCondition.Text = value;
-            }
+            get => _strCondition;
+            set => txtCondition.Text = value;
         }
 
         /// <summary>
@@ -103,14 +85,8 @@ namespace Chummer
         /// </summary>
         public int SelectedBonus
         {
-            get
-            {
-                return _intBonus;
-            }
-            set
-            {
-                nudBonus.Value = value;
-            }
+            get => _intBonus;
+            set => nudBonus.Value = value;
         }
 
         #endregion

@@ -16,10 +16,9 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-using Chummer.Backend;
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
 
@@ -29,11 +28,11 @@ namespace Chummer
     {
         private string _strSelectedMartialArt = string.Empty;
         
-        private bool _blnAddAgain = false;
+        private bool _blnAddAgain;
         private string _strForcedValue = string.Empty;
-        private bool _blnShowQualities = false;
+        private bool _blnShowQualities;
 
-        private readonly XmlDocument _objXmlDocument = null;
+        private readonly XmlDocument _objXmlDocument;
         private readonly Character _objCharacter;
 
         #region Control Events
@@ -135,38 +134,20 @@ namespace Chummer
         /// <summary>
         /// Whether or not the user wants to add another item after this one.
         /// </summary>
-        public bool AddAgain
-        {
-            get
-            {
-                return _blnAddAgain;
-            }
-        }
+        public bool AddAgain => _blnAddAgain;
 
         /// <summary>
         /// Martial Art that was selected in the dialogue.
         /// </summary>
-        public string SelectedMartialArt
-        {
-            get
-            {
-                return _strSelectedMartialArt;
-            }
-        }
+        public string SelectedMartialArt => _strSelectedMartialArt;
 
         /// <summary>
         /// Only show Martial Arts that are provided by a quality
         /// </summary>
         public bool ShowQualities
         {
-            get
-            {
-                return _blnShowQualities;
-            }
-            set
-            {
-                _blnShowQualities = value;
-            }
+            get => _blnShowQualities;
+            set => _blnShowQualities = value;
         }
 
         /// <summary>
@@ -174,10 +155,7 @@ namespace Chummer
         /// </summary>
         public string ForcedValue
         {
-            set
-            {
-                _strForcedValue = value;
-            }
+            set => _strForcedValue = value;
         }
         #endregion
 

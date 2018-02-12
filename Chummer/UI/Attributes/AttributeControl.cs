@@ -17,12 +17,7 @@
  *  https://github.com/chummer5a/chummer5a
  */
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using Chummer.Backend.Attributes;
 
@@ -31,10 +26,9 @@ namespace Chummer.UI.Attributes
     public partial class AttributeControl : UserControl
     {
         // ConnectionRatingChanged Event Handler.
-        public delegate void ValueChangedHandler(Object sender, EventArgs e);
+        public delegate void ValueChangedHandler(object sender, EventArgs e);
         public event ValueChangedHandler ValueChanged;
         private readonly CharacterAttrib _objAttribute;
-        private readonly object sender;
         private decimal _oldBase;
         private decimal _oldKarma;
         private readonly Character _objCharacter;
@@ -64,6 +58,9 @@ namespace Chummer.UI.Attributes
             }
             else
             {
+                while (_objAttribute.KarmaMaximum < 0 && _objAttribute.Base > 0)
+                    _objAttribute.Base -= 1;
+
                 nudBase.DataBindings.Add("Maximum", _dataSource, nameof(CharacterAttrib.PriorityMaximum), false, DataSourceUpdateMode.OnPropertyChanged);
                 nudBase.DataBindings.Add("Value", _dataSource, nameof(CharacterAttrib.Base), false, DataSourceUpdateMode.OnPropertyChanged);
                 nudBase.DataBindings.Add("Enabled", _dataSource, nameof(CharacterAttrib.BaseUnlocked), false, DataSourceUpdateMode.OnPropertyChanged);
@@ -81,16 +78,19 @@ namespace Chummer.UI.Attributes
                 cmdBurnEdge.Visible = false;
             }
         }
-
-        public AttributeControl(object sender)
-        {
-            this.sender = sender;
-        }
-
+        
 		public void ResetBinding(CharacterAttrib attrib)
 		{
 			_dataSource.DataSource = attrib;
 		}
+
+        public void UnbindAttributeControl()
+        {
+            foreach (Control objControl in Controls)
+            {
+                objControl.DataBindings.Clear();
+            }
+        }
 
 		private void cmdImproveATT_Click(object sender, EventArgs e)
         {
@@ -152,17 +152,18 @@ namespace Chummer.UI.Attributes
                 if (intValue >= intTotalMaximum && intTotalMaximum != 0)
                 {
                     bool blnAttributeListContainsThisAbbrev = false;
-                    bool blnAnyOtherAttributeAtMax = false;
+                    int intNumOtherAttributeAtMax = 0;
+                    int intMaxOtherAttributesAtMax = _objCharacter.Options.Allow2ndMaxAttribute ? 1 : 0;
                     foreach (CharacterAttrib objLoopAttrib in _objCharacter.AttributeSection.AttributeList)
                     {
                         if (objLoopAttrib.Abbrev == AttributeName)
                             blnAttributeListContainsThisAbbrev = true;
                         else if (objLoopAttrib.AtMetatypeMaximum)
-                            blnAnyOtherAttributeAtMax = true;
-                        if (blnAnyOtherAttributeAtMax && blnAttributeListContainsThisAbbrev)
+                            intNumOtherAttributeAtMax += 1;
+                        if (intNumOtherAttributeAtMax > intMaxOtherAttributesAtMax && blnAttributeListContainsThisAbbrev)
                             break;
                     }
-                    if (blnAnyOtherAttributeAtMax && blnAttributeListContainsThisAbbrev)
+                    if (intNumOtherAttributeAtMax > intMaxOtherAttributesAtMax && blnAttributeListContainsThisAbbrev)
                     {
                         MessageBox.Show(LanguageManager.GetString("Message_AttributeMaximum", GlobalOptions.Language),
                             LanguageManager.GetString("MessageTitle_Attribute", GlobalOptions.Language), MessageBoxButtons.OK,
@@ -174,10 +175,7 @@ namespace Chummer.UI.Attributes
             return true;
         }
 
-        public string AttributeName
-	    {
-		    get { return _objAttribute.Abbrev; }
-	    }
+        public string AttributeName => _objAttribute.Abbrev;
 
         private void cmdBurnEdge_Click(object sender, EventArgs e)
         {

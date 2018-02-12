@@ -131,14 +131,21 @@
   <ItemGroup>
     <Compile Include="Backend\Attributes\AttributeSection.cs" />
     <Compile Include="Backend\Datastructures\AvailabilityValue.cs" />
+    <Compile Include="Backend\Datastructures\CachedBindingList.cs" />
+    <Compile Include="Backend\Datastructures\MostRecentlyUsedCollection.cs" />
+    <Compile Include="Backend\Datastructures\ObservableCollectionWithMaxSize.cs" />
     <Compile Include="Backend\Datastructures\NuyenString.cs" />
     <Compile Include="Backend\Datastructures\SourceString.cs" />
+    <Compile Include="Backend\Datastructures\TaggedObservableCollection.cs" />
     <Compile Include="Backend\Datastructures\TextEventArgs.cs" />
     <Compile Include="Backend\Equipment\WeaponMount.cs" />
+    <Compile Include="Backend\Extensions\ListExtensions.cs" />
     <Compile Include="Backend\Extensions\ImageExtensions.cs" />
     <Compile Include="Backend\Extensions\LinqExtensions.cs" />
+    <Compile Include="Backend\Extensions\ObservableCollectionExtensions.cs" />
     <Compile Include="Backend\Extensions\StringExtensions.cs" />
     <Compile Include="Backend\Extensions\WinFormsExtensions.cs" />
+    <Compile Include="Backend\Extensions\XPathNavigatorExtensions.cs" />
     <Compile Include="Backend\Improvements\ImprovementMethods.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -163,7 +170,7 @@
     <Compile Include="Backend\Equipment\WeaponAccessory.cs" />
     <Compile Include="Backend\Extensions\BindingListExtensions.cs" />
     <Compile Include="Backend\Extensions\BitArrayExtensions.cs" />
-    <Compile Include="Backend\Extensions\IEnumerableExtensions.cs" />
+    <Compile Include="Backend\Extensions\EnumerableExtensions.cs" />
     <Compile Include="Backend\Debugging\PerformanceDebugUtils.cs" />
     <Compile Include="Backend\Shared Methods\SelectionShared.cs" />
     <Compile Include="Backend\Powers\PowerSorters.cs" />
@@ -175,6 +182,8 @@
     <Compile Include="Backend\Skills\SkillGroup.cs" />
     <Compile Include="Backend\Skills\SkillSorters.cs" />
     <Compile Include="Backend\Skills\SkillsSection.cs" />
+    <Compile Include="Backend\Stories\Story.cs" />
+    <Compile Include="Backend\Stories\StoryModule.cs" />
     <Compile Include="Backend\Uniques\AIProgram.cs" />
     <Compile Include="Backend\Uniques\Art.cs" />
     <Compile Include="Backend\Uniques\CalendarWeek.cs" />
@@ -239,6 +248,7 @@
     <Compile Include="frmCreateWeaponMount.Designer.cs">
       <DependentUpon>frmCreateWeaponMount.cs</DependentUpon>
     </Compile>
+    <Compile Include="helpers\DataGridViewTextBoxColumnTranslated.cs" />
     <Compile Include="helpers\ElasticComboBox.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -470,48 +480,48 @@
     <Compile Include="frmNotes.Designer.cs">
       <DependentUpon>frmNotes.cs</DependentUpon>
     </Compile>
-    <Compile Include="Omae\frmOmae.cs">
+    <None Include="Omae\frmOmae.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Omae\frmOmae.Designer.cs">
+    </None>
+    <None Include="Omae\frmOmae.Designer.cs">
       <DependentUpon>frmOmae.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Omae\frmOmaeAccount.cs">
+    </None>
+    <None Include="Omae\frmOmaeAccount.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Omae\frmOmaeAccount.Designer.cs">
+    </None>
+    <None Include="Omae\frmOmaeAccount.Designer.cs">
       <DependentUpon>frmOmaeAccount.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Omae\frmOmaeCompress.cs">
+    </None>
+    <None Include="Omae\frmOmaeCompress.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Omae\frmOmaeCompress.Designer.cs">
+    </None>
+    <None Include="Omae\frmOmaeCompress.Designer.cs">
       <DependentUpon>frmOmaeCompress.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Omae\frmOmaeUpload.cs">
+    </None>
+    <None Include="Omae\frmOmaeUpload.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Omae\frmOmaeUpload.Designer.cs">
+    </None>
+    <None Include="Omae\frmOmaeUpload.Designer.cs">
       <DependentUpon>frmOmaeUpload.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Omae\frmOmaeUploadData.cs">
+    </None>
+    <None Include="Omae\frmOmaeUploadData.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Omae\frmOmaeUploadData.Designer.cs">
+    </None>
+    <None Include="Omae\frmOmaeUploadData.Designer.cs">
       <DependentUpon>frmOmaeUploadData.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Omae\frmOmaeUploadLanguage.cs">
+    </None>
+    <None Include="Omae\frmOmaeUploadLanguage.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Omae\frmOmaeUploadLanguage.Designer.cs">
+    </None>
+    <None Include="Omae\frmOmaeUploadLanguage.Designer.cs">
       <DependentUpon>frmOmaeUploadLanguage.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Omae\frmOmaeUploadSheet.cs">
+    </None>
+    <None Include="Omae\frmOmaeUploadSheet.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Omae\frmOmaeUploadSheet.Designer.cs">
+    </None>
+    <None Include="Omae\frmOmaeUploadSheet.Designer.cs">
       <DependentUpon>frmOmaeUploadSheet.cs</DependentUpon>
-    </Compile>
+    </None>
     <Compile Include="frmPlayerDashboard.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -812,12 +822,12 @@
     <Compile Include="Controls\InitiativeUserControl.Designer.cs">
       <DependentUpon>InitiativeUserControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Omae\OmaeRecord.cs">
+    <None Include="Omae\OmaeRecord.cs">
       <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Omae\OmaeRecord.Designer.cs">
+    </None>
+    <None Include="Omae\OmaeRecord.Designer.cs">
       <DependentUpon>OmaeRecord.cs</DependentUpon>
-    </Compile>
+    </None>
     <Compile Include="Controls\PetControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -1376,9 +1386,6 @@
       <DependentUpon>language.xsd</DependentUpon>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="nuget.config">
-      <SubType>Designer</SubType>
-    </None>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -1640,9 +1647,18 @@
     <Content Include="customdata\Education Qualities Apply Karma Discount in Create Mode\amend_qualities.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="customdata\German Data Changes - Exotic Weapons Use Standard Skills\amend_weapons.xml" />
-    <Content Include="customdata\German Data Changes - Growth Spell Category\amend_spells.xml" />
-    <Content Include="customdata\German Data Changes - Gyro-Stablisation Vehicle Mod\override_gyro-stabilization_vehicles.xml" />
+    <Content Include="customdata\German Data Changes - Commlink App Prices\amend_commlinkappsprices_gear.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\German Data Changes - Exotic Weapons Use Standard Skills\amend_weapons.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\German Data Changes - Growth Spell Category\amend_spells.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\German Data Changes - Gyro-Stablisation Vehicle Mod\override_gyro-stabilization_vehicles.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="customdata\German Data Changes - Heightened Concentration has Levels\amend_heightenedconcentration_powers.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -3080,11 +3096,17 @@
     <Content Include="sheets\xt.Calendar.xslt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="sheets\xt.ComplexForms.xslt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="sheets\xt.ConditionMonitor.xslt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
     <Content Include="sheets\xt.Contacts.xslt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="sheets\xt.CritterPowers.xslt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="sheets\xt.Expenses.xslt">

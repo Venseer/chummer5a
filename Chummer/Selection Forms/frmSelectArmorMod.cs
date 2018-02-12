@@ -31,15 +31,16 @@ namespace Chummer
         private string _strSelectedArmorMod = string.Empty;
 
         private string _strAllowedCategories = string.Empty;
-        private bool _blnAddAgain = false;
-        private decimal _decArmorCost = 0;
-        private decimal _decMarkup = 0;
+        private bool _blnAddAgain;
+        private decimal _decArmorCapacity;
+        private decimal _decArmorCost;
+        private decimal _decMarkup;
         private CapacityStyle _eCapacityStyle = CapacityStyle.Standard;
 
-        private readonly XmlDocument _objXmlDocument = null;
+        private readonly XmlDocument _objXmlDocument;
         private readonly Character _objCharacter;
         private bool _blnBlackMarketDiscount;
-        private bool _blnExcludeGeneralCategory = false;
+        private bool _blnExcludeGeneralCategory;
         private readonly HashSet<string> _setBlackMarketMaps;
 
         #region Control Events
@@ -122,118 +123,72 @@ namespace Chummer
         /// <summary>
         /// Whether or not the user wants to add another item after this one.
         /// </summary>
-        public bool AddAgain
-        {
-            get
-            {
-                return _blnAddAgain;
-            }
-        }
+        public bool AddAgain => _blnAddAgain;
 
         /// <summary>
         /// Armor's Cost.
         /// </summary>
         public decimal ArmorCost
         {
-            set
-            {
-                _decArmorCost = value;
-            }
+            set => _decArmorCost = value;
+        }
+
+        /// <summary>
+        /// Armor's Cost.
+        /// </summary>
+        public decimal ArmorCapacity
+        {
+            set => _decArmorCapacity = value;
         }
 
         /// <summary>
         /// Whether or not the selected Vehicle is used.
         /// </summary>
-        public bool BlackMarketDiscount
-        {
-            get
-            {
-                return _blnBlackMarketDiscount;
-            }
-        }
+        public bool BlackMarketDiscount => _blnBlackMarketDiscount;
 
         /// <summary>
         /// Name of Accessory that was selected in the dialogue.
         /// </summary>
-        public string SelectedArmorMod
-        {
-            get
-            {
-                return _strSelectedArmorMod;
-            }
-        }
+        public string SelectedArmorMod => _strSelectedArmorMod;
 
         /// <summary>
         /// Rating that was selected in the dialogue.
         /// </summary>
-        public int SelectedRating
-        {
-            get
-            {
-                return decimal.ToInt32(nudRating.Value);
-            }
-        }
+        public int SelectedRating => decimal.ToInt32(nudRating.Value);
 
         /// <summary>
         /// Categories that the Armor allows to be used.
         /// </summary>
         public string AllowedCategories
         {
-            get
-            {
-                return _strAllowedCategories;
-            }
-            set
-            {
-                _strAllowedCategories = value;
-            }
+            get => _strAllowedCategories;
+            set => _strAllowedCategories = value;
         }
 
         /// <summary>
         /// Whether or not the General category should be included.
         /// </summary>
         public bool ExcludeGeneralCategory {
-            get
-            {
-                return _blnExcludeGeneralCategory;
-            }
-            set
-            {
-                _blnExcludeGeneralCategory = value;
-            }
+            get => _blnExcludeGeneralCategory;
+            set => _blnExcludeGeneralCategory = value;
         }
 
         /// <summary>
         /// Whether or not the item should be added for free.
         /// </summary>
-        public bool FreeCost
-        {
-            get
-            {
-                return chkFreeItem.Checked;
-            }
-        }
+        public bool FreeCost => chkFreeItem.Checked;
 
         /// <summary>
         /// Markup percentage.
         /// </summary>
-        public decimal Markup
-        {
-            get
-            {
-                return _decMarkup;
-            }
-        }
+        public decimal Markup => _decMarkup;
 
         /// <summary>
         /// Capacity display style.
         /// </summary>
         public CapacityStyle CapacityDisplayStyle
         {
-            set
-            {
-                _eCapacityStyle = value;
-            }
+            set => _eCapacityStyle = value;
         }
         #endregion
 
@@ -271,7 +226,7 @@ namespace Chummer
             nudRating.Maximum = Convert.ToDecimal(objXmlMod["maxrating"].InnerText, GlobalOptions.InvariantCultureInfo);
             if (chkHideOverAvailLimit.Checked)
             {
-                while (nudRating.Maximum > 1 && !Backend.SelectionShared.CheckAvailRestriction(objXmlMod, _objCharacter, decimal.ToInt32(nudRating.Maximum)))
+                while (nudRating.Maximum > 1 && !SelectionShared.CheckAvailRestriction(objXmlMod, _objCharacter, decimal.ToInt32(nudRating.Maximum)))
                 {
                     nudRating.Maximum -= 1;
                 }
@@ -326,7 +281,7 @@ namespace Chummer
                 string strCostElement = objXmlMod["cost"]?.InnerText ?? string.Empty;
                 if (strCostElement.StartsWith("Variable("))
                 {
-                    decimal decMin = 0;
+                    decimal decMin;
                     decimal decMax = decimal.MaxValue;
                     string strCost = strCostElement.TrimStart("Variable(", true).TrimEnd(')');
                     if (strCost.Contains('-'))
@@ -347,8 +302,8 @@ namespace Chummer
                 }
                 else
                 {
-                    string strCost = strCostElement.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
-                    strCost = strCost.Replace("Armor Cost", _decArmorCost.ToString(GlobalOptions.InvariantCultureInfo));
+                    string strCost = strCostElement.CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))
+                        .CheapReplace("Armor Cost", () => _decArmorCost.ToString(GlobalOptions.InvariantCultureInfo));
 
                     // Apply any markup.
                     decimal decCost = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(strCost), GlobalOptions.InvariantCultureInfo);
@@ -362,13 +317,11 @@ namespace Chummer
 
             // Capacity.
             // XPathExpression cannot evaluate while there are square brackets, so remove them if necessary.
-            string strCapacity = objXmlMod["armorcapacity"].InnerText;
+            string strCapacity = objXmlMod["armorcapacity"]?.InnerText;
 
             // Handle YNT Softweave
-            if (strCapacity.Contains("Capacity"))
-            {
-                lblCapacity.Text = "+50%";
-            }
+            if (_eCapacityStyle == CapacityStyle.Zero || string.IsNullOrEmpty(strCapacity))
+                lblCapacity.Text = "[0]";
             else
             {
                 if (strCapacity.StartsWith("FixedValues("))
@@ -377,12 +330,18 @@ namespace Chummer
                     strCapacity = strValues[decimal.ToInt32(nudRating.Value) - 1];
                 }
 
-                strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
+                strCapacity = strCapacity.CheapReplace("Capacity", () => _decArmorCapacity.ToString(GlobalOptions.InvariantCultureInfo))
+                    .CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
+                bool blnSquareBrackets = strCapacity.Contains('[');
+                if (blnSquareBrackets)
+                    strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
 
-                if (_eCapacityStyle == CapacityStyle.Zero)
-                    lblCapacity.Text = "[0]";
-                else
-                    lblCapacity.Text = '[' + CommonFunctions.EvaluateInvariantXPath(strCapacity.CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))).ToString() + ']';
+                //Rounding is always 'up'. For items that generate capacity, this means making it a larger negative number.
+                string strReturn = ((double)CommonFunctions.EvaluateInvariantXPath(strCapacity)).ToString("#,0.##", GlobalOptions.CultureInfo);
+                if (blnSquareBrackets)
+                    strReturn = '[' + strReturn + ']';
+
+                lblCapacity.Text = strReturn;
             }
 
             string strSource = objXmlMod["source"].InnerText;
@@ -418,7 +377,7 @@ namespace Chummer
 
             foreach (XmlNode objXmlMod in objXmlModList)
             {
-                if (!chkHideOverAvailLimit.Checked || Backend.SelectionShared.CheckAvailRestriction(objXmlMod, _objCharacter))
+                if (!chkHideOverAvailLimit.Checked || SelectionShared.CheckAvailRestriction(objXmlMod, _objCharacter))
                 {
                     lstMods.Add(new ListItem(objXmlMod["id"].InnerText, objXmlMod["translate"]?.InnerText ?? objXmlMod["name"].InnerText));
                 }

@@ -16,7 +16,7 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
+ using System;
  using System.ComponentModel;
  using System.Drawing;
  using System.Linq;
@@ -69,6 +69,18 @@ namespace Chummer
             MoveControls();
         }
 
+        public void UnbindPowerControl()
+        {
+            PowerObject.PropertyChanged -= Power_PropertyChanged;
+            PowerObject.CharacterObject.PropertyChanged -= Power_PropertyChanged;
+            if (PowerObject.Name == "Improved Ability (skill)")
+                PowerObject.CharacterObject.SkillsSection.PropertyChanged -= Power_PropertyChanged;
+            foreach (Control objControl in Controls)
+            {
+                objControl.DataBindings.Clear();
+            }
+        }
+
         private void Power_PropertyChanged(object sender, PropertyChangedEventArgs propertyChangedEventArgs)
         {
             string strPropertyName = propertyChangedEventArgs?.PropertyName;
@@ -77,6 +89,12 @@ namespace Chummer
                 PowerObject.DisplayPoints = PowerObject.PowerPoints.ToString(GlobalOptions.CultureInfo);
                 tipTooltip.SetToolTip(lblPowerPoints, PowerObject.ToolTip());
                 cmdDelete.Enabled = PowerObject.FreeLevels == 0;
+            }
+            if (strPropertyName == nameof(PowerObject.Name))
+            {
+                PowerObject.CharacterObject.SkillsSection.PropertyChanged -= Power_PropertyChanged;
+                if (PowerObject.Name == "Improved Ability (skill)")
+                    PowerObject.CharacterObject.SkillsSection.PropertyChanged += Power_PropertyChanged;
             }
             // Super hacky solution, but we need all values updated properly if maxima change for any reason
             if (strPropertyName == nameof(PowerObject.TotalMaximumLevels))
@@ -91,7 +109,7 @@ namespace Chummer
 
         private void PowerControl_Load(object sender, EventArgs e)
         {
-            this.Width = cmdDelete.Left + cmdDelete.Width;
+            Width = cmdDelete.Left + cmdDelete.Width;
             cmdDelete.Enabled = PowerObject.FreeLevels == 0;
         }
 
@@ -141,14 +159,8 @@ namespace Chummer
         /// </summary>
         public Power PowerObject
         {
-            get
-            {
-                return _objPower;
-            }
-            set
-            {
-                _objPower = value;
-            }
+            get => _objPower;
+            set => _objPower = value;
         }
 
         /// <summary>
@@ -156,14 +168,8 @@ namespace Chummer
         /// </summary>
         public string PowerName
         {
-            get
-            {
-                return _objPower.Name;
-            }
-            set
-            {
-                _objPower.Name = value;
-            }
+            get => _objPower.Name;
+            set => _objPower.Name = value;
         }
 
         /// <summary>
@@ -171,14 +177,8 @@ namespace Chummer
         /// </summary>
         public string Extra
         {
-            get
-            {
-                return _objPower.Extra;
-            }
-            set
-            {
-                _objPower.Extra = value;
-            }
+            get => _objPower.Extra;
+            set => _objPower.Extra = value;
         }
 
         #endregion
@@ -213,7 +213,7 @@ namespace Chummer
                 }
                 cmdDelete.Left = imgNotes.Left + imgNotes.Width + 6;
 
-                if (cmdDelete.Left + cmdDelete.Width > this.Width)
+                if (cmdDelete.Left + cmdDelete.Width > Width)
                 {
                     lblPowerName.Font = new Font(lblPowerName.Font.FontFamily.Name, lblPowerName.Font.Size - 0.25f);
                     nudRating.Font = lblPowerName.Font;

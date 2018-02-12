@@ -116,6 +116,50 @@ Application Changes:
 - Removed <transgenicsgenetechcost> from the improvement system and all code related to processing transgenics, as it is a holdover from the 4e days, and unlike something like <genetechcostmultiplier>, there is no way to translate it to 5e's mechanics.
 - Fixed an issue where adding contacts from a file would not register and save those contacts with the underlying character.
 - Fixed a bug where spirit names would get printed as blank if using a non-default localization that does not have a translated entry for the particular spirit. Fixes #2416.
+- Cyberware grades are no longer hidden if the character is ignoring creation rules.
+- Fixed an issue where unequipping modular cyberware that was equipped to a vehicle in career mode would keep the old cyberware node on the vehicle tree view.
+- Fixed a bug where lifestyle qualities with restrictions based on existing lifestyle qualities would not function properly.
+- Fixed an issue where editing spirit or sprite notes would not mark the underlying character as "dirty". Fixes #2420.
+- Fixed an issue where removing a source for prototype transhuman would not cause 'ware originally marked as prototype transhuman to revert. Fixes #2425.
+- Fixed a bug where selling an item that added gear or cyberware via a bonus would not factor the price of the bonus-granted item into the amount the character would gain from selling the item.
+- Fixed a crash when deleting a lifestyle quality from an advanced lifestyle. Fixes #2428.
+- Fixed an issue where skill group names would not get printed properly if using a translation with no translated string specified for a skill group. Fixes #2430.
+- Fixed a crash when switching list selections in the Translator before the existing list had fully loaded. Fixes #2431.
+- Minor changes to the Quality condition in required/forbidden nodes to support looking for an Extra value.
+- Fixed a crash that sometimes occurred when closing a character form on a slower machine without having visited the skills tab first.
+- Restored the ability to search knowledge skills by name.
+- Fixed an issue where sorting active skills by name, category, or skill group would use sort by English names instead of the localized ones.
+- Fixed an issue where characters could not sort by skill groups of skills that were added after the skills tab was initialized (e.g. Resonance- or Magic-based skill groups).
+- Fixed various memory leaks that would occur whenever a character and/or a form were closed.
+- Added localization support to the About screen, file dialog filters, the JSON export dialog, karma and nuyen chart axes, and the application title.
+- Fixed an issue where weapon mounts would not get printed with vehicles. Fixes #2426.
+- Fixed an issues caused by the equipping or unequipping armor, armor mods, gear, or cyberware completely removing linked bonuses instead of just disabling them.
+- Fixed an issue where non-quality bonuses that add qualities or contacts would not properly get removed if the parent item was removed. Existing characters affected by this bug will need to Re-Apply Improvements. Fixes #2460.
+- Fixed an issue where getting an error in a static constructor that would display a warning would cause Chummer5 to silently crash in the background. Fixes #2453.
+- Fixed an issue where closing the character roster would continue to cause it to update in the background when a character is changed.
+- If the character roster encounters an issue when trying to load a character's file, it will now add an entry to the character roster indicating the error it encountered instead of silently not adding the character's file to the roster.
+- Fixed an issue where the possession method selection box could never be enabled when creating a new critter.
+- Changed quality adding logic so that variable karma costs are no longer supported, but adding a quality with a karma cost in career mode won't prematurely add the quality before the character confirms that they wish to buy the selected quality.
+- Fixed an issue where using Reapply Improvements on a character who has less Essence than their metatype maximum could potentially increase the amount of special attribute points they would lose to Essence loss.
+- Fixed an issue where karma expenditures on martial arts at chargen would not get displayed in the sidebar.
+- The karma value calculator will now also display the value that should be used when comparing a priority-based character to if it were built with Point Buy (i.e. without karma value from contact points and knowledge points).
+- Chummer5 will now live-update the watch folder node in the character roster if the underlying folder's contents are changed in any way.
+- Both the Recent Characters and Favorite Characters lists in the character roster can now be sorted alphabetically. Part of #2074.
+- Characters no longer lose their position in the Most Recently Used list if they are added to the Favorite Characters list.
+- Added an option to limit an item so that it can only be taken in career mode (this is done with the <careeronly> tag).
+- Added support to the <unlockskills> bonus to use XPath filters to select which skills to unlock instead of being beholden to built-in filter enumerators.
+- Added the ability for gear added through improvements to retain its original cost if a "fullcost" node is present as a child element.
+- Added the ability for equipment of all types to have costs and availabilities based on a character's attributes.
+- Fixed an issue where the house rule for attribute points getting spent after karma did nothing. Note that it will not affect attribute values when spending on special attributes with values lost from Essence loss (i.e. special attribute points will still be spent before Essence loss modifiers are applied, and karma will still be spent after Essence loss modifiers are applied), though it will still affect karma costs associated with them. Fixes #2472.
+- Fixed an issue where the house rule for metatypes using alternate attribute karma costs would not properly account for spent priority points.
+- Fixed an issue where characters with old versions of leveled qualities would get bonuses applied twice after those qualities were converted to the new system for leveled qualities.
+- Fixed a crash that occurred when loading old characters with too many priority points allocated to an attribute.
+- Fixed an issue where limited spells would get their drain values reduced twice, once at creation and once when their drain value would be fetched. Fixes #2474.
+- Fixed an issue where ammo and modes would not be translated correctly in the Browse tab of the weapon selection screen. Fixes #2481.
+- Fixed an issue where buying ammo for ranged weapons and attempting to load specific ammo into bows, crossbows, and some exotic weapons would not work. Fixes #2476, fixes #2372.
+- Added the ability for improvements to add weapons via the <addweapon> bonus.
+- Altering custom data directory information in the options menu will now immediately apply those changes instead of requiring Chummer5a to restart (though the prompt will still appear just in case).
+- Adjusted the NewSpellKarmaCost improvement to support restrictions based on spell type.
 
 Data Changes:
 
@@ -132,6 +176,15 @@ Data Changes:
 - Removed extra base Recoil Compensation from the HK G12A4 from SAG.
 - Fixed a bug where the Evo Atlantis was granting two cyberfins instead of cyberfins on both hands and both feet.
 - Removed the <hide /> flag from the Aware quality.
+- Horse mentor spirit now adds a proxy for the Movement critter power as a metamagic. 
+- Added a customdata entry for German Commlink App prices.
+- Fixed incorrect priority values for the Falconine and Canine shifter metatypes at Priority C.
+- Fixed incorrect available mod slots for most of the drones from Rigger 5.
+- Entries for the Rank quality have been split up based on karma cost.
+- The Elemental Body power now adds a weapon entry for Elemental Body. Existing characters with Elemental Body will need to re-apply improvements in order for it to show up. Fixes #1918.
+- Human Bovine shifters now properly have the Uneducated quality.
+- All shifters have had their Uneducated quality updated to be removable with Karma.
+- Dedicated Spellslinger quality now only discounts Spells, excluding Enchantments, Rituals and Preparations.
 
 New Strings:
 
@@ -160,6 +213,33 @@ New Strings:
 - String_EssenceLossChargen
 - String_SpiritFettering
 - String_AttributeLoss
+- Skill_NativeLanguageShort
+- DialogFilter_Chum5
+- DialogFilter_Xml
+- DialogFilter_Html
+- DialogFilter_Pdf
+- DialogFilter_Exe
+- DialogFilter_Json
+- DialogFilter_All
+- String_Version
+- String_Error
+- About_Description_Text
+- About_Company_Text
+- About_Copyright_Text
+- About_Label_Contributors
+- About_Label_Disclaimer
+- About_Label_Disclaimer_Text
+- String_Currently_Installed_Version
+- String_Latest_Version
+- Button_Export_SaveJsonAs
+- String_Unknown
+- String_D6
+- Message_Options_SettingsName
+- MessageTitle_Options_SettingsName
+- Message_Options_ValidationResults
+- MessageTitle_Options_ValidationResults
+- String_TotalComparisonWithPointBuy
+- Message_SelectGeneric_CareerOnlyRestriction
 
 Changed Strings:
 
@@ -178,6 +258,16 @@ Changed Strings:
 - Node_SelectedBioware
 - Tab_IncreaseLifestyleMonths
 - Tab_DecreaseLifestyleMonths
+- String_Up_To_Date
+- String_Update_Available
+- Checkbox_Options_KnowledgeMultiplier
+- Checkbox_Options_ContactMultiplier
+- Message_MetagenicQualitiesSubtractingKarma
+- Message_ExtraKarma
+- Message_NoExtraKarma
+- Tip_SkillsSkillGroups
+- Tip_SkillsActiveSkills
+- Tip_SkillsKnowledgeSkills
 
 Removed Strings:
 
@@ -193,6 +283,12 @@ Removed Strings:
 - MessageTitle_SelectMartialArtAdvantage
 - Title_SelectMartialArtAdvantage
 - Label_LifestyleMonths
+- String_No_Update_Found
+- Label_SummaryManeuvers
+- Tip_BuildManeuvers
+- Tip_OptionsExceptionalAttribute
+- Tip_BuildFoci
+- MessageTitle_SelectGeneric_PriorityRestriction
 
 Build 197
 

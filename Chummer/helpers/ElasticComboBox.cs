@@ -18,7 +18,6 @@
  */
 using System;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace Chummer
@@ -45,21 +44,17 @@ namespace Chummer
 
         public ElasticComboBox() : this(null) { }
 
-        public ElasticComboBox(ToolTip objToolTip) : base()
+        public ElasticComboBox(ToolTip objToolTip)
         {
-            _tt = objToolTip;
-            if (_tt == null)
+            _tt = objToolTip ?? new ToolTip
             {
-                _tt = new ToolTip
-                {
-                    AutoPopDelay = 1500,
-                    InitialDelay = 400,
-                    UseAnimation = true,
-                    UseFading = true,
-                    Active = true
-                };
-            }
-            
+                AutoPopDelay = 1500,
+                InitialDelay = 400,
+                UseAnimation = true,
+                UseFading = true,
+                Active = true
+            };
+
             MouseEnter += Label_MouseEnter;
             MouseLeave += Label_MouseLeave;
 
@@ -80,7 +75,7 @@ namespace Chummer
 
         public new object DataSource
         {
-            get { return base.DataSource; }
+            get => base.DataSource;
             set
             {
                 if (base.DataSource != value)
@@ -92,7 +87,7 @@ namespace Chummer
         }
         public new string DisplayMember
         {
-            get { return base.DisplayMember; }
+            get => base.DisplayMember;
             set
             {
                 if (base.DisplayMember != value)
@@ -104,7 +99,7 @@ namespace Chummer
         }
         public new string ValueMember
         {
-            get { return base.ValueMember; }
+            get => base.ValueMember;
             set
             {
                 if (base.ValueMember != value)
@@ -120,7 +115,9 @@ namespace Chummer
             float fltMaxItemWidth = Width;
             foreach (var objItem in Items)
             {
-                string strItemText = ((ListItem)objItem).Name;
+                string strItemText = string.Empty;
+                if (objItem is ListItem objListItem)
+                    strItemText = objListItem.Name;
                 if (string.IsNullOrEmpty(strItemText))
                     strItemText = GetItemText(objItem);
                 float fltLoopItemWidth = _objGraphics.MeasureString(strItemText, Font).Width;
@@ -128,6 +125,16 @@ namespace Chummer
                     fltMaxItemWidth = fltLoopItemWidth;
             }
             DropDownWidth = Convert.ToInt32(Math.Ceiling(fltMaxItemWidth));
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _tt?.Dispose();
+                _objGraphics?.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }

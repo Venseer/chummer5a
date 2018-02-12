@@ -16,7 +16,7 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-using Chummer.Backend;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,7 +29,7 @@ namespace Chummer
     {
         private string _strSelectedTechnique = string.Empty;
 
-        private bool _blnAddAgain = false;
+        private bool _blnAddAgain;
 
         private readonly MartialArt _objMartialArt;
         private readonly XmlDocument _xmlDocument;
@@ -57,7 +57,7 @@ namespace Chummer
                 foreach (XmlNode xmlTechnique in xmlMartialArtNode.SelectNodes("techniques/technique"))
                 {
                     string strTechniqueName = xmlTechnique.InnerText;
-                    if (!_objMartialArt.Techniques.Any(x => x.Name == strTechniqueName))
+                    if (_objMartialArt.Techniques.All(x => x.Name != strTechniqueName))
                     {
                         setAllowedTechniques.Add(strTechniqueName);
                     }
@@ -129,25 +129,13 @@ namespace Chummer
         /// <summary>
         /// Whether or not the user wants to add another item after this one.
         /// </summary>
-        public bool AddAgain
-        {
-            get
-            {
-                return _blnAddAgain;
-            }
-
-        }
+        public bool AddAgain => _blnAddAgain;
 
         /// <summary>
         /// Martial Art Technique that was selected in the dialogue.
         /// </summary>
-        public string SelectedTechnique
-        {
-            get
-            {
-                return _strSelectedTechnique;
-            }
-        }
+        public string SelectedTechnique => _strSelectedTechnique;
+
         #endregion
 
         #region Methods

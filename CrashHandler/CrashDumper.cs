@@ -1,5 +1,4 @@
 using System;
-using System.CodeDom.Compiler;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
@@ -24,7 +22,7 @@ namespace CrashHandler
 		public Dictionary<string, string> PretendFiles => _pretendFiles;
 		public Dictionary<string, string> Attributes => _attributes;
 		public CrashDumperProgress Progress => _progress;
-		public Action<object, CrashDumperProgressChangedEventArgs> CrashDumperProgressChanged { get; set; }
+	    public event Action<object, CrashDumperProgressChangedEventArgs> CrashDumperProgressChanged;
 		public string WorkingDirectory { get; }
 		public Process Process { get; private set; }
 		public bool DoCleanUp { get; set; } = true;
@@ -40,7 +38,7 @@ namespace CrashHandler
 		private readonly ManualResetEvent _startSendEvent = new ManualResetEvent(false);
         private string _strLatestDumpName = string.Empty;
 	    
-	    private TextWriter CrashLogWriter;
+	    private readonly TextWriter CrashLogWriter;
 
         /// <summary>
         /// 
@@ -214,7 +212,7 @@ namespace CrashHandler
 		private bool CreateDump(Process process, IntPtr exceptionInfo, uint threadId, bool debugger)
 		{
 
-            bool ret = false;
+            bool ret;
             _strLatestDumpName = "crashdump-" + DateTime.Now.ToFileTimeUtc().ToString() + ".dmp";
             using (FileStream file = File.Create(Path.Combine(WorkingDirectory, _strLatestDumpName)))
 			{
@@ -294,7 +292,7 @@ namespace CrashHandler
 
 		private byte[] GetZip()
 		{
-            byte[] objReturn = null;
+            byte[] objReturn;
             MemoryStream mem = new MemoryStream();
             // archive.Dispose() should call mem.Dispose()
             using (ZipArchive archive = new ZipArchive(mem, ZipArchiveMode.Create, false))
@@ -483,7 +481,7 @@ namespace CrashHandler
 		}
 
         #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
+        private bool disposedValue; // To detect redundant calls
 
         protected virtual void Dispose(bool disposing)
         {

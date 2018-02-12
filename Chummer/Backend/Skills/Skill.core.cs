@@ -18,14 +18,13 @@
  */
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Chummer.Backend.Equipment;
 using Chummer.Backend.Attributes;
 
 namespace Chummer.Backend.Skills
 {
-    partial class Skill : IHasName, IHasInternalId
+    partial class Skill : IHasInternalId
     {
         private int _intBase;
         private int _intKarma;
@@ -34,37 +33,27 @@ namespace Chummer.Backend.Skills
         /// <summary>
         /// Base for internal use. No calling into other classes, making recursive loops impossible
         /// </summary>
-        internal int Ibase
-        {
-            get { return _intBase + FreeBase; }
-        }
+        internal int Ibase => _intBase + FreeBase;
 
         /// <summary>
         /// Karma for internal use. No calling into other classes, making recursive loops impossible
         /// </summary>
-        internal int Ikarma
-        {
-            get { return _intKarma + FreeKarma; }
-        }
+        internal int Ikarma => _intKarma + FreeKarma;
 
         /// <summary>
         /// How many points REALLY are in _base. Better that subclasses calculating Base - FreeBase()
         /// </summary>
-        protected int BasePoints { get { return _intBase; } }
+        protected int BasePoints => _intBase;
 
         /// <summary>
         /// How many points REALLY are in _karma Better htan subclasses calculating Karma - FreeKarma()
         /// </summary>
-        protected int KarmaPoints { get { return _intKarma; } }
+        protected int KarmaPoints => _intKarma;
 
         /// <summary>
         /// Is it possible to place points in Base or is it prevented? (Build method or skill group)
         /// </summary>
-        public bool BaseUnlocked
-        {
-            get { return _objCharacter.BuildMethod.HaveSkillPoints() && 
-                    (SkillGroupObject == null || SkillGroupObject.Base <= 0); }
-        }
+        public bool BaseUnlocked => _objCharacter.BuildMethodHasSkillPoints && (SkillGroupObject == null || SkillGroupObject.Base <= 0 || (!_objCharacter.Options.StrictSkillGroupsInCreateMode && _objCharacter.Options.UsePointsOnBrokenGroups));
 
         /// <summary>
         /// Is it possible to place points in Karma or is it prevented a stricter interprentation of the rules
@@ -92,8 +81,9 @@ namespace Chummer.Backend.Skills
             {
                 if (SkillGroupObject?.Base > 0)
                 {
-                    _intBase = 0;
-                    return SkillGroupObject.Base;
+                    if (_objCharacter.Options.StrictSkillGroupsInCreateMode || !_objCharacter.Options.UsePointsOnBrokenGroups)
+                        _intBase = 0;
+                    return SkillGroupObject.Base + _intBase + FreeBase;
                 }
                 else
                 {
@@ -102,7 +92,8 @@ namespace Chummer.Backend.Skills
             }
             set
             {
-                if (SkillGroupObject != null && SkillGroupObject.Base != 0) return;
+                if (SkillGroupObject != null && SkillGroupObject.Base != 0 && (_objCharacter.Options.StrictSkillGroupsInCreateMode || !_objCharacter.Options.UsePointsOnBrokenGroups))
+                    return;
 
                 int intMax = 0;
                 int intOld = _intBase; // old value, don't fire too many events...
@@ -173,13 +164,7 @@ namespace Chummer.Backend.Skills
         /// Levels in this skill. Read only. You probably want to increase
         /// Karma instead
         /// </summary>
-        public int Rating
-        {
-            get
-            {
-                return Math.Max(CyberwareRating, TotalBaseRating);
-            }
-        }
+        public int Rating => Math.Max(CyberwareRating, TotalBaseRating);
 
         /// <summary>
         /// The rating the character has paid for, plus any improvement-based bonuses to skill rating.
@@ -201,20 +186,14 @@ namespace Chummer.Backend.Skills
         /// or other overrides for skill Rating. Read only, you probably want to 
         /// increase Karma instead.
         /// </summary>
-        public int LearnedRating
-        {
-            get { return Karma + Base; }
-        }
+        public int LearnedRating => Karma + Base;
 
         /// <summary>
         /// Is the specialization bought with karma. During career mode this is undefined
         /// </summary>
         public bool BuyWithKarma
         {
-            get
-            {
-                return _blnBuyWithKarma;
-            }
+            get => _blnBuyWithKarma;
             set
             {
                 _blnBuyWithKarma = (value || ForceBuyWithKarma()) && !UnForceBuyWithKarma();
@@ -264,7 +243,7 @@ namespace Chummer.Backend.Skills
         {
             get
             {
-                if (CharacterObject.Improvements.All(x => x.ImproveType != Improvement.ImprovementType.ReflexRecorderOptimization))
+                if (!CharacterObject.Improvements.Any(x => x.ImproveType == Improvement.ImprovementType.ReflexRecorderOptimization && x.Enabled))
                     return -1;
                 
                 Cyberware ware = CharacterObject.Cyberware.FirstOrDefault(x => x.SourceID == s_GuiReflexRecorderId);
@@ -280,28 +259,17 @@ namespace Chummer.Backend.Skills
         /// <summary>
         /// Things that modify the dicepool of the skill
         /// </summary>
-        public int PoolModifiers
-        {
-            get {
-                return Bonus(false);
-            }
-        }
+        public int PoolModifiers => Bonus(false);
 
         /// <summary>
         /// Things that modify the dicepool of the skill
         /// </summary>
-        public int RatingModifiers
-        {
-            get
-            {
-                return Bonus(true);
-            }
-        }
+        public int RatingModifiers => Bonus(true);
 
-        protected int Bonus(bool AddToRating)
+        protected int Bonus(bool blnAddToRating)
         {
             //Some of this is not future proof. Rating that don't stack is not supported but i'm not aware of any cases where that will happen (for skills)
-            return RelevantImprovements(x => x.AddToRating == AddToRating).Sum(x => x.Value);
+            return RelevantImprovements(x => x.AddToRating == blnAddToRating).Sum(x => x.Value);
         }
 
         private IEnumerable<Improvement> RelevantImprovements(Func<Improvement, bool> funcWherePredicate = null)
@@ -331,7 +299,7 @@ namespace Chummer.Backend.Skills
                                 }
                                 break;
                             case Improvement.ImprovementType.SkillGroup:
-                                if (objImprovement.ImprovedName == _strGroup && !objImprovement.Exclude.Contains(Name) && !objImprovement.Exclude.Contains(SkillCategory))
+                                if (objImprovement.ImprovedName == SkillGroup && !objImprovement.Exclude.Contains(Name) && !objImprovement.Exclude.Contains(SkillCategory))
                                     yield return objImprovement;
                                 break;
                             case Improvement.ImprovementType.SkillCategory:
@@ -361,13 +329,7 @@ namespace Chummer.Backend.Skills
             }
         }
 
-        public int WoundModifier
-        {
-            get
-            {
-                return Math.Min(0, ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.ConditionMonitor));
-            }
-        }
+        public int WoundModifier => Math.Min(0, ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.ConditionMonitor));
 
         /// <summary>
         /// How much Sp this costs. Price during career mode is undefined
@@ -488,7 +450,7 @@ namespace Chummer.Backend.Skills
 
             intLevelsModded /= 2; //we get square, we need triangle
 
-            int cost = 0;
+            int cost;
             if (lower == 0)
                 cost = (intLevelsModded - 1) * _objCharacter.Options.KarmaImproveActiveSkill + _objCharacter.Options.KarmaNewActiveSkill;
             else
@@ -518,7 +480,7 @@ namespace Chummer.Backend.Skills
 
                         intGroupLevelsModded /= 2; //we get square, we need triangle
 
-                        int intGroupCost = 0;
+                        int intGroupCost;
                         int intNakedSkillCost = objMySkillGroup.SkillList.Count;
                         if (lower == 0)
                         {
@@ -580,7 +542,7 @@ namespace Chummer.Backend.Skills
                 return -1;
             }
             int upgrade = 0;
-            int intOptionsCost = 1;
+            int intOptionsCost;
             if (intTotalBaseRating == 0)
             {
                 intOptionsCost = _objCharacter.Options.KarmaNewActiveSkill;
@@ -609,7 +571,7 @@ namespace Chummer.Backend.Skills
                     }
                     if (intSkillGroupUpper != int.MaxValue && intSkillGroupUpper > intTotalBaseRating)
                     {
-                        int intGroupCost = 0;
+                        int intGroupCost;
                         int intNakedSkillCost = objMySkillGroup.SkillList.Count;
                         if (intTotalBaseRating == 0)
                         {
@@ -679,13 +641,13 @@ namespace Chummer.Backend.Skills
             entry.Create(price * -1, upgradetext, ExpenseType.Karma, DateTime.Now);
             entry.Undo = new ExpenseUndo().CreateKarma(intTotalBaseRating == 0 ? KarmaExpenseType.AddSkill : KarmaExpenseType.ImproveSkill, InternalId);
             
-            CharacterObject.ExpenseEntries.Add(entry);
+            CharacterObject.ExpenseEntries.AddWithSort(entry);
 
             Karma += 1;
             CharacterObject.Karma -= price;
         }
 
-        private bool _oldCanAffordSpecialization = false;
+        private bool _oldCanAffordSpecialization;
         public bool CanAffordSpecialization
         {
             get
@@ -757,7 +719,7 @@ namespace Chummer.Backend.Skills
             entry.Create(price * -1, upgradetext, ExpenseType.Karma, DateTime.Now);
             entry.Undo = new ExpenseUndo().CreateKarma(KarmaExpenseType.AddSpecialization, nspec.InternalId);
 
-            CharacterObject.ExpenseEntries.Add(entry);
+            CharacterObject.ExpenseEntries.AddWithSort(entry);
 
             Specializations.Add(nspec);
             CharacterObject.Karma -= price;

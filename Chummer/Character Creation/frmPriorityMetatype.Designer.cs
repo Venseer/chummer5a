@@ -13,9 +13,10 @@ namespace Chummer
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                components?.Dispose();
+                tipTooltip?.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -250,6 +251,7 @@ namespace Chummer
             this.chkPossessionBased.Text = "Summoned by Possess-based Tradition";
             this.chkPossessionBased.UseVisualStyleBackColor = true;
             this.chkPossessionBased.Visible = false;
+            this.chkPossessionBased.CheckedChanged += new System.EventHandler(chkPossessionBased_CheckedChanged);
             // 
             // nudForce
             // 
@@ -723,7 +725,6 @@ namespace Chummer
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Choose Character Priorities";
             this.Tag = "Title_ChooseCharacterPriorities";
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.frmPriorityMetatype_FormClosed);
             this.Load += new System.EventHandler(this.frmPriorityMetatype_Load);
             this.pnlPriorities.ResumeLayout(false);
             this.pnlPriorities.PerformLayout();

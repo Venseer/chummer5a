@@ -31,13 +31,13 @@ namespace Chummer
         private static string s_StrSelectedCategory = string.Empty;
 
         private bool _blnLoading = true;
-        private bool _blnAddAgain = false;
-        private readonly bool _blnAdvancedProgramAllowed = true;
-        private readonly bool _blnInherentProgram = false;
+        private bool _blnAddAgain;
+        private readonly bool _blnAdvancedProgramAllowed;
+        private readonly bool _blnInherentProgram;
         private readonly Character _objCharacter;
         private readonly List<ListItem> _lstCategory = new List<ListItem>();
 
-        private readonly XmlDocument _objXmlDocument = null;
+        private readonly XmlDocument _objXmlDocument;
 
         #region Control Events
         public frmSelectAIProgram(Character objCharacter, bool blnAdvancedProgramAllowed = true, bool blnInherentProgram = false)
@@ -55,20 +55,21 @@ namespace Chummer
         private void frmSelectProgram_Load(object sender, EventArgs e)
         {
             // Populate the Category list.
-            XmlNodeList objXmlNodeList = _objXmlDocument.SelectNodes("/chummer/categories/category");
-            foreach (XmlNode objXmlCategory in objXmlNodeList)
-            {
-                string strInnerText = objXmlCategory.InnerText;
-                if (_blnInherentProgram && strInnerText != "Common Programs" && strInnerText != "Hacking Programs")
-                    continue;
-                if (!_blnAdvancedProgramAllowed && strInnerText == "Advanced Programs")
-                    continue;
-                // Make sure it is not already in the Category list.
-                if (!_lstCategory.Any(objItem => objItem.Value.ToString() == strInnerText))
-                {
-                    _lstCategory.Add(new ListItem(strInnerText, objXmlCategory.Attributes?["translate"]?.InnerText ?? strInnerText));
-                }
-            }
+            using (XmlNodeList objXmlNodeList = _objXmlDocument.SelectNodes("/chummer/categories/category"))
+                if (objXmlNodeList != null)
+                    foreach (XmlNode objXmlCategory in objXmlNodeList)
+                    {
+                        string strInnerText = objXmlCategory.InnerText;
+                        if (_blnInherentProgram && strInnerText != "Common Programs" && strInnerText != "Hacking Programs")
+                            continue;
+                        if (!_blnAdvancedProgramAllowed && strInnerText == "Advanced Programs")
+                            continue;
+                        // Make sure it is not already in the Category list.
+                        if (_lstCategory.All(objItem => objItem.Value.ToString() != strInnerText))
+                        {
+                            _lstCategory.Add(new ListItem(strInnerText, objXmlCategory.Attributes?["translate"]?.InnerText ?? strInnerText));
+                        }
+                    }
             _lstCategory.Sort(CompareListItems.CompareNames);
 
             if (_lstCategory.Count > 0)
@@ -171,27 +172,15 @@ namespace Chummer
         /// <summary>
         /// Whether or not the user wants to add another item after this one.
         /// </summary>
-        public bool AddAgain
-        {
-            get
-            {
-                return _blnAddAgain;
-            }
-        }
+        public bool AddAgain => _blnAddAgain;
 
         /// <summary>
         /// Program that was selected in the dialogue.
         /// </summary>
         public string SelectedProgram
         {
-            get
-            {
-                return _strSelectedAIProgram;
-            }
-            set
-            {
-                _strSelectedAIProgram = value;
-            }
+            get => _strSelectedAIProgram;
+            set => _strSelectedAIProgram = value;
         }
         #endregion
 
@@ -310,13 +299,12 @@ namespace Chummer
 
             foreach (XmlNode objXmlProgram in objXmlNodeList)
             {
-                bool blnAdd = true;
                 if (chkLimitList.Checked)
                 {
                     string strRequire = objXmlProgram["require"]?.InnerText;
                     if (!string.IsNullOrEmpty(strRequire))
                     {
-                        blnAdd = false;
+                        bool blnAdd = false;
                         foreach (AIProgram objAIProgram in _objCharacter.AIPrograms)
                         {
                             if (objAIProgram.Name == strRequire)
@@ -333,7 +321,7 @@ namespace Chummer
                 // If this is a critter with Optional Programs, see if this Program is allowed.
                 if (xmlCritterOptionalPrograms?.Count > 0)
                 {
-                    blnAdd = false;
+                    bool blnAdd = false;
                     foreach (XmlNode objXmlForm in xmlCritterOptionalPrograms)
                     {
                         if (objXmlForm.InnerText == strName)

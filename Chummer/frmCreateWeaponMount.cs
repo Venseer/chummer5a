@@ -32,14 +32,11 @@ namespace Chummer
 	    private readonly Vehicle _objVehicle;
 	    private readonly Character _objCharacter;
 	    private WeaponMount _objMount;
-        private XmlDocument _xmlDoc;
+        private readonly XmlDocument _xmlDoc;
 
-        public WeaponMount WeaponMount
-        {
-            get => _objMount;
-        }
+        public WeaponMount WeaponMount => _objMount;
 
-        public frmCreateWeaponMount(Vehicle objVehicle, Character objCharacter, WeaponMount objWeaponMount = null)
+	    public frmCreateWeaponMount(Vehicle objVehicle, Character objCharacter, WeaponMount objWeaponMount = null)
 		{
             _xmlDoc = XmlManager.Load("vehicles.xml");
 		    _objVehicle = objVehicle;
@@ -133,6 +130,7 @@ namespace Chummer
 
             _blnLoading = false;
             UpdateInfo();
+            LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
         }
 
 		private void cmdOK_Click(object sender, EventArgs e)
@@ -205,8 +203,7 @@ namespace Chummer
                 }
                 if (!blnRequirementsMet)
                     return;
-
-                blnRequirementsMet = true;
+                
                 strStringToCheck = xmlSelectedFlexibility["name"]?.InnerText;
                 if (!string.IsNullOrEmpty(strStringToCheck))
                 {
@@ -222,8 +219,7 @@ namespace Chummer
                 }
                 if (!blnRequirementsMet)
                     return;
-
-                blnRequirementsMet = true;
+                
                 strStringToCheck = xmlSelectedVisibility["name"]?.InnerText;
                 if (!string.IsNullOrEmpty(strStringToCheck))
                 {
@@ -515,17 +511,13 @@ namespace Chummer
             TreeNode objModsParentNode = treMods.FindNode("Node_AdditionalMods");
             do
             {
-                frmSelectVehicleMod frmPickVehicleMod = new frmSelectVehicleMod(_objCharacter)
+                frmSelectVehicleMod frmPickVehicleMod = new frmSelectVehicleMod(_objCharacter, _objMount?.Mods)
                 {
                     // Pass the selected vehicle on to the form.
                     SelectedVehicle = _objVehicle,
                     VehicleMountMods = true,
                     WeaponMountSlots = intSlots
                 };
-                if (_objMount != null)
-                {
-                    frmPickVehicleMod.InstalledMods = _objMount.Mods;
-                }
 
                 frmPickVehicleMod.ShowDialog(this);
 
@@ -539,7 +531,10 @@ namespace Chummer
                 XmlDocument objXmlDocument = XmlManager.Load("vehicles.xml");
                 XmlNode objXmlMod = objXmlDocument.SelectSingleNode("/chummer/weaponmountmods/mod[id = \"" + frmPickVehicleMod.SelectedMod + "\"]");
 
-                VehicleMod objMod = new VehicleMod(_objCharacter);
+                VehicleMod objMod = new VehicleMod(_objCharacter)
+                {
+                    DiscountCost = frmPickVehicleMod.BlackMarketDiscount
+                };
                 objMod.Create(objXmlMod, frmPickVehicleMod.SelectedRating, _objVehicle, frmPickVehicleMod.Markup);
                 // Check the item's Cost and make sure the character can afford it.
                 decimal decOriginalCost = _objVehicle.TotalCost;
@@ -600,7 +595,7 @@ namespace Chummer
                     objExpense.Create(decCost * -1,
                         LanguageManager.GetString("String_ExpensePurchaseVehicleMod", GlobalOptions.Language) +
                         ' ' + objMod.DisplayNameShort(GlobalOptions.Language), ExpenseType.Nuyen, DateTime.Now);
-                    _objCharacter.ExpenseEntries.Add(objExpense);
+                    _objCharacter.ExpenseEntries.AddWithSort(objExpense);
                     _objCharacter.Nuyen -= decCost;
 
                     ExpenseUndo objUndo = new ExpenseUndo();
@@ -644,31 +639,28 @@ namespace Chummer
         private void cmdDeleteMod_Click(object sender, EventArgs e)
         {
             TreeNode objSelectedNode = treMods.SelectedNode;
-            if (objSelectedNode != null)
+            string strSelectedId = objSelectedNode?.Tag.ToString();
+            if (!string.IsNullOrEmpty(strSelectedId) && strSelectedId.IsGuid())
             {
-                string strSelectedId = objSelectedNode.Tag.ToString();
-                if (!string.IsNullOrEmpty(strSelectedId) && strSelectedId.IsGuid())
+                VehicleMod objMod = _lstMods.FirstOrDefault(x => x.InternalId == strSelectedId);
+                if (objMod != null && !objMod.IncludedInVehicle)
                 {
-                    VehicleMod objMod = _lstMods.FirstOrDefault(x => x.InternalId == strSelectedId);
-                    if (objMod != null && !objMod.IncludedInVehicle)
-                    {
-                        if (!_objCharacter.ConfirmDelete(LanguageManager.GetString("Message_DeleteVehicle", GlobalOptions.Language)))
-                            return;
+                    if (!_objCharacter.ConfirmDelete(LanguageManager.GetString("Message_DeleteVehicle", GlobalOptions.Language)))
+                        return;
 
-                        _lstMods.Remove(objMod);
-                        foreach (Weapon objLoopWeapon in objMod.Weapons)
-                        {
-                            objLoopWeapon.DeleteWeapon(null, null);
-                        }
-                        foreach (Cyberware objLoopCyberware in objMod.Cyberware)
-                        {
-                            objLoopCyberware.DeleteCyberware(null, null);
-                        }
-                        TreeNode objParentNode = objSelectedNode.Parent;
-                        objSelectedNode.Remove();
-                        if (objParentNode.Nodes.Count == 0)
-                            objParentNode.Remove();
+                    _lstMods.Remove(objMod);
+                    foreach (Weapon objLoopWeapon in objMod.Weapons)
+                    {
+                        objLoopWeapon.DeleteWeapon();
                     }
+                    foreach (Cyberware objLoopCyberware in objMod.Cyberware)
+                    {
+                        objLoopCyberware.DeleteCyberware();
+                    }
+                    TreeNode objParentNode = objSelectedNode.Parent;
+                    objSelectedNode.Remove();
+                    if (objParentNode.Nodes.Count == 0)
+                        objParentNode.Remove();
                 }
             }
         }

@@ -1,12 +1,28 @@
-using Chummer.Backend;
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
+
 using Chummer.Backend.Equipment;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 
@@ -58,18 +74,18 @@ namespace Chummer
     {
         private Guid _guiID;
         private string _strName = string.Empty;
-        private bool _blnMetagenetic = false;
+        private bool _blnMetagenetic;
         private string _strExtra = string.Empty;
         private string _strSource = string.Empty;
         private string _strPage = string.Empty;
-        private bool _blnMutant = false;
+        private bool _blnMutant;
         private string _strNotes = string.Empty;
         private bool _blnImplemented = true;
         private bool _blnContributeToLimit = true;
         private bool _blnPrint = true;
         private bool _blnDoubleCostCareer = true;
-        private bool _blnCanBuyWithSpellPoints = false;
-        private int _intBP = 0;
+        private bool _blnCanBuyWithSpellPoints;
+        private int _intBP;
         private QualityType _eQualityType = QualityType.Positive;
         private QualitySource _eQualitySource = QualitySource.Selected;
         private string _strSourceName = string.Empty;
@@ -79,12 +95,12 @@ namespace Chummer
         private readonly Character _objCharacter;
         private Guid _guiWeaponID;
         private Guid _guiQualityId;
-        private string _stage;
+        private string _strStage;
 
-        public String Stage
+        public string Stage
         {
-            get => _stage;
-            private set => _stage = value;
+            get => _strStage;
+            private set => _strStage = value;
         }
 
         #region Helper Methods
@@ -152,52 +168,14 @@ namespace Chummer
         /// <param name="objQualitySource">Source of the Quality.</param>
         /// <param name="lstWeapons">List of Weapons that should be added to the Character.</param>
         /// <param name="strForceValue">Force a value to be selected for the Quality.</param>
-        public void Create(XmlNode objXmlQuality, QualitySource objQualitySource, List<Weapon> lstWeapons, string strForceValue = "", string strSourceName = "")
+        public void Create(XmlNode objXmlQuality, QualitySource objQualitySource, IList<Weapon> lstWeapons, string strForceValue = "", string strSourceName = "")
         {
             _strSourceName = strSourceName;
             objXmlQuality.TryGetStringFieldQuickly("name", ref _strName);
             objXmlQuality.TryGetBoolFieldQuickly("metagenetic", ref _blnMetagenetic);
             if (!objXmlQuality.TryGetStringFieldQuickly("altnotes", ref _strNotes))
                 objXmlQuality.TryGetStringFieldQuickly("notes", ref _strNotes);
-            // Check for a Variable Cost.
-            XmlNode objKarmaNode = objXmlQuality["karma"];
-            if (objKarmaNode != null)
-            {
-                string strKarmaNodeTest = objKarmaNode.InnerText;
-                if (strKarmaNodeTest.StartsWith("Variable("))
-                {
-                    decimal decMin = 0.0m;
-                    decimal decMax = decimal.MaxValue;
-                    string strCost = strKarmaNodeTest.TrimStart("Variable(", true).TrimEnd(')');
-                    if (strCost.Contains('-'))
-                    {
-                        string[] strValues = strCost.Split('-');
-                        decMin = Convert.ToDecimal(strValues[0], GlobalOptions.InvariantCultureInfo);
-                        decMax = Convert.ToDecimal(strValues[1], GlobalOptions.InvariantCultureInfo);
-                    }
-                    else
-                        decMin = Convert.ToDecimal(strCost.FastEscape('+'), GlobalOptions.InvariantCultureInfo);
-
-                    if (decMin != 0 || decMax != decimal.MaxValue)
-                    {
-                        using (frmSelectNumber frmPickNumber = new frmSelectNumber(0))
-                        {
-                            if (decMax > 1000000)
-                                decMax = 1000000;
-                            frmPickNumber.Minimum = decMin;
-                            frmPickNumber.Maximum = decMax;
-                            frmPickNumber.Description = LanguageManager.GetString("String_SelectVariableCost", GlobalOptions.Language).Replace("{0}", DisplayNameShort(GlobalOptions.Language));
-                            frmPickNumber.AllowCancel = false;
-                            frmPickNumber.ShowDialog();
-                            _intBP = decimal.ToInt32(frmPickNumber.SelectedValue);
-                        }
-                    }
-                }
-                else
-                {
-                    _intBP = Convert.ToInt32(strKarmaNodeTest);
-                }
-            }
+            objXmlQuality.TryGetInt32FieldQuickly("karma", ref _intBP);
             _eQualityType = ConvertToQualityType(objXmlQuality["category"]?.InnerText);
             _eQualitySource = objQualitySource;
             objXmlQuality.TryGetBoolFieldQuickly("doublecareer", ref _blnDoubleCostCareer);
@@ -211,24 +189,22 @@ namespace Chummer
 
             if (_eQualityType == QualityType.LifeModule)
             {
-                objXmlQuality.TryGetStringFieldQuickly("stage", ref _stage);
+                objXmlQuality.TryGetStringFieldQuickly("stage", ref _strStage);
             }
 
-            if (objXmlQuality["id"] != null && Guid.TryParse(objXmlQuality["id"].InnerText, out Guid guiTemp))
+            if (objXmlQuality.TryGetField("id", Guid.TryParse, out Guid guiTemp))
             {
                 _guiQualityId = guiTemp;
                 _objCachedMyXmlNode = null;
             }
 
             // Add Weapons if applicable.
-            if (objXmlQuality.InnerXml.Contains("<addweapon>"))
-            {
-                XmlDocument objXmlWeaponDocument = XmlManager.Load("weapons.xml");
-
-                // More than one Weapon can be added, so loop through all occurrences.
-                if (objXmlWeaponDocument != null)
+            // More than one Weapon can be added, so loop through all occurrences.
+            using (XmlNodeList xmlAddWeaponList = objXmlQuality.SelectNodes("addweapon"))
+                if (xmlAddWeaponList?.Count > 0)
                 {
-                    foreach (XmlNode objXmlAddWeapon in objXmlQuality.SelectNodes("addweapon"))
+                    XmlDocument objXmlWeaponDocument = XmlManager.Load("weapons.xml");
+                    foreach (XmlNode objXmlAddWeapon in xmlAddWeaponList)
                     {
                         string strLoopID = objXmlAddWeapon.InnerText;
                         XmlNode objXmlWeapon = strLoopID.IsGuid()
@@ -238,45 +214,45 @@ namespace Chummer
                         Weapon objGearWeapon = new Weapon(_objCharacter);
                         objGearWeapon.Create(objXmlWeapon, lstWeapons);
                         objGearWeapon.ParentID = InternalId;
+                        objGearWeapon.Cost = "0";
                         lstWeapons.Add(objGearWeapon);
 
                         Guid.TryParse(objGearWeapon.InternalId, out _guiWeaponID);
                     }
                 }
-            }
 
-            if (objXmlQuality.InnerXml.Contains("<naturalweapons>"))
-            {
-                foreach (XmlNode objXmlNaturalWeapon in objXmlQuality["naturalweapons"].SelectNodes("naturalweapon"))
-                {
-                    Weapon objWeapon = new Weapon(_objCharacter);
-                    if (objXmlNaturalWeapon["name"] != null)
-                        objWeapon.Name = objXmlNaturalWeapon["name"].InnerText;
-                    objWeapon.Category = LanguageManager.GetString("Tab_Critter", GlobalOptions.Language);
-                    objWeapon.WeaponType = "Melee";
-                    if (objXmlNaturalWeapon["reach"] != null)
-                        objWeapon.Reach = Convert.ToInt32(objXmlNaturalWeapon["reach"].InnerText);
-                    if (objXmlNaturalWeapon["accuracy"] != null)
-                        objWeapon.Accuracy = objXmlNaturalWeapon["accuracy"].InnerText;
-                    if (objXmlNaturalWeapon["damage"] != null)
-                        objWeapon.Damage = objXmlNaturalWeapon["damage"].InnerText;
-                    if (objXmlNaturalWeapon["ap"] != null)
-                        objWeapon.AP = objXmlNaturalWeapon["ap"].InnerText; ;
-                    objWeapon.Mode = "0";
-                    objWeapon.RC = "0";
-                    objWeapon.Concealability = 0;
-                    objWeapon.Avail = "0";
-                    objWeapon.Cost = "0";
-                    if (objXmlNaturalWeapon["useskill"] != null)
-                        objWeapon.UseSkill = objXmlNaturalWeapon["useskill"].InnerText;
-                    if (objXmlNaturalWeapon["source"] != null)
-                        objWeapon.Source = objXmlNaturalWeapon["source"].InnerText;
-                    if (objXmlNaturalWeapon["page"] != null)
-                        objWeapon.Page = objXmlNaturalWeapon["page"].InnerText;
+            using (XmlNodeList xmlNaturalWeaponList = objXmlQuality.SelectNodes("naturalweapons/naturalweapon"))
+                if (xmlNaturalWeaponList?.Count > 0)
+                    foreach (XmlNode objXmlNaturalWeapon in xmlNaturalWeaponList)
+                    {
+                        Weapon objWeapon = new Weapon(_objCharacter);
+                        if (objXmlNaturalWeapon["name"] != null)
+                            objWeapon.Name = objXmlNaturalWeapon["name"].InnerText;
+                        objWeapon.Category = LanguageManager.GetString("Tab_Critter", GlobalOptions.Language);
+                        objWeapon.WeaponType = "Melee";
+                        if (objXmlNaturalWeapon["reach"] != null)
+                            objWeapon.Reach = Convert.ToInt32(objXmlNaturalWeapon["reach"].InnerText);
+                        if (objXmlNaturalWeapon["accuracy"] != null)
+                            objWeapon.Accuracy = objXmlNaturalWeapon["accuracy"].InnerText;
+                        if (objXmlNaturalWeapon["damage"] != null)
+                            objWeapon.Damage = objXmlNaturalWeapon["damage"].InnerText;
+                        if (objXmlNaturalWeapon["ap"] != null)
+                            objWeapon.AP = objXmlNaturalWeapon["ap"].InnerText;
+                        objWeapon.Mode = "0";
+                        objWeapon.RC = "0";
+                        objWeapon.Concealability = 0;
+                        objWeapon.Avail = "0";
+                        objWeapon.Cost = "0";
+                        if (objXmlNaturalWeapon["useskill"] != null)
+                            objWeapon.UseSkill = objXmlNaturalWeapon["useskill"].InnerText;
+                        if (objXmlNaturalWeapon["source"] != null)
+                            objWeapon.Source = objXmlNaturalWeapon["source"].InnerText;
+                        if (objXmlNaturalWeapon["page"] != null)
+                            objWeapon.Page = objXmlNaturalWeapon["page"].InnerText;
 
-                    _objCharacter.Weapons.Add(objWeapon);
-                }
-            }
+                        _objCharacter.Weapons.Add(objWeapon);
+                    }
+
             _nodDiscounts = objXmlQuality["costdiscount"];
             // If the item grants a bonus, pass the information to the Improvement Manager.
             _nodBonus = objXmlQuality["bonus"];
@@ -374,7 +350,7 @@ namespace Chummer
             objWriter.WriteElementString("notes", _strNotes);
             if (_eQualityType == QualityType.LifeModule)
             {
-                objWriter.WriteElementString("stage", _stage);
+                objWriter.WriteElementString("stage", _strStage);
             }
 
             if (!_guiQualityId.Equals(Guid.Empty))
@@ -394,6 +370,14 @@ namespace Chummer
         {
             objNode.TryGetField("guid", Guid.TryParse, out _guiID);
             objNode.TryGetStringFieldQuickly("name", ref _strName);
+            if (!objNode.TryGetField("id", Guid.TryParse, out _guiQualityId))
+            {
+                XmlNode objNewNode = XmlManager.Load("qualities.xml").SelectSingleNode("/chummer/qualities/quality[name = \"" + Name + "\"]");
+                if (objNewNode?.TryGetField("id", Guid.TryParse, out _guiQualityId) == true)
+                    _objCachedMyXmlNode = null;
+            }
+            else
+                _objCachedMyXmlNode = null;
             objNode.TryGetStringFieldQuickly("extra", ref _strExtra);
             objNode.TryGetInt32FieldQuickly("bp", ref _intBP);
             objNode.TryGetBoolFieldQuickly("implemented", ref _blnImplemented);
@@ -423,22 +407,17 @@ namespace Chummer
 
             if (_eQualityType == QualityType.LifeModule)
             {
-                objNode.TryGetStringFieldQuickly("stage", ref _stage);
+                objNode.TryGetStringFieldQuickly("stage", ref _strStage);
             }
-            if (!objNode.TryGetField("id", Guid.TryParse, out _guiQualityId))
-            {
-                XmlNode objNewNode = XmlManager.Load("qualities.xml").SelectSingleNode("/chummer/qualities/quality[name = \"" + Name + "\"]");
-                if (objNewNode?.TryGetField("id", Guid.TryParse, out _guiQualityId) == true)
-                    _objCachedMyXmlNode = null;
-            }
-            else
-                _objCachedMyXmlNode = null;
         }
 
         /// <summary>
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
+        /// <param name="intRating">Pre-calculated rating of the quality for printing.</param>
+        /// <param name="objCulture">Culture in which to print.</param>
+        /// <param name="strLanguageToPrint">Language in which to print</param>
         public void Print(XmlTextWriter objWriter, int intRating, CultureInfo objCulture, string strLanguageToPrint)
         {
             if (_blnPrint)
@@ -457,8 +436,7 @@ namespace Chummer
                 string strQualityType = Type.ToString();
                 if (strLanguageToPrint != GlobalOptions.DefaultLanguage)
                 {
-                    XmlNode objNode = XmlManager.Load("qualities.xml", strLanguageToPrint).SelectSingleNode("/chummer/categories/category[. = \"" + strQualityType + "\"]/@translate");
-                    strQualityType = objNode?.InnerText ?? strQualityType;
+                    strQualityType = XmlManager.Load("qualities.xml", strLanguageToPrint).SelectSingleNode("/chummer/categories/category[. = \"" + strQualityType + "\"]/@translate")?.InnerText ?? strQualityType;
                 }
                 objWriter.WriteElementString("qualitytype", strQualityType);
                 objWriter.WriteElementString("qualitytype_english", Type.ToString());
@@ -752,7 +730,7 @@ namespace Chummer
             set => _strNotes = value;
         }
 
-        private XmlNode _objCachedMyXmlNode = null;
+        private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
 
         public XmlNode GetNode()
@@ -809,11 +787,11 @@ namespace Chummer
         /// THIS IS A WIP AND ONLY CHECKS QUALITIES. REQUIRED POWERS, METATYPES AND OTHERS WON'T BE CHECKED
         /// </summary>
         /// <param name="objCharacter">The Character</param>
-        /// <param name="XmlQuality">The XmlNode describing the quality</param>
+        /// <param name="xmlQuality">The XmlNode describing the quality</param>
         /// <returns>Is the Quality valid on said Character</returns>
-        public static bool IsValid(Character objCharacter, XmlNode objXmlQuality)
+        public static bool IsValid(Character objCharacter, XmlNode xmlQuality)
         {
-            return IsValid(objCharacter, objXmlQuality, out QualityFailureReason q, out List<Quality> q2);
+            return IsValid(objCharacter, xmlQuality, out QualityFailureReason q, out List<Quality> q2);
         }
 
         /// <summary>
@@ -852,11 +830,13 @@ namespace Chummer
                 if (xmlOneOfNode != null)
                 {
                     //Add to set for O(N log M) runtime instead of O(N * M)
-                    HashSet<String> lstRequired = new HashSet<String>();
-                    foreach (XmlNode node in xmlOneOfNode.SelectNodes("quality"))
-                    {
-                        lstRequired.Add(node.InnerText);
-                    }
+                    HashSet<string> lstRequired = new HashSet<string>();
+                    using (XmlNodeList xmlNodeList = xmlOneOfNode.SelectNodes("quality"))
+                        if (xmlNodeList != null)
+                            foreach (XmlNode node in xmlNodeList)
+                            {
+                                lstRequired.Add(node.InnerText);
+                            }
 
                     if (!objCharacter.Qualities.Any(quality => lstRequired.Contains(quality.Name)))
                     {
@@ -864,32 +844,36 @@ namespace Chummer
                     }
 
                     reason |= QualityFailureReason.MetatypeRequired;
-                    foreach (XmlNode objNode in xmlOneOfNode.SelectNodes("metatype"))
-                    {
-                        if (objNode.InnerText == objCharacter.Metatype)
-                        {
-                            reason &= ~QualityFailureReason.MetatypeRequired;
-                            break;
-                        }
-                    }
+                    using (XmlNodeList xmlNodeList = xmlOneOfNode.SelectNodes("metatype"))
+                        if (xmlNodeList != null)
+                            foreach (XmlNode objNode in xmlNodeList)
+                            {
+                                if (objNode.InnerText == objCharacter.Metatype)
+                                {
+                                    reason &= ~QualityFailureReason.MetatypeRequired;
+                                    break;
+                                }
+                            }
                 }
                 XmlNode xmlAllOfNode = xmlRequiredNode["allof"];
                 if (xmlAllOfNode != null)
                 {
                     //Add to set for O(N log M) runtime instead of O(N * M)
-                    HashSet<String> lstRequired = new HashSet<String>();
+                    HashSet<string> lstRequired = new HashSet<string>();
                     foreach (Quality objQuality in objCharacter.Qualities)
                     {
                         lstRequired.Add(objQuality.Name);
                     }
-                    foreach (XmlNode node in xmlAllOfNode.SelectNodes("quality"))
-                    {
-                        if (!lstRequired.Contains(node.InnerText))
-                        {
-                            reason |= QualityFailureReason.RequiredMultiple;
-                            break;
-                        }
-                    }
+                    using (XmlNodeList xmlNodeList = xmlAllOfNode.SelectNodes("quality"))
+                        if (xmlNodeList != null)
+                            foreach (XmlNode node in xmlNodeList)
+                            {
+                                if (!lstRequired.Contains(node.InnerText))
+                                {
+                                    reason |= QualityFailureReason.RequiredMultiple;
+                                    break;
+                                }
+                            }
                 }
             }
 
@@ -900,11 +884,13 @@ namespace Chummer
                 if (xmlOneOfNode != null)
                 {
                     //Add to set for O(N log M) runtime instead of O(N * M)
-                    HashSet<String> qualityForbidden = new HashSet<String>();
-                    foreach (XmlNode node in xmlOneOfNode.SelectNodes("quality"))
-                    {
-                        qualityForbidden.Add(node.InnerText);
-                    }
+                    HashSet<string> qualityForbidden = new HashSet<string>();
+                    using (XmlNodeList xmlNodeList = xmlOneOfNode.SelectNodes("quality"))
+                        if (xmlNodeList != null)
+                            foreach (XmlNode node in xmlNodeList)
+                            {
+                                qualityForbidden.Add(node.InnerText);
+                            }
 
                     foreach (Quality quality in objCharacter.Qualities)
                     {
@@ -924,6 +910,7 @@ namespace Chummer
         /// This method builds a xmlNode upwards adding/overriding elements
         /// </summary>
         /// <param name="id">ID of the node</param>
+        /// <param name="xmlDoc">XmlDocument containing the object with which to override this quality.</param>
         /// <returns>A XmlNode containing the id and all nodes of its parrents</returns>
         public static XmlNode GetNodeOverrideable(string id, XmlDocument xmlDoc)
         {
@@ -933,29 +920,27 @@ namespace Chummer
         private static XmlNode GetNodeOverrideable(XmlNode n)
         {
             XmlNode workNode = n.Clone();  //clone as to not mess up the acctual xml document
-            if (workNode != null)
+
+            XmlNode parentNode = n.SelectSingleNode("../..");
+            if (parentNode?["id"] != null)
             {
-                XmlNode parentNode = n.SelectSingleNode("../..");
-                if (parentNode?["id"] != null)
+                XmlNode sourceNode = GetNodeOverrideable(parentNode);
+                if (sourceNode != null)
                 {
-                    XmlNode sourceNode = GetNodeOverrideable(parentNode);
-                    if (sourceNode != null)
+                    foreach (XmlNode node in sourceNode.ChildNodes)
                     {
-                        foreach (XmlNode node in sourceNode.ChildNodes)
+                        if (workNode[node.LocalName] == null && node.LocalName != "versions")
                         {
-                            if (workNode[node.LocalName] == null && node.LocalName != "versions")
+                            workNode.AppendChild(node.Clone());
+                        }
+                        else if (node.LocalName == "bonus")
+                        {
+                            XmlNode xmlBonusNode = workNode["bonus"];
+                            if (xmlBonusNode != null)
                             {
-                                workNode.AppendChild(node.Clone());
-                            }
-                            else if (node.LocalName == "bonus")
-                            {
-                                XmlNode xmlBonusNode = workNode["bonus"];
-                                if (xmlBonusNode != null)
+                                foreach (XmlNode childNode in node.ChildNodes)
                                 {
-                                    foreach (XmlNode childNode in node.ChildNodes)
-                                    {
-                                        xmlBonusNode.AppendChild(childNode.Clone());
-                                    }
+                                    xmlBonusNode.AppendChild(childNode.Clone());
                                 }
                             }
                         }

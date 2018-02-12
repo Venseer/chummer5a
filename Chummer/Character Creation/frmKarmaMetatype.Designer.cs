@@ -1,4 +1,5 @@
-﻿using System.Windows;
+using System;
+using System.Windows;
 using System.Windows.Forms;
 
 namespace Chummer
@@ -16,9 +17,10 @@ namespace Chummer
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                components?.Dispose();
+                tipTooltip?.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -154,6 +156,7 @@ namespace Chummer
             this.chkPossessionBased.Text = "Summoned by Possess-based Tradition";
             this.chkPossessionBased.UseVisualStyleBackColor = true;
             this.chkPossessionBased.Visible = false;
+            this.chkPossessionBased.CheckedChanged += new EventHandler(chkPossessionBased_CheckedChanged);
             // 
             // nudForce
             // 
@@ -495,7 +498,6 @@ namespace Chummer
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Tag = "Title_Metatype";
             this.Text = "Select a Metatype";
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.frmMetatype_FormClosed);
             this.Load += new System.EventHandler(this.frmMetatype_Load);
             this.pnlMetatypes.ResumeLayout(false);
             this.pnlMetatypes.PerformLayout();

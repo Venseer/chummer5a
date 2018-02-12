@@ -1,9 +1,23 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 
@@ -29,7 +43,7 @@ namespace Chummer
         private string _strLimit = string.Empty;
         private string _strCondition = string.Empty;
         private int _intBonus;
-        private Character _objCharacter;
+        private readonly Character _objCharacter;
 
         #region Constructor, Create, Save, Load, and Print Methods
         public LimitModifier(Character objCharacter)
@@ -40,11 +54,10 @@ namespace Chummer
         }
 
         /// Create a Skill Limit Modifier from an XmlNode.
-        /// <param name="objXmlAdvantageNode">XmlNode to create the object from.</param>
-        /// <param name="objCharacter">Character the Gear is being added to.</param>
+        /// <param name="objXmlLimitModifierNode">XmlNode to create the object from.</param>
         public void Create(XmlNode objXmlLimitModifierNode)
         {
-            _strName = objXmlLimitModifierNode["name"].InnerText;
+            _strName = objXmlLimitModifierNode["name"]?.InnerText ?? string.Empty;
 
             if (objXmlLimitModifierNode["bonus"] != null)
             {
@@ -62,6 +75,7 @@ namespace Chummer
         /// <param name="strName">The name of the modifier.</param>
         /// <param name="intBonus">The bonus amount.</param>
         /// <param name="strLimit">The limit this modifies.</param>
+        /// <param name="strCondition">Condition when the limit modifier is to be activated.</param>
         public void Create(string strName, int intBonus, string strLimit, string strCondition)
         {
             _strName = strName;
@@ -105,6 +119,7 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
+        /// <param name="strLanguageToPrint">Language in which to print</param>
         public void Print(XmlTextWriter objWriter, string strLanguageToPrint)
         {
             objWriter.WriteStartElement("limitmodifier");
@@ -196,7 +211,7 @@ namespace Chummer
         {
             get
             {
-                string strBonus = string.Empty;
+                string strBonus;
                 if (_intBonus > 0)
                     strBonus = '+' + _intBonus.ToString();
                 else

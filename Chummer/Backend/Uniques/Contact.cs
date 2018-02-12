@@ -1,3 +1,21 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -5,7 +23,6 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
@@ -193,6 +210,8 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
+        /// <param name="objCulture">Culture in which to print.</param>
+        /// <param name="strLanguageToPrint">Language in which to print</param>
         public void Print(XmlTextWriter objWriter, CultureInfo objCulture, string strLanguageToPrint)
         {
             objWriter.WriteStartElement("contact");
@@ -273,14 +292,8 @@ namespace Chummer
 
         public string DisplayRole
         {
-            get
-            {
-                return DisplayRoleMethod(GlobalOptions.Language);
-            }
-            set
-            {
-                _strRole = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
-            }
+            get => DisplayRoleMethod(GlobalOptions.Language);
+            set => _strRole = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
         }
 
         /// <summary>
@@ -333,13 +346,13 @@ namespace Chummer
                     objMetatypeNode = objMetatypeDoc.SelectSingleNode("/chummer/metatypes/metatype[name = \"" + LinkedCharacter.Metatype + "\"]");
                 }
 
-                strReturn = objMetatypeNode["translate"]?.InnerText ?? LanguageManager.TranslateExtra(LinkedCharacter.Metatype, strLanguage);
+                strReturn = objMetatypeNode?["translate"]?.InnerText ?? LanguageManager.TranslateExtra(LinkedCharacter.Metatype, strLanguage);
 
                 if (!string.IsNullOrEmpty(LinkedCharacter.Metavariant))
                 {
-                    objMetatypeNode = objMetatypeNode.SelectSingleNode("metavariants/metavariant[name = \"" + LinkedCharacter.Metavariant + "\"]");
+                    objMetatypeNode = objMetatypeNode?.SelectSingleNode("metavariants/metavariant[name = \"" + LinkedCharacter.Metavariant + "\"]");
 
-                    string strMetatypeTranslate = objMetatypeNode["translate"]?.InnerText;
+                    string strMetatypeTranslate = objMetatypeNode?["translate"]?.InnerText;
                     strReturn += !string.IsNullOrEmpty(strMetatypeTranslate) ? " (" + strMetatypeTranslate + ')' : " (" + LanguageManager.TranslateExtra(LinkedCharacter.Metavariant, strLanguage) + ')';
                 }
             }
@@ -350,14 +363,8 @@ namespace Chummer
 
         public string DisplayMetatype
         {
-            get
-            {
-                return DisplayMetatypeMethod(GlobalOptions.Language);
-            }
-            set
-            {
-                _strMetatype = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
-            }
+            get => DisplayMetatypeMethod(GlobalOptions.Language);
+            set => _strMetatype = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
         }
 
         /// <summary>
@@ -379,10 +386,7 @@ namespace Chummer
                 }
                 return _strMetatype;
             }
-            set
-            {
-                _strMetatype = value;
-            }
+            set => _strMetatype = value;
         }
 
         public string DisplaySexMethod(string strLanguage)
@@ -395,14 +399,8 @@ namespace Chummer
 
         public string DisplaySex
         {
-            get
-            {
-                return DisplaySexMethod(GlobalOptions.Language);
-            }
-            set
-            {
-                _strSex = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
-            }
+            get => DisplaySexMethod(GlobalOptions.Language);
+            set => _strSex = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
         }
 
         /// <summary>
@@ -416,10 +414,7 @@ namespace Chummer
                     return LinkedCharacter.Sex;
                 return _strSex;
             }
-            set
-            {
-                _strSex = value;
-            }
+            set => _strSex = value;
         }
 
         public string DisplayAgeMethod(string strLanguage)
@@ -432,14 +427,8 @@ namespace Chummer
 
         public string DisplayAge
         {
-            get
-            {
-                return DisplayAgeMethod(GlobalOptions.Language);
-            }
-            set
-            {
-                _strAge = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
-            }
+            get => DisplayAgeMethod(GlobalOptions.Language);
+            set => _strAge = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
         }
 
         /// <summary>
@@ -453,10 +442,7 @@ namespace Chummer
                     return LinkedCharacter.Age;
                 return _strAge;
             }
-            set
-            {
-                _strAge = value;
-            }
+            set => _strAge = value;
         }
 
         public string DisplayTypeMethod(string strLanguage)
@@ -469,14 +455,8 @@ namespace Chummer
 
         public string DisplayType
         {
-            get
-            {
-                return DisplayTypeMethod(GlobalOptions.Language);
-            }
-            set
-            {
-                _strType = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
-            }
+            get => DisplayTypeMethod(GlobalOptions.Language);
+            set => _strType = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
         }
 
         /// <summary>
@@ -484,14 +464,8 @@ namespace Chummer
         /// </summary>
         public string Type
         {
-            get
-            {
-                return _strType;
-            }
-            set
-            {
-                _strType = value;
-            }
+            get => _strType;
+            set => _strType = value;
         }
 
         public string DisplayPreferredPaymentMethod(string strLanguage)
@@ -504,14 +478,8 @@ namespace Chummer
 
         public string DisplayPreferredPayment
         {
-            get
-            {
-                return DisplayPreferredPaymentMethod(GlobalOptions.Language);
-            }
-            set
-            {
-                _strPreferredPayment = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
-            }
+            get => DisplayPreferredPaymentMethod(GlobalOptions.Language);
+            set => _strPreferredPayment = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
         }
 
         /// <summary>
@@ -519,14 +487,8 @@ namespace Chummer
         /// </summary>
         public string PreferredPayment
         {
-            get
-            {
-                return _strPreferredPayment;
-            }
-            set
-            {
-                _strPreferredPayment = value;
-            }
+            get => _strPreferredPayment;
+            set => _strPreferredPayment = value;
         }
 
         public string DisplayHobbiesViceMethod(string strLanguage)
@@ -539,14 +501,8 @@ namespace Chummer
 
         public string DisplayHobbiesVice
         {
-            get
-            {
-                return DisplayHobbiesViceMethod(GlobalOptions.Language);
-            }
-            set
-            {
-                _strHobbiesVice = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
-            }
+            get => DisplayHobbiesViceMethod(GlobalOptions.Language);
+            set => _strHobbiesVice = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
         }
 
         /// <summary>
@@ -554,14 +510,8 @@ namespace Chummer
         /// </summary>
         public string HobbiesVice
         {
-            get
-            {
-                return _strHobbiesVice;
-            }
-            set
-            {
-                _strHobbiesVice = value;
-            }
+            get => _strHobbiesVice;
+            set => _strHobbiesVice = value;
         }
 
         public string DisplayPersonalLifeMethod(string strLanguage)
@@ -574,14 +524,8 @@ namespace Chummer
 
         public string DisplayPersonalLife
         {
-            get
-            {
-                return DisplayPersonalLifeMethod(GlobalOptions.Language);
-            }
-            set
-            {
-                _strPersonalLife = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
-            }
+            get => DisplayPersonalLifeMethod(GlobalOptions.Language);
+            set => _strPersonalLife = LanguageManager.ReverseTranslateExtra(value, GlobalOptions.Language);
         }
 
         /// <summary>
@@ -589,14 +533,8 @@ namespace Chummer
         /// </summary>
         public string PersonalLife
         {
-            get
-            {
-                return _strPersonalLife;
-            }
-            set
-            {
-                _strPersonalLife = value;
-            }
+            get => _strPersonalLife;
+            set => _strPersonalLife = value;
         }
 
         /// <summary>
@@ -637,13 +575,7 @@ namespace Chummer
             set => _eContactType = value;
         }
 
-        public bool IsNotEnemy
-        {
-            get
-            {
-                return EntityType != ContactType.Enemy;
-            }
-        }
+        public bool IsNotEnemy => EntityType != ContactType.Enemy;
 
         /// <summary>
         /// Name of the save file for this Contact.
@@ -715,13 +647,7 @@ namespace Chummer
         /// <summary>
         /// Unique ID for this contact
         /// </summary>
-        public string GUID
-        {
-            get
-            {
-                return _strUnique;
-            }
-        }
+        public string GUID => _strUnique;
 
         /// <summary>
         /// Is this contact a made man
@@ -739,10 +665,7 @@ namespace Chummer
             }
         }
 
-        public bool NotMadeMan
-        {
-            get => !MadeMan;
-        }
+        public bool NotMadeMan => !MadeMan;
 
         public bool Blackmail
         {
@@ -762,28 +685,18 @@ namespace Chummer
             set => _blnForceLoyalty = value;
         }
 
-        public Character CharacterObject
-        {
-            get => _objCharacter;
-        }
+        public Character CharacterObject => _objCharacter;
 
-        public Character LinkedCharacter
-        {
-            get => _objLinkedCharacter;
-        }
+        public Character LinkedCharacter => _objLinkedCharacter;
 
-        public bool NoLinkedCharacter
-        {
-            get => _objLinkedCharacter == null;
-        }
+        public bool NoLinkedCharacter => _objLinkedCharacter == null;
 
         public void RefreshForControl()
         {
-            PropertyChangedEventHandler objPropertyChanged = PropertyChanged;
-            if (objPropertyChanged != null)
+            if (PropertyChanged != null)
             {
-                objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Loyalty)));
-                objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Connection)));
+                PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Loyalty)));
+                PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Connection)));
             }
             RefreshLinkedCharacter(false);
         }
@@ -792,7 +705,6 @@ namespace Chummer
         {
             Character _objOldLinkedCharacter = _objLinkedCharacter;
             _objCharacter.LinkedCharacters.Remove(_objLinkedCharacter);
-            _objLinkedCharacter = null;
             bool blnError = false;
             bool blnUseRelative = false;
 
@@ -818,10 +730,7 @@ namespace Chummer
                 if (strFile.EndsWith(".chum5"))
                 {
                     Character objOpenCharacter = Program.MainForm.OpenCharacters.FirstOrDefault(x => x.FileName == strFile);
-                    if (objOpenCharacter != null)
-                        _objLinkedCharacter = objOpenCharacter;
-                    else
-                        _objLinkedCharacter = Program.MainForm.LoadCharacter(strFile, string.Empty, false, false);
+                    _objLinkedCharacter = objOpenCharacter ?? Program.MainForm.LoadCharacter(strFile, string.Empty, false, false);
                     if (_objLinkedCharacter != null)
                         _objCharacter.LinkedCharacters.Add(_objLinkedCharacter);
                 }
@@ -833,7 +742,7 @@ namespace Chummer
                     if (!Program.MainForm.OpenCharacters.Any(x => x.LinkedCharacters.Contains(_objOldLinkedCharacter) && x != _objOldLinkedCharacter))
                     {
                         Program.MainForm.OpenCharacters.Remove(_objOldLinkedCharacter);
-                        _objOldLinkedCharacter.Dispose();
+                        _objOldLinkedCharacter.DeleteCharacter();
                     }
                 }
                 if (_objLinkedCharacter != null)

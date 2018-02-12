@@ -1,4 +1,4 @@
-/*  This file is part of Chummer5a.
+﻿/*  This file is part of Chummer5a.
  *
  *  Chummer5a is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,9 +16,8 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+ using System.Reflection;
+ using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -30,7 +29,7 @@ using System.Runtime.InteropServices;
                            "Chummer5 update by Adam Schmidt: srchummer5@gmail.com\n\r" +
                            "Chummer5a update by Anonymous fa/tg/uy: chummer5isalive@gmail.com\n\r" +
                            "Additional 5a updates by Johannes Elgaard: joha4270@gmail.com")]
-[assembly: AssemblyProduct("Chummer")]
+[assembly: AssemblyProduct("Chummer5a")]
 [assembly: AssemblyCopyright("Copyright © Keith Rudolph 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

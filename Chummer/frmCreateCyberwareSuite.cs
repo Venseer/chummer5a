@@ -74,13 +74,28 @@ namespace Chummer
 
             // See if a Suite with this name already exists for the Custom category. This is done without the XmlManager since we need to check each file individually.
             XmlDocument objXmlDocument = new XmlDocument();
-            XmlNodeList objXmlSuiteList;
             string strCustomPath = Path.Combine(Application.StartupPath, "data");
             foreach (string strFile in Directory.GetFiles(strCustomPath, "custom*_" + _strType + ".xml"))
             {
-                objXmlDocument.Load(strFile);
-                objXmlSuiteList = objXmlDocument.SelectNodes("/chummer/suites/suite[name = \"" + txtName.Text + "\"]");
-                if (objXmlSuiteList.Count > 0)
+                try
+                {
+                    using (StreamReader objStreamReader = new StreamReader(strFile, Encoding.UTF8, true))
+                    {
+                        objXmlDocument.Load(objStreamReader);
+                    }
+                }
+                catch (IOException ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                    return;
+                }
+                catch (XmlException ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                    return;
+                }
+                XmlNodeList objXmlSuiteList = objXmlDocument.SelectNodes("/chummer/suites/suite[name = \"" + txtName.Text + "\"]");
+                if (objXmlSuiteList?.Count > 0)
                 {
                     MessageBox.Show(LanguageManager.GetString("Message_CyberwareSuite_DuplicateName", GlobalOptions.Language).Replace("{0}", txtName.Text).Replace("{1}", strFile.Replace(strCustomPath + Path.DirectorySeparatorChar, string.Empty)), LanguageManager.GetString("MessageTitle_CyberwareSuite_DuplicateName", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
@@ -93,10 +108,28 @@ namespace Chummer
             // If this is not a new file, read in the existing contents.
             XmlDocument objXmlCurrentDocument = new XmlDocument();
             if (!blnNewFile)
-                objXmlCurrentDocument.Load(strPath);
+            {
+                try
+                {
+                    using (StreamReader objStreamReader = new StreamReader(strPath, Encoding.UTF8, true))
+                    {
+                        objXmlCurrentDocument.Load(objStreamReader);
+                    }
+                }
+                catch (IOException ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                    return;
+                }
+                catch (XmlException ex)
+                {
+                    MessageBox.Show(ex.ToString());
+                    return;
+                }
+            }
 
             FileStream objStream = new FileStream(strPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
-            XmlTextWriter objWriter = new XmlTextWriter(objStream, Encoding.Unicode)
+            XmlTextWriter objWriter = new XmlTextWriter(objStream, Encoding.UTF8)
             {
                 Formatting = Formatting.Indented,
                 Indentation = 1,

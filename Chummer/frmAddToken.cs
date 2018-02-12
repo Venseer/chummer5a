@@ -16,15 +16,9 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
+ using System;
+ using System.IO;
+ using System.Windows.Forms;
 
 namespace Chummer
 {
@@ -34,7 +28,7 @@ namespace Chummer
         private readonly InitiativeUserControl parentControl;
         private Character _character;
         private readonly Random _objRandom = MersenneTwister.SfmtRandom.Create();
-        private int _intModuloTemp = 0;
+        private int _intModuloTemp;
 
         public frmAddToken(InitiativeUserControl init)
         {
@@ -52,7 +46,7 @@ namespace Chummer
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
-                Filter = "Chummer5 Files (*.chum5)|*.chum5|All Files (*.*)|*.*"
+                Filter = LanguageManager.GetString("DialogFilter_Chum5", GlobalOptions.Language) + '|' + LanguageManager.GetString("DialogFilter_All", GlobalOptions.Language)
             };
 
             if (openFileDialog.ShowDialog(this) == DialogResult.OK)
@@ -104,7 +98,6 @@ namespace Chummer
         /// <param name="e"></param>
         private void btnOK_Click(object sender, EventArgs e)
         {
-            Random objRandom = MersenneTwister.SfmtRandom.Create();
             if (_character != null)
             {
                 _character.InitialInit = (int)nudInitStart.Value;

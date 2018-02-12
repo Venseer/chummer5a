@@ -1,4 +1,4 @@
-/*  This file is part of Chummer5a.
+﻿/*  This file is part of Chummer5a.
  *
  *  Chummer5a is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,14 +16,8 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
+ using System;
+ using System.Windows.Forms;
 
 namespace Chummer
 {
@@ -36,8 +30,8 @@ namespace Chummer
         /// </summary>
         public int MaxPhysical
         {
-            get { return _progressBarPhysical.Maximum; }
-            set { _progressBarPhysical.Maximum = value; }
+            get => _progressBarPhysical.Maximum;
+            set => _progressBarPhysical.Maximum = value;
         }
 
         /// <summary>
@@ -45,8 +39,8 @@ namespace Chummer
         /// </summary>
         public int MaxStun
         {
-            get { return _progressBarStun.Maximum; }
-            set { _progressBarStun.Maximum = value; }
+            get => _progressBarStun.Maximum;
+            set => _progressBarStun.Maximum = value;
         }
 
         /// <summary>
@@ -54,8 +48,8 @@ namespace Chummer
         /// </summary>
         public int Physical 
         {
-            get{ return _progressBarPhysical.Value; }
-            set { _progressBarPhysical.Value = value; }
+            get => _progressBarPhysical.Value;
+            set => _progressBarPhysical.Value = value;
         }
 
         /// <summary>
@@ -63,8 +57,8 @@ namespace Chummer
         /// </summary>
         public int Stun 
         {
-            get { return _progressBarStun.Value; }
-            set { _progressBarStun.Value = value; }
+            get => _progressBarStun.Value;
+            set => _progressBarStun.Value = value;
         }
         #endregion
 

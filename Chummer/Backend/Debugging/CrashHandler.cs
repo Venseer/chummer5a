@@ -24,11 +24,9 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Microsoft.Win32;
-using System.Security;
 
 namespace Chummer.Backend
 {
@@ -49,11 +47,11 @@ namespace Chummer.Backend
 
             // JavaScriptSerializer requires that all properties it accesses be public.
             // ReSharper disable once MemberCanBePrivate.Local 
-            public List<string> capturefiles = new List<string>();
+            public readonly List<string> capturefiles = new List<string>();
             // ReSharper disable once MemberCanBePrivate.Local 
-            public Dictionary<string, string> pretendfiles = new Dictionary<string, string>();
+            public readonly Dictionary<string, string> pretendfiles = new Dictionary<string, string>();
             // ReSharper disable once MemberCanBePrivate.Local 
-            public Dictionary<string, string> attributes = new Dictionary<string, string>();
+            public readonly Dictionary<string, string> attributes = new Dictionary<string, string>();
             public int processid = Process.GetCurrentProcess().Id;
             public uint threadId = NativeMethods.GetCurrentThreadId();
 
@@ -76,16 +74,19 @@ namespace Chummer.Backend
                 {
                     RegistryKey cv = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
 
+                    if (cv?.GetValueNames().Contains("ProductId") == false)
+                    {
+                        //On 32 bit builds? get 64 bit registry
+                        cv.Close();
+                        cv = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+                    }
+
                     if (cv != null)
                     {
-                        if (!cv.GetValueNames().Contains("ProductId"))
-                        {
-                            //On 32 bit builds? get 64 bit registry
-                            cv = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64).OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
-                        }
-
                         attributes.Add("machine-id", cv.GetValue("ProductId").ToString());
                         attributes.Add("os-name", cv.GetValue("ProductName").ToString());
+
+                        cv.Close();
                     }
                 }
 
@@ -139,13 +140,13 @@ namespace Chummer.Backend
                 dump.AddFile(Path.Combine(Application.StartupPath, "settings", "default.xml"));
                 dump.AddFile(Path.Combine(Application.StartupPath, "chummerlog.txt"));
 
-                Byte[] info = new UTF8Encoding(true).GetBytes(dump.SerializeBase64());
+                byte[] info = new UTF8Encoding(true).GetBytes(dump.SerializeBase64());
                 File.WriteAllBytes(Path.Combine(Application.StartupPath, "json.txt"), info);
 
                 //Process crashHandler = Process.Start("crashhandler", "crash " + Path.Combine(Application.StartupPath, "json.txt") + " --debug");
                 Process crashHandler = Process.Start("crashhandler", "crash " + Path.Combine(Application.StartupPath, "json.txt"));
 
-                crashHandler.WaitForExit();
+                crashHandler?.WaitForExit();
             }
             catch(Exception nex)
             {

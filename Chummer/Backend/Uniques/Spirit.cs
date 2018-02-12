@@ -1,3 +1,21 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -126,6 +144,8 @@ namespace Chummer
         /// Print the object's XML to the XmlWriter.
         /// </summary>
         /// <param name="objWriter">XmlTextWriter to write with.</param>
+        /// <param name="objCulture">Culture in which to print numbers.</param>
+        /// <param name="strLanguageToPrint">Language in which to print.</param>
         public void Print(XmlTextWriter objWriter, CultureInfo objCulture, string strLanguageToPrint)
         {
             // Translate the Critter name if applicable.
@@ -151,12 +171,12 @@ namespace Chummer
 
                 Dictionary<string, int> dicAttributes = new Dictionary<string, int>();
                 objWriter.WriteStartElement("spiritattributes");
-                foreach (string strAttribute in new String[] { "bod", "agi", "rea", "str", "cha", "int", "wil", "log", "ini" })
+                foreach (string strAttribute in new[] { "bod", "agi", "rea", "str", "cha", "int", "wil", "log", "ini" })
                 {
                     string strInner = string.Empty;
                     if (objXmlCritterNode.TryGetStringFieldQuickly(strAttribute, ref strInner))
                     {
-                        int intValue = 1;
+                        int intValue;
                         try
                         {
                             intValue = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strInner.Replace("F", _intForce.ToString())));
@@ -221,7 +241,7 @@ namespace Chummer
                     objWriter.WriteStartElement("skills");
                     foreach (XmlNode xmlSkillNode in xmlPowersNode.ChildNodes)
                     {
-                        string strAttrName = xmlSkillNode.Attributes?["attr"]?.Value;
+                        string strAttrName = xmlSkillNode.Attributes?["attr"]?.Value ?? string.Empty;
                         if (!dicAttributes.TryGetValue(strAttrName, out int intAttrValue))
                             intAttrValue = _intForce;
                         int intDicepool = intAttrValue + _intForce;
@@ -516,7 +536,7 @@ namespace Chummer
             set => _strNotes = value;
         }
 
-        private bool _blnFettered = false;
+        private bool _blnFettered;
         public bool Fettered
         {
             get => _blnFettered;
@@ -546,7 +566,7 @@ namespace Chummer
                             objExpense.Create(FetteringCost * -1,
                                 LanguageManager.GetString("String_ExpenseFetteredSpirit", GlobalOptions.Language) + ' ' + Name,
                                 ExpenseType.Karma, DateTime.Now);
-                            CharacterObject.ExpenseEntries.Add(objExpense);
+                            CharacterObject.ExpenseEntries.AddWithSort(objExpense);
                             CharacterObject.Karma -= FetteringCost;
 
                             ExpenseUndo objUndo = new ExpenseUndo();
@@ -569,7 +589,7 @@ namespace Chummer
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private XmlNode _objCachedMyXmlNode = null;
+        private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
 
         public XmlNode GetNode()
@@ -587,21 +607,14 @@ namespace Chummer
             return _objCachedMyXmlNode;
         }
 
-        public Character LinkedCharacter
-        {
-            get => _objLinkedCharacter;
-        }
+        public Character LinkedCharacter => _objLinkedCharacter;
 
-        public bool NoLinkedCharacter
-        {
-            get => _objLinkedCharacter == null;
-        }
+        public bool NoLinkedCharacter => _objLinkedCharacter == null;
 
         public void RefreshLinkedCharacter(bool blnShowError)
         {
             Character _objOldLinkedCharacter = _objLinkedCharacter;
             _objCharacter.LinkedCharacters.Remove(_objLinkedCharacter);
-            _objLinkedCharacter = null;
             bool blnError = false;
             bool blnUseRelative = false;
 
@@ -627,10 +640,7 @@ namespace Chummer
                 if (strFile.EndsWith(".chum5"))
                 {
                     Character objOpenCharacter = Program.MainForm.OpenCharacters.FirstOrDefault(x => x.FileName == strFile);
-                    if (objOpenCharacter != null)
-                        _objLinkedCharacter = objOpenCharacter;
-                    else
-                        _objLinkedCharacter = Program.MainForm.LoadCharacter(strFile, string.Empty, false, false);
+                    _objLinkedCharacter = objOpenCharacter ?? Program.MainForm.LoadCharacter(strFile, string.Empty, false, false);
                     if (_objLinkedCharacter != null)
                         _objCharacter.LinkedCharacters.Add(_objLinkedCharacter);
                 }
@@ -642,7 +652,7 @@ namespace Chummer
                     if (!Program.MainForm.OpenCharacters.Any(x => x.LinkedCharacters.Contains(_objOldLinkedCharacter) && x != _objOldLinkedCharacter))
                     {
                         Program.MainForm.OpenCharacters.Remove(_objOldLinkedCharacter);
-                        _objOldLinkedCharacter.Dispose();
+                        _objOldLinkedCharacter.DeleteCharacter();
                     }
                 }
                 if (_objLinkedCharacter != null)
@@ -650,11 +660,10 @@ namespace Chummer
                     if (string.IsNullOrEmpty(_strCritterName) && CritterName != LanguageManager.GetString("String_UnnamedCharacter", GlobalOptions.Language))
                         _strCritterName = CritterName;
                 }
-                PropertyChangedEventHandler objPropertyChanged = PropertyChanged;
-                if (objPropertyChanged != null)
+                if (PropertyChanged != null)
                 {
-                    objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(CritterName)));
-                    objPropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(NoLinkedCharacter)));
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(CritterName)));
+                    PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(NoLinkedCharacter)));
                 }
             }
         }

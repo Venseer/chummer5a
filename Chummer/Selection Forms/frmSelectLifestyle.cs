@@ -18,8 +18,7 @@
  */
  using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Windows.Forms;
+ using System.Windows.Forms;
 using System.Xml;
  using Chummer.Backend.Equipment;
 using System.Xml.XPath;
@@ -29,13 +28,13 @@ namespace Chummer
 {
     public partial class frmSelectLifestyle : Form
     {
-        private bool _blnAddAgain = false;
-        private Lifestyle _objLifestyle;
+        private bool _blnAddAgain;
+        private readonly Lifestyle _objLifestyle;
         private Lifestyle _objSourceLifestyle;
         private readonly Character _objCharacter;
         private LifestyleType _objType = LifestyleType.Standard;
 
-        private readonly XmlDocument _objXmlDocument = null;
+        private readonly XmlDocument _objXmlDocument;
 
         private bool _blnSkipRefresh = true;
 
@@ -212,38 +211,20 @@ namespace Chummer
         /// <summary>
         /// Whether or not the user wants to add another item after this one.
         /// </summary>
-        public bool AddAgain
-        {
-            get
-            {
-                return _blnAddAgain;
-            }
-        }
+        public bool AddAgain => _blnAddAgain;
 
         /// <summary>
         /// Lifestyle that was created in the dialogue.
         /// </summary>
-        public Lifestyle SelectedLifestyle
-        {
-            get
-            {
-                return _objLifestyle;
-            }
-        }
+        public Lifestyle SelectedLifestyle => _objLifestyle;
 
         /// <summary>
         /// Type of Lifestyle to create.
         /// </summary>
         public LifestyleType StyleType
         {
-            get
-            {
-                return _objType;
-            }
-            set
-            {
-                _objType = value;
-            }
+            get => _objType;
+            set => _objType = value;
         }
         #endregion
 
@@ -260,7 +241,7 @@ namespace Chummer
                 _objLifestyle.Source = objXmlLifestyle["source"].InnerText;
                 _objLifestyle.Page = objXmlLifestyle["page"].InnerText;
                 _objLifestyle.Name = txtLifestyleName.Text;
-                _objLifestyle.BaseLifestyle = objXmlLifestyle["name"].InnerText.ToString();
+                _objLifestyle.BaseLifestyle = objXmlLifestyle["name"].InnerText;
                 _objLifestyle.Cost = Convert.ToDecimal(objXmlLifestyle["cost"].InnerText, GlobalOptions.InvariantCultureInfo);
                 _objLifestyle.Roommates = _objLifestyle.TrustFund ? 0 : decimal.ToInt32(nudRoommates.Value);
                 _objLifestyle.Percentage = nudPercentage.Value;
@@ -413,8 +394,7 @@ namespace Chummer
 
         private void MoveControls()
         {
-            int intLeft = 0;
-            intLeft = Math.Max(lblLifestyleNameLabel.Left + lblLifestyleNameLabel.Width, lblLifestyles.Left + lblLifestyles.Width);
+            int intLeft = Math.Max(lblLifestyleNameLabel.Left + lblLifestyleNameLabel.Width, lblLifestyles.Left + lblLifestyles.Width);
 
             txtLifestyleName.Left = intLeft + 6;
             cboLifestyle.Left = intLeft + 6;

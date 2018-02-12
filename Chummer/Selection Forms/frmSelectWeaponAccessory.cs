@@ -16,7 +16,7 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
+ using System;
 using System.Collections.Generic;
  using System.Globalization;
  using System.Linq;
@@ -30,16 +30,15 @@ namespace Chummer
 {
     public partial class frmSelectWeaponAccessory : Form
     {
-        private string _strSelectedAccessory = string.Empty;
-        private decimal _decMarkup = 0;
+        private string _strSelectedAccessory;
+        private decimal _decMarkup;
 
         private bool _blnLoading = true;
-        private List<string> _strAllowedMounts = new List<string>();
-        private int _intRating = 0;
+        private readonly List<string> _lstAllowedMounts = new List<string>();
         private Weapon _objParentWeapon;
-        private bool _blnAddAgain = false;
+        private bool _blnAddAgain;
 
-        private readonly XmlDocument _objXmlDocument = null;
+        private readonly XmlDocument _objXmlDocument;
         private readonly Character _objCharacter;
         private bool _blnBlackMarketDiscount;
         //private readonly List<string> _blackMarketMaps = new List<string>();
@@ -88,91 +87,108 @@ namespace Chummer
             
             // Populate the Accessory list.
             StringBuilder strMount = new StringBuilder("contains(mount, \"Internal\") or contains(mount, \"None\") or mount = \"\"");
-            foreach (string strAllowedMount in _strAllowedMounts)
+            foreach (string strAllowedMount in _lstAllowedMounts)
             {
                 if (!string.IsNullOrEmpty(strAllowedMount))
                     strMount.Append(" or contains(mount, \"" + strAllowedMount + "\")");
             }
             XmlNode xmlParentWeaponDataNode = _objParentWeapon.GetNode();
-            XmlNodeList objXmlAccessoryList = _objXmlDocument.SelectNodes("/chummer/accessories/accessory[(" + strMount.ToString() + ") and (" + _objCharacter.Options.BookXPath() + ")]");
-            foreach (XmlNode objXmlAccessory in objXmlAccessoryList)
-            {
-                XmlNode xmlExtraMountNode = objXmlAccessory["extramount"];
-                if (xmlExtraMountNode != null)
-                {
-                    if (_strAllowedMounts.Count > 1)
+            using (XmlNodeList objXmlAccessoryList = _objXmlDocument.SelectNodes("/chummer/accessories/accessory[(" + strMount + ") and (" + _objCharacter.Options.BookXPath() + ")]"))
+                if (objXmlAccessoryList != null)
+                    foreach (XmlNode objXmlAccessory in objXmlAccessoryList)
                     {
-                        foreach (string strItem in (xmlExtraMountNode.InnerText.Split('/')).Where(strItem => !string.IsNullOrEmpty(strItem)))
+                        XmlNode xmlExtraMountNode = objXmlAccessory["extramount"];
+                        if (xmlExtraMountNode != null)
                         {
-                            if (_strAllowedMounts.All(strAllowedMount => strAllowedMount != strItem))
+                            if (_lstAllowedMounts.Count > 1)
                             {
-                                goto NextItem;
+                                foreach (string strItem in (xmlExtraMountNode.InnerText.Split('/')).Where(strItem => !string.IsNullOrEmpty(strItem)))
+                                {
+                                    if (_lstAllowedMounts.All(strAllowedMount => strAllowedMount != strItem))
+                                    {
+                                        goto NextItem;
+                                    }
+                                }
                             }
                         }
+
+                        XmlNode xmlTestNode = objXmlAccessory.SelectSingleNode("forbidden/weapondetails");
+                        if (xmlTestNode != null)
+                        {
+                            // Assumes topmost parent is an AND node
+                            if (xmlParentWeaponDataNode.ProcessFilterOperationNode(xmlTestNode, false))
+                            {
+                                continue;
+                            }
+                        }
+                        xmlTestNode = objXmlAccessory.SelectSingleNode("required/weapondetails");
+                        if (xmlTestNode != null)
+                        {
+                            // Assumes topmost parent is an AND node
+                            if (!xmlParentWeaponDataNode.ProcessFilterOperationNode(xmlTestNode, false))
+                            {
+                                continue;
+                            }
+                        }
+
+                        xmlTestNode = objXmlAccessory.SelectSingleNode("forbidden/oneof");
+                        if (xmlTestNode != null)
+                        {
+                            using (XmlNodeList objXmlForbiddenList = xmlTestNode.SelectNodes("accessory"))
+                            {
+                                if (objXmlForbiddenList != null)
+                                {
+                                    //Add to set for O(N log M) runtime instead of O(N * M)
+
+                                    HashSet<string> objForbiddenAccessory = new HashSet<string>();
+                                    foreach (XmlNode node in objXmlForbiddenList)
+                                    {
+                                        objForbiddenAccessory.Add(node.InnerText);
+                                    }
+
+                                    if (_objParentWeapon.WeaponAccessories.Any(objAccessory =>
+                                        objForbiddenAccessory.Contains(objAccessory.Name)))
+                                    {
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+
+                        xmlTestNode = objXmlAccessory.SelectSingleNode("required/oneof");
+                        if (xmlTestNode != null)
+                        {
+                            using (XmlNodeList objXmlRequiredList = xmlTestNode.SelectNodes("accessory"))
+                            {
+                                if (objXmlRequiredList != null)
+                                {
+                                    //Add to set for O(N log M) runtime instead of O(N * M)
+
+                                    HashSet<string> objRequiredAccessory = new HashSet<string>();
+                                    foreach (XmlNode node in objXmlRequiredList)
+                                    {
+                                        objRequiredAccessory.Add(node.InnerText);
+                                    }
+
+                                    if (!_objParentWeapon.WeaponAccessories.Any(objAccessory =>
+                                        objRequiredAccessory.Contains(objAccessory.Name)))
+                                    {
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }
+                        }
+
+                        if (!chkHideOverAvailLimit.Checked || SelectionShared.CheckAvailRestriction(objXmlAccessory, _objCharacter))
+                        {
+                            lstAccessories.Add(new ListItem(objXmlAccessory["id"]?.InnerText, objXmlAccessory["translate"]?.InnerText ?? objXmlAccessory["name"]?.InnerText ?? string.Empty));
+                        }
+                        NextItem:;
                     }
-                }
-
-                XmlNode xmlTestNode = objXmlAccessory.SelectSingleNode("forbidden/weapondetails");
-                if (xmlTestNode != null)
-                {
-                    // Assumes topmost parent is an AND node
-                    if (xmlParentWeaponDataNode.ProcessFilterOperationNode(xmlTestNode, false))
-                    {
-                        continue;
-                    }
-                }
-                xmlTestNode = objXmlAccessory.SelectSingleNode("required/weapondetails");
-                if (xmlTestNode != null)
-                {
-                    // Assumes topmost parent is an AND node
-                    if (!xmlParentWeaponDataNode.ProcessFilterOperationNode(xmlTestNode, false))
-                    {
-                        continue;
-                    }
-                }
-
-                xmlTestNode = objXmlAccessory.SelectSingleNode("forbidden/oneof");
-                if (xmlTestNode != null)
-                {
-                    XmlNodeList objXmlForbiddenList = xmlTestNode.SelectNodes("accessory");
-                    //Add to set for O(N log M) runtime instead of O(N * M)
-
-                    HashSet<string> objForbiddenAccessory = new HashSet<string>();
-                    foreach (XmlNode node in objXmlForbiddenList)
-                    {
-                        objForbiddenAccessory.Add(node.InnerText);
-                    }
-
-                    if (_objParentWeapon.WeaponAccessories.Any(objAccessory => objForbiddenAccessory.Contains(objAccessory.Name)))
-                    {
-                        continue;
-                    }
-                }
-
-                xmlTestNode = objXmlAccessory.SelectSingleNode("required/oneof");
-                if (xmlTestNode != null)
-                {
-                    XmlNodeList objXmlRequiredList = xmlTestNode.SelectNodes("accessory");
-                    //Add to set for O(N log M) runtime instead of O(N * M)
-
-                    HashSet<string> objRequiredAccessory = new HashSet<string>();
-                    foreach (XmlNode node in objXmlRequiredList)
-                    {
-                        objRequiredAccessory.Add(node.InnerText);
-                    }
-
-                    if (!_objParentWeapon.WeaponAccessories.Any(objAccessory => objRequiredAccessory.Contains(objAccessory.Name)))
-                    {
-                        continue;
-                    }
-                }
-
-                if (!chkHideOverAvailLimit.Checked || Backend.SelectionShared.CheckAvailRestriction(objXmlAccessory, _objCharacter))
-                {
-                    lstAccessories.Add(new ListItem(objXmlAccessory["id"].InnerText, objXmlAccessory["translate"]?.InnerText ?? objXmlAccessory["name"]?.InnerText ?? string.Empty));
-                }
-                NextItem:;
-            }
             
             lstAccessories.Sort(CompareListItems.CompareNames);
             string strOldSelected = lstAccessory.SelectedValue?.ToString();
@@ -254,35 +270,17 @@ namespace Chummer
         /// <summary>
         /// Whether or not the user wants to add another item after this one.
         /// </summary>
-        public bool AddAgain
-        {
-            get
-            {
-                return _blnAddAgain;
-            }
-        }
+        public bool AddAgain => _blnAddAgain;
 
         /// <summary>
         /// Name of Accessory that was selected in the dialogue.
         /// </summary>
-        public string SelectedAccessory
-        {
-            get
-            {
-                return _strSelectedAccessory;
-            }
-        }
+        public string SelectedAccessory => _strSelectedAccessory;
 
         /// <summary>
         /// Mount that was selected in the dialogue.
         /// </summary>
-        public Tuple<string, string> SelectedMount
-        {
-            get
-            {
-                return new Tuple<string, string>(cboMount.SelectedItem?.ToString(), cboExtraMount.SelectedItem?.ToString());
-            }
-        }
+        public Tuple<string, string> SelectedMount => new Tuple<string, string>(cboMount.SelectedItem?.ToString(), cboExtraMount.SelectedItem?.ToString());
 
         /// <summary>
         /// Rating of the Accessory.
@@ -311,15 +309,21 @@ namespace Chummer
             set
             {
                 _objParentWeapon = value;
-                _strAllowedMounts.Clear();
-                XmlNodeList objXmlMountList = value.GetNode()?.SelectNodes("accessorymounts/mount");
-                foreach (XmlNode objXmlMount in objXmlMountList)
+                _lstAllowedMounts.Clear();
+                using (XmlNodeList objXmlMountList = value.GetNode()?.SelectNodes("accessorymounts/mount"))
                 {
-                    string strLoopMount = objXmlMount.InnerText;
-                    // Run through the Weapon's currenct Accessories and filter out any used up Mount points.
-                    if (!_objParentWeapon.WeaponAccessories.Any(objMod => objMod.Mount == strLoopMount || objMod.ExtraMount == strLoopMount))
+                    if (objXmlMountList != null)
                     {
-                        _strAllowedMounts.Add(strLoopMount);
+                        foreach (XmlNode objXmlMount in objXmlMountList)
+                        {
+                            string strLoopMount = objXmlMount.InnerText;
+                            // Run through the Weapon's currenct Accessories and filter out any used up Mount points.
+                            if (!_objParentWeapon.WeaponAccessories.Any(objMod =>
+                                objMod.Mount == strLoopMount || objMod.ExtraMount == strLoopMount))
+                            {
+                                _lstAllowedMounts.Add(strLoopMount);
+                            }
+                        }
                     }
                 }
             }
@@ -328,35 +332,18 @@ namespace Chummer
         /// <summary>
         /// Whether or not the item should be added for free.
         /// </summary>
-        public bool FreeCost
-        {
-            get
-            {
-                return chkFreeItem.Checked;
-            }
-        }
+        public bool FreeCost => chkFreeItem.Checked;
 
         /// <summary>
         /// Whether or not the selected Vehicle is used.
         /// </summary>
-        public bool BlackMarketDiscount
-        {
-            get
-            {
-                return _blnBlackMarketDiscount;
-            }
-        }
+        public bool BlackMarketDiscount => _blnBlackMarketDiscount;
 
         /// <summary>
         /// Markup percentage.
         /// </summary>
-        public decimal Markup
-        {
-            get
-            {
-                return _decMarkup;
-            }
-        }
+        public decimal Markup => _decMarkup;
+
         #endregion
 
         #region Methods
@@ -370,8 +357,7 @@ namespace Chummer
                     cboExtraMount.SelectedIndex = 0;
                 else
                     cboMount.SelectedIndex = 0;
-                while ((cboMount.SelectedItem.ToString() != "None") && (cboExtraMount.SelectedItem.ToString() != "None")
-                    && (cboMount.SelectedItem.ToString() == cboExtraMount.SelectedItem.ToString()))
+                while (cboMount.SelectedItem.ToString() != "None" && cboExtraMount.SelectedItem.ToString() != "None" && cboMount.SelectedItem.ToString() == cboExtraMount.SelectedItem.ToString())
                 {
                     if (boolChangeExtraMountFirst)
                         cboExtraMount.SelectedIndex += 1;
@@ -430,7 +416,7 @@ namespace Chummer
                 nudRating.Maximum = intMaxRating;
                 if (chkHideOverAvailLimit.Checked)
                 {
-                    while (nudRating.Maximum > nudRating.Minimum && !Backend.SelectionShared.CheckAvailRestriction(xmlAccessory, _objCharacter, decimal.ToInt32(nudRating.Maximum)))
+                    while (nudRating.Maximum > nudRating.Minimum && !SelectionShared.CheckAvailRestriction(xmlAccessory, _objCharacter, decimal.ToInt32(nudRating.Maximum)))
                     {
                         nudRating.Maximum -= 1;
                     }
@@ -442,19 +428,16 @@ namespace Chummer
                 nudRating.Visible = false;
                 lblRatingLabel.Visible = false;
             }
+
+            string[] astrDataMounts = xmlAccessory["mount"]?.InnerText.Split('/');
             List<string> strMounts = new List<string>();
-            foreach (string strItem in xmlAccessory["mount"]?.InnerText?.Split('/'))
+            if (astrDataMounts != null)
             {
-                strMounts.Add(strItem);
+                strMounts.AddRange(astrDataMounts);
             }
             strMounts.Add("None");
 
-            List<string> strAllowed = new List<string>();
-            foreach (string strItem in _strAllowedMounts)
-            {
-                strAllowed.Add(strItem);
-            }
-            strAllowed.Add("None");
+            List<string> strAllowed = new List<string>(_lstAllowedMounts) {"None"};
             cboMount.Visible = true;
             cboMount.Items.Clear();
             foreach (string strCurrentMount in strMounts)
@@ -470,14 +453,7 @@ namespace Chummer
                     }
                 }
             }
-            if (cboMount.Items.Count <= 1)
-            {
-                cboMount.Enabled = false;
-            }
-            else
-            {
-                cboMount.Enabled = true;
-            }
+            cboMount.Enabled = cboMount.Items.Count > 1;
             cboMount.SelectedIndex = 0;
 
             List<string> strExtraMounts = new List<string>();
@@ -506,14 +482,7 @@ namespace Chummer
                     }
                 }
             }
-            if (cboExtraMount.Items.Count <= 1)
-            {
-                cboExtraMount.Enabled = false;
-            }
-            else
-            {
-                cboExtraMount.Enabled = true;
-            }
+            cboExtraMount.Enabled = cboExtraMount.Items.Count > 1;
             cboExtraMount.SelectedIndex = 0;
             if (cboMount.SelectedItem.ToString() != "None" && cboExtraMount.SelectedItem.ToString() != "None"
                 && cboMount.SelectedItem.ToString() == cboExtraMount.SelectedItem.ToString())
@@ -554,7 +523,7 @@ namespace Chummer
                         .Replace("Rating", nudRating.Value.ToString(GlobalOptions.CultureInfo));
                 if (strCost.StartsWith("Variable("))
                 {
-                    decimal decMin = 0;
+                    decimal decMin;
                     decimal decMax = decimal.MaxValue;
                     strCost = strCost.TrimStart("Variable(", true).TrimEnd(')');
                     if (strCost.Contains('-'))
@@ -618,7 +587,6 @@ namespace Chummer
             if (!string.IsNullOrEmpty(strSelectedId))
             {
                 _strSelectedAccessory = strSelectedId;
-                int.TryParse(nudRating.Value.ToString(GlobalOptions.CultureInfo), out _intRating);
                 _decMarkup = nudMarkup.Value;
                 _blnBlackMarketDiscount = chkBlackMarketDiscount.Checked;
                 DialogResult = DialogResult.OK;

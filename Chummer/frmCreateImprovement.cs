@@ -16,10 +16,11 @@
  *  You can obtain the full source code for Chummer5a at
  *  https://github.com/chummer5a/chummer5a
  */
-﻿using System;
+ using System;
 using System.Collections.Generic;
 using System.IO;
  using System.Linq;
+ using System.Text;
  using System.Windows.Forms;
 using System.Xml;
 
@@ -29,7 +30,7 @@ namespace Chummer
     public partial class frmCreateImprovement : Form
     {
         private readonly Character _objCharacter;
-        private readonly XmlDocument _objDocument = null;
+        private readonly XmlDocument _objDocument;
         private string _strSelect = string.Empty;
         private Improvement _objEditImprovement;
 
@@ -346,12 +347,14 @@ namespace Chummer
 
             // Build the XML for the Improvement.
             XmlNode objFetchNode = _objDocument.SelectSingleNode("/chummer/improvements/improvement[id = \"" + cboImprovemetType.SelectedValue + "\"]");
-            if (objFetchNode == null) return;
+            string strInternal = objFetchNode?["internal"]?.InnerText;
+            if (string.IsNullOrEmpty(strInternal))
+                return;
             objWriter.WriteStartDocument();
             // <bonus>
             objWriter.WriteStartElement("bonus");
             // <whatever element>
-            objWriter.WriteStartElement(objFetchNode["internal"]?.InnerText);
+            objWriter.WriteStartElement(strInternal);
 
             string strRating = string.Empty;
             if (chkApplyToRating.Checked)
@@ -380,7 +383,7 @@ namespace Chummer
             objStream.Position = 0;
 
             // Read it back in as an XmlDocument.
-            StreamReader objReader = new StreamReader(objStream);
+            StreamReader objReader = new StreamReader(objStream, Encoding.UTF8, true);
             XmlDocument objBonusXml = new XmlDocument();
             strXml = objReader.ReadToEnd();
             objBonusXml.LoadXml(strXml);
@@ -448,10 +451,7 @@ namespace Chummer
         /// </summary>
         public Improvement EditImprovementObject
         {
-            set
-            {
-                _objEditImprovement = value;
-            }
+            set => _objEditImprovement = value;
         }
         #endregion
     }
