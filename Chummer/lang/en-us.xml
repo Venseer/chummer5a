@@ -790,6 +790,10 @@
       <text>Force</text>
     </string>
     <string>
+      <key>String_Level</key>
+      <text>Level</text>
+    </string>
+    <string>
       <key>String_CyberlimbAttributeModifier</key>
       <text>affected by Cyberlimb Attributes</text>
     </string>
@@ -1237,7 +1241,7 @@
     </string>
     <string>
       <key>About_Label_Disclaimer_Text</key>
-      <text>Chummer is completely unofficial and is in no way endorsed by The Topps Company, Inc. or Catalyst Game Labs. The Topps Company, Inc. has sole ownership of the names, logo, artwork, marks, photographs, sounds, audio, video and/or any proprietary material used in connection with the game Shadowrun.\n\r\n\rUnless agreed to in writing, the developer provides the Work (and each Contributor provides its Contributions) on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.\n\r\n\rBy using Chummer You agree that You legally own a copy of the Shadowrun rulebook and any sourcebook whose information you select to use. You are solely responsible for determining the appropriateness of using or redistributing the content You create and assume any risks associated with Your exercise of permissions under this License.\n\r\n\rChummer uses icons from the Silk icon set made by Mark James which is available at www.famfamfam.com.</text>
+      <text>Chummer is completely unofficial and is in no way endorsed by The Topps Company, Inc. or Catalyst Game Labs. The Topps Company, Inc. has sole ownership of the names, logo, artwork, marks, photographs, sounds, audio, video and/or any proprietary material used in connection with the game Shadowrun.\n\r\n\rUnless agreed to in writing, the developer provides the Work (and each Contributor provides its Contributions) on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either expressed or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.\n\r\n\rBy using Chummer You agree that You legally own a copy of the Shadowrun rulebook and any sourcebook whose information you select to use. You are solely responsible for determining the appropriateness of using or redistributing the content You create and assume any risks associated with Your exercise of permissions under this License.\n\r\n\rChummer uses icons from the Silk icon set made by Mark James which is available at www.famfamfam.com.</text>
     </string>
     <!-- End Region -->
     <!-- Region Character Roster -->
@@ -2028,16 +2032,12 @@
       <text>Cannot Remove Cyberware</text>
     </string>
     <string>
-      <key>Message_ComplexFormLimitCareer</key>
-      <text>Your number of Complex Forms cannot exceed your RES × 2 score.</text>
-    </string>        
-    <string>
       <key>Message_ComplexFormLimit</key>
-      <text>Your number of Complex Forms cannot exceed your LOG score during Character Generation.</text>
+      <text>Your cannot have more complex forms than twice your RES score. Ref: Page 98, SR5 Core (Errata'd).</text>
     </string>
     <string>
       <key>Message_PriorityComplexFormLimit</key>
-      <text>Your number of Complex Forms cannot exceed the number defined by your selected Talent priority.</text>
+      <text>Your cannot have more complex forms than allowed by your selected Talent priority.</text>
     </string>
     <string>
       <key>MessageTitle_ComplexFormLimit</key>
@@ -3725,6 +3725,34 @@
       <text>Touch</text>
     </string>
     <string>
+      <key>String_ComplexFormLevel</key>
+      <text>L</text>
+    </string>
+    <string>
+      <key>String_ComplexFormTargetPersona</key>
+      <text>Persona</text>
+    </string>
+    <string>
+      <key>String_ComplexFormTargetDevice</key>
+      <text>Device</text>
+    </string>
+    <string>
+      <key>String_ComplexFormTargetFile</key>
+      <text>File</text>
+    </string>
+    <string>
+      <key>String_ComplexFormTargetSprite</key>
+      <text>Sprite</text>
+    </string>
+    <string>
+      <key>String_ComplexFormTargetHost</key>
+      <text>Host</text>
+    </string>
+    <string>
+      <key>String_ComplexFormTargetIC</key>
+      <text>IC</text>
+    </string>
+    <string>
       <key>String_ActionAutomatic</key>
       <text>Auto</text>
     </string>
@@ -4408,16 +4436,32 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Add Initiate Grade</text>
     </string>
     <string>
+      <key>Button_RemoveInitiateGrade</key>
+      <text>Remove Initiate Grade</text>
+    </string>
+    <string>
       <key>Button_AddSubmersionGrade</key>
       <text>Add Submersion Grade</text>
+    </string>
+    <string>
+      <key>Button_RemoveSubmersionGrade</key>
+      <text>Remove Submersion Grade</text>
     </string>
     <string>
       <key>Button_AddMetamagic</key>
       <text>Add Metamagic</text>
     </string>
     <string>
+      <key>Button_RemoveMetamagic</key>
+      <text>Remove Metamagic</text>
+    </string>
+    <string>
       <key>Button_AddEcho</key>
       <text>Add Echo</text>
+    </string>
+    <string>
+      <key>Button_RemoveEcho</key>
+      <text>Remove Echo</text>
     </string>
     <!-- End Region-->
     <!-- Region Cyberware Tab -->
@@ -5196,6 +5240,14 @@ Only one attribute may be at its Maximum value during character creation.</text>
       <text>Walking: AGI × 2 ({0} MPCT) / ({1} KPH)\nRunning: AGI × 4 ({2} MPCT) / ({3} KPH)</text>
     </string>
     <string>
+      <key>Label_OtherCoreCM</key>
+      <text>Core Condition Track:</text>
+    </string>
+    <string>
+      <key>Label_OtherMatrixCM</key>
+      <text>Matrix Condition Track:</text>
+    </string>
+    <string>
       <key>Label_OtherPhysicalCM</key>
       <text>Physical Condition Track:</text>
     </string>
@@ -5495,7 +5547,15 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <string>
       <key>Tip_SpellDrainSeeDescription</key>
-      <text>See Spell description</text>
+      <text>See Spell Description</text>
+    </string>
+    <string>
+      <key>Tip_ComplexFormFadingBase</key>
+      <text>Base Fading for</text>
+    </string>
+    <string>
+      <key>Tip_ComplexFormFadingSeeDescription</key>
+      <text>See Complex Form Description</text>
     </string>
     <string>
       <key>Tip_ImproveInitiateGrade</key>
@@ -5543,6 +5603,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <!-- End Region-->
     <!-- Region ASDF Attributes-->
+    <string>
+      <key>String_DeviceRating</key>
+      <text>Device Rating</text>
+    </string>
     <string>
       <key>String_Attack</key>
       <text>Attack</text>
@@ -5874,7 +5938,7 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <string>
       <key>Message_CyberwareSuite_DuplicateName</key>
-      <text>A Suite named "{0}" already exists in the "{1}" data file. Please choose a different name.</text>
+      <text>A Suite named "{0}" already exists in a data file. Please choose a different name.</text>
     </string>
     <string>
       <key>MessageTitle_CyberwareSuite_DuplicateName</key>
@@ -5980,7 +6044,7 @@ Only one attribute may be at its Maximum value during character creation.</text>
     </string>
     <string>
       <key>Message_CreatePACKSKit_DuplicateName</key>
-      <text>A Kit named "{0}" already exists in the "{1}" data file. Please choose a different name.</text>
+      <text>A Kit named "{0}" already exists in a data file. Please choose a different name.</text>
     </string>
     <string>
       <key>MessageTitle_CreatePACKSKit_DuplicateName</key>
@@ -8106,19 +8170,19 @@ Only one attribute may be at its Maximum value during character creation.</text>
     <!-- End Region-->
     <!-- Region Select Program Window -->
     <string>
-      <key>Title_SelectProgram</key>
-      <text>Select a Program</text>
+      <key>Title_SelectComplexForm</key>
+      <text>Select a Complex Form</text>
     </string>
     <string>
-      <key>Label_SelectProgram_Target</key>
+      <key>Label_SelectComplexForm_Target</key>
       <text>Target:</text>
     </string>
     <string>
-      <key>Label_SelectProgram_Duration</key>
+      <key>Label_SelectComplexForm_Duration</key>
       <text>Duration:</text>
     </string>
     <string>
-      <key>Label_SelectProgram_FV</key>
+      <key>Label_SelectComplexForm_FV</key>
       <text>FV:</text>
     </string>
     <!-- End Region-->
@@ -8460,6 +8524,10 @@ Only one attribute may be at its Maximum value during character creation.</text>
     <string>
       <key>Warning_Update_CouldNotConnect</key>
       <text>Chummer was unable to connect to the update server. Please check your firewall and proxy settings.</text>
+    </string>
+    <string>
+      <key>Warning_Update_CouldNotConnectException</key>
+      <text>Chummer was unable to connect to the update server. Please check your firewall and proxy settings.\n\nError Message:\n{0}.</text>
     </string>
 	<string>
       <key>Button_Download</key>

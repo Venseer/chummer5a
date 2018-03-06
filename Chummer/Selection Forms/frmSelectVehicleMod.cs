@@ -132,6 +132,7 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
 
@@ -148,13 +149,14 @@ namespace Chummer
 
         private void lstMod_DoubleClick(object sender, EventArgs e)
         {
-            cmdOK_Click(sender, e);
+            _blnAddAgain = false;
+            AcceptForm();
         }
 
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             _blnAddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
 
         private void chkFreeItem_CheckedChanged(object sender, EventArgs e)
@@ -280,7 +282,7 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ')';
+                    strFilter += " and (" + objCategoryFilter.ToString().TrimEndOnce(" or ") + ')';
                 }
             }
             */
@@ -423,7 +425,9 @@ namespace Chummer
                 if (strMinRating?.Length > 0)
                 {
                     strMinRating = ReplaceStrings(strMinRating);
-                    intMinRating = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strMinRating));
+                    object objTempProcess = CommonFunctions.EvaluateInvariantXPath(strMinRating, out bool blnTempIsSuccess);
+                    if (blnTempIsSuccess)
+                        intMinRating = Convert.ToInt32(objTempProcess);
                 }
                 bool blnDisableRating = false;
                 string strRating = xmlVehicleMod.SelectSingleNode("rating")?.Value.ToLower();
@@ -479,19 +483,14 @@ namespace Chummer
                 string strSlots = xmlVehicleMod.SelectSingleNode("slots")?.Value ?? string.Empty;
                 if (strSlots.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strSlots.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strSlots.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strSlots = strValues[decimal.ToInt32(nudRating.Value) - 1];
                 }
                 int.TryParse(strSlots, out int intExtraSlots);
                 strSlots = ReplaceStrings(strSlots, intExtraSlots);
-                try
-                {
-                    lblSlots.Text = CommonFunctions.EvaluateInvariantXPath(strSlots).ToString();
-                }
-                catch (XPathException)
-                {
-                    lblSlots.Text = strSlots;
-                }
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(strSlots, out bool blnIsSuccess);
+                lblSlots.Text = blnIsSuccess ? Convert.ToInt32(objProcess).ToString() : strSlots;
+
                 int.TryParse(lblSlots.Text, out intExtraSlots);
 
                 // Avail.
@@ -499,7 +498,7 @@ namespace Chummer
                 if (strAvailExpr.StartsWith("FixedValues("))
                 {
                     int intRating = decimal.ToInt32(nudRating.Value - 1);
-                    strAvailExpr = strAvailExpr.TrimStart("FixedValues(", true).TrimEnd(')');
+                    strAvailExpr = strAvailExpr.TrimStartOnce("FixedValues(", true).TrimEndOnce(')');
                     string[] strValues = strAvailExpr.Split(',');
                     if (intRating > strValues.Length || intRating < 0)
                     {
@@ -521,14 +520,10 @@ namespace Chummer
                     strSuffix = LanguageManager.GetString("String_AvailRestricted", GlobalOptions.Language);
                     strAvailExpr = strAvailExpr.Substring(0, strAvailExpr.Length - 1);
                 }
-                try
-                {
-                    lblAvail.Text = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(ReplaceStrings(strAvailExpr))).ToString() + strSuffix;
-                }
-                catch (XPathException)
-                {
-                    lblAvail.Text = strAvailExpr + strSuffix;
-                }
+
+                strAvailExpr = ReplaceStrings(strAvailExpr);
+                objProcess = CommonFunctions.EvaluateInvariantXPath(strAvailExpr, out blnIsSuccess);
+                lblAvail.Text = (blnIsSuccess ? Convert.ToInt32(objProcess).ToString() : strAvailExpr) + strSuffix;
 
                 // Cost.
                 chkBlackMarketDiscount.Enabled = true;
@@ -544,7 +539,7 @@ namespace Chummer
                     {
                         decimal decMin;
                         decimal decMax = decimal.MaxValue;
-                        strCost = strCost.TrimStart("Variable(", true).TrimEnd(')');
+                        strCost = strCost.TrimStartOnce("Variable(", true).TrimEndOnce(')');
                         if (strCost.Contains('-'))
                         {
                             string[] strValues = strCost.Split('-');
@@ -564,7 +559,7 @@ namespace Chummer
                     else if (strCost.StartsWith("FixedValues("))
                     {
                         int intRating = decimal.ToInt32(nudRating.Value) - 1;
-                        strCost = strCost.TrimStart("FixedValues(", true).TrimEnd(')');
+                        strCost = strCost.TrimStartOnce("FixedValues(", true).TrimEndOnce(')');
                         string[] strValues = strCost.Split(',');
                         if (intRating < 0 || intRating > strValues.Length)
                         {
@@ -574,7 +569,9 @@ namespace Chummer
                     }
                     strCost = ReplaceStrings(strCost, intExtraSlots);
 
-                    decItemCost = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(strCost), GlobalOptions.InvariantCultureInfo);
+                    objProcess = CommonFunctions.EvaluateInvariantXPath(strCost, out blnIsSuccess);
+                    if (blnIsSuccess)
+                        decItemCost = Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo);
                     decItemCost *= _intModMultiplier;
 
                     // Apply any markup.

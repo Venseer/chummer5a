@@ -101,6 +101,7 @@ namespace Chummer.UI.Skills
                 nudKarma.DataBindings.Add("Value", skill, nameof(Skill.Karma), false, DataSourceUpdateMode.OnPropertyChanged);
                 nudSkill.DataBindings.Add("Value", skill, nameof(Skill.Base), false, DataSourceUpdateMode.OnPropertyChanged);
 
+                nudSkill.DataBindings.Add("Visible", skill.CharacterObject, nameof(skill.CharacterObject.BuildMethodHasSkillPoints), false, DataSourceUpdateMode.OnPropertyChanged);
                 nudSkill.DataBindings.Add("Enabled", skill, nameof(Skill.BaseUnlocked), false,
                     DataSourceUpdateMode.OnPropertyChanged);
                 nudSkill.DataBindings.Add("InterceptMouseWheel", skill.CharacterObject.Options, nameof(CharacterOptions.InterceptMode), false, 
@@ -125,11 +126,10 @@ namespace Chummer.UI.Skills
                     //dropdown/spec
                     cboSpec.DisplayMember = nameof(ListItem.Name);
                     cboSpec.ValueMember = nameof(ListItem.Value);
-                    cboSpec.DataBindings.Add("Enabled", skill, nameof(Skill.CanHaveSpecs), false,
-                        DataSourceUpdateMode.OnPropertyChanged);
+                    cboSpec.DataBindings.Add("Enabled", skill, nameof(Skill.CanHaveSpecs), false, DataSourceUpdateMode.OnPropertyChanged);
                     cboSpec.SelectedIndex = -1;
                     cboSpec.DataSource = skill.CGLSpecializations;
-
+                    
                     cboSpec.DataBindings.Add("Text", skill, nameof(Skill.Specialization), false, DataSourceUpdateMode.OnPropertyChanged);
                 }
                 cboSpec.EndUpdate();
@@ -186,7 +186,7 @@ namespace Chummer.UI.Skills
 
                 case nameof(Skill.Leveled):
                     BackColor = _skill.Leveled ? SystemColors.ButtonHighlight : SystemColors.Control;
-                    btnAddSpec.Visible = _skill.CharacterObject.Created && _skill.Leveled &&  !_skill.IsExoticSkill;
+                    btnAddSpec.Visible = _skill.CharacterObject.Created &&  !_skill.IsExoticSkill && _skill.CanHaveSpecs;
                     if (all) { goto case nameof(Skill.SkillToolTip); }  break;
 
 
@@ -214,8 +214,7 @@ namespace Chummer.UI.Skills
 
                 case nameof(Skill.Rating):
                 case nameof(Skill.Specialization):
-                    lblModifiedRating.Text =
-                        _skill.DisplayOtherAttribue(_attributeActive.TotalValue);
+                    lblModifiedRating.Text =  _skill.DisplayOtherAttribute(_attributeActive.TotalValue, _attributeActive.Abbrev);
                     break;
             }
         }
@@ -317,6 +316,7 @@ namespace Chummer.UI.Skills
         public bool CustomAttributeSet => _attributeActive != _skill.AttributeObject;
 
         public int NameWidth => lblName.PreferredWidth;
+        public int NudSkillWidth => nudSkill.Width;
 
         public void ResetSelectAttribute()
         {
@@ -381,15 +381,15 @@ namespace Chummer.UI.Skills
             lblName.Width = i;
             if (_skill.CharacterObject.Created)
             {
-                btnAttribute.Left = lblName.Right + 2;
-                cboSelectAttribute.Left = lblName.Right + 2;
-                lblCareerRating.Left = cboSelectAttribute.Right + 2;
+                btnAttribute.Left = lblName.Right + 6;
+                cboSelectAttribute.Left = lblName.Right + 6;
+                lblCareerRating.Left = cboSelectAttribute.Right + 6;
             }
             else
             {
-                nudSkill.Left = lblName.Right + 2;
-                nudKarma.Left = nudSkill.Right + 2;
-                lblAttribute.Left = nudKarma.Right + 2;
+                nudSkill.Left = lblName.Right + 6;
+                nudKarma.Left = nudSkill.Right + 6;
+                lblAttribute.Left = nudKarma.Right + 6;
             }
         }
 

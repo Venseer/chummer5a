@@ -186,11 +186,10 @@ namespace Chummer
                 StringBuilder strAccessories = new StringBuilder();
                 foreach (WeaponAccessory objAccessory in _objSelectedWeapon.WeaponAccessories)
                 {
-                    strAccessories.Append(objAccessory.DisplayName(GlobalOptions.Language));
-                    strAccessories.Append('\n');
+                    strAccessories.AppendLine(objAccessory.DisplayName(GlobalOptions.Language));
                 }
                 if (strAccessories.Length > 0)
-                    strAccessories.Length -= 1;
+                    strAccessories.Length -= Environment.NewLine.Length;
 
                 lblIncludedAccessories.Text = strAccessories.Length == 0 ? LanguageManager.GetString("String_None", GlobalOptions.Language) : strAccessories.ToString();
 
@@ -273,14 +272,13 @@ namespace Chummer
                     StringBuilder strAccessories = new StringBuilder();
                     foreach (WeaponAccessory objAccessory in objWeapon.WeaponAccessories)
                     {
-                        strAccessories.Append(objAccessory.DisplayName(GlobalOptions.Language));
-                        strAccessories.Append('\n');
+                        strAccessories.AppendLine(objAccessory.DisplayName(GlobalOptions.Language));
                     }
                     if (strAccessories.Length > 0)
-                        strAccessories.Length -= 1;
+                        strAccessories.Length -= Environment.NewLine.Length;
                     AvailabilityValue objAvail = objWeapon.TotalAvailTuple();
                     SourceString strSource = new SourceString(objWeapon.Source, objWeapon.DisplayPage(GlobalOptions.Language));
-                    NuyenString strCost = new NuyenString(objWeapon.DisplayCost(out decimal decDummy));
+                    NuyenString strCost = new NuyenString(objWeapon.DisplayCost(out decimal _));
 
                     tabWeapons.Rows.Add(strID, strWeaponName, strDice, intAccuracy, strDamage, strAP, intRC, strAmmo, strMode, strReach, strAccessories.ToString(), objAvail, strSource, strCost);
                 }
@@ -353,6 +351,7 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
 
@@ -369,7 +368,7 @@ namespace Chummer
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             _blnAddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
 
         private void chkFreeItem_CheckedChanged(object sender, EventArgs e)
@@ -536,7 +535,7 @@ namespace Chummer
                         {
                             string strWeapon = dgvWeapons.SelectedRows[0].Cells[0].Value.ToString();
                             if (!string.IsNullOrEmpty(strWeapon))
-                                strWeapon = strWeapon.Substring(0, strWeapon.LastIndexOf("(", StringComparison.Ordinal) - 1);
+                                strWeapon = strWeapon.Substring(0, strWeapon.LastIndexOf('(') - 1);
                             objNode = _objXmlDocument.SelectSingleNode("/chummer/weapons/weapon[id = \"" + strWeapon + "\"]");
                         }
                         else
@@ -602,6 +601,7 @@ namespace Chummer
 
         private void dgvWeapons_DoubleClick(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
         #endregion

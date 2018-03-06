@@ -18,10 +18,8 @@
  */
  using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.XPath;
  using Chummer.Backend.Equipment;
 
 namespace Chummer
@@ -84,6 +82,7 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
 
@@ -99,13 +98,14 @@ namespace Chummer
 
         private void lstMod_DoubleClick(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
 
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             _blnAddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
 
         private void chkFreeItem_CheckedChanged(object sender, EventArgs e)
@@ -203,7 +203,10 @@ namespace Chummer
         private void UpdateSelectedArmor()
         {
             string strSelectedId = lstMod.SelectedValue?.ToString();
-            if (string.IsNullOrEmpty(strSelectedId))
+            XmlNode objXmlMod = null;
+            if (!string.IsNullOrEmpty(strSelectedId))
+                objXmlMod = _objXmlDocument.SelectSingleNode("/chummer/mods/mod[id = \"" + strSelectedId + "\"]");
+            if (objXmlMod == null)
             {
                 lblA.Text = string.Empty;
                 nudRating.Enabled = false;
@@ -215,15 +218,12 @@ namespace Chummer
                 tipTooltip.SetToolTip(lblSource, string.Empty);
                 return;
             }
-            // Retireve the information for the selected Accessory.
-            XmlNode objXmlMod = _objXmlDocument.SelectSingleNode("/chummer/mods/mod[id = \"" + strSelectedId + "\"]");
-
             // Extract the Avil and Cost values from the Cyberware info since these may contain formulas and/or be based off of the Rating.
             // This is done using XPathExpression.
 
-            lblA.Text = objXmlMod["armor"].InnerText;
+            lblA.Text = objXmlMod["armor"]?.InnerText;
 
-            nudRating.Maximum = Convert.ToDecimal(objXmlMod["maxrating"].InnerText, GlobalOptions.InvariantCultureInfo);
+            nudRating.Maximum = Convert.ToDecimal(objXmlMod["maxrating"]?.InnerText, GlobalOptions.InvariantCultureInfo);
             if (chkHideOverAvailLimit.Checked)
             {
                 while (nudRating.Maximum > 1 && !SelectionShared.CheckAvailRestriction(objXmlMod, _objCharacter, decimal.ToInt32(nudRating.Maximum)))
@@ -244,7 +244,7 @@ namespace Chummer
             }
 
             string strAvail = string.Empty;
-            string strAvailExpr = objXmlMod["avail"].InnerText;
+            string strAvailExpr = objXmlMod["avail"]?.InnerText ?? string.Empty;
             if (strAvailExpr.Length > 0)
             {
                 char chrLastAvailChar = strAvailExpr[strAvailExpr.Length - 1];
@@ -260,14 +260,8 @@ namespace Chummer
                 }
             }
 
-            try
-            {
-                lblAvail.Text = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strAvailExpr.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)))).ToString() + strAvail;
-            }
-            catch (XPathException)
-            {
-                lblAvail.Text = strAvailExpr + strAvail;
-            }
+            object objProcess = CommonFunctions.EvaluateInvariantXPath(strAvailExpr.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out bool blnIsSuccess);
+            lblAvail.Text = (blnIsSuccess ? Convert.ToInt32(objProcess).ToString() : strAvailExpr) + strAvail;
 
             // Cost.
             chkBlackMarketDiscount.Checked = _setBlackMarketMaps.Contains(objXmlMod["category"]?.InnerText);
@@ -283,7 +277,7 @@ namespace Chummer
                 {
                     decimal decMin;
                     decimal decMax = decimal.MaxValue;
-                    string strCost = strCostElement.TrimStart("Variable(", true).TrimEnd(')');
+                    string strCost = strCostElement.TrimStartOnce("Variable(", true).TrimEndOnce(')');
                     if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
@@ -306,7 +300,8 @@ namespace Chummer
                         .CheapReplace("Armor Cost", () => _decArmorCost.ToString(GlobalOptions.InvariantCultureInfo));
 
                     // Apply any markup.
-                    decimal decCost = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(strCost), GlobalOptions.InvariantCultureInfo);
+                    objProcess = CommonFunctions.EvaluateInvariantXPath(strCost, out blnIsSuccess);
+                    decimal decCost = blnIsSuccess ? Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo) : 0;
                     decCost *= 1 + (nudMarkup.Value / 100.0m);
 
                     lblCost.Text = decCost.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
@@ -326,26 +321,27 @@ namespace Chummer
             {
                 if (strCapacity.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strCapacity.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strCapacity = strValues[decimal.ToInt32(nudRating.Value) - 1];
                 }
 
                 strCapacity = strCapacity.CheapReplace("Capacity", () => _decArmorCapacity.ToString(GlobalOptions.InvariantCultureInfo))
                     .CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
-                bool blnSquareBrackets = strCapacity.Contains('[');
+                bool blnSquareBrackets = strCapacity.StartsWith('[');
                 if (blnSquareBrackets)
                     strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
 
                 //Rounding is always 'up'. For items that generate capacity, this means making it a larger negative number.
-                string strReturn = ((double)CommonFunctions.EvaluateInvariantXPath(strCapacity)).ToString("#,0.##", GlobalOptions.CultureInfo);
+                objProcess = CommonFunctions.EvaluateInvariantXPath(strCapacity, out blnIsSuccess);
+                string strReturn = blnIsSuccess ? ((double)objProcess).ToString("#,0.##", GlobalOptions.CultureInfo) : strCapacity;
                 if (blnSquareBrackets)
                     strReturn = '[' + strReturn + ']';
 
                 lblCapacity.Text = strReturn;
             }
 
-            string strSource = objXmlMod["source"].InnerText;
-            string strPage = objXmlMod["altpage"]?.InnerText ?? objXmlMod["page"].InnerText;
+            string strSource = objXmlMod["source"]?.InnerText ?? LanguageManager.GetString("String_Unknown", GlobalOptions.Language);
+            string strPage = objXmlMod["altpage"]?.InnerText ?? objXmlMod["page"]?.InnerText ?? LanguageManager.GetString("String_Unknown", GlobalOptions.Language);
             lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + ' ' + strPage;
             tipTooltip.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + ' ' + LanguageManager.GetString("String_Page", GlobalOptions.Language) + ' ' + strPage);
         }
@@ -373,15 +369,20 @@ namespace Chummer
             {
                 strMount += "category = \"General\"";
             }
-            XmlNodeList objXmlModList = _objXmlDocument.SelectNodes("/chummer/mods/mod[" + strMount + " and (" + _objCharacter.Options.BookXPath() + ")]");
 
-            foreach (XmlNode objXmlMod in objXmlModList)
-            {
-                if (!chkHideOverAvailLimit.Checked || SelectionShared.CheckAvailRestriction(objXmlMod, _objCharacter))
-                {
-                    lstMods.Add(new ListItem(objXmlMod["id"].InnerText, objXmlMod["translate"]?.InnerText ?? objXmlMod["name"].InnerText));
-                }
-            }
+            using (XmlNodeList objXmlModList = _objXmlDocument.SelectNodes("/chummer/mods/mod[" + strMount + " and (" + _objCharacter.Options.BookXPath() + ")]"))
+                if (objXmlModList?.Count > 0)
+                    foreach (XmlNode objXmlMod in objXmlModList)
+                    {
+                        string strId = objXmlMod["id"]?.InnerText;
+                        if (!string.IsNullOrEmpty(strId))
+                        {
+                            if (!chkHideOverAvailLimit.Checked || SelectionShared.CheckAvailRestriction(objXmlMod, _objCharacter))
+                            {
+                                lstMods.Add(new ListItem(strId, objXmlMod["translate"]?.InnerText ?? objXmlMod["name"]?.InnerText ?? LanguageManager.GetString("String_Unknown", GlobalOptions.Language)));
+                            }
+                        }
+                    }
             lstMods.Sort(CompareListItems.CompareNames);
             lstMod.BeginUpdate();
             lstMod.ValueMember = "Value";

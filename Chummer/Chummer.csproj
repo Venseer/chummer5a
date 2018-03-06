@@ -287,12 +287,12 @@
     <Compile Include="Controls\ContactControl.Designer.cs">
       <DependentUpon>ContactControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Controls\DiceRollerControl.cs">
+    <None Include="Controls\DiceRollerControl.cs">
       <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Controls\DiceRollerControl.Designer.cs">
+    </None>
+    <None Include="Controls\DiceRollerControl.Designer.cs">
       <DependentUpon>DiceRollerControl.cs</DependentUpon>
-    </Compile>
+    </None>
     <Compile Include="frmAddToken.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -335,12 +335,12 @@
     <Compile Include="frmCreateSpell.Designer.cs">
       <DependentUpon>frmCreateSpell.cs</DependentUpon>
     </Compile>
-    <Compile Include="frmGMDashboard.cs">
+    <None Include="frmGMDashboard.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="frmGMDashboard.Designer.cs">
+    </None>
+    <None Include="frmGMDashboard.Designer.cs">
       <DependentUpon>frmGMDashboard.cs</DependentUpon>
-    </Compile>
+    </None>
     <Compile Include="Selection Forms\frmSelectOptionalPower.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -522,12 +522,12 @@
     <None Include="Omae\frmOmaeUploadSheet.Designer.cs">
       <DependentUpon>frmOmaeUploadSheet.cs</DependentUpon>
     </None>
-    <Compile Include="frmPlayerDashboard.cs">
+    <None Include="frmPlayerDashboard.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="frmPlayerDashboard.Designer.cs">
+    </None>
+    <None Include="frmPlayerDashboard.Designer.cs">
       <DependentUpon>frmPlayerDashboard.cs</DependentUpon>
-    </Compile>
+    </None>
     <Compile Include="frmPrintMultiple.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -666,12 +666,12 @@
     <Compile Include="Selection Forms\frmSelectPACKSKit.Designer.cs">
       <DependentUpon>frmSelectPACKSKit.cs</DependentUpon>
     </Compile>
-    <Compile Include="Selection Forms\frmSelectProgramOption.cs">
+    <None Include="Selection Forms\frmSelectProgramOption.cs">
       <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Selection Forms\frmSelectProgramOption.Designer.cs">
+    </None>
+    <None Include="Selection Forms\frmSelectProgramOption.Designer.cs">
       <DependentUpon>frmSelectProgramOption.cs</DependentUpon>
-    </Compile>
+    </None>
     <Compile Include="Selection Forms\frmSelectQuality.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -756,11 +756,11 @@
     <Compile Include="Selection Forms\frmSelectPower.Designer.cs">
       <DependentUpon>frmSelectPower.cs</DependentUpon>
     </Compile>
-    <Compile Include="Selection Forms\frmSelectProgram.cs">
+    <Compile Include="Selection Forms\frmSelectComplexForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Selection Forms\frmSelectProgram.Designer.cs">
-      <DependentUpon>frmSelectProgram.cs</DependentUpon>
+    <Compile Include="Selection Forms\frmSelectComplexForm.Designer.cs">
+      <DependentUpon>frmSelectComplexForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Selection Forms\frmSelectSpell.cs">
       <SubType>Form</SubType>
@@ -1138,8 +1138,8 @@
     <EmbeddedResource Include="Selection Forms\frmSelectPower.resx">
       <DependentUpon>frmSelectPower.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Selection Forms\frmSelectProgram.resx">
-      <DependentUpon>frmSelectProgram.cs</DependentUpon>
+    <EmbeddedResource Include="Selection Forms\frmSelectComplexForm.resx">
+      <DependentUpon>frmSelectComplexForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Selection Forms\frmSelectSpell.resx">
       <DependentUpon>frmSelectSpell.cs</DependentUpon>
@@ -1644,6 +1644,44 @@
     <Content Include="customdata\Cyberlimbs Cannot Add Headware\amend_cyberlimbheadware_cyberware.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_armor.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_bioware.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_critterpowers.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_cyberware.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_gear.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_martialarts.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_mentors.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_powers.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_priorities.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_qualities.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_skills.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\Delnar Skills Remake\amend_streams.xml" />
+    <Content Include="customdata\Delnar Skills Remake\amend_traditions.xml" />
+    <Content Include="customdata\Delnar Skills Remake\amend_weapons.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="customdata\Education Qualities Apply Karma Discount in Create Mode\amend_qualities.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1660,6 +1698,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="customdata\German Data Changes - Heightened Concentration has Levels\amend_heightenedconcentration_powers.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="customdata\German Data Changes - Rigger 5 Mods - Catalina 2\amend_vehicles.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="customdata\Radar Sensor as Sensor Function\custom_radarsensorfunction_gear.xml">

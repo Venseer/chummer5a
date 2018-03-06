@@ -18,13 +18,14 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.XPath;
 using Chummer.Backend.Attributes;
 
 namespace Chummer.Backend.Equipment
@@ -32,6 +33,7 @@ namespace Chummer.Backend.Equipment
     /// <summary>
     /// Weapon Accessory.
     /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class WeaponAccessory : IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -63,7 +65,6 @@ namespace Chummer.Backend.Equipment
         private int _intAmmoSlots;
         private bool _blnDeployable;
         private bool _blnDiscountCost;
-        private bool _blnBlackMarketDiscount;
         private bool _blnIncludedInWeapon;
         private bool _blnInstalled = true;
         private int _intAccessoryCostMultiplier = 1;
@@ -81,6 +82,19 @@ namespace Chummer.Backend.Equipment
             // Create the GUID for the new Weapon.
             _guiID = Guid.NewGuid();
             _objCharacter = objCharacter;
+
+            _lstGear.CollectionChanged += GearChildrenOnCollectionChanged;
+        }
+
+        private void GearChildrenOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action != NotifyCollectionChangedAction.Add &&
+                e.Action != NotifyCollectionChangedAction.Replace) return;
+            if (Installed && Parent?.ParentVehicle == null) return;
+            foreach (Gear objGear in e.NewItems)
+            {
+                objGear.ChangeEquippedStatus(false);
+            }
         }
 
         /// Create a Weapon Accessory from an XmlNode and return the TreeNodes for it.
@@ -108,7 +122,7 @@ namespace Chummer.Backend.Equipment
                 {
                     decimal decMin;
                     decimal decMax = decimal.MaxValue;
-                    string strCost = _strCost.TrimStart("Variable(", true).TrimEnd(')');
+                    string strCost = _strCost.TrimStartOnce("Variable(", true).TrimEndOnce(')');
                     if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
@@ -334,6 +348,12 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetInt32FieldQuickly("rangebonus", ref _intRangeBonus);
             objNode.TryGetStringFieldQuickly("extra", ref _strExtra);
             objNode.TryGetInt32FieldQuickly("ammobonus", ref _intAmmoBonus);
+
+            if (blnCopy && !Installed)
+            {
+                _blnInstalled = true;
+                Installed = false;
+            }
         }
 
         /// <summary>
@@ -562,9 +582,10 @@ namespace Chummer.Backend.Equipment
                     strConceal = strConceal.Replace("Rating", Rating.ToString());
                     try
                     {
-                        intReturn = Convert.ToInt32(Math.Ceiling((double)CommonFunctions.EvaluateInvariantXPath(strConceal)));
+                        object objProcess = CommonFunctions.EvaluateInvariantXPath(strConceal, out bool blnIsSuccess);
+                        if (blnIsSuccess)
+                            intReturn = Convert.ToInt32(Math.Ceiling((double)objProcess));
                     }
-                    catch (XPathException) { }
                     catch (OverflowException) { }
                     catch (InvalidCastException) { }
                 }
@@ -645,7 +666,28 @@ namespace Chummer.Backend.Equipment
         public bool Installed
         {
             get => _blnInstalled;
-            set => _blnInstalled = value;
+            set
+            {
+                if (_blnInstalled != value)
+                {
+                    _blnInstalled = value;
+                    if (Parent?.ParentVehicle == null)
+                    {
+                        foreach (Gear objGear in Gear)
+                        {
+                            if (objGear.Equipped)
+                                objGear.ChangeEquippedStatus(true);
+                        }
+                    }
+                    else
+                    {
+                        foreach (Gear objGear in Gear)
+                        {
+                            objGear.ChangeEquippedStatus(false);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -678,7 +720,7 @@ namespace Chummer.Backend.Equipment
             {
                 if (strAvail.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strAvail.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strAvail.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strAvail = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                 }
 
@@ -699,13 +741,9 @@ namespace Chummer.Backend.Equipment
                     objAvail.CheapReplace(strAvail, objLoopAttribute.Abbrev + "Base", () => objLoopAttribute.TotalBase.ToString());
                 }
 
-                try
-                {
-                    intAvail = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(objAvail.ToString()));
-                }
-                catch (XPathException)
-                {
-                }
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objAvail.ToString(), out bool blnIsSuccess);
+                if (blnIsSuccess)
+                    intAvail += Convert.ToInt32(objProcess);
             }
 
             if (blnCheckChildren)
@@ -762,7 +800,30 @@ namespace Chummer.Backend.Equipment
         public Weapon Parent
         {
             get => _objParent;
-            set => _objParent = value;
+            set
+            {
+                if (_objParent != value)
+                {
+                    _objParent = value;
+                    if (Parent != null)
+                    {
+                        if (Parent.ParentVehicle != null)
+                        {
+                            foreach (Gear objGear in Gear)
+                            {
+                                objGear.ChangeEquippedStatus(false);
+                            }
+                        }
+                        else if (Installed)
+                        {
+                            foreach (Gear objGear in Gear)
+                            {
+                                objGear.ChangeEquippedStatus(true);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -792,13 +853,14 @@ namespace Chummer.Backend.Equipment
                 string strCostExpr = Cost;
                 if (strCostExpr.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strCostExpr.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strCostExpr.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strCostExpr = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                 }
 
                 StringBuilder objCost = new StringBuilder(strCostExpr.TrimStart('+'));
                 objCost.CheapReplace(strCostExpr, "Rating", () => Rating.ToString(GlobalOptions.InvariantCultureInfo));
                 objCost.CheapReplace(strCostExpr, "Weapon Cost", () => (Parent?.OwnCost ?? 0.0m).ToString(GlobalOptions.InvariantCultureInfo));
+                objCost.CheapReplace(strCostExpr, "Weapon Total Cost", () => (Parent?.MultipliableCost(this) ?? 0.0m).ToString(GlobalOptions.InvariantCultureInfo));
 
                 foreach (CharacterAttrib objLoopAttribute in _objCharacter.AttributeSection.AttributeList.Concat(_objCharacter.AttributeSection.SpecialAttributeList))
                 {
@@ -806,10 +868,13 @@ namespace Chummer.Backend.Equipment
                     objCost.CheapReplace(strCostExpr, objLoopAttribute.Abbrev + "Base", () => objLoopAttribute.TotalBase.ToString());
                 }
 
-                decimal decReturn = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(objCost.ToString()).ToString(), GlobalOptions.InvariantCultureInfo) * Parent.CostMultiplier;
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objCost.ToString(), out bool blnIsSuccess);
+                decimal decReturn = blnIsSuccess ? Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo) : 0;
 
                 if (DiscountCost)
                     decReturn *= 0.9m;
+                if (Parent != null)
+                    decReturn *= Parent.AccessoryMultiplier;
 
                 return decReturn;
             }
@@ -891,15 +956,6 @@ namespace Chummer.Backend.Equipment
             set => _strExtra = value;
         }
         
-        /// <summary>
-        /// Whether the Accessory is affected by Black Market Discounts.
-        /// </summary>
-        public bool BlackMarketDiscount
-        {
-            get => _blnBlackMarketDiscount;
-            set => _blnBlackMarketDiscount = value;
-        }
-        
         private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
 
@@ -932,6 +988,9 @@ namespace Chummer.Backend.Equipment
 
         public TreeNode CreateTreeNode(ContextMenuStrip cmsWeaponAccessory, ContextMenuStrip cmsWeaponAccessoryGear)
         {
+            if (IncludedInWeapon && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             TreeNode objNode = new TreeNode
             {
                 Name = InternalId,
@@ -947,11 +1006,18 @@ namespace Chummer.Backend.Equipment
             {
                 objNode.ForeColor = SystemColors.GrayText;
             }
+
             objNode.ToolTipText = Notes.WordWrap(100);
+
+            TreeNodeCollection lstChildNodes = objNode.Nodes;
             foreach (Gear objGear in Gear)
             {
-                objNode.Nodes.Add(objGear.CreateTreeNode(cmsWeaponAccessoryGear));
-                objNode.Expand();
+                TreeNode objLoopNode = objGear.CreateTreeNode(cmsWeaponAccessoryGear);
+                if (objLoopNode != null)
+                {
+                    lstChildNodes.Add(objLoopNode);
+                    objNode.Expand();
+                }
             }
 
             return objNode;

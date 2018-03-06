@@ -165,22 +165,27 @@ namespace Chummer
         {
             // tosses the character information relevant to each character
         #region Condition Monitor
-            ConditionMonitorUserControl uc = 
-                tabControl.TabPages[(int)DashBoardPages.CM].Controls[0] as ConditionMonitorUserControl;
-            uc.MaxPhysical = CurrentNPC.PhysicalCM;
-            uc.MaxStun = CurrentNPC.StunCM;
-            uc.Physical = uc.MaxPhysical;
-            uc.Stun = uc.MaxStun;
-        #endregion
+
+            if (tabControl.TabPages[(int) DashBoardPages.CM].Controls[0] is ConditionMonitorUserControl uc)
+            {
+                uc.MaxPhysical = CurrentNPC.PhysicalCM;
+                uc.MaxStun = CurrentNPC.StunCM;
+                uc.Physical = uc.MaxPhysical;
+                uc.Stun = uc.MaxStun;
+            }
+
+            #endregion
 
         #region Skill tab
             //TODO fix this
         #endregion
 
         #region Dice Roller
+            /*
             DiceRollerControl dice = 
                 tabControl.TabPages[(int)DashBoardPages.Dice].Controls[0] as DiceRollerControl;
-            //dice.NumberOfEdge = this.CurrentNPC.EDG;    // todo figure out number of edge dice
+            dice.NumberOfEdge = this.CurrentNPC.EDG;    // todo figure out number of edge dice
+            */
         #endregion
         }
         #endregion

@@ -17,6 +17,7 @@
  *  https://github.com/chummer5a/chummer5a
  */
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
@@ -26,6 +27,7 @@ namespace Chummer
     /// <summary>
     /// An Art.
     /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class Art : IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -263,6 +265,9 @@ namespace Chummer
         #region Methods
         public TreeNode CreateTreeNode(ContextMenuStrip cmsArt, bool blnAddCategory = false)
         {
+            if (Grade == -1 && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             string strText = DisplayName(GlobalOptions.Language);
             if (blnAddCategory)
                 strText = LanguageManager.GetString("Label_Art", GlobalOptions.Language) + ' ' + strText;

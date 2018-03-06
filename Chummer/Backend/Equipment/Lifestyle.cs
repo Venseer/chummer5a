@@ -18,6 +18,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -36,10 +37,11 @@ namespace Chummer.Backend.Equipment
         Week = 1,
         Day = 2,
     }
-    
+
     /// <summary>
     /// Lifestyle.
     /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class Lifestyle : IHasInternalId, IHasName, IHasXmlNode
     {
         // ReSharper disable once InconsistentNaming
@@ -891,6 +893,9 @@ namespace Chummer.Backend.Equipment
 
         public TreeNode CreateTreeNode(ContextMenuStrip cmsBasicLifestyle, ContextMenuStrip cmsAdvancedLifestyle)
         {
+            //if (!string.IsNullOrEmpty(ParentID) && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+            //return null;
+
             TreeNode objNode = new TreeNode
             {
                 Name = InternalId,

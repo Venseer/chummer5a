@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
- using System.Xml.XPath;
 
 namespace Chummer
 {
@@ -618,9 +617,9 @@ namespace Chummer
                 strDV = '+' + strDV;
             if (intDV == 0)
                 strDV = string.Empty;
-            lblDV.Text = (strBase + strDV).Replace('/', '÷');
-            lblDV.Text = lblDV.Text.CheapReplace("F", () => LanguageManager.GetString("String_SpellForce", GlobalOptions.Language));
-            lblDV.Text = lblDV.Text.CheapReplace("Damage Value", () => LanguageManager.GetString("String_SpellDamageValue", GlobalOptions.Language));
+            lblDV.Text = (strBase + strDV).Replace('/', '÷')
+                .CheapReplace("F", () => LanguageManager.GetString("String_SpellForce", GlobalOptions.Language))
+                .CheapReplace("Damage Value", () => LanguageManager.GetString("String_SpellDamageValue", GlobalOptions.Language));
 
             return strBase + strDV;
         }
@@ -635,7 +634,7 @@ namespace Chummer
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
                 if (!string.IsNullOrEmpty(strMessage))
-                    strMessage += '\n';
+                    strMessage += Environment.NewLine;
                 strMessage += LanguageManager.GetString("Message_SpellName", GlobalOptions.Language);
             }
 
@@ -643,7 +642,7 @@ namespace Chummer
             if (txtRestriction.Enabled && string.IsNullOrWhiteSpace(txtRestriction.Text))
             {
                 if (!string.IsNullOrEmpty(strMessage))
-                    strMessage += '\n';
+                    strMessage += Environment.NewLine;
                 strMessage += LanguageManager.GetString("Message_SpellRestricted", GlobalOptions.Language);
             }
 
@@ -654,7 +653,7 @@ namespace Chummer
                 if (!chkModifier1.Checked && !chkModifier2.Checked)
                 {
                     if (!string.IsNullOrEmpty(strMessage))
-                        strMessage += '\n';
+                        strMessage += Environment.NewLine;
                     strMessage += LanguageManager.GetString("Message_CombatSpellRequirement1", GlobalOptions.Language);
                 }
 
@@ -662,7 +661,7 @@ namespace Chummer
                 if (!chkModifier4.Checked && !chkModifier5.Checked)
                 {
                     if (!string.IsNullOrEmpty(strMessage))
-                        strMessage += '\n';
+                        strMessage += Environment.NewLine;
                     strMessage += LanguageManager.GetString("Message_CombatSpellRequirement2", GlobalOptions.Language);
                 }
             }
@@ -672,7 +671,7 @@ namespace Chummer
                 if (!chkModifier1.Checked && !chkModifier2.Checked && !chkModifier3.Checked)
                 {
                     if (!string.IsNullOrEmpty(strMessage))
-                        strMessage += '\n';
+                        strMessage += Environment.NewLine;
                     strMessage += LanguageManager.GetString("Message_DetectionSpellRequirement1", GlobalOptions.Language);
                 }
 
@@ -680,7 +679,7 @@ namespace Chummer
                 if (!chkModifier4.Checked && !chkModifier5.Checked)
                 {
                     if (!string.IsNullOrEmpty(strMessage))
-                        strMessage += '\n';
+                        strMessage += Environment.NewLine;
                     strMessage += LanguageManager.GetString("Message_DetectionSpellRequirement2", GlobalOptions.Language);
                 }
             }
@@ -694,7 +693,7 @@ namespace Chummer
                 if (!chkModifier1.Checked && !chkModifier2.Checked)
                 {
                     if (!string.IsNullOrEmpty(strMessage))
-                        strMessage += '\n';
+                        strMessage += Environment.NewLine;
                     strMessage += LanguageManager.GetString("Message_IllusionSpellRequirement1", GlobalOptions.Language);
                 }
 
@@ -702,7 +701,7 @@ namespace Chummer
                 if (!chkModifier3.Checked && !chkModifier4.Checked)
                 {
                     if (!string.IsNullOrEmpty(strMessage))
-                        strMessage += '\n';
+                        strMessage += Environment.NewLine;
                     strMessage += LanguageManager.GetString("Message_IllusionSpellRequirement2", GlobalOptions.Language);
                 }
             }
@@ -712,7 +711,7 @@ namespace Chummer
                 if (!chkModifier1.Checked && !chkModifier2.Checked && !chkModifier3.Checked)
                 {
                     if (!string.IsNullOrEmpty(strMessage))
-                        strMessage += '\n';
+                        strMessage += Environment.NewLine;
                     strMessage += LanguageManager.GetString("Message_ManipulationSpellRequirement1", GlobalOptions.Language);
                 }
 
@@ -720,7 +719,7 @@ namespace Chummer
                 if (!chkModifier4.Checked && !chkModifier5.Checked)
                 {
                     if (!string.IsNullOrEmpty(strMessage))
-                        strMessage += '\n';
+                        strMessage += Environment.NewLine;
                     strMessage += LanguageManager.GetString("Message_ManipulationSpellRequirement2", GlobalOptions.Language);
                 }
             }

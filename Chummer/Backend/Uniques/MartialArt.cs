@@ -17,6 +17,7 @@
  *  https://github.com/chummer5a/chummer5a
  */
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
@@ -27,6 +28,7 @@ namespace Chummer
     /// <summary>
     /// A Martial Art.
     /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class MartialArt : IHasChildren<MartialArtTechnique>, IHasName, IHasInternalId, IHasXmlNode
     {
         private string _strName = string.Empty;
@@ -290,6 +292,9 @@ namespace Chummer
         #region Methods
         public TreeNode CreateTreeNode(ContextMenuStrip cmsMartialArt, ContextMenuStrip cmsMartialArtTechnique)
         {
+            if (IsQuality && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             TreeNode objNode = new TreeNode
             {
                 Name = InternalId,
@@ -305,12 +310,18 @@ namespace Chummer
             {
                 objNode.ForeColor = SystemColors.GrayText;
             }
+
             objNode.ToolTipText = Notes.WordWrap(100);
 
-            foreach (MartialArtTechnique objAdvantage in Techniques)
+            TreeNodeCollection lstChildNodes = objNode.Nodes;
+            foreach (MartialArtTechnique objTechnique in Techniques)
             {
-                objNode.Nodes.Add(objAdvantage.CreateTreeNode(cmsMartialArtTechnique));
-                objNode.Expand();
+                TreeNode objLoopNode = objTechnique.CreateTreeNode(cmsMartialArtTechnique);
+                if (objLoopNode != null)
+                {
+                    lstChildNodes.Add(objLoopNode);
+                    objNode.Expand();
+                }
             }
 
             return objNode;

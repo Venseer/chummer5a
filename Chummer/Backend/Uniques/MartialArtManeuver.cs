@@ -17,6 +17,7 @@
  *  https://github.com/chummer5a/chummer5a
  */
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
@@ -26,6 +27,7 @@ namespace Chummer
     /// <summary>
     /// A Martial Art Maneuver.
     /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class MartialArtManeuver : IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -198,6 +200,9 @@ namespace Chummer
         #region Methods
         public TreeNode CreateTreeNode(ContextMenuStrip cmsMartialArtTechnique)
         {
+            //if (!string.IsNullOrEmpty(ParentID) && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+            //return null;
+
             TreeNode objNode = new TreeNode
             {
                 Name = InternalId,

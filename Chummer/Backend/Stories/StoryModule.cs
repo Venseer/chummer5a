@@ -18,6 +18,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
@@ -25,6 +26,7 @@ using System.Xml.XPath;
 
 namespace Chummer
 {
+    [DebuggerDisplay("{DisplayNameMethod(GlobalOptions.DefaultLanguage)}")]
     public class StoryModule : IHasName, IHasInternalId, IHasXmlNode
     {
         private readonly Dictionary<string, string> _dicEnglishTexts = new Dictionary<string, string>();
@@ -322,15 +324,11 @@ namespace Chummer
                 }
                 case "$XPath":
                 {
-                    try
-                    {
-                        return CommonFunctions.EvaluateInvariantXPath(strArguments).ToString();
+                    object objProcess = CommonFunctions.EvaluateInvariantXPath(strArguments, out bool blnIsSuccess);
+                    if (blnIsSuccess)
+                        return objProcess.ToString();
+                    return LanguageManager.GetString("String_Unknown", strLanguage);
                     }
-                    catch (Exception)
-                    {
-                        return LanguageManager.GetString("String_Unknown", strLanguage);
-                    }
-                }
                 case "$Index":
                 {
                     string[] strArgumentsSplit = strArguments.Split('|');
@@ -374,18 +372,18 @@ namespace Chummer
                     return string.Empty;
                 }
             }
-
+            
             if (blnGeneratePersistents)
             {
                 if (ParentStory.PersistentModules.TryGetValue(strFunction, out StoryModule objInnerModule))
-                    return ResolveMacros(objInnerModule.DisplayText(strArguments, strLanguage), strLanguage).NormalizeWhiteSpace();
+                    return ResolveMacros(objInnerModule.DisplayText(strArguments, strLanguage), strLanguage);
                 StoryModule objPersistentStoryModule = ParentStory.GeneratePersistentModule(strFunction);
                 if (objPersistentStoryModule != null)
-                    return ResolveMacros(objPersistentStoryModule.DisplayText(strArguments, strLanguage), strLanguage).NormalizeWhiteSpace();
+                    return ResolveMacros(objPersistentStoryModule.DisplayText(strArguments, strLanguage), strLanguage);
             }
             else if (ParentStory.PersistentModules.TryGetValue(strFunction, out StoryModule objInnerModule))
-                return ResolveMacros(objInnerModule.DisplayText(strArguments, strLanguage), strLanguage).NormalizeWhiteSpace();
-            
+                return ResolveMacros(objInnerModule.DisplayText(strArguments, strLanguage), strLanguage);
+
             return LanguageManager.GetString("String_Error", strLanguage);
         }
 

@@ -17,6 +17,7 @@
  *  https://github.com/chummer5a/chummer5a
  */
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Xml;
@@ -26,6 +27,7 @@ namespace Chummer
     /// <summary>
     /// An AI Program or Advanced Program.
     /// </summary>
+    [DebuggerDisplay("{DisplayNameShort(GlobalOptions.DefaultLanguage)}")]
     public class AIProgram : IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -194,8 +196,12 @@ namespace Chummer
         /// </summary>
         public string DisplayRequiresProgram(string strLanguage)
         {
-            XmlNode objNode = XmlManager.Load("programs.xml", strLanguage).SelectSingleNode("/chummer/programs/program[name = \"" + RequiresProgram + "\"]");
-            return objNode?["translate"]?.InnerText ?? objNode?["name"]?.InnerText ?? LanguageManager.GetString("String_None", strLanguage);
+            if (string.IsNullOrEmpty(RequiresProgram))
+                return LanguageManager.GetString("String_None", strLanguage);
+            if (strLanguage == GlobalOptions.Language)
+                return RequiresProgram;
+            
+            return XmlManager.Load("programs.xml", strLanguage).SelectSingleNode("/chummer/programs/program[name = \"" + RequiresProgram + "\"]/translate")?.InnerText ?? RequiresProgram;
         }
 
         /// <summary>
@@ -264,6 +270,9 @@ namespace Chummer
         #region Methods
         public TreeNode CreateTreeNode(ContextMenuStrip cmsAIProgram)
         {
+            if (!CanDelete && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             TreeNode objNode = new TreeNode
             {
                 Name = InternalId,

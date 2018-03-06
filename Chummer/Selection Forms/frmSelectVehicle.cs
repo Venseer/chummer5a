@@ -115,6 +115,7 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
 
@@ -130,13 +131,14 @@ namespace Chummer
 
         private void lstVehicle_DoubleClick(object sender, EventArgs e)
         {
-            cmdOK_Click(sender, e);
+            _blnAddAgain = false;
+            AcceptForm();
         }
 
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             _blnAddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
 
         private void chkUsedVehicle_CheckedChanged(object sender, EventArgs e)
@@ -314,7 +316,7 @@ namespace Chummer
             string strCost = objXmlVehicle.SelectSingleNode("cost")?.Value ?? string.Empty;
             if (strCost.StartsWith("Variable"))
             {
-                lblVehicleCost.Text = strCost.TrimStart("Variable(", true).TrimEnd(')');
+                lblVehicleCost.Text = strCost.TrimStartOnce("Variable(", true).TrimEndOnce(')');
                 lblTest.Text = string.Empty;
             }
             else
@@ -365,7 +367,7 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ')';
+                    strFilter += " and (" + objCategoryFilter.ToString().TrimEndOnce(" or ") + ')';
                 }
             }
 

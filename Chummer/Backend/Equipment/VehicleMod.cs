@@ -18,19 +18,21 @@
  */
 using Chummer.Backend.Attributes;
 using System;
+using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.XPath;
 
 namespace Chummer.Backend.Equipment
 {
     /// <summary>
     /// Vehicle Modification.
     /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class VehicleMod : IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -75,6 +77,51 @@ namespace Chummer.Backend.Equipment
             // Create the GUID for the new VehicleMod.
             _guiID = Guid.NewGuid();
             _objCharacter = objCharacter;
+
+            _lstVehicleWeapons.CollectionChanged += ChildrenWeaponsOnCollectionChanged;
+            _lstCyberware.CollectionChanged += ChildrenCyberwareOnCollectionChanged;
+        }
+
+        private void ChildrenCyberwareOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    foreach (Cyberware objNewItem in e.NewItems)
+                        objNewItem.ParentVehicle = Parent;
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    foreach (Cyberware objOldItem in e.OldItems)
+                        objOldItem.ParentVehicle = null;
+                    break;
+                case NotifyCollectionChangedAction.Replace:
+                    foreach (Cyberware objOldItem in e.OldItems)
+                        objOldItem.ParentVehicle = null;
+                    foreach (Cyberware objNewItem in e.NewItems)
+                        objNewItem.ParentVehicle = Parent;
+                    break;
+            }
+        }
+
+        private void ChildrenWeaponsOnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    foreach (Weapon objNewItem in e.NewItems)
+                        objNewItem.ParentVehicle = Parent;
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    foreach (Weapon objOldItem in e.OldItems)
+                        objOldItem.ParentVehicle = null;
+                    break;
+                case NotifyCollectionChangedAction.Replace:
+                    foreach (Weapon objOldItem in e.OldItems)
+                        objOldItem.ParentVehicle = null;
+                    foreach (Weapon objNewItem in e.NewItems)
+                        objNewItem.ParentVehicle = Parent;
+                    break;
+            }
         }
 
         /// Create a Vehicle Modification from an XmlNode and return the TreeNodes for it.
@@ -125,7 +172,7 @@ namespace Chummer.Backend.Equipment
             {
                 decimal decMin;
                 decimal decMax = decimal.MaxValue;
-                string strCost = _strCost.TrimStart("Variable(", true).TrimEnd(')');
+                string strCost = _strCost.TrimStartOnce("Variable(", true).TrimEndOnce(')');
                 if (strCost.Contains('-'))
                 {
                     string[] strValues = strCost.Split('-');
@@ -631,14 +678,14 @@ namespace Chummer.Backend.Equipment
                 // Reordered to process fixed value strings
                 if (strAvail.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strAvail.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strAvail.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strAvail = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                 }
 
                 if (strAvail.StartsWith("Range("))
                 {
                     // If the Availability code is based on the current Rating of the item, separate the Availability string into an array and find the first bracket that the Rating is lower than or equal to.
-                    string[] strValues = strAvail.Replace("MaxRating", MaxRating).TrimStart("Range(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strAvail.Replace("MaxRating", MaxRating).TrimStartOnce("Range(", true).TrimEndOnce(')').Split(',');
                     foreach (string strValue in strValues)
                     {
                         string strAvailCode = strValue.Split('[')[1].Trim('[', ']');
@@ -675,13 +722,9 @@ namespace Chummer.Backend.Equipment
                 objAvail.CheapReplace(strAvail, "Acceleration", () => Parent?.Accel.ToString() ?? "0");
                 objAvail.CheapReplace(strAvail, "Handling", () => Parent?.Handling.ToString() ?? "0");
 
-                try
-                {
-                    intAvail += Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(objAvail.ToString()));
-                }
-                catch (XPathException)
-                {
-                }
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objAvail.ToString(), out bool blnIsSuccess);
+                if (blnIsSuccess)
+                    intAvail += Convert.ToInt32(objProcess);
             }
 
             if (blnCheckChildren)
@@ -727,60 +770,61 @@ namespace Chummer.Backend.Equipment
         {
             get
             {
-                string strReturn;
-                int intPos = _strCapacity.IndexOf("/[", StringComparison.Ordinal);
-                if (!string.IsNullOrEmpty(_strCapacity) && intPos != -1)
+                string strReturn = _strCapacity;
+                if (string.IsNullOrEmpty(strReturn))
+                    return (0.0m).ToString("#,0.##", GlobalOptions.CultureInfo);
+
+                if (strReturn.StartsWith("FixedValues("))
                 {
-                    string strFirstHalf = _strCapacity.Substring(0, intPos);
-                    string strSecondHalf = _strCapacity.Substring(intPos + 1, _strCapacity.Length - intPos - 1);
-                    bool blnSquareBrackets = strFirstHalf.Contains('[');
-                    string strCapacity = strFirstHalf;
+                    string[] strValues = strReturn.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
+                    strReturn = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
+                }
 
-                    if (blnSquareBrackets && strCapacity.Length > 2)
-                        strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
+                int intPos = strReturn.IndexOf("/[", StringComparison.Ordinal);
+                if (intPos != -1)
+                {
+                    string strFirstHalf = strReturn.Substring(0, intPos);
+                    string strSecondHalf = strReturn.Substring(intPos + 1, strReturn.Length - intPos - 1);
+                    bool blnSquareBrackets = strFirstHalf.StartsWith('[');
 
-                    if (_strCapacity == "[*]")
+                    if (blnSquareBrackets && strFirstHalf.Length > 2)
+                        strFirstHalf = strFirstHalf.Substring(1, strFirstHalf.Length - 2);
+
+                    if (strFirstHalf == "[*]")
                         strReturn = "*";
                     else
                     {
-                        if (_strCapacity.StartsWith("FixedValues("))
+                        if (strFirstHalf.StartsWith("FixedValues("))
                         {
-                            string[] strValues = _strCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
-                            strReturn = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
+                            string[] strValues = strFirstHalf.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
+                            strFirstHalf = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                         }
-                        else
+
+                        try
                         {
-                            try
-                            {
-                                strReturn = ((double)CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", Rating.ToString()))).ToString("#,0.##", GlobalOptions.CultureInfo);
-                            }
-                            catch (XPathException)
-                            {
-                                strReturn = strCapacity;
-                            }
-                            catch (OverflowException) // Result is text and not a double
-                            {
-                                strReturn = strCapacity;
-                            }
-                            catch (InvalidCastException) // Result is text and not a double
-                            {
-                                strReturn = strCapacity;
-                            }
+                            object objProcess = CommonFunctions.EvaluateInvariantXPath(strFirstHalf.Replace("Rating", Rating.ToString()), out bool blnIsSuccess);
+                            strReturn = blnIsSuccess ? ((double)objProcess).ToString("#,0.##", GlobalOptions.CultureInfo) : strFirstHalf;
+                        }
+                        catch (OverflowException) // Result is text and not a double
+                        {
+                            strReturn = strFirstHalf;
+                        }
+                        catch (InvalidCastException) // Result is text and not a double
+                        {
+                            strReturn = strFirstHalf;
                         }
                     }
+
                     if (blnSquareBrackets)
-                        strReturn = '[' + strCapacity + ']';
+                        strReturn = '[' + strReturn + ']';
 
                     if (strSecondHalf.Contains("Rating"))
                     {
                         strSecondHalf = strSecondHalf.Trim('[', ']');
                         try
                         {
-                            strSecondHalf = '[' + ((double)CommonFunctions.EvaluateInvariantXPath(strSecondHalf.Replace("Rating", Rating.ToString()))).ToString("#,0.##", GlobalOptions.CultureInfo) + ']';
-                        }
-                        catch (XPathException)
-                        {
-                            strSecondHalf = '[' + strSecondHalf + ']';
+                            object objProcess = CommonFunctions.EvaluateInvariantXPath(strSecondHalf.Replace("Rating", Rating.ToString()), out bool blnIsSuccess);
+                            strSecondHalf = '[' + (blnIsSuccess ? ((double)objProcess).ToString("#,0.##", GlobalOptions.CultureInfo) : strSecondHalf) + ']';
                         }
                         catch (OverflowException) // Result is text and not a double
                         {
@@ -794,35 +838,22 @@ namespace Chummer.Backend.Equipment
 
                     strReturn += "/" + strSecondHalf;
                 }
-                else if (_strCapacity.Contains("Rating"))
+                else if (strReturn.Contains("Rating"))
                 {
                     // If the Capaicty is determined by the Rating, evaluate the expression.
                     // XPathExpression cannot evaluate while there are square brackets, so remove them if necessary.
-                    bool blnSquareBrackets = _strCapacity.Contains('[');
-                    string strCapacity = _strCapacity;
+                    bool blnSquareBrackets = strReturn.StartsWith('[');
+                    string strCapacity = strReturn;
                     if (blnSquareBrackets)
                         strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
-                    strReturn = ((double)CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", Rating.ToString()))).ToString("#,0.##", GlobalOptions.CultureInfo);
+                    object objProcess = CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", Rating.ToString()), out bool blnIsSuccess);
+                    strReturn = blnIsSuccess ? ((double)objProcess).ToString("#,0.##", GlobalOptions.CultureInfo) : strCapacity;
                     if (blnSquareBrackets)
                         strReturn = '[' + strReturn + ']';
                 }
-                else
-                {
-                    if (_strCapacity.StartsWith("FixedValues("))
-                    {
-                        string[] strValues = _strCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
-                        strReturn = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
-                    }
-                    else
-                    {
-                        // Just a straight Capacity, so return the value.
-                        strReturn = _strCapacity;
-                    }
-                }
-                if (string.IsNullOrEmpty(strReturn))
-                    strReturn = "0";
-                if (decimal.TryParse(strReturn, NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decimal decReturn))
+                else if (decimal.TryParse(strReturn, NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decimal decReturn))
                     return decReturn.ToString("#,0.##", GlobalOptions.CultureInfo);
+
                 return strReturn;
             }
         }
@@ -848,9 +879,10 @@ namespace Chummer.Backend.Equipment
                     foreach (Cyberware objChildCyberware in Cyberware)
                     {
                         string strCapacity = objChildCyberware.CalculatedCapacity;
-                        if (strCapacity.Contains("/["))
-                            strCapacity = strCapacity.Substring(strCapacity.IndexOf('[') + 1, strCapacity.IndexOf(']') - strCapacity.IndexOf('[') - 1);
-                        else if (strCapacity.Contains('['))
+                        int intPos = strCapacity.IndexOf("/[", StringComparison.Ordinal);
+                        if (intPos != -1)
+                            strCapacity = strCapacity.Substring(intPos + 2, strCapacity.LastIndexOf(']') - intPos - 2);
+                        else if (strCapacity.StartsWith('['))
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacity == "*")
                             strCapacity = "0";
@@ -866,9 +898,10 @@ namespace Chummer.Backend.Equipment
                     foreach (Cyberware objChildCyberware in Cyberware)
                     {
                         string strCapacity = objChildCyberware.CalculatedCapacity;
-                        if (strCapacity.Contains("/["))
-                            strCapacity = strCapacity.Substring(strCapacity.IndexOf('[') + 1, strCapacity.IndexOf(']') - strCapacity.IndexOf('[') - 1);
-                        else if (strCapacity.Contains('['))
+                        int intPos = strCapacity.IndexOf("/[", StringComparison.Ordinal);
+                        if (intPos != -1)
+                            strCapacity = strCapacity.Substring(intPos + 2, strCapacity.LastIndexOf(']') - intPos - 2);
+                        else if (strCapacity.StartsWith('['))
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacity == "*")
                             strCapacity = "0";
@@ -889,7 +922,7 @@ namespace Chummer.Backend.Equipment
             string strCostExpr = Cost;
             if (strCostExpr.StartsWith("FixedValues("))
             {
-                string[] strValues = strCostExpr.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                string[] strValues = strCostExpr.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                 strCostExpr = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
             }
 
@@ -909,7 +942,9 @@ namespace Chummer.Backend.Equipment
             objCost.CheapReplace(strCostExpr, "Acceleration", () => Parent?.Accel.ToString() ?? "0");
             objCost.CheapReplace(strCostExpr, "Handling", () => Parent?.Handling.ToString() ?? "0");
             objCost.Replace("Slots", intSlots.ToString());
-            decimal decReturn = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(objCost.ToString()), GlobalOptions.InvariantCultureInfo);
+
+            object objProcess = CommonFunctions.EvaluateInvariantXPath(objCost.ToString(), out bool blnIsSuccess);
+            decimal decReturn = blnIsSuccess ? Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo) : 0;
 
             if (DiscountCost)
                 decReturn *= 0.9m;
@@ -945,7 +980,7 @@ namespace Chummer.Backend.Equipment
                 string strCostExpr = Cost;
                 if (strCostExpr.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strCostExpr.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strCostExpr.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strCostExpr = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                 }
 
@@ -965,7 +1000,9 @@ namespace Chummer.Backend.Equipment
                 objCost.CheapReplace(strCostExpr, "Acceleration", () => Parent?.Accel.ToString() ?? "0");
                 objCost.CheapReplace(strCostExpr, "Handling", () => Parent?.Handling.ToString() ?? "0");
                 objCost.CheapReplace(strCostExpr, "Slots", () => WeaponMountParent?.CalculatedSlots.ToString() ?? "0");
-                decimal decReturn = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(objCost.ToString()), GlobalOptions.InvariantCultureInfo);
+
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objCost.ToString(), out bool blnIsSuccess);
+                decimal decReturn = blnIsSuccess ? Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo) : 0;
 
                 if (DiscountCost)
                     decReturn *= 0.9m;
@@ -990,7 +1027,7 @@ namespace Chummer.Backend.Equipment
                 string strSlotsExpression = Slots;
                 if (strSlotsExpression.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strSlotsExpression.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strSlotsExpression.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strSlotsExpression = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                 }
 
@@ -1009,7 +1046,8 @@ namespace Chummer.Backend.Equipment
                 objSlots.CheapReplace(strSlotsExpression, "Acceleration", () => Parent?.Accel.ToString() ?? "0");
                 objSlots.CheapReplace(strSlotsExpression, "Handling", () => Parent?.Handling.ToString() ?? "0");
 
-                return Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(objSlots.ToString()));
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objSlots.ToString(), out bool blnIsSuccess);
+                return blnIsSuccess ? Convert.ToInt32(objProcess) : 0;
             }
         }
 
@@ -1154,6 +1192,9 @@ namespace Chummer.Backend.Equipment
         /// </summary>
         public TreeNode CreateTreeNode(ContextMenuStrip cmsVehicleMod, ContextMenuStrip cmsCyberware, ContextMenuStrip cmsCyberwareGear, ContextMenuStrip cmsVehicleWeapon, ContextMenuStrip cmsVehicleWeaponAccessory, ContextMenuStrip cmsVehicleWeaponAccessoryGear)
         {
+            if (IncludedInVehicle && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             TreeNode objNode = new TreeNode
             {
                 Name = InternalId,
@@ -1167,19 +1208,25 @@ namespace Chummer.Backend.Equipment
                 objNode.ForeColor = SystemColors.GrayText;
             objNode.ToolTipText = Notes.WordWrap(100);
 
+            TreeNodeCollection lstChildNodes = objNode.Nodes;
             // Cyberware.
             foreach (Cyberware objCyberware in Cyberware)
             {
-                objNode.Nodes.Add(objCyberware.CreateTreeNode(cmsCyberware, cmsCyberwareGear));
-                objNode.Expand();
+                TreeNode objLoopNode = objCyberware.CreateTreeNode(cmsCyberware, cmsCyberwareGear);
+                if (objLoopNode != null)
+                    lstChildNodes.Add(objLoopNode);
             }
             
             // VehicleWeapons.
             foreach (Weapon objWeapon in Weapons)
             {
-                objNode.Nodes.Add(objWeapon.CreateTreeNode(cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear));
-                objNode.Expand();
+                TreeNode objLoopNode = objWeapon.CreateTreeNode(cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear);
+                if (objLoopNode != null)
+                    lstChildNodes.Add(objLoopNode);
             }
+
+            if (lstChildNodes.Count > 0)
+                objNode.Expand();
 
             return objNode;
         }

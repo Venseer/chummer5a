@@ -280,15 +280,17 @@ namespace Chummer
             string strUpdateLocation = GlobalOptions.PreferNightlyBuilds
                 ? "https://api.github.com/repos/chummer5a/chummer5a/releases"
                 : "https://api.github.com/repos/chummer5a/chummer5a/releases/latest";
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             HttpWebRequest request;
             try
             {
                 WebRequest objTemp = WebRequest.Create(strUpdateLocation);
                 request = objTemp as HttpWebRequest;
             }
-            catch (System.Security.SecurityException)
+            catch (System.Security.SecurityException ex)
             {
                 Utils.CachedGitVersion = null;
+                Log.Error(ex);
                 return;
             }
             if (request == null)
@@ -312,9 +314,10 @@ namespace Chummer
             {
                 response = request.GetResponse() as HttpWebResponse;
             }
-            catch (WebException)
+            catch (WebException ex)
             {
                 Utils.CachedGitVersion = null;
+                Log.Error(ex);
                 return;
             }
 
@@ -395,8 +398,9 @@ namespace Chummer
             if (!string.IsNullOrEmpty(line))
             {
                 string strVersion = line.Substring(line.IndexOf(':') + 1);
-                if (strVersion.Contains('}'))
-                    strVersion = strVersion.Substring(0, strVersion.IndexOf('}'));
+                int intPos = strVersion.IndexOf('}');
+                if (intPos != -1)
+                    strVersion = strVersion.Substring(0, intPos);
                 strVersion = strVersion.FastEscape('\"');
 
                 if (_workerVersionUpdateChecker.CancellationPending)
@@ -412,7 +416,7 @@ namespace Chummer
                 {
                     strVersion = strVersion + ".0";
                 }
-                Version.TryParse(strVersion.TrimStart("Nightly-v"), out verLatestVersion);
+                Version.TryParse(strVersion.TrimStartOnce("Nightly-v"), out verLatestVersion);
             }
             // Cleanup the streams and the response.
             reader.Close();
@@ -464,10 +468,12 @@ namespace Chummer
             Close();
         }
 
+        /*
         private void dashboardToolStripMenuItem_Click(object sender, EventArgs e)
         {
             frmGMDashboard.Instance.Show();
         }
+        */
 
         private void CloseAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -582,7 +588,6 @@ namespace Chummer
             objCharacter.IsCritter = true;
             objCharacter.Created = true;
             objCharacter.BuildMethod = CharacterBuildMethod.Karma;
-            objCharacter.BuildPoints = 0;
 
             // Show the Metatype selection window.
             frmKarmaMetatype frmSelectMetatype = new frmKarmaMetatype(objCharacter, "critters.xml");

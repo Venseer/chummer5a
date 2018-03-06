@@ -18,19 +18,21 @@
  */
 using Chummer.Backend.Skills;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.XPath;
 
 namespace Chummer
 {
     /// <summary>
     /// A Magician Spell.
     /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class Spell : IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -261,6 +263,7 @@ namespace Chummer
             StringBuilder objReturn = new StringBuilder();
 
             string[] strDescriptorsIn = Descriptors.Split(',');
+            bool blnExtendedFound = false;
             foreach (string strDescriptor in strDescriptorsIn)
             {
                 switch (strDescriptor.Trim())
@@ -297,6 +300,10 @@ namespace Chummer
                         break;
                     case "Environmental":
                         objReturn.Append(LanguageManager.GetString("String_DescEnvironmental", strLanguage));
+                        break;
+                    case "Extended Area":
+                        blnExtendedFound = true;
+                        objReturn.Append(LanguageManager.GetString("String_DescExtendedArea", GlobalOptions.Language));
                         break;
                     case "Geomancy":
                         objReturn.Append(LanguageManager.GetString("String_DescGeomancy", strLanguage));
@@ -357,7 +364,7 @@ namespace Chummer
             }
 
             // If Extended Area was not found and the Extended flag is enabled, add Extended Area to the list of Descriptors.
-            if (Extended)
+            if (Extended && !blnExtendedFound)
                 objReturn.Append(LanguageManager.GetString("String_DescExtendedArea", strLanguage) + ", ");
 
             // Remove the trailing comma.
@@ -416,12 +423,15 @@ namespace Chummer
         public string DisplayDV(string strLanguage)
         {
             string strReturn = DV.Replace('/', '÷');
-            strReturn = strReturn.CheapReplace("F", () => LanguageManager.GetString("String_SpellForce", strLanguage));
-            strReturn = strReturn.CheapReplace("Overflow damage", () => LanguageManager.GetString("String_SpellOverflowDamage", strLanguage));
-            strReturn = strReturn.CheapReplace("Damage Value", () => LanguageManager.GetString("String_SpellDamageValue", strLanguage));
-            strReturn = strReturn.CheapReplace("Toxin DV", () => LanguageManager.GetString("String_SpellToxinDV", strLanguage));
-            strReturn = strReturn.CheapReplace("Disease DV", () => LanguageManager.GetString("String_SpellDiseaseDV", strLanguage));
-            strReturn = strReturn.CheapReplace("Radiation Power", () => LanguageManager.GetString("String_SpellRadiationPower", strLanguage));
+            if (strLanguage != GlobalOptions.DefaultLanguage)
+            {
+                strReturn = strReturn.CheapReplace("F", () => LanguageManager.GetString("String_SpellForce", strLanguage))
+                    .CheapReplace("Overflow damage", () => LanguageManager.GetString("String_SpellOverflowDamage", strLanguage))
+                    .CheapReplace("Damage Value", () => LanguageManager.GetString("String_SpellDamageValue", strLanguage))
+                    .CheapReplace("Toxin DV", () => LanguageManager.GetString("String_SpellToxinDV", strLanguage))
+                    .CheapReplace("Disease DV", () => LanguageManager.GetString("String_SpellDiseaseDV", strLanguage))
+                    .CheapReplace("Radiation Power", () => LanguageManager.GetString("String_SpellRadiationPower", strLanguage));
+            }
 
             return strReturn;
         }
@@ -433,51 +443,53 @@ namespace Chummer
         {
             get
             {
-                string strTip = LanguageManager.GetString("Tip_SpellDrainBase", GlobalOptions.Language);
+                StringBuilder strTip = new StringBuilder(LanguageManager.GetString("Tip_SpellDrainBase", GlobalOptions.Language));
                 int intMAG = _objCharacter.MAG.TotalValue;
-
-                if (_objCharacter.AdeptEnabled && _objCharacter.MagicianEnabled)
-                {
-                    intMAG = _objCharacter.Options.SpiritForceBasedOnTotalMAG ? _objCharacter.MAG.TotalValue : _objCharacter.MAG.Value;
-                }
-
+                string strDV = DV;
                 for (int i = 1; i <= intMAG * 2; i++)
                 {
                     // Calculate the Spell's Drain for the current Force.
-                    object xprResult;
-                    try
-                    {
-                        xprResult = CommonFunctions.EvaluateInvariantXPath(DV.Replace("F", i.ToString()).Replace("/", " div "));
-                    }
-                    catch (XPathException)
-                    {
-                        xprResult = null;
-                    }
+                    object xprResult = CommonFunctions.EvaluateInvariantXPath(strDV.Replace("F", i.ToString()).Replace("/", " div "), out bool blnIsSuccess);
 
-                    if (xprResult != null && DV != "Special")
+                    if (blnIsSuccess && strDV != "Special")
                     {
                         int intDV = Convert.ToInt32(Math.Floor(Convert.ToDouble(xprResult.ToString(), GlobalOptions.InvariantCultureInfo)));
+
+                        if (Limited)
+                        {
+                            intDV -= 2;
+                        }
+                        if (Extended && !Name.EndsWith("Extended"))
+                        {
+                            intDV += 2;
+                        }
 
                         // Drain cannot be lower than 2.
                         if (intDV < 2)
                             intDV = 2;
-                        strTip += "\n" + LanguageManager.GetString("String_Force", GlobalOptions.Language) + ' ' + i.ToString() + ": " + intDV.ToString();
+                        strTip.Append(Environment.NewLine + LanguageManager.GetString("String_Force", GlobalOptions.Language) + ' ' + i.ToString() + ": " + intDV.ToString());
                     }
                     else
                     {
-                        strTip = LanguageManager.GetString("Tip_SpellDrainSeeDescription", GlobalOptions.Language);
+                        strTip.Clear();
+                        strTip.Append(LanguageManager.GetString("Tip_SpellDrainSeeDescription", GlobalOptions.Language));
                         break;
                     }
                 }
-                if (_objCharacter.Improvements.Any(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category) && o.Enabled))
+
+                List<Improvement> lstDrainImprovements = _objCharacter.Improvements
+                    .Where(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || (o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain && (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category))) &&
+                                o.Enabled).ToList();
+                if (lstDrainImprovements.Count > 0)
                 {
-                    strTip += $"\n {LanguageManager.GetString("Label_Bonus", GlobalOptions.Language)}";
-                    strTip = _objCharacter.Improvements
-                        .Where(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) && (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category) && o.Enabled)
-                        .Aggregate(strTip, (current, imp) => current + $"\n {_objCharacter.GetObjectName(imp, GlobalOptions.Language)} ({imp.Value:0;-0;0})");
+                    strTip.Append(Environment.NewLine + LanguageManager.GetString("Label_Bonus", GlobalOptions.Language));
+                    foreach (Improvement objLoopImprovement in lstDrainImprovements)
+                    {
+                        strTip.Append($"{Environment.NewLine}{_objCharacter.GetObjectName(objLoopImprovement, GlobalOptions.Language)} ({objLoopImprovement.Value:0;-0;0})");
+                    }
                 }
 
-                return strTip;
+                return strTip.ToString();
             }
         }
 
@@ -496,12 +508,15 @@ namespace Chummer
         public string DisplayRange(string strLanguage)
         {
             string strReturn = Range;
-            strReturn = strReturn.CheapReplace("Self", () => LanguageManager.GetString("String_SpellRangeSelf", strLanguage));
-            strReturn = strReturn.CheapReplace("LOS", () => LanguageManager.GetString("String_SpellRangeLineOfSight", strLanguage));
-            strReturn = strReturn.CheapReplace("LOI", () => LanguageManager.GetString("String_SpellRangeLineOfInfluence", strLanguage));
-            strReturn = strReturn.CheapReplace("T", () => LanguageManager.GetString("String_SpellRangeTouch", strLanguage));
-            strReturn = strReturn.CheapReplace("(A)", () => "(" + LanguageManager.GetString("String_SpellRangeArea", strLanguage) + ')');
-            strReturn = strReturn.CheapReplace("MAG", () => LanguageManager.GetString("String_AttributeMAGShort", strLanguage));
+            if (strLanguage != GlobalOptions.DefaultLanguage)
+            {
+                strReturn = strReturn.CheapReplace("Self", () => LanguageManager.GetString("String_SpellRangeSelf", strLanguage))
+                    .CheapReplace("LOS", () => LanguageManager.GetString("String_SpellRangeLineOfSight", strLanguage))
+                    .CheapReplace("LOI", () => LanguageManager.GetString("String_SpellRangeLineOfInfluence", strLanguage))
+                    .CheapReplace("T", () => LanguageManager.GetString("String_SpellRangeTouch", strLanguage))
+                    .CheapReplace("(A)", () => "(" + LanguageManager.GetString("String_SpellRangeArea", strLanguage) + ')')
+                    .CheapReplace("MAG", () => LanguageManager.GetString("String_AttributeMAGShort", strLanguage));
+            }
 
             return strReturn;
         }
@@ -569,40 +584,55 @@ namespace Chummer
             {
                 string strReturn = _strDV;
                 bool force = strReturn.StartsWith('F');
-                if (Limited || _objCharacter.Improvements.Any(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) &&
+                if (Limited || (Extended && !Name.EndsWith("Extended")) || _objCharacter.Improvements.Any(o => (o.ImproveType == Improvement.ImprovementType.DrainValue || o.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) &&
                                                                    (string.IsNullOrEmpty(o.ImprovedName) || o.ImprovedName == Category) && o.Enabled))
                 {
-                    string dv = strReturn.TrimStart('F');
+                    string strDV = strReturn.TrimStartOnce('F');
                     //Navigator can't do math on a single value, so inject a mathable value.
-                    if (string.IsNullOrEmpty(dv))
+                    if (string.IsNullOrEmpty(strDV))
                     {
-                        dv = "0";
+                        strDV = "0";
                     }
-                    else if (strReturn.Contains('-'))
+                    else
                     {
-                        dv = strReturn.Substring(strReturn.IndexOf('-'));
-                    }
-                    else if (strReturn.Contains('+'))
-                    {
-                        dv = strReturn.Substring(strReturn.IndexOf('+'));
+                        int intPos = strReturn.IndexOf('-');
+                        if (intPos != -1)
+                        {
+                            strDV = strReturn.Substring(intPos);
+                        }
+                        else
+                        {
+                            intPos = strReturn.IndexOf('+');
+                            if (intPos != -1)
+                            {
+                                strDV = strReturn.Substring(intPos);
+                            }
+                        }
                     }
                     foreach (Improvement imp in _objCharacter.Improvements.Where(i => (i.ImproveType == Improvement.ImprovementType.DrainValue || i.ImproveType == Improvement.ImprovementType.SpellCategoryDrain) &&
                                                                                       (string.IsNullOrEmpty(i.ImprovedName) || i.ImprovedName == Category) && i.Enabled))
                     {
-                        dv += $" + {imp.Value:0;-0;0}";
+                        strDV += $" + {imp.Value:0;-0;0}";
                     }
                     if (Limited)
                     {
-                        dv += " + -2";
+                        strDV += " + -2";
                     }
-                    object xprResult = CommonFunctions.EvaluateInvariantXPath(dv.TrimStart('+'));
-                    if (force)
+                    if (Extended && !Name.EndsWith("Extended"))
                     {
-                        strReturn = $"F{xprResult:+0;-0;0}";
+                        strDV += " + 2";
                     }
-                    else
+                    object xprResult = CommonFunctions.EvaluateInvariantXPath(strDV.TrimStart('+'), out bool blnIsSuccess);
+                    if (blnIsSuccess)
                     {
-                        strReturn += xprResult;
+                        if (force)
+                        {
+                            strReturn = $"F{xprResult:+0;-0;}";
+                        }
+                        else if (xprResult.ToString() != "0")
+                        {
+                            strReturn += xprResult;
+                        }
                     }
                 }
                 return strReturn;
@@ -687,7 +717,7 @@ namespace Chummer
         public string DisplayNameShort(string strLanguage)
         {
             string strReturn = strLanguage != GlobalOptions.DefaultLanguage ? GetNode(strLanguage)?["translate"]?.InnerText ?? Name : Name;
-            if (Extended)
+            if (Extended && !Name.EndsWith("Extended"))
                 strReturn += ", " + LanguageManager.GetString("String_SpellExtended", strLanguage);
 
             return strReturn;
@@ -769,7 +799,7 @@ namespace Chummer
                 Skill objSkill = Skill;
                 if (objSkill != null)
                 {
-                    intReturn = UsesUnarmed ? objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue) : objSkill.Pool;
+                    intReturn = UsesUnarmed ? objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue, "MAG") : objSkill.Pool;
                     // Add any Specialization bonus if applicable.
                     if (objSkill.HasSpecialization(Category))
                         intReturn += 2;
@@ -793,7 +823,7 @@ namespace Chummer
                 Skill objSkill = Skill;
                 if (objSkill != null)
                 {
-                    int intPool = UsesUnarmed ? objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue) : objSkill.Pool;
+                    int intPool = UsesUnarmed ? objSkill.PoolOtherAttribute(_objCharacter.MAG.TotalValue, "MAG") : objSkill.Pool;
                     strReturn = objSkill.DisplayNameMethod(GlobalOptions.Language) + " (" + intPool.ToString() + ')';
                     // Add any Specialization bonus if applicable.
                     if (objSkill.HasSpecialization(Category))
@@ -831,6 +861,9 @@ namespace Chummer
         #region Methods
         public TreeNode CreateTreeNode(ContextMenuStrip cmsSpell, bool blnAddCategory = false)
         {
+            if (Grade != 0 && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             string strText = DisplayName(GlobalOptions.Language);
             if (blnAddCategory)
             {

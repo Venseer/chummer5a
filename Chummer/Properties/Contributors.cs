@@ -23,7 +23,8 @@ namespace Chummer.Properties
 {
     public static class Contributors
     {
-        public static ReadOnlyCollection<string> Usernames { get { return Array.AsReadOnly(_lstUsernames); } }
+        public static ReadOnlyCollection<string> Usernames => Array.AsReadOnly(_lstUsernames);
+
         private static readonly string[] _lstUsernames = {
             "Chummer 5 Is Alive<chummer5a>",
             "DelnarErsike",
@@ -35,8 +36,8 @@ namespace Chummer.Properties
             "HaikenEdge",
             "Luiz Borges<luizbgomide>",
             "chummer78",
-            "cfresquet",
             "Youneko17",
+            "cfresquet",
             "angelforest",
             "Ternega",
             "sethsatan",
@@ -45,7 +46,6 @@ namespace Chummer.Properties
             "Skarablood",
             "Dmitri Suvorov<suvjunmd>",
             "rabbitslayer4",
-            "SolitarySky",
             "argo2445",
             "masterki",
             "rolfman",
@@ -55,6 +55,33 @@ namespace Chummer.Properties
             "Lochabar",
             "mudge6",
             "Richard Zang<richard-zang>",
+            "Claire<MachineMuse>",
+            "DeastinY<DeastinY>",
+            "SquadronROE",
+            "bodison",
+            "graptis",
+            "Johannes Novotny<jonovotny>",
+            "BodieSullivan",
+            "William Johnson<dethstrobe>",
+            "Felix Dombek<FelixDombek>",
+            "Fightbackman<Fightbackman>",
+            "Jamey Johnston<Hood281>",
+            "James Brown<Maxis010>",
+            "LeonardoDeQuirm",
+            "Lydia K<GearheadLydia>",
+            "Making GitHub Delicious.<waffle-iron>",
+            "Mike MacDonald<crazymykl>",
+            "Mondlied",
+            "PMDevelopment<PAMulligan>",
+            "Phil5555",
+            "rhockett94",
+            "TDW89",
+            "Urs Zeidler<UrsZeidler>",
+            "Xenryusho",
+            "Zitchas<Zitchas>",
+            "blubderapo",
+            "johnwobrien",
+            "mikekacz",
         };
     }
 }

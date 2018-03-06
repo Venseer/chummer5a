@@ -26,6 +26,7 @@ using Chummer.Backend.Equipment;
 using System.Xml;
 using System.Xml.XPath;
 using System.Runtime.CompilerServices;
+using Chummer.Annotations;
 using iTextSharp.text.pdf;
 using iTextSharp.text.pdf.parser;
 
@@ -39,26 +40,60 @@ namespace Chummer
         private static readonly XmlDocument s_ObjXPathNavigatorDocument = new XmlDocument();
         private static readonly XPathNavigator s_ObjXPathNavigator = s_ObjXPathNavigatorDocument.CreateNavigator();
 
+        private static readonly char[] s_LstInvariantXPathLegalChars = "1234567890+-*abdegilmnortuv()[]{}!=<>&;. ".ToCharArray();
+
         /// <summary>
         /// Evaluate a string consisting of an XPath Expression that could be evaluated on an empty document.
         /// </summary>
-        /// <param name="strXPath">String as XPath Expression to evaluate</param>
+        /// <param name="strXPath">String as XPath Expression to evaluate.</param>
+        /// <param name="blnIsSuccess">Whether we successfully processed the XPath (true) or encountered an error (false).</param>
         /// <returns>System.Boolean, System.Double, System.String, or System.Xml.XPath.XPathNodeIterator depending on the result type.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static object EvaluateInvariantXPath(string strXPath)
+        public static object EvaluateInvariantXPath(string strXPath, out bool blnIsSuccess)
         {
-            return s_ObjXPathNavigator.Evaluate(strXPath);
+            if (!strXPath.IsLegalCharsOnly(true, s_LstInvariantXPathLegalChars))
+            {
+                blnIsSuccess = false;
+                return strXPath;
+            }
+
+            object objReturn;
+            try
+            {
+                objReturn = s_ObjXPathNavigator.Evaluate(strXPath);
+                blnIsSuccess = true;
+            }
+            catch (Exception)
+            {
+                Utils.BreakIfDebug();
+                objReturn = strXPath;
+                blnIsSuccess = false;
+            }
+            return objReturn;
         }
 
         /// <summary>
         /// Evaluate an XPath Expression that could be evaluated on an empty document.
         /// </summary>
         /// <param name="objXPath">XPath Expression to evaluate</param>
+        /// <param name="blnIsSuccess">Whether we successfully processed the XPath (true) or encountered an error (false).</param>
         /// <returns>System.Boolean, System.Double, System.String, or System.Xml.XPath.XPathNodeIterator depending on the result type.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static object EvaluateInvariantXPath(XPathExpression objXPath)
+        public static object EvaluateInvariantXPath(XPathExpression objXPath, out bool blnIsSuccess)
         {
-            return s_ObjXPathNavigator.Evaluate(objXPath);
+            object objReturn;
+            try
+            {
+                objReturn = s_ObjXPathNavigator.Evaluate(objXPath);
+                blnIsSuccess = true;
+            }
+            catch (Exception)
+            {
+                Utils.BreakIfDebug();
+                objReturn = objXPath;
+                blnIsSuccess = false;
+            }
+            return objReturn;
         }
         #endregion
 
@@ -70,7 +105,7 @@ namespace Chummer
         /// <param name="lstVehicles">List of Vehicles to search.</param>
         public static Gear FindVehicleGear(this IEnumerable<Vehicle> lstVehicles, string strGuid)
         {
-            return lstVehicles.FindVehicleGear(strGuid, out Vehicle objFoundVehicle, out WeaponAccessory objFoundWeaponAccessory, out Cyberware objFoundCyberware);
+            return lstVehicles.FindVehicleGear(strGuid, out Vehicle _, out WeaponAccessory _, out Cyberware _);
         }
 
         /// <summary>
@@ -79,6 +114,8 @@ namespace Chummer
         /// <param name="strGuid">InternalId of the Gear to find.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
         /// <param name="objFoundVehicle">Vehicle that the Gear was found in.</param>
+        /// <param name="objFoundWeaponAccessory">Weapon Accessory that the Gear was found in.</param>
+        /// <param name="objFoundCyberware">Cyberware that the Gear was found in.</param>
         public static Gear FindVehicleGear(this IEnumerable<Vehicle> lstVehicles, string strGuid, out Vehicle objFoundVehicle, out WeaponAccessory objFoundWeaponAccessory, out Cyberware objFoundCyberware)
         {
             if (!string.IsNullOrEmpty(strGuid) && !strGuid.IsEmptyGuid())
@@ -131,46 +168,29 @@ namespace Chummer
         /// <summary>
         /// Locate a VehicleMod within the character's Vehicles.
         /// </summary>
-        /// <param name="strGuid">InternalId of the VehicleMod to find.</param>
+        /// <param name="funcPredicate">Predicate to locate the VehicleMod.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
-        public static VehicleMod FindVehicleMod(this IEnumerable<Vehicle> lstVehicles, string strGuid)
+        public static VehicleMod FindVehicleMod([NotNull] this IEnumerable<Vehicle> lstVehicles, [NotNull] Func<VehicleMod, bool> funcPredicate)
         {
-            return lstVehicles.FindVehicleMod(strGuid, out Vehicle objFoundVehicle, out WeaponMount objFoundWeaponMount);
+            return lstVehicles.FindVehicleMod(funcPredicate, out Vehicle _, out WeaponMount _);
         }
 
         /// <summary>
         /// Locate a VehicleMod within the character's Vehicles.
         /// </summary>
-        /// <param name="strGuid">InternalId of the VehicleMod to find.</param>
+        /// <param name="funcPredicate">Predicate to locate the VehicleMod.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
         /// <param name="objFoundVehicle">Vehicle that the VehicleMod was found in.</param>
-        public static VehicleMod FindVehicleMod(this IEnumerable<Vehicle> lstVehicles, string strGuid, out Vehicle objFoundVehicle, out WeaponMount objFoundWeaponMount)
+        /// <param name="objFoundWeaponMount">Weapon Mount that the VehicleMod was found in.</param>
+        public static VehicleMod FindVehicleMod([NotNull] this IEnumerable<Vehicle> lstVehicles, [NotNull] Func<VehicleMod, bool> funcPredicate, out Vehicle objFoundVehicle, out WeaponMount objFoundWeaponMount)
         {
-            if (!string.IsNullOrWhiteSpace(strGuid) && !strGuid.IsEmptyGuid())
+            foreach (Vehicle objVehicle in lstVehicles)
             {
-                foreach (Vehicle objVehicle in lstVehicles)
+                VehicleMod objMod = objVehicle.FindVehicleMod(funcPredicate, out objFoundWeaponMount);
+                if (objMod != null)
                 {
-                    foreach (VehicleMod objMod in objVehicle.Mods)
-                    {
-                        if (objMod.InternalId == strGuid)
-                        {
-                            objFoundVehicle = objVehicle;
-                            objFoundWeaponMount = null;
-                            return objMod;
-                        }
-                    }
-                    foreach (WeaponMount objMount in objVehicle.WeaponMounts)
-                    {
-                        foreach (VehicleMod objMod in objMount.Mods)
-                        {
-                            if (objMod.InternalId == strGuid)
-                            {
-                                objFoundVehicle = objVehicle;
-                                objFoundWeaponMount = objMount;
-                                return objMod;
-                            }
-                        }
-                    }
+                    objFoundVehicle = objVehicle;
+                    return objMod;
                 }
             }
 
@@ -186,7 +206,7 @@ namespace Chummer
         /// <param name="lstVehicles">List of Vehicles to search.</param>
         public static Weapon FindVehicleWeapon(this IEnumerable<Vehicle> lstVehicles, string strGuid)
         {
-            return lstVehicles.FindVehicleWeapon(strGuid, out Vehicle objFoundVehicle, out WeaponMount objFoundWeaponMount, out VehicleMod objFoundVehicleMod);
+            return lstVehicles.FindVehicleWeapon(strGuid, out Vehicle _, out WeaponMount _, out VehicleMod _);
         }
 
         /// <summary>
@@ -197,7 +217,7 @@ namespace Chummer
         /// <param name="objFoundVehicle">Vehicle that the Weapon was found in.</param>
         public static Weapon FindVehicleWeapon(this IEnumerable<Vehicle> lstVehicles, string strGuid, out Vehicle objFoundVehicle)
         {
-            return lstVehicles.FindVehicleWeapon(strGuid, out objFoundVehicle, out WeaponMount objFoundWeaponMount, out VehicleMod objFoundVehicleMod);
+            return lstVehicles.FindVehicleWeapon(strGuid, out objFoundVehicle, out WeaponMount _, out VehicleMod _);
         }
 
         /// <summary>
@@ -207,6 +227,7 @@ namespace Chummer
         /// <param name="lstVehicles">List of Vehicles to search.</param>
         /// <param name="objFoundVehicle">Vehicle that the Weapon was found in.</param>
         /// <param name="objFoundVehicleMod">Vehicle mod that the Weapon was found in.</param>
+        /// <param name="objFoundWeaponMount">Weapon Mount that the Weapon was found in.</param>
         public static Weapon FindVehicleWeapon(this IEnumerable<Vehicle> lstVehicles, string strGuid, out Vehicle objFoundVehicle, out WeaponMount objFoundWeaponMount, out VehicleMod objFoundVehicleMod)
         {
             if (!string.IsNullOrWhiteSpace(strGuid) && !strGuid.IsEmptyGuid())
@@ -266,12 +287,13 @@ namespace Chummer
             return null;
         }
         /// <summary>
-        /// 
+        /// Locate a Weapon Mount within the character's Vehicles.
         /// </summary>
-        /// <param name="strGuid"></param>
-        /// <param name="lstVehicles"></param>
+        /// <param name="strGuid">Internal Id with which to look for the vehicle mod.</param>
+        /// <param name="lstVehicles">List of root vehicles to search.</param>
+        /// <param name="objFoundVehicle">Vehicle in which the Weapon Mount was found.</param>
         /// <returns></returns>
-        public static WeaponMount FindVehicleWeaponMount(this IEnumerable<Vehicle> lstVehicles, string strGuid, out Vehicle outVehicle)
+        public static WeaponMount FindVehicleWeaponMount(this IEnumerable<Vehicle> lstVehicles, string strGuid, out Vehicle objFoundVehicle)
         {
             if (!string.IsNullOrWhiteSpace(strGuid) && !strGuid.IsEmptyGuid())
             {
@@ -281,20 +303,21 @@ namespace Chummer
                     {
                         if (objMod.InternalId == strGuid)
                         {
-                            outVehicle = objVehicle;
+                            objFoundVehicle = objVehicle;
                             return objMod;
                         }
                     }
                 }
             }
-            outVehicle = null;
+            objFoundVehicle = null;
             return null;
         }
         /// <summary>
-        /// 
+        /// Locate a Vehicle Mod within the character's Vehicles' weapon mounts.
         /// </summary>
-        /// <param name="strGuid"></param>
-        /// <param name="lstVehicles"></param>
+        /// <param name="strGuid">Internal Id with which to look for the vehicle mod.</param>
+        /// <param name="lstVehicles">List of root vehicles to search.</param>
+        /// <param name="outMount">Weapon Mount in which the Vehicle Mod was found.</param>
         /// <returns></returns>
         public static VehicleMod FindVehicleWeaponMountMod(this IEnumerable<Vehicle> lstVehicles, string strGuid, out WeaponMount outMount)
         {
@@ -362,34 +385,27 @@ namespace Chummer
         /// <summary>
         /// Locate a piece of Cyberware within the character's Vehicles.
         /// </summary>
-        /// <param name="strGuid">InternalId of the Cyberware to find.</param>
+        /// <param name="funcPredicate">Predicate to locate the Cyberware.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
-        public static Cyberware FindVehicleCyberware(this IEnumerable<Vehicle> lstVehicles, string strGuid)
+        public static Cyberware FindVehicleCyberware([NotNull] this IEnumerable<Vehicle> lstVehicles, [NotNull] Func<Cyberware, bool> funcPredicate)
         {
-            return lstVehicles.FindVehicleCyberware(strGuid, out VehicleMod objFoundVehicleMod);
+            return lstVehicles.FindVehicleCyberware(funcPredicate, out VehicleMod _);
         }
 
         /// <summary>
         /// Locate a piece of Cyberware within the character's Vehicles.
         /// </summary>
-        /// <param name="strGuid">InternalId of the Cyberware to find.</param>
+        /// <param name="funcPredicate">Predicate to locate the Cyberware.</param>
         /// <param name="lstVehicles">List of Vehicles to search.</param>
         /// <param name="objFoundVehicleMod">Vehicle Mod to which the Cyberware belongs.</param>
-        public static Cyberware FindVehicleCyberware(this IEnumerable<Vehicle> lstVehicles, string strGuid, out VehicleMod objFoundVehicleMod)
+        public static Cyberware FindVehicleCyberware([NotNull] this IEnumerable<Vehicle> lstVehicles, [NotNull] Func<Cyberware, bool> funcPredicate, out VehicleMod objFoundVehicleMod)
         {
-            if (!string.IsNullOrWhiteSpace(strGuid) && !strGuid.IsEmptyGuid())
+            foreach (Vehicle objVehicle in lstVehicles)
             {
-                foreach (Vehicle objVehicle in lstVehicles)
+                Cyberware objReturn = objVehicle.FindVehicleCyberware(funcPredicate, out objFoundVehicleMod);
+                if (objReturn != null)
                 {
-                    foreach (VehicleMod objMod in objVehicle.Mods)
-                    {
-                        Cyberware objReturn = objMod.Cyberware.DeepFindById(strGuid);
-                        if (objReturn != null)
-                        {
-                            objFoundVehicleMod = objMod;
-                            return objReturn;
-                        }
-                    }
+                    return objReturn;
                 }
             }
 
@@ -404,7 +420,7 @@ namespace Chummer
         /// <param name="lstArmors">List of Armors to search.</param>
         public static Gear FindArmorGear(this IEnumerable<Armor> lstArmors, string strGuid)
         {
-            return lstArmors.FindArmorGear(strGuid, out Armor objFoundArmor, out ArmorMod objFoundArmorMod);
+            return lstArmors.FindArmorGear(strGuid, out Armor _, out ArmorMod _);
         }
 
         /// <summary>
@@ -475,7 +491,7 @@ namespace Chummer
         /// <param name="lstCyberware">List of Cyberware to search.</param>
         public static Gear FindCyberwareGear(this IEnumerable<Cyberware> lstCyberware, string strGuid)
         {
-            return lstCyberware.FindCyberwareGear(strGuid, out Cyberware objFoundCyberware);
+            return lstCyberware.FindCyberwareGear(strGuid, out Cyberware _);
         }
 
         /// <summary>
@@ -535,7 +551,7 @@ namespace Chummer
         /// <param name="lstWeapons">List of Weapons to search.</param>
         public static Gear FindWeaponGear(this IEnumerable<Weapon> lstWeapons, string strGuid)
         {
-            return lstWeapons.FindWeaponGear(strGuid, out WeaponAccessory objFoundAccessory);
+            return lstWeapons.FindWeaponGear(strGuid, out WeaponAccessory _);
         }
 
         /// <summary>
@@ -600,7 +616,7 @@ namespace Chummer
         /// <param name="lstMartialArts">List of Martial Arts to search.</param>
         public static MartialArtTechnique FindMartialArtTechnique(this IEnumerable<MartialArt> lstMartialArts, string strGuid)
         {
-            return lstMartialArts.FindMartialArtTechnique(strGuid, out MartialArt objFoundMartialArt);
+            return lstMartialArts.FindMartialArtTechnique(strGuid, out MartialArt _);
         }
 
         /// <summary>
@@ -630,400 +646,7 @@ namespace Chummer
             return null;
         }
         #endregion
-
-        #region Move TreeNodes
-        /// <summary>
-        /// Move a Gear TreeNode after Drag and Drop, changing its parent.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new idnex.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveGearParent(Character objCharacter, TreeNode objDestination, TreeNode objGearNode)
-        {
-            // The item cannot be dropped onto itself or onto one of its children.
-            for (TreeNode objCheckNode = objDestination; objCheckNode != null && objCheckNode.Level >= objDestination.Level; objCheckNode = objCheckNode.Parent)
-                if (objCheckNode == objGearNode)
-                    return;
-
-            string strSelectedId = objGearNode.Tag.ToString();
-            // Locate the currently selected piece of Gear.
-            Gear objGear = objCharacter.Gear.DeepFindById(strSelectedId);
-
-            // Gear cannot be moved to one if its children.
-            bool blnAllowMove = true;
-            TreeNode objFindNode = objDestination;
-            if (objDestination.Level > 0)
-            {
-                do
-                {
-                    objFindNode = objFindNode.Parent;
-                    if (objFindNode.Tag.ToString() == objGear.InternalId)
-                    {
-                        blnAllowMove = false;
-                        break;
-                    }
-                } while (objFindNode.Level > 0);
-            }
-
-            if (!blnAllowMove)
-                return;
-
-            // Remove the Gear from the character.
-            if (objGear.Parent == null)
-                objCharacter.Gear.Remove(objGear);
-            else
-            {
-                objGear.Parent.Children.Remove(objGear);
-                objGear.Parent.RefreshMatrixAttributeArray();
-            }
-
-            if (objDestination.Level == 0)
-            {
-                // The Gear was moved to a location, so add it to the character instead.
-                objGear.Location = objDestination.Text;
-                objGear.Parent = null;
-                objCharacter.Gear.Add(objGear);
-            }
-            else
-            {
-                // Locate the Gear that the item was dropped on.
-                Gear objParent = objCharacter.Gear.DeepFindById(objDestination.Tag.ToString());
-
-                // Add the Gear as a child of the destination Node and clear its location.
-                objGear.Location = string.Empty;
-                objGear.Parent = objParent;
-                objParent.Children.Add(objGear);
-                objParent.RefreshMatrixAttributeArray();
-            }
-        }
-
-        /// <summary>
-        /// Move a Gear TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveGearNode(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode objGearNode)
-        {
-            string strSelectedId = objGearNode?.Tag.ToString();
-            Gear objGear = objCharacter.Gear.FirstOrDefault(x => x.InternalId == strSelectedId);
-            if (objGear != null)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-
-                // Change the Location on the Gear item.
-                objGear.Location = objNewParent.Tag.ToString() == "Node_SelectedGear" ? string.Empty : objNewParent.Text;
-
-                objCharacter.Gear.Move(objCharacter.Gear.IndexOf(objGear), intNewIndex);
-            }
-        }
-
-        /// <summary>
-        /// Move a Gear Location TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveGearRoot(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode nodOldNode)
-        {
-            if (objDestination != null)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-                intNewIndex = objNewParent.Index;
-            }
-
-            if (intNewIndex == 0)
-                return;
-            
-            string strLocation = nodOldNode.Tag.ToString();
-            objCharacter.GearLocations.Move(objCharacter.GearLocations.IndexOf(strLocation), intNewIndex);
-        }
-
-        /// <summary>
-        /// Move a Lifestyle TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveLifestyleNode(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode nodLifestyleNode)
-        {
-            if (objDestination != null)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-                intNewIndex = objNewParent.Index;
-            }
-
-            if (intNewIndex == 0)
-                return;
-
-            string strSelectedId = nodLifestyleNode.Tag.ToString();
-            Lifestyle objLifestyle = objCharacter.Lifestyles.FirstOrDefault(x => x.InternalId == strSelectedId);
-            if (objLifestyle != null)
-                objCharacter.Lifestyles.Move(objCharacter.Lifestyles.IndexOf(objLifestyle), intNewIndex);
-        }
-
-        /// <summary>
-        /// Move an Armor TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveArmorNode(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode nodArmorNode)
-        {
-            string strSelectedId = nodArmorNode?.Tag.ToString();
-            // Locate the currently selected Armor.
-            Armor objArmor = objCharacter.Armor.FindById(strSelectedId);
-            if (objArmor != null)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-
-                // Change the Location on the Armor item.
-                objArmor.Location = objNewParent.Tag.ToString() == "Node_SelectedArmor" ? string.Empty : objNewParent.Text;
-
-                objCharacter.Armor.Move(objCharacter.Armor.IndexOf(objArmor), intNewIndex);
-            }
-        }
-
-        /// <summary>
-        /// Move an Armor Location TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveArmorRoot(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode nodOldNode)
-        {
-            if (objDestination != null)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-                intNewIndex = objNewParent.Index;
-            }
-
-            if (intNewIndex == 0)
-                return;
-
-            string strLocation = nodOldNode.Tag.ToString();
-            objCharacter.ArmorLocations.Move(objCharacter.ArmorLocations.IndexOf(strLocation), intNewIndex);
-        }
-
-        /// <summary>
-        /// Move a Weapon TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveWeaponNode(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode nodWeaponNode)
-        {
-            string strSelectedId = nodWeaponNode?.Tag.ToString();
-            // Locate the currently selected Weapon.
-            Weapon objWeapon = objCharacter.Weapons.FindById(strSelectedId);
-            if (objWeapon != null)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-
-                // Change the Location on the Armor item.
-                objWeapon.Location = objNewParent.Tag.ToString() == "Node_SelectedWeapons" ? string.Empty : objNewParent.Text;
-
-                objCharacter.Weapons.Move(objCharacter.Weapons.IndexOf(objWeapon), intNewIndex);
-            }
-        }
-
-        /// <summary>
-        /// Move a Weapon Location TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveWeaponRoot(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode nodOldNode)
-        {
-            if (objDestination != null)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-                intNewIndex = objNewParent.Index;
-            }
-
-            if (intNewIndex == 0)
-                return;
-            
-            string strLocation = nodOldNode.Tag.ToString();
-            objCharacter.WeaponLocations.Move(objCharacter.WeaponLocations.IndexOf(strLocation), intNewIndex);
-        }
         
-        /// <summary>
-        /// Move a Vehicle TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveVehicleNode(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode nodVehicleNode)
-        {
-            string strSelectedId = nodVehicleNode?.Tag.ToString();
-            // Locate the currently selected Vehicle.
-            Vehicle objVehicle = objCharacter.Vehicles.FindById(strSelectedId);
-            if (objVehicle != null)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-
-                // Change the Location on the Armor item.
-                objVehicle.Location = objNewParent.Tag.ToString() == "Node_SelectedVehicles" ? string.Empty : objNewParent.Text;
-
-                objCharacter.Vehicles.Move(objCharacter.Vehicles.IndexOf(objVehicle), intNewIndex);
-            }
-        }
-
-        /// <summary>
-        /// Move a Vehicle Gear TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="nodDestination">Destination Node.</param>
-        public static void MoveVehicleGearParent(Character objCharacter, TreeNode nodDestination, TreeNode nodGearNode)
-        {
-            // The item cannot be dropped onto itself or onto one of its children.
-            for (TreeNode objCheckNode = nodDestination; objCheckNode != null && objCheckNode.Level >= nodDestination.Level; objCheckNode = objCheckNode.Parent)
-                if (objCheckNode == nodGearNode)
-                    return;
-
-            // Locate the currently selected piece of Gear.
-            Gear objGear = objCharacter.Vehicles.FindVehicleGear(nodGearNode.Tag.ToString(), out Vehicle objOldVehicle, out WeaponAccessory objOldWeaponAccessory, out Cyberware objOldCyberware);
-
-            if (objGear == null)
-                return;
-
-            Gear objOldParent = objGear.Parent;
-            string strDestinationId = nodDestination.Tag.ToString();
-            // Make sure the destination is another piece of Gear or a Location.
-            Gear objDestinationGear = objCharacter.Vehicles.FindVehicleGear(strDestinationId);
-            if (objDestinationGear != null)
-            {
-                // Remove the Gear from the Vehicle.
-                if (objOldParent != null)
-                {
-                    objOldParent.Children.Remove(objGear);
-                    objOldParent.RefreshMatrixAttributeArray();
-                }
-                else if (objOldCyberware != null)
-                {
-                    objOldCyberware.Gear.Remove(objGear);
-                    objOldCyberware.RefreshMatrixAttributeArray();
-                }
-                else if (objOldWeaponAccessory != null)
-                    objOldWeaponAccessory.Gear.Remove(objGear);
-                else
-                {
-                    objOldVehicle.Gear.Remove(objGear);
-                    objOldVehicle.RefreshMatrixAttributeArray();
-                }
-
-                // Add the Gear to its new parent.
-                objGear.Location = string.Empty;
-                objGear.Parent = objDestinationGear;
-                objDestinationGear.Children.Add(objGear);
-                objDestinationGear.RefreshMatrixAttributeArray();
-            }
-            else
-            {
-                // Determine if this is a Location.
-                TreeNode nodVehicleNode = nodDestination;
-                do
-                {
-                    nodVehicleNode = nodVehicleNode.Parent;
-                }
-                while (nodVehicleNode.Level > 1);
-
-                // Get a reference to the destination Vehicle.
-                Vehicle objDestinationVehicle = objCharacter.Vehicles.FindById(nodVehicleNode.Tag.ToString());
-
-                // Determine if this is a Location in the destination Vehicle.
-                string strDestinationLocation = objDestinationVehicle.Locations.FirstOrDefault(x => x == strDestinationId);
-
-                if (!string.IsNullOrEmpty(strDestinationLocation))
-                {
-                    // Remove the Gear from the Vehicle.
-                    if (objOldParent != null)
-                    {
-                        objOldParent.Children.Remove(objGear);
-                        objOldParent.RefreshMatrixAttributeArray();
-                    }
-                    else if (objOldCyberware != null)
-                    {
-                        objOldCyberware.Gear.Remove(objGear);
-                        objOldCyberware.RefreshMatrixAttributeArray();
-                    }
-                    else if (objOldWeaponAccessory != null)
-                        objOldWeaponAccessory.Gear.Remove(objGear);
-                    else
-                    {
-                        objOldVehicle.Gear.Remove(objGear);
-                        objOldVehicle.RefreshMatrixAttributeArray();
-                    }
-
-                    // Add the Gear to the Vehicle and set its Location.
-                    objGear.Location = strDestinationLocation;
-                    objGear.Parent = null;
-                    objDestinationVehicle.Gear.Add(objGear);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Move an Improvement TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveImprovementNode(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode nodOldNode)
-        {
-            string strSelectedId = nodOldNode?.Tag.ToString();
-            int intOldIndex = -1;
-            for (int i = 0; i < objCharacter.Improvements.Count; ++i)
-            {
-                if (objCharacter.Improvements[i].SourceName == strSelectedId)
-                {
-                    intOldIndex = i;
-                    break;
-                }
-            }
-
-            if (intOldIndex != -1)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-
-                Improvement objImprovement = objCharacter.Improvements[intOldIndex];
-                // Change the Group on the Custom Improvement.
-                objImprovement.CustomGroup = objNewParent.Text;
-                objCharacter.Improvements[intOldIndex] = objImprovement;
-            }
-        }
-
-        /// <summary>
-        /// Move an Improvement Group TreeNode after Drag and Drop.
-        /// </summary>
-        /// <param name="intNewIndex">Node's new index.</param>
-        /// <param name="objDestination">Destination Node.</param>
-        public static void MoveImprovementRoot(Character objCharacter, int intNewIndex, TreeNode objDestination, TreeNode nodOldNode)
-        {
-            if (objDestination != null)
-            {
-                TreeNode objNewParent = objDestination;
-                while (objNewParent.Level > 0)
-                    objNewParent = objNewParent.Parent;
-                intNewIndex = objNewParent.Index;
-            }
-
-            if (intNewIndex == 0)
-                return;
-            
-            string strLocation = nodOldNode.Tag.ToString();
-            objCharacter.ImprovementGroups.Move(objCharacter.ImprovementGroups.IndexOf(strLocation), intNewIndex);
-        }
-        #endregion
-
         /// <summary>
         /// Book code (using the translated version if applicable).
         /// </summary>
@@ -1210,7 +833,11 @@ namespace Chummer
             // as such the code would run at most half of the comparisons with the variants
             // but to be sure we find everything still strip unnecessary stuff after the ':' and any number in it.
             // PS: does any qualities have numbers on them? Or is that a chummer thing?
-            string strTextToSearch = strText.Split(':')[0].Trim().TrimEnd(" I", " II", " III", " IV");
+            string strTextToSearch = strText;
+            int intPos = strTextToSearch.IndexOf(':');
+            if (intPos != -1)
+                strTextToSearch = strTextToSearch.Substring(0, intPos);
+            strTextToSearch = strTextToSearch.Trim().TrimEndOnce(" I", " II", " III", " IV");
 
             PdfReader reader = objBookInfo.CachedPdfReader;
             List<string> lstStringFromPDF = new List<string>();
@@ -1233,7 +860,7 @@ namespace Chummer
                 string strPageText = PdfTextExtractor.GetTextFromPage(reader, intPage, new SimpleTextExtractionStrategy());
 
                 // don't trust it to be correct, trim all whitespace and remove empty strings before we even start
-                lstStringFromPDF.AddRange(strPageText.Split('\n').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)));
+                lstStringFromPDF.AddRange(strPageText.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)));
 
                 for (int i = intProcessedStrings; i < lstStringFromPDF.Count; i++)
                 {
@@ -1246,16 +873,15 @@ namespace Chummer
                     // we still haven't found anything
                     if (intTitleIndex == -1)
                     {
-                        int intTextToSearchLenght = strTextToSearch.Length;
-                        int intLineBiggerThanText = lstStringFromPDF[i].Length - intTextToSearchLenght;
+                        int intTextToSearchLength = strTextToSearch.Length;
                         int intTitleExtraLines = 0;
-                        if (strCurrentLine.Length < intTextToSearchLenght)
+                        if (strCurrentLine.Length < intTextToSearchLength)
                         {
                             // if the line is smaller first check if it contains the start of the text, before parsing the rest
                             if (strTextToSearch.StartsWith(strCurrentLine, StringComparison.OrdinalIgnoreCase))
                             {
                                 // now just add more lines to it until it is enough
-                                while (strCurrentLine.Length < intTextToSearchLenght && (i + intTitleExtraLines + 1) < lstStringFromPDF.Count)
+                                while (strCurrentLine.Length < intTextToSearchLength && (i + intTitleExtraLines + 1) < lstStringFromPDF.Count)
                                 {
                                     intTitleExtraLines++;
                                     // add the content plus a space
@@ -1269,16 +895,16 @@ namespace Chummer
                             }
                         }
                         // now either we have enough text to search or the page doesn't have anymore stuff and must give up
-                        if (strCurrentLine.Length < intTextToSearchLenght)
+                        if (strCurrentLine.Length < intTextToSearchLength)
                             break;
 
                         if (strCurrentLine.StartsWith(strTextToSearch, StringComparison.OrdinalIgnoreCase))
                         {
                             // WE FOUND SOMETHING! lets check what kind block we have
                             // if it is bigger it must have a ':' after the name otherwise it is probably the wrong stuff
-                            if (strCurrentLine.Length > intTextToSearchLenght)
+                            if (strCurrentLine.Length > intTextToSearchLength)
                             {
-                                if (strCurrentLine[intTextToSearchLenght] == ':')
+                                if (strCurrentLine[intTextToSearchLength] == ':')
                                 {
                                     intTitleIndex = i;
                                     blnTitleWithColon = true;
@@ -1313,7 +939,7 @@ namespace Chummer
                         {
                             // if it is header or footer information just remove it
                             // do we also include lines with just numbers as probably page numbers??
-                            if (strCurrentLine.All(c => char.IsDigit(c)) || strCurrentLine.Contains(">>") || strCurrentLine.Contains("<<"))
+                            if (strCurrentLine.All(char.IsDigit) || strCurrentLine.Contains(">>") || strCurrentLine.Contains("<<"))
                             {
                                 lstStringFromPDF.RemoveAt(i);
                                 // rewind and go again
@@ -1355,32 +981,32 @@ namespace Chummer
                 if (blnTitleWithColon)
                     return string.Join(" ", strArray, intTitleIndex, intBlockEndIndex - intTitleIndex);
                 // add the title
-                string strResultContent = strArray[intTitleIndex] + '\n';
+                string strResultContent = strArray[intTitleIndex] + Environment.NewLine;
                 // if we have extra info add it keeping the line breaks
                 if (intExtraAllCapsInfo > 0)
-                    strResultContent += string.Join("\n", strArray, intTitleIndex + 1, intExtraAllCapsInfo) + '\n';
+                    strResultContent += string.Join(Environment.NewLine, strArray, intTitleIndex + 1, intExtraAllCapsInfo) + Environment.NewLine;
                 int intContentStartIndex = intTitleIndex + intExtraAllCapsInfo + 1;
                 // this is the best we can do for now, it will still mangle spell blocks a bit
                 for (int i = intContentStartIndex; i < intBlockEndIndex; i++)
                 {
                     string strContentString = strArray[i];
-                    switch (strContentString.Last())
+                    if (strContentString.Length > 0)
                     {
-                        case '-':
-                            strResultContent += strContentString.Substring(0, strContentString.Length - 1);
-                            break;
-                        case '.':
-                        case '!':
-                        case '?':
-                            strResultContent += strContentString + '\n';
-                            break;
-                        default:
+                        char chrLastChar = strContentString[strContentString.Length - 1];
+                        if (char.IsPunctuation(chrLastChar))
+                        {
+                            if (chrLastChar == '-')
+                                strResultContent += strContentString.Substring(0, strContentString.Length - 1);
+                            else
+                                strResultContent += strContentString + Environment.NewLine;
+                        }
+                        else
+                        {
                             strResultContent += strContentString + ' ';
-                            break;
+                        }
                     }
                 }
-                // In tooltips linebreaks should follow windows style \r\n
-                return strResultContent.Replace("\n", Environment.NewLine);
+                return strResultContent;
             }
             return string.Empty;
         }

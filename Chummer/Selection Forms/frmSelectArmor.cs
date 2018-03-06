@@ -123,11 +123,13 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
 
         private void lstArmor_DoubleClick(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
 
@@ -201,7 +203,7 @@ namespace Chummer
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             _blnAddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
 
         private void txtSearch_TextChanged(object sender, EventArgs e)
@@ -333,7 +335,7 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ')';
+                    strFilter += " and (" + objCategoryFilter.ToString().TrimEndOnce(" or ") + ')';
                 }
             }
 
@@ -383,18 +385,16 @@ namespace Chummer
                             StringBuilder strAccessories = new StringBuilder();
                             foreach (ArmorMod objMod in objArmor.ArmorMods)
                             {
-                                strAccessories.Append(objMod.DisplayName(GlobalOptions.Language));
-                                strAccessories.Append('\n');
+                                strAccessories.AppendLine(objMod.DisplayName(GlobalOptions.Language));
                             }
                             foreach (Gear objGear in objArmor.Gear)
                             {
-                                strAccessories.Append(objGear.DisplayName(GlobalOptions.Language));
-                                strAccessories.Append('\n');
+                                strAccessories.AppendLine(objGear.DisplayName(GlobalOptions.Language));
                             }
                             if (strAccessories.Length > 0)
-                                strAccessories.Length -= 1;
+                                strAccessories.Length -= Environment.NewLine.Length;
                             SourceString strSource = new SourceString(objArmor.Source, objArmor.Page(GlobalOptions.Language));
-                            NuyenString strCost = new NuyenString(objArmor.DisplayCost(out decimal decDummy, false));
+                            NuyenString strCost = new NuyenString(objArmor.DisplayCost(out decimal _, false));
 
                             tabArmor.Rows.Add(strArmorGuid, strArmorName, intArmor, decCapacity, objAvail, strAccessories.ToString(), strSource, strCost);
                         }

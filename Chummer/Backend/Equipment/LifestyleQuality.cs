@@ -18,15 +18,16 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.XPath;
 
 namespace Chummer.Backend.Equipment
 {
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class LifestyleQuality : IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -74,8 +75,8 @@ namespace Chummer.Backend.Equipment
         /// <summary>
         /// Convert a string to a LifestyleQualitySource.
         /// </summary>
-        /// <param name="strValue">String value to convert.</param>
 #if DEBUG
+        /// <param name="strValue">String value to convert.</param>
         public static QualitySource ConvertToLifestyleQualitySource(string strValue)
         {
             switch (strValue)
@@ -135,7 +136,7 @@ namespace Chummer.Backend.Equipment
             int intParenthesesIndex = _strExtra.IndexOf('(');
             if (intParenthesesIndex != -1)
             {
-                _strExtra = intParenthesesIndex + 1 < strExtra.Length ? strExtra.Substring(intParenthesesIndex + 1).TrimEnd(')') : string.Empty;
+                _strExtra = intParenthesesIndex + 1 < strExtra.Length ? strExtra.Substring(intParenthesesIndex + 1).TrimEndOnce(')') : string.Empty;
             }
 
             // If the item grants a bonus, pass the information to the Improvement Manager.
@@ -503,14 +504,9 @@ namespace Chummer.Backend.Equipment
                     return 0;
                 if (!decimal.TryParse(_strCost, NumberStyles.Any, GlobalOptions.InvariantCultureInfo, out decimal decReturn))
                 {
-                    try
-                    {
-                        decReturn = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(_strCost));
-                    }
-                    catch (XPathException)
-                    {
-                        decReturn = 0.0m;
-                    }
+                    object objProcess = CommonFunctions.EvaluateInvariantXPath(_strCost, out bool blnIsSuccess);
+                    if (blnIsSuccess)
+                        return Convert.ToDecimal(objProcess);
                 }
                 return decReturn;
             }
@@ -664,6 +660,9 @@ namespace Chummer.Backend.Equipment
         #region Methods
         public TreeNode CreateTreeNode()
         {
+            if (_objLifestyleQualitySource == QualitySource.BuiltIn && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             TreeNode objNode = new TreeNode
             {
                 Name = InternalId,

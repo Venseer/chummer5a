@@ -17,7 +17,9 @@
  *  https://github.com/chummer5a/chummer5a
  */
 using System;
+#if DEBUG
 using System.Diagnostics;
+#endif
  using System.Globalization;
 using System.Xml;
 using System.Runtime.CompilerServices;
@@ -105,7 +107,7 @@ namespace Chummer
                     = new StackTrace().GetFrame(1).GetMethod();
                 string errorMsg = string.Format("Tried to read missing field \"{0}\" in {1}.{2}", field, mth.ReflectedType?.Name, mth);
 #else
-                string errorMsg = string.Format("Tried to read missing field \"{0}\"", field);
+                string errorMsg = $"Tried to read missing field \"{field}\"";
 #endif
                 Log.Error(errorMsg);
                 //Finaly, we have to assign an out parameter something, so default
@@ -494,6 +496,19 @@ namespace Chummer
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Determine whether or not an XmlNode with the specified name exists within an XmlNode.
+        /// </summary>
+        /// <param name="xmlNode">XmlNode to examine.</param>
+        /// <param name="strName">Name of the XmlNode to look for.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool NodeExists(this XmlNode xmlNode, string strName)
+        {
+            if (string.IsNullOrEmpty(strName))
+                return false;
+            return xmlNode?.SelectSingleNode(strName) != null;
         }
     }
 }

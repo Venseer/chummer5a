@@ -114,8 +114,7 @@
       </adeptwayrequires>
       <bonus>
         <weaponcategorydv>
-          <selectskill skillcategory="Combat Active">
-          </selectskill>
+          <selectskill limittoskill="Astral Combat,Blades,Clubs,Exotic Melee Weapon,Unarmed Combat" />
           <bonus>1</bonus>
         </weaponcategorydv>
       </bonus>
@@ -425,14 +424,14 @@
       <levels>True</levels>
       <limit>1</limit>
       <bonus>
-        <toxincontactresist>1</toxincontactresist>
-        <toxiningestionresist>1</toxiningestionresist>
-        <toxininhalationresist>1</toxininhalationresist>
-        <toxininjectionresist>1</toxininjectionresist>
-        <pathogencontactresist>1</pathogencontactresist>
-        <pathogeningestionresist>1</pathogeningestionresist>
-        <pathogeninhalationresist>1</pathogeninhalationresist>
-        <pathogeninjectionresist>1</pathogeninjectionresist>
+        <toxincontactresist>Rating</toxincontactresist>
+        <toxiningestionresist>Rating</toxiningestionresist>
+        <toxininhalationresist>Rating</toxininhalationresist>
+        <toxininjectionresist>Rating</toxininjectionresist>
+        <pathogencontactresist>Rating</pathogencontactresist>
+        <pathogeningestionresist>Rating</pathogeningestionresist>
+        <pathogeninhalationresist>Rating</pathogeninhalationresist>
+        <pathogeninjectionresist>Rating</pathogeninjectionresist>
       </bonus>
       <source>SR5</source>
       <page>311</page>
@@ -884,10 +883,11 @@
       <page>171</page>
       <action>Simple</action>
       <bonus>
+        <!-- TODO: Add improvement that contributes dice to a specific specialization
         <specificskill>
           <name>Climbing</name>
           <bonus>Rating</bonus>
-        </specificskill>
+        </specificskill> -->
       </bonus>
     </power>
     <power>

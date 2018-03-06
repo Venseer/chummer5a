@@ -17,6 +17,7 @@
  *  https://github.com/chummer5a/chummer5a
  */
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
@@ -27,6 +28,7 @@ namespace Chummer
     /// <summary>
     /// A Metamagic or Echo.
     /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class Metamagic : IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -302,6 +304,9 @@ namespace Chummer
         #region Methods
         public TreeNode CreateTreeNode(ContextMenuStrip cmsMetamagic, bool blnAddCategory = false)
         {
+            if (Grade == -1 && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             string strText = DisplayName(GlobalOptions.Language);
             if (blnAddCategory)
                 strText = LanguageManager.GetString(SourceType == Improvement.ImprovementSource.Metamagic ? "Label_Metamagic" : "Label_Echo", GlobalOptions.Language) + ' ' + strText;

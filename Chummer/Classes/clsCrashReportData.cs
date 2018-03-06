@@ -68,7 +68,7 @@ namespace Chummer
 
 
             report.Send();
-            MessageBox.Show("Crash report sent.\nPlease refer to the crash id " + report.Id);
+            MessageBox.Show("Crash report sent." + Environment.NewLine + "Please refer to the crash id " + report.Id);
         }
 
         private readonly List<KeyValuePair<string, Stream>> values; 
@@ -76,7 +76,7 @@ namespace Chummer
         /// <summary>
         /// Unique ID for the crash report, makes a user able to refer to a specific report
         /// </summary>
-        public Guid Id { get; private set; }
+        public Guid Id { get; }
 
         private string _subject;
         public string Subject
@@ -137,7 +137,6 @@ namespace Chummer
 
                         if (cv != null)
                         {
-                            string[] keys = cv.GetValueNames();
                             report.AppendFormat("Machine ID Primary= {0}", cv.GetValue("ProductId"));
                             report.AppendLine();
                             cv.Close();

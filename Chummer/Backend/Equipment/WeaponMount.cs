@@ -18,21 +18,22 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.XPath;
 using Chummer.Backend.Attributes;
 
 namespace Chummer.Backend.Equipment
 {
-	/// <summary>
-	/// Vehicle Modification.
-	/// </summary>
-	public class WeaponMount : IHasInternalId, IHasName, IHasXmlNode
+    /// <summary>
+    /// Vehicle Modification.
+    /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
+    public class WeaponMount : IHasInternalId, IHasName, IHasXmlNode
     {
 		private Guid _guiID;
 		private decimal _decMarkup;
@@ -52,6 +53,7 @@ namespace Chummer.Backend.Equipment
 		private int _intSlots;
 		private string _strCost = string.Empty;
         private string _strSourceId = string.Empty;
+        private string _strLocation = string.Empty;
 
         private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
@@ -92,7 +94,7 @@ namespace Chummer.Backend.Equipment
                 {
                     decimal decMin;
                     decimal decMax = decimal.MaxValue;
-                    string strCost = _strCost.TrimStart("Variable(", true).TrimEnd(')');
+                    string strCost = _strCost.TrimStartOnce("Variable(", true).TrimEndOnce(')');
                     if (strCost.Contains('-'))
                     {
                         string[] strValues = strCost.Split('-');
@@ -203,8 +205,9 @@ namespace Chummer.Backend.Equipment
 			objNode.TryGetStringFieldQuickly("avail", ref _strAvail);
 			objNode.TryGetStringFieldQuickly("cost", ref _strCost);
 			objNode.TryGetDecFieldQuickly("markup", ref _decMarkup);
-			objNode.TryGetStringFieldQuickly("source", ref _strSource);
-			objNode.TryGetBoolFieldQuickly("included", ref _blnIncludeInVehicle);
+		    objNode.TryGetStringFieldQuickly("source", ref _strSource);
+		    objNode.TryGetStringFieldQuickly("location", ref _strLocation);
+            objNode.TryGetBoolFieldQuickly("included", ref _blnIncludeInVehicle);
 			objNode.TryGetBoolFieldQuickly("installed", ref _blnInstalled);
 
             XmlNode xmlChildrenNode = objNode["weapons"];
@@ -273,8 +276,9 @@ namespace Chummer.Backend.Equipment
 			objWriter.WriteElementString("cost", TotalCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
 			objWriter.WriteElementString("owncost", OwnCost.ToString(_objCharacter.Options.NuyenFormat, objCulture));
 			objWriter.WriteElementString("source", CommonFunctions.LanguageBookShort(Source, strLanguageToPrint));
-			objWriter.WriteElementString("page", Page(strLanguageToPrint));
-			objWriter.WriteElementString("included", IncludedInVehicle.ToString());
+		    objWriter.WriteElementString("page", Page(strLanguageToPrint));
+		    objWriter.WriteElementString("location", _strLocation);
+            objWriter.WriteElementString("included", IncludedInVehicle.ToString());
             objWriter.WriteStartElement("weapons");
 		    foreach (Weapon objWeapon in Weapons)
 		    {
@@ -325,6 +329,21 @@ namespace Chummer.Backend.Equipment
                     objWeaponMountOption.Create(xmlDataNode);
                     objMount.WeaponMountOptions.Add(objWeaponMountOption);
                 }
+                _strLocation = xmlNode["location"]?.InnerText ?? string.Empty;
+                xmlDataNode = xmlNode["mods"];
+                if (xmlDataNode == null) return;
+                using (XmlNodeList xmlModList = xmlDataNode.SelectNodes("mod"))
+                    if (xmlModList != null)
+                        foreach (XmlNode xmlModNode in xmlModList)
+                        {
+                            VehicleMod objMod = new VehicleMod(_objCharacter)
+                            {
+                                Parent = Parent,
+                                WeaponMountParent = this
+                            };
+                            objMod.Load(xmlModNode);
+                            _lstMods.Add(objMod);
+                        }
             }
         }
         #endregion
@@ -352,6 +371,15 @@ namespace Chummer.Backend.Equipment
         {
             get => _strName;
             set => _strName = value;
+        }
+
+        /// <summary>
+        /// Where the mount is physically located on the vehicle.
+        /// </summary>
+        public string Location
+        {
+            get => _strLocation;
+            set => _strLocation = value;
         }
 
         /// <summary>
@@ -552,13 +580,10 @@ namespace Chummer.Backend.Equipment
                 objAvail.CheapReplace(strAvail, "Speed", () => Parent?.Speed.ToString() ?? "0");
                 objAvail.CheapReplace(strAvail, "Acceleration", () => Parent?.Accel.ToString() ?? "0");
                 objAvail.CheapReplace(strAvail, "Handling", () => Parent?.Handling.ToString() ?? "0");
-                try
-                {
-                    intAvail = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(objAvail.ToString()));
-                }
-                catch (XPathException)
-                {
-                }
+
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objAvail.ToString(), out bool blnIsSuccess);
+                if (blnIsSuccess)
+                    intAvail += Convert.ToInt32(objProcess);
             }
 
             // Run through the Accessories and add in their availability.
@@ -631,7 +656,9 @@ namespace Chummer.Backend.Equipment
                 objCost.CheapReplace(strCost, "Speed", () => Parent?.Speed.ToString() ?? "0");
                 objCost.CheapReplace(strCost, "Acceleration", () => Parent?.Accel.ToString() ?? "0");
                 objCost.CheapReplace(strCost, "Handling", () => Parent?.Handling.ToString() ?? "0");
-                decimal decReturn = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(objCost.ToString()), GlobalOptions.InvariantCultureInfo);
+
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objCost.ToString(), out bool blnIsSuccess);
+                decimal decReturn = blnIsSuccess ? Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo) : 0;
 
                 if (DiscountCost)
                     decReturn *= 0.9m;
@@ -682,6 +709,10 @@ namespace Chummer.Backend.Equipment
                 strReturn.Length -= 2;
                 if (blnCloseParantheses)
                     strReturn.Append(')');
+                if (!string.IsNullOrWhiteSpace(_strLocation))
+                {
+                    strReturn.Append($" - {Location}");
+                }
             }
 
             return strReturn.ToString();
@@ -727,8 +758,14 @@ namespace Chummer.Backend.Equipment
         /// <param name="cmsVehicleWeaponAccessory">ContextMenuStrip for Vehicle Weapon Accessories</param>
         /// <param name="cmsVehicleWeaponAccessoryGear">ContextMenuStrip for Vehicle Weapon Gear</param>
         /// <param name="cmsVehicleWeaponMount">ContextMenuStrip for Vehicle Weapon Mounts</param>
+        /// <param name="cmsCyberware">ContextMenuStrip for Cyberware.</param>
+        /// <param name="cmsCyberwareGear">ContextMenuStrip for Gear in Cyberware.</param>
+        /// <param name="cmsVehicleMod">ContextMenuStrip for Vehicle Mods.</param>
         public TreeNode CreateTreeNode(ContextMenuStrip cmsVehicleWeaponMount, ContextMenuStrip cmsVehicleWeapon, ContextMenuStrip cmsVehicleWeaponAccessory, ContextMenuStrip cmsVehicleWeaponAccessoryGear, ContextMenuStrip cmsCyberware, ContextMenuStrip cmsCyberwareGear, ContextMenuStrip cmsVehicleMod)
         {
+            if (IncludedInVehicle && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             TreeNode objNode = new TreeNode
             {
                 Name = InternalId,
@@ -744,18 +781,26 @@ namespace Chummer.Backend.Equipment
             {
                 objNode.ForeColor = SystemColors.GrayText;
             }
+
             objNode.ToolTipText = Notes.WordWrap(100);
+
+            TreeNodeCollection lstChildNodes = objNode.Nodes;
             // VehicleMods.
             foreach (VehicleMod objMod in Mods)
             {
-                objNode.Nodes.Add(objMod.CreateTreeNode(cmsVehicleMod, cmsCyberware, cmsCyberwareGear, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear));
-                objNode.Expand();
+                TreeNode objLoopNode = objMod.CreateTreeNode(cmsVehicleMod, cmsCyberware, cmsCyberwareGear, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear);
+                if (objLoopNode != null)
+                    lstChildNodes.Add(objLoopNode);
             }
             foreach (Weapon objWeapon in Weapons)
             {
-                objNode.Nodes.Add(objWeapon.CreateTreeNode(cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear));
-                objNode.Expand();
+                TreeNode objLoopNode = objWeapon.CreateTreeNode(cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear);
+                if (objLoopNode != null)
+                    lstChildNodes.Add(objLoopNode);
             }
+
+            if (lstChildNodes.Count > 0)
+                objNode.Expand();
 
             return objNode;
         }
@@ -804,8 +849,8 @@ namespace Chummer.Backend.Equipment
             {
                 int intMin;
                 int intMax = 0;
-                string strCost = _strCost.Replace("Variable(", string.Empty).TrimEnd(')');
-                if (strCost.Contains("-"))
+                string strCost = _strCost.TrimStartOnce("Variable(", true).TrimEndOnce(')');
+                if (strCost.Contains('-'))
                 {
                     string[] strValues = strCost.Split('-');
                     intMin = Convert.ToInt32(strValues[0]);
@@ -899,7 +944,8 @@ namespace Chummer.Backend.Equipment
                     objCost.CheapReplace(strCost, objLoopAttribute.Abbrev + "Base", () => objLoopAttribute.TotalBase.ToString());
                 }
 
-                return Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(objCost.ToString()), GlobalOptions.InvariantCultureInfo);
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objCost.ToString(), out bool blnIsSuccess);
+                return blnIsSuccess ? Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo) : 0;
             }
         }
 
@@ -977,13 +1023,9 @@ namespace Chummer.Backend.Equipment
                     objAvail.CheapReplace(strAvail, objLoopAttribute.Abbrev + "Base", () => objLoopAttribute.TotalBase.ToString());
                 }
 
-                try
-                {
-                    intAvail = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(objAvail.ToString()));
-                }
-                catch (XPathException)
-                {
-                }
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objAvail.ToString(), out bool blnIsSuccess);
+                if (blnIsSuccess)
+                    intAvail += Convert.ToInt32(objProcess);
             }
 
             return new AvailabilityValue(intAvail, chrLastAvailChar, blnModifyParentAvail);

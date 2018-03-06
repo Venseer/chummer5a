@@ -18,6 +18,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
@@ -25,7 +26,7 @@ using System.Xml;
 
 namespace Chummer
 {
-    public class CharacterOptions
+    public class CharacterOptions : INotifyPropertyChanged
     {
         private readonly Character _character;
         private string _strFileName = "default.xml";
@@ -65,7 +66,7 @@ namespace Chummer
         private bool _blnDroneArmorMultiplierEnabled;
         private bool _blnFreeKnowledgeMultiplierEnabled;
         private bool _blnFreeSpiritPowerPointsMAG;
-        private bool _blnIgnoreArmorEncumbrance = true;
+        private bool _blnNoArmorEncumbrance;
         private bool _blnIgnoreArt;
         private bool _blnUnarmedImprovementsApplyToWeapons;
         private bool _blnLicenseRestrictedItems;
@@ -181,6 +182,8 @@ namespace Chummer
         // Sourcebook list.
         private readonly HashSet<string> _lstBooks = new HashSet<string>();
 
+        public event PropertyChangedEventHandler PropertyChanged;
+
         #region Initialization, Save, and Load Methods
         public CharacterOptions(Character character)
         {
@@ -294,8 +297,8 @@ namespace Chummer
             objWriter.WriteElementString("usetotalvalueforcontacts", _blnUseTotalValueForFreeContacts.ToString());
             // <nosinglearmorencumbrance />
             objWriter.WriteElementString("nosinglearmorencumbrance", _blnNoSingleArmorEncumbrance.ToString());
-            // <ignorearmorencumbrance />
-            objWriter.WriteElementString("ignorearmorencumbrance", _blnIgnoreArmorEncumbrance.ToString());
+            // <NoArmorEncumbrance />
+            objWriter.WriteElementString("noarmorencumbrance", _blnNoArmorEncumbrance.ToString());
             // <esslossreducesmaximumonly />
             objWriter.WriteElementString("esslossreducesmaximumonly", _blnESSLossReducesMaximumOnly.ToString());
             // <allowskillregrouping />
@@ -648,7 +651,7 @@ namespace Chummer
             // No Single Armor Encumbrance
             objXmlNode.TryGetBoolFieldQuickly("nosinglearmorencumbrance", ref _blnNoSingleArmorEncumbrance);
             // Ignore Armor Encumbrance
-            objXmlNode.TryGetBoolFieldQuickly("ignorearmorencumbrance", ref _blnIgnoreArmorEncumbrance);
+            objXmlNode.TryGetBoolFieldQuickly("noarmorencumbrance", ref _blnNoArmorEncumbrance);
             // Essence Loss Reduces Maximum Only.
             objXmlNode.TryGetBoolFieldQuickly("esslossreducesmaximumonly", ref _blnESSLossReducesMaximumOnly);
             // Allow Skill Regrouping.
@@ -1135,7 +1138,14 @@ namespace Chummer
         public bool MysAdeptAllowPPCareer
         {
             get => _blnMysAdeptAllowPPCareer;
-            set => _blnMysAdeptAllowPPCareer = value;
+            set
+            {
+                if (_blnMysAdeptAllowPPCareer != value)
+                {
+                    _blnMysAdeptAllowPPCareer = value;
+                    _character?.RefreshMysAdeptAllowPPCareer();
+                }
+            }
         }
 
         /// <summary>
@@ -1144,7 +1154,14 @@ namespace Chummer
         public bool MysAdeptSecondMAGAttribute
         {
             get => _blnMysAdeptSecondMAGAttribute;
-            set => _blnMysAdeptSecondMAGAttribute = value;
+            set
+            {
+                if (_blnMysAdeptSecondMAGAttribute != value)
+                {
+                    _blnMysAdeptSecondMAGAttribute = value;
+                    _character?.RefreshUseMysticAdeptPPs();
+                }
+            }
         }
 
         /// <summary>
@@ -1239,10 +1256,10 @@ namespace Chummer
         /// <summary>
         /// House Rule: Ignore Armor Encumbrance entirely.
         /// </summary>
-        public bool IgnoreArmorEncumbrance
+        public bool NoArmorEncumbrance
         {
-            get => _blnIgnoreArmorEncumbrance;
-            set => _blnIgnoreArmorEncumbrance = value;
+            get => _blnNoArmorEncumbrance;
+            set => _blnNoArmorEncumbrance = value;
         }
 
         /// <summary>
@@ -1360,7 +1377,14 @@ namespace Chummer
         public bool ArmorDegradation
         {
             get => _blnArmorDegradation;
-            set => _blnArmorDegradation = value;
+            set
+            {
+                if (_blnArmorDegradation != value)
+                {
+                    _blnArmorDegradation = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ArmorDegradation)));
+                }
+            }
         }
         
         /// <summary>

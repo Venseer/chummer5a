@@ -107,8 +107,10 @@ namespace Chummer
                     return objImprovementAdder.skilllevel;
                 case "PUSHTEXT":
                     return objImprovementAdder.pushtext;
-                case "KNOWSOFT":
-                    return objImprovementAdder.knowsoft;
+                case "ACTIVESOFT":
+                    return objImprovementAdder.activesoft;
+                case "SKILLSOFT":
+                    return objImprovementAdder.skillsoft;
                 case "KNOWLEDGESKILLLEVEL":
                     return objImprovementAdder.knowledgeskilllevel;
                 case "KNOWLEDGESKILLPOINTS":
@@ -143,6 +145,8 @@ namespace Chummer
                     return objImprovementAdder.skillgroup;
                 case "SKILLATTRIBUTE":
                     return objImprovementAdder.skillattribute;
+                case "SKILLLINKEDATTRIBUTE":
+                    return objImprovementAdder.skilllinkedattribute;
                 case "SKILLARTICULATION":
                     return objImprovementAdder.skillarticulation;
                 case "ARMOR":
@@ -375,6 +379,8 @@ namespace Chummer
                     return objImprovementAdder.drainvalue;
                 case "FADINGRESIST":
                     return objImprovementAdder.fadingresist;
+                case "FADINGVALUE":
+                    return objImprovementAdder.fadingvalue;
                 case "NOTORIETY":
                     return objImprovementAdder.notoriety;
                 case "STREETCRED":
@@ -543,6 +549,8 @@ namespace Chummer
                     return objImprovementAdder.addware;
                 case "WEAPONACCURACY":
                     return objImprovementAdder.weaponaccuracy;
+                case "METAGENETICLIMIT":
+                    return objImprovementAdder.metageneticlimit;
                 // No method matches, return a null pointer
                 default:
                     return null;

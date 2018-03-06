@@ -18,6 +18,7 @@
  */
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -33,6 +34,7 @@ namespace Chummer
     /// <summary>
     /// An Adept Power.
     /// </summary>
+    [DebuggerDisplay("{DisplayNameMethod(GlobalOptions.DefaultLanguage)}")]
     public class Power : INotifyPropertyChanged, IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -185,8 +187,9 @@ namespace Chummer
             else
             {
                 string strPowerName = Name;
-                if (strPowerName.Contains('('))
-                    strPowerName = strPowerName.Substring(0, strPowerName.IndexOf('(') - 1);
+                int intPos = strPowerName.IndexOf('(');
+                if (intPos != -1)
+                    strPowerName = strPowerName.Substring(0, intPos - 1);
                 XmlDocument objXmlDocument = XmlManager.Load("powers.xml");
                 XmlNode xmlPower = objXmlDocument.SelectSingleNode("/chummer/powers/power[starts-with(./name,\"" + strPowerName + "\")]");
                 if (xmlPower.TryGetField("id", Guid.TryParse, out _sourceID))
@@ -201,8 +204,9 @@ namespace Chummer
             if (string.IsNullOrEmpty(_strAdeptWayDiscount))
             {
                 string strPowerName = Name;
-                if (strPowerName.Contains('('))
-                    strPowerName = strPowerName.Substring(0, strPowerName.IndexOf('(') - 1);
+                int intPos = strPowerName.IndexOf('(');
+                if (intPos != -1)
+                    strPowerName = strPowerName.Substring(0, intPos - 1);
                 _strAdeptWayDiscount = XmlManager.Load("powers.xml").SelectSingleNode("/chummer/powers/power[starts-with(./name,\"" + strPowerName + "\")]/adeptway")?.InnerText ?? string.Empty;
             }
             Rating = Convert.ToInt32(objNode["rating"]?.InnerText);
@@ -228,7 +232,7 @@ namespace Chummer
                 XmlNode objXmlPower = XmlManager.Load("powers.xml").SelectSingleNode("/chummer/powers/power[starts-with(./name,\"Improved Reflexes\")]");
                 if (objXmlPower != null)
                 {
-                    if (int.TryParse(Name.TrimStart("Improved Reflexes", true).Trim(), out int intTemp))
+                    if (int.TryParse(Name.TrimStartOnce("Improved Reflexes", true).Trim(), out int intTemp))
                     {
                         Create(objXmlPower, intTemp, null, false);
                         objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
@@ -559,9 +563,11 @@ namespace Chummer
             get => _blnDiscountedAdeptWay;
             set
             {
-                if (value == _blnDiscountedAdeptWay) return;
-                _blnDiscountedAdeptWay = value;
-                OnPropertyChanged();
+                if (value != _blnDiscountedAdeptWay)
+                {
+                    _blnDiscountedAdeptWay = value;
+                    OnPropertyChanged(nameof(DiscountedAdeptWay));
+                }
             }
         }
 
@@ -688,12 +694,15 @@ namespace Chummer
                 {
                     blnReturn = _nodAdeptWayRequirements.RequirementsMet(CharacterObject);
                 }
-                if (!blnReturn && DiscountedAdeptWay)
-                {
-                    DiscountedAdeptWay = false;
-                }
+
                 return blnReturn;
             }
+        }
+
+        public void RefreshDiscountedAdeptWay(bool blnAdeptWayDiscountEnabled)
+        {
+            if (DiscountedAdeptWay && !blnAdeptWayDiscountEnabled)
+                DiscountedAdeptWay = false;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

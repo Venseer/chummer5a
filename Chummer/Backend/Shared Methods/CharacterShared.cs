@@ -175,38 +175,6 @@ namespace Chummer
         }
 
         /// <summary>
-        /// Update the label and tooltip for the character's Condition Monitors.
-        /// </summary>
-        /// <param name="lblPhysical"></param>
-        /// <param name="lblStun"></param>
-        /// <param name="tipTooltip"></param>
-        protected void UpdateConditionMonitor(Label lblPhysical, Label lblStun, ToolTip tipTooltip)
-        {
-            // Condition Monitor.
-            int intCMPhysical = _objCharacter.PhysicalCM;
-            int intCMStun = _objCharacter.StunCM;
-
-            // Update the Condition Monitor labels.
-            lblPhysical.Text = intCMPhysical.ToString();
-            lblStun.Text = intCMStun.ToString();
-            if (tipTooltip != null)
-            {
-                int intBOD = _objCharacter.BOD.TotalValue;
-                int intWIL = _objCharacter.WIL.TotalValue;
-                string strCM = $"8 + ({_objCharacter.BOD.DisplayAbbrev}/2)({(intBOD + 1) / 2})";
-                if (ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.PhysicalCM) != 0)
-                    strCM += " + " + LanguageManager.GetString("Tip_Modifiers", GlobalOptions.Language) + " (" +
-                             ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.PhysicalCM).ToString() + ')';
-                tipTooltip.SetToolTip(lblPhysical, strCM);
-                strCM = $"8 + ({_objCharacter.WIL.DisplayAbbrev}/2)({(intWIL + 1) / 2})";
-                if (ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.StunCM) != 0)
-                    strCM += " + " + LanguageManager.GetString("Tip_Modifiers", GlobalOptions.Language) + " (" +
-                             ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.StunCM).ToString() + ')';
-                tipTooltip.SetToolTip(lblStun, strCM);
-            }
-        }
-
-        /// <summary>
         /// Update the label and tooltip for the character's Armor Rating.
         /// </summary>
         /// <param name="lblArmor"></param>
@@ -229,22 +197,6 @@ namespace Chummer
                 {
                     lblCMArmor.Text = intTotalArmorRating.ToString();
                     tipTooltip.SetToolTip(lblCMArmor, strArmorToolTip);
-                }
-            }
-
-            // Remove any Improvements from Armor Encumbrance.
-            ImprovementManager.RemoveImprovements(_objCharacter, Improvement.ImprovementSource.ArmorEncumbrance);
-            if (!_objCharacter.Options.IgnoreArmorEncumbrance)
-            {
-                // Create the Armor Encumbrance Improvements.
-                int intEncumbrance = _objCharacter.ArmorEncumbrance;
-                if (intEncumbrance < 0)
-                {
-                    ImprovementManager.CreateImprovement(_objCharacter, "AGI", Improvement.ImprovementSource.ArmorEncumbrance, string.Empty,
-                        Improvement.ImprovementType.Attribute, "precedence-1", 0, 1, 0, 0, intEncumbrance);
-                    ImprovementManager.CreateImprovement(_objCharacter, "REA", Improvement.ImprovementSource.ArmorEncumbrance, string.Empty,
-                        Improvement.ImprovementType.Attribute, "precedence-1", 0, 1, 0, 0, intEncumbrance);
-                    ImprovementManager.Commit(_objCharacter);
                 }
             }
         }
@@ -271,7 +223,7 @@ namespace Chummer
                 StringBuilder objMental = new StringBuilder(
                     $"({_objCharacter.LOG.DisplayAbbrev} [{_objCharacter.LOG.TotalValue}] * 2) + {_objCharacter.INT.DisplayAbbrev} [{_objCharacter.INT.TotalValue}] + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] / 3");
                 StringBuilder objSocial = new StringBuilder(
-                    $"({_objCharacter.CHA.DisplayAbbrev} [{_objCharacter.CHA.TotalValue}] * 2) + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] + {_objCharacter.ESS.DisplayAbbrev} [{_objCharacter.Essence.ToString(GlobalOptions.CultureInfo)}] / 3");
+                    $"({_objCharacter.CHA.DisplayAbbrev} [{_objCharacter.CHA.TotalValue}] * 2) + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] + {_objCharacter.ESS.DisplayAbbrev} [{_objCharacter.Essence().ToString(GlobalOptions.CultureInfo)}] / 3");
 
                 foreach (Improvement objLoopImprovement in _objCharacter.Improvements)
                 {
@@ -541,6 +493,9 @@ namespace Chummer
 
             void AddToTree(Spell objSpell, bool blnSingleAdd = true)
             {
+                TreeNode objNode = objSpell.CreateTreeNode(cmsSpell);
+                if (objNode == null)
+                    return;
                 TreeNode objParentNode = null;
                 switch (objSpell.Category)
                 {
@@ -665,6 +620,7 @@ namespace Chummer
                                     break;
                                 }
                             }
+
                             nodMetamagicParentChildren.Insert(intTargetIndex, objMetamagicNode);
                             if (blnSingleAdd)
                                 treMetamagic.SelectedNode = objMetamagicNode;
@@ -674,7 +630,6 @@ namespace Chummer
 
                 if (objParentNode != null)
                 {
-                    TreeNode objNode = objSpell.CreateTreeNode(cmsSpell);
                     if (blnSingleAdd)
                     {
                         TreeNodeCollection lstParentNodeChildren = objParentNode.Nodes;
@@ -775,6 +730,10 @@ namespace Chummer
 
             void AddToTree(AIProgram objAIProgram, bool blnSingleAdd = true)
             {
+                TreeNode objNode = objAIProgram.CreateTreeNode(cmsAdvancedProgram);
+                if (objNode == null)
+                    return;
+
                 if (objParentNode == null)
                 {
                     objParentNode = new TreeNode()
@@ -785,7 +744,7 @@ namespace Chummer
                     treAIPrograms.Nodes.Add(objParentNode);
                     objParentNode.Expand();
                 }
-                TreeNode objNode = objAIProgram.CreateTreeNode(cmsAdvancedProgram);
+
                 if (blnSingleAdd)
                 {
                     TreeNodeCollection lstParentNodeChildren = objParentNode.Nodes;
@@ -798,6 +757,7 @@ namespace Chummer
                             break;
                         }
                     }
+
                     lstParentNodeChildren.Insert(intTargetIndex, objNode);
                     treAIPrograms.SelectedNode = objNode;
                 }
@@ -898,6 +858,9 @@ namespace Chummer
 
             void AddToTree(ComplexForm objComplexForm, bool blnSingleAdd = true)
             {
+                TreeNode objNode = objComplexForm.CreateTreeNode(cmsComplexForm);
+                if (objNode == null)
+                    return;
                 if (objParentNode == null)
                 {
                     objParentNode = new TreeNode()
@@ -927,13 +890,13 @@ namespace Chummer
                                     break;
                                 }
                             }
+
                             nodMetamagicParentChildren.Insert(intTargetIndex, objMetamagicNode);
                             if (blnSingleAdd)
                                 treMetamagic.SelectedNode = objMetamagicNode;
                         }
                     }
                 }
-                TreeNode objNode = objComplexForm.CreateTreeNode(cmsComplexForm);
                 if (blnSingleAdd)
                 {
                     TreeNodeCollection lstParentNodeChildren = objParentNode.Nodes;
@@ -946,6 +909,7 @@ namespace Chummer
                             break;
                         }
                     }
+
                     lstParentNodeChildren.Insert(intTargetIndex, objNode);
                     treComplexForms.SelectedNode = objNode;
                 }
@@ -1196,17 +1160,21 @@ namespace Chummer
                     if (objMetamagic.Grade < 0)
                     {
                         TreeNode objNode = objMetamagic.CreateTreeNode(cmsInitiationNotes, true);
-                        int intNodesCount = lstRootNodes.Count;
-                        int intTargetIndex = intOffset;
-                        for (; intTargetIndex < intNodesCount; ++intTargetIndex)
+                        if (objNode != null)
                         {
-                            if (CompareTreeNodes.CompareText(lstRootNodes[intTargetIndex], objNode) >= 0)
+                            int intNodesCount = lstRootNodes.Count;
+                            int intTargetIndex = intOffset;
+                            for (; intTargetIndex < intNodesCount; ++intTargetIndex)
                             {
-                                break;
+                                if (CompareTreeNodes.CompareText(lstRootNodes[intTargetIndex], objNode) >= 0)
+                                {
+                                    break;
+                                }
                             }
+
+                            lstRootNodes.Insert(intTargetIndex, objNode);
+                            objNode.Expand();
                         }
-                        lstRootNodes.Insert(intTargetIndex, objNode);
-                        objNode.Expand();
                     }
                 }
 
@@ -1223,6 +1191,60 @@ namespace Chummer
                             {
                                 AddToTree(objGrade, intNewIndex);
                                 intNewIndex += 1;
+                                if (CharacterObject.RESEnabled)
+                                {
+                                    CharacterObject.SubmersionGrade++;
+                                }
+                                else
+                                {
+                                    CharacterObject.InitiateGrade++;
+                                }
+                            }
+                            //TODO: Annoying boilerplate, but whatever. 
+                            if (CharacterObject.RESEnabled)
+                            {
+                                // Remove any existing Initiation Improvements.
+                                ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Submersion);
+
+                                // Create the replacement Improvement.
+                                ImprovementManager.CreateImprovement(CharacterObject, "RES", Improvement.ImprovementSource.Submersion, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.SubmersionGrade);
+                                ImprovementManager.Commit(CharacterObject);
+
+                                // Update any Echo Improvements the character might have.
+                                foreach (Metamagic objMetamagic in CharacterObject.Metamagics.Where(metamagic => metamagic.Bonus != null))
+                                {
+                                    // If the Bonus contains "Rating", remove the existing Improvement and create new ones.
+                                    if (objMetamagic.Bonus.InnerXml.Contains("Rating"))
+                                    {
+                                        ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Echo, objMetamagic.InternalId);
+                                        ImprovementManager.CreateImprovements(CharacterObject, Improvement.ImprovementSource.Echo, objMetamagic.InternalId, objMetamagic.Bonus, false, CharacterObject.SubmersionGrade, objMetamagic.DisplayNameShort(GlobalOptions.Language));
+                                    }
+                                }
+                            }
+                            else if (CharacterObject.MAGEnabled)
+                            {
+                                // Remove any existing Initiation Improvements.
+                                ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Initiation);
+
+                                // Create the replacement Improvement.
+                                ImprovementManager.CreateImprovement(CharacterObject, "MAG", Improvement.ImprovementSource.Initiation, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.InitiateGrade);
+                                ImprovementManager.CreateImprovement(CharacterObject, "MAGAdept", Improvement.ImprovementSource.Initiation, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.InitiateGrade);
+                                ImprovementManager.Commit(CharacterObject);
+
+                                // Update any Metamagic Improvements the character might have.
+                                foreach (Metamagic objMetamagic in CharacterObject.Metamagics.Where(metamagic => metamagic.Bonus != null))
+                                {
+                                    // If the Bonus contains "Rating", remove the existing Improvement and create new ones.
+                                    if (objMetamagic.Bonus.InnerXml.Contains("Rating"))
+                                    {
+                                        ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Metamagic, objMetamagic.InternalId);
+                                        ImprovementManager.CreateImprovements(CharacterObject, Improvement.ImprovementSource.Metamagic, objMetamagic.InternalId, objMetamagic.Bonus, false, CharacterObject.InitiateGrade, objMetamagic.DisplayNameShort(GlobalOptions.Language));
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Utils.BreakIfDebug();
                             }
                         }
                         break;
@@ -1231,6 +1253,60 @@ namespace Chummer
                             foreach (InitiationGrade objGrade in notifyCollectionChangedEventArgs.OldItems)
                             {
                                 treMetamagic.FindNode(objGrade.InternalId)?.Remove();
+                                // Remove the child objects (arts, metamagics, enhancements, enchantments, rituals)
+                                // Arts
+                                List<Art> lstRemoveArts = CharacterObject.Arts.Where(o => o.Grade == objGrade.Grade).ToList();
+                                foreach (Art objArt in lstRemoveArts)
+                                    CharacterObject.Arts.Remove(objArt);
+
+                                // Metamagics
+                                List<Metamagic> lstRemoveMetamagics = CharacterObject.Metamagics.Where(o => o.Grade == objGrade.Grade).ToList();
+                                foreach (Metamagic objMetamagic in lstRemoveMetamagics)
+                                {
+                                    CharacterObject.Metamagics.Remove(objMetamagic);
+                                    ImprovementManager.RemoveImprovements(CharacterObject, objMetamagic.SourceType, objMetamagic.InternalId);
+                                }
+
+                                // Enhancements
+                                List<Enhancement> lstRemoveEnhancements = CharacterObject.Enhancements.Where(objEnhancement => objEnhancement.Grade == objGrade.Grade).ToList();
+                                foreach (Enhancement objEnhancement in lstRemoveEnhancements)
+                                    CharacterObject.Enhancements.Remove(objEnhancement);
+
+                                // Spells
+                                List<Spell> lstRemoveSpells = CharacterObject.Spells.Where(objSpell => objSpell.Grade == objGrade.Grade).ToList();
+                                foreach (Spell objSpell in lstRemoveSpells)
+                                    CharacterObject.Spells.Remove(objSpell);
+                                
+                                // Complex Forms
+                                List<ComplexForm> lstRemoveComplexForms = CharacterObject.ComplexForms.Where(cf => cf.Grade == objGrade.Grade).ToList();
+                                foreach (ComplexForm cf in lstRemoveComplexForms)
+                                    CharacterObject.ComplexForms.Remove(cf);
+
+                                // Grade
+                                CharacterObject.InitiationGrades.Remove(objGrade);
+
+                                if (CharacterObject.MAGEnabled)
+                                {
+                                    CharacterObject.InitiateGrade = Math.Max(objGrade.Grade - 1, 0);
+                                    // Remove any existing Initiation Improvements.
+                                    ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Initiation);
+                                    if (CharacterObject.InitiateGrade == 0) break;
+                                    // Create the replacement Improvement.
+                                    ImprovementManager.CreateImprovement(CharacterObject, "MAG", Improvement.ImprovementSource.Initiation, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.InitiateGrade);
+                                    ImprovementManager.CreateImprovement(CharacterObject, "MAGAdept", Improvement.ImprovementSource.Initiation, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.InitiateGrade);
+                                    ImprovementManager.Commit(CharacterObject);
+                                }
+                                else if (CharacterObject.RESEnabled)
+                                {
+                                    CharacterObject.SubmersionGrade = Math.Max(objGrade.Grade - 1, 0);
+
+                                    // Remove any existing Initiation Improvements.
+                                    ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Submersion);
+                                    if (CharacterObject.SubmersionGrade == 0) break;
+                                    // Create the replacement Improvement.
+                                    ImprovementManager.CreateImprovement(CharacterObject, "RES", Improvement.ImprovementSource.Submersion, string.Empty, Improvement.ImprovementType.Attribute, string.Empty, 0, 1, 0, CharacterObject.SubmersionGrade);
+                                    ImprovementManager.Commit(CharacterObject);
+                                }
                             }
                         }
                         break;
@@ -1269,6 +1345,19 @@ namespace Chummer
                         }
                         break;
                 }
+
+                Improvement.ImprovementSource source = CharacterObject.RESEnabled ? Improvement.ImprovementSource.Echo : Improvement.ImprovementSource.Metamagic;
+                int grade = CharacterObject.RESEnabled ? CharacterObject.SubmersionGrade : CharacterObject.InitiateGrade;
+                // Update any Metamagic Improvements the character might have.
+                foreach (Metamagic objMetamagic in CharacterObject.Metamagics.Where(metamagic => metamagic.Bonus != null))
+                {
+                    // If the Bonus contains "Rating", remove the existing Improvement and create new ones.
+                    if (objMetamagic.Bonus.InnerXml.Contains("Rating"))
+                    {
+                        ImprovementManager.RemoveImprovements(CharacterObject, source, objMetamagic.InternalId);
+                        ImprovementManager.CreateImprovements(CharacterObject, source, objMetamagic.InternalId, objMetamagic.Bonus, false, grade, objMetamagic.DisplayNameShort(GlobalOptions.Language));
+                    }
+                }
             }
 
             void AddToTree(InitiationGrade objInitiationGrade, int intIndex = -1)
@@ -1280,6 +1369,8 @@ namespace Chummer
                     if (objArt.Grade == objInitiationGrade.Grade)
                     {
                         TreeNode objNode = objArt.CreateTreeNode(cmsInitiationNotes, true);
+                        if (objNode == null)
+                            continue;
                         int intNodesCount = lstParentNodeChildren.Count;
                         int intTargetIndex = 0;
                         for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1297,6 +1388,8 @@ namespace Chummer
                     if (objMetamagic.Grade == objInitiationGrade.Grade)
                     {
                         TreeNode objNode = objMetamagic.CreateTreeNode(cmsInitiationNotes, true);
+                        if (objNode == null)
+                            continue;
                         int intNodesCount = lstParentNodeChildren.Count;
                         int intTargetIndex = 0;
                         for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1314,6 +1407,8 @@ namespace Chummer
                     if (objSpell.Grade == objInitiationGrade.Grade)
                     {
                         TreeNode objNode = objSpell.CreateTreeNode(cmsInitiationNotes, true);
+                        if (objNode == null)
+                            continue;
                         int intNodesCount = lstParentNodeChildren.Count;
                         int intTargetIndex = 0;
                         for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1331,6 +1426,8 @@ namespace Chummer
                     if (objComplexForm.Grade == objInitiationGrade.Grade)
                     {
                         TreeNode objNode = objComplexForm.CreateTreeNode(cmsInitiationNotes);
+                        if (objNode == null)
+                            continue;
                         int intNodesCount = lstParentNodeChildren.Count;
                         int intTargetIndex = 0;
                         for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1348,6 +1445,8 @@ namespace Chummer
                     if (objEnhancement.Grade == objInitiationGrade.Grade)
                     {
                         TreeNode objNode = objEnhancement.CreateTreeNode(cmsInitiationNotes, true);
+                        if (objNode == null)
+                            continue;
                         int intNodesCount = lstParentNodeChildren.Count;
                         int intTargetIndex = 0;
                         for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1367,6 +1466,8 @@ namespace Chummer
                         if (objEnhancement.Grade == objInitiationGrade.Grade)
                         {
                             TreeNode objNode = objEnhancement.CreateTreeNode(cmsInitiationNotes, true);
+                            if (objNode == null)
+                                continue;
                             int intNodesCount = lstParentNodeChildren.Count;
                             int intTargetIndex = 0;
                             for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1441,6 +1542,8 @@ namespace Chummer
                     {
                         TreeNodeCollection nodMetamagicParentChildren = nodMetamagicParent.Nodes;
                         TreeNode objNode = objArt.CreateTreeNode(cmsInitiationNotes, true);
+                        if (objNode == null)
+                            return;
                         int intNodesCount = nodMetamagicParentChildren.Count;
                         int intTargetIndex = 0;
                         for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1512,6 +1615,8 @@ namespace Chummer
                     {
                         TreeNodeCollection nodMetamagicParentChildren = nodMetamagicParent.Nodes;
                         TreeNode objNode = objEnhancement.CreateTreeNode(cmsInitiationNotes, true);
+                        if (objNode == null)
+                            return;
                         int intNodesCount = nodMetamagicParentChildren.Count;
                         int intTargetIndex = 0;
                         for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1603,6 +1708,8 @@ namespace Chummer
                 {
                     TreeNodeCollection nodMetamagicParentChildren = treMetamagic.Nodes;
                     TreeNode objNode = objMetamagic.CreateTreeNode(cmsInitiationNotes, true);
+                    if (objNode == null)
+                        return;
                     int intNodesCount = nodMetamagicParentChildren.Count;
                     int intTargetIndex = CharacterObject.InitiationGrades.Count;
                     for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1628,6 +1735,8 @@ namespace Chummer
                         {
                             TreeNodeCollection nodMetamagicParentChildren = nodMetamagicParent.Nodes;
                             TreeNode objNode = objMetamagic.CreateTreeNode(cmsInitiationNotes, true);
+                            if (objNode == null)
+                                return;
                             int intNodesCount = nodMetamagicParentChildren.Count;
                             int intTargetIndex = 0;
                             for (; intTargetIndex < intNodesCount; ++intTargetIndex)
@@ -1732,6 +1841,9 @@ namespace Chummer
 
             void AddToTree(CritterPower objPower, bool blnSingleAdd = true)
             {
+                TreeNode objNode = objPower.CreateTreeNode(cmsCritterPowers);
+                if (objNode == null)
+                    return;
                 TreeNode objParentNode;
                 switch (objPower.Category)
                 {
@@ -1762,7 +1874,6 @@ namespace Chummer
                         objParentNode = objPowersNode;
                         break;
                 }
-                TreeNode objNode = objPower.CreateTreeNode(cmsCritterPowers);
                 if (blnSingleAdd)
                 {
                     TreeNodeCollection lstParentNodeChildren = objParentNode.Nodes;
@@ -1907,6 +2018,9 @@ namespace Chummer
 
             void AddToTree(Quality objQuality, bool blnSingleAdd = true)
             {
+                TreeNode objNode = objQuality.CreateTreeNode(cmsQuality);
+                if (objNode == null)
+                    return;
                 TreeNode objParentNode = null;
                 switch (objQuality.Type)
                 {
@@ -1953,7 +2067,6 @@ namespace Chummer
 
                 if (objParentNode != null)
                 {
-                    TreeNode objNode = objQuality.CreateTreeNode(cmsQuality);
                     if (blnSingleAdd)
                     {
                         TreeNodeCollection lstParentNodeChildren = objParentNode.Nodes;
@@ -2257,7 +2370,8 @@ namespace Chummer
             void AddToTree(Weapon objWeapon, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
-
+                if (objNode == null)
+                    return;
                 TreeNode nodParent = null;
                 if (!string.IsNullOrEmpty(objWeapon.Location))
                 {
@@ -2402,7 +2516,8 @@ namespace Chummer
             void AddToTree(Weapon objWeapon, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objWeapon.CreateTreeNode(cmsWeapon, cmsWeaponAccessory, cmsWeaponAccessoryGear);
-
+                if (objNode == null)
+                    return;
                 if (intIndex >= 0)
                     nodParent.Nodes.Insert(intIndex, objNode);
                 else
@@ -2502,7 +2617,8 @@ namespace Chummer
             void AddToTree(WeaponAccessory objWeaponAccessory, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objWeaponAccessory.CreateTreeNode(cmsWeaponAccessory, cmsWeaponAccessoryGear);
-
+                if (objNode == null)
+                    return;
                 if (intIndex >= 0)
                     nodParent.Nodes.Insert(intIndex, objNode);
                 else
@@ -2805,7 +2921,8 @@ namespace Chummer
             void AddToTree(Armor objArmor, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objArmor.CreateTreeNode(cmsArmor, cmsArmorMod, cmsArmorGear);
-
+                if (objNode == null)
+                    return;
                 TreeNode nodParent = null;
                 if (!string.IsNullOrEmpty(objArmor.Location))
                 {
@@ -2917,7 +3034,8 @@ namespace Chummer
             void AddToTree(ArmorMod objArmorMod, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objArmorMod.CreateTreeNode(cmsArmorMod, cmsArmorGear);
-
+                if (objNode == null)
+                    return;
                 if (intIndex >= 0)
                     nodArmor.Nodes.Insert(intIndex, objNode);
                 else
@@ -3167,7 +3285,8 @@ namespace Chummer
                     return;
 
                 TreeNode objNode = objGear.CreateTreeNode(cmsGear);
-
+                if (objNode == null)
+                    return;
                 TreeNode nodParent = null;
                 if (!string.IsNullOrEmpty(objGear.Location))
                 {
@@ -3301,7 +3420,8 @@ namespace Chummer
             void AddToTree(Gear objGear, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objGear.CreateTreeNode(cmsGear);
-
+                if (objNode == null)
+                    return;
                 if (string.IsNullOrEmpty(objGear.Location))
                 {
                     if (intIndex >= 0)
@@ -3441,6 +3561,10 @@ namespace Chummer
                     return;
                 }
 
+                TreeNode objNode = objCyberware.CreateTreeNode(cmsCyberware, cmsCyberwareGear);
+                if (objNode == null)
+                    return;
+
                 TreeNode nodParent = null;
                 if (objCyberware.SourceType == Improvement.ImprovementSource.Cyberware)
                 {
@@ -3491,8 +3615,6 @@ namespace Chummer
                 
                 if (nodParent != null)
                 {
-                    TreeNode objNode = objCyberware.CreateTreeNode(cmsCyberware, cmsCyberwareGear);
-
                     if (blnSingleAdd)
                     {
                         TreeNodeCollection lstParentNodeChildren = nodParent.Nodes;
@@ -3622,6 +3744,8 @@ namespace Chummer
             void AddToTree(Cyberware objCyberware, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objCyberware.CreateTreeNode(cmsCyberware, cmsCyberwareGear);
+                if (objNode == null)
+                    return;
 
                 if (intIndex >= 0)
                     nodParent.Nodes.Insert(intIndex, objNode);
@@ -3986,6 +4110,8 @@ namespace Chummer
             void AddToTree(VehicleMod objVehicleMod, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objVehicleMod.CreateTreeNode(cmsVehicleMod, cmsCyberware, cmsCyberwareGear, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear);
+                if (objNode == null)
+                    return;
 
                 if (intIndex >= 0)
                     nodParent.Nodes.Insert(intIndex, objNode);
@@ -4128,6 +4254,8 @@ namespace Chummer
             void AddToTree(WeaponMount objWeaponMount, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objWeaponMount.CreateTreeNode(cmsVehicleWeaponMount, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsCyberware, cmsCyberwareGear, cmsVehicleMod);
+                if (objNode == null)
+                    return;
 
                 if (nodParent == null)
                 {
@@ -4414,6 +4542,8 @@ namespace Chummer
             void AddToTree(Vehicle objVehicle, int intIndex = -1, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objVehicle.CreateTreeNode(cmsVehicle, cmsVehicleLocation, cmsVehicleWeapon, cmsVehicleWeaponAccessory, cmsVehicleWeaponAccessoryGear, cmsVehicleGear, cmsVehicleWeaponMount, cmsCyberware, cmsCyberwareGear);
+                if (objNode == null)
+                    return;
 
                 TreeNode nodParent = null;
                 if (!string.IsNullOrEmpty(objVehicle.Location))
@@ -4444,7 +4574,7 @@ namespace Chummer
             }
         }
 
-        public void RefreshFociFromGear(TreeView treFoci, ContextMenuStrip cmsGear, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs = null)
+        public void RefreshFociFromGear(TreeView treFoci, ContextMenuStrip cmsFocus, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs = null)
         {
             string strSelectedId = treFoci.SelectedNode?.Tag.ToString();
 
@@ -4465,26 +4595,22 @@ namespace Chummer
                         case "Foci":
                         case "Metamagic Foci":
                             {
-                                TreeNode objNode = objGear.CreateTreeNode(cmsGear);
+                                TreeNode objNode = objGear.CreateTreeNode(cmsFocus);
+                                if (objNode == null)
+                                    continue;
                                 objNode.Text = objNode.Text.Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language));
                                 for (int i = _objCharacter.Foci.Count - 1; i >= 0; --i)
                                 {
                                     if (i < _objCharacter.Foci.Count)
                                     {
                                         Focus objFocus = _objCharacter.Foci[i];
-                                        if (objFocus.GearId == objGear.InternalId)
+                                        if (objFocus.GearObject == objGear)
                                         {
-                                            objFocus.Rating = objGear.Rating;
                                             intFociTotal += objFocus.Rating;
                                             // Do not let the number of BP spend on bonded Foci exceed MAG * 5.
                                             if (intFociTotal > intMaxFocusTotal && !_objCharacter.IgnoreRules)
                                             {
-                                                // Mark the Gear a Bonded.
-                                                foreach (Gear objCharacterGear in _objCharacter.Gear)
-                                                {
-                                                    if (objCharacterGear.InternalId == objFocus.GearId)
-                                                        objCharacterGear.Bonded = false;
-                                                }
+                                                objGear.Bonded = false;
                                                 _objCharacter.Foci.RemoveAt(i);
                                                 objNode.Checked = false;
                                             }
@@ -4516,7 +4642,7 @@ namespace Chummer
                                             }
                                         }
 
-                                        AddToTree(objStack.CreateTreeNode(objGear, cmsGear), false);
+                                        AddToTree(objStack.CreateTreeNode(objGear, cmsFocus), false);
                                     }
                                 }
                             }
@@ -4536,11 +4662,11 @@ namespace Chummer
                             if (_objOptions.MysAdeptSecondMAGAttribute && _objCharacter.IsMysticAdept)
                                 intMaxFocusTotal = Math.Min(intMaxFocusTotal, _objCharacter.MAGAdept.TotalValue * 5);
 
-                            HashSet<string> setNewGearIds = new HashSet<string>();
+                            HashSet<Gear> setNewGears = new HashSet<Gear>();
                             foreach (Gear objGear in notifyCollectionChangedEventArgs.NewItems)
-                                setNewGearIds.Add(objGear.InternalId);
+                                setNewGears.Add(objGear);
 
-                            int intFociTotal = _objCharacter.Foci.Where(x => !setNewGearIds.Contains(x.GearId)).Sum(x => x.Rating);
+                            int intFociTotal = _objCharacter.Foci.Where(x => !setNewGears.Contains(x.GearObject)).Sum(x => x.Rating);
 
                             foreach (Gear objGear in notifyCollectionChangedEventArgs.NewItems)
                             {
@@ -4549,26 +4675,23 @@ namespace Chummer
                                     case "Foci":
                                     case "Metamagic Foci":
                                         {
-                                            TreeNode objNode = objGear.CreateTreeNode(cmsGear);
+                                            TreeNode objNode = objGear.CreateTreeNode(cmsFocus);
+                                            if (objNode == null)
+                                                continue;
                                             objNode.Text = objNode.Text.Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language));
                                             for (int i = _objCharacter.Foci.Count - 1; i >= 0; --i)
                                             {
                                                 if (i < _objCharacter.Foci.Count)
                                                 {
                                                     Focus objFocus = _objCharacter.Foci[i];
-                                                    if (objFocus.GearId == objGear.InternalId)
+                                                    if (objFocus.GearObject == objGear)
                                                     {
-                                                        objFocus.Rating = objGear.Rating;
                                                         intFociTotal += objFocus.Rating;
                                                         // Do not let the number of BP spend on bonded Foci exceed MAG * 5.
                                                         if (intFociTotal > intMaxFocusTotal && !_objCharacter.IgnoreRules)
                                                         {
                                                             // Mark the Gear a Bonded.
-                                                            foreach (Gear objCharacterGear in _objCharacter.Gear)
-                                                            {
-                                                                if (objCharacterGear.InternalId == objFocus.GearId)
-                                                                    objCharacterGear.Bonded = false;
-                                                            }
+                                                            objGear.Bonded = false;
                                                             _objCharacter.Foci.RemoveAt(i);
                                                             objNode.Checked = false;
                                                             if (!blnWarned)
@@ -4606,7 +4729,7 @@ namespace Chummer
                                                         }
                                                     }
 
-                                                    AddToTree(objStack.CreateTreeNode(objGear, cmsGear));
+                                                    AddToTree(objStack.CreateTreeNode(objGear, cmsFocus));
                                                 }
                                             }
                                         }
@@ -4629,7 +4752,7 @@ namespace Chummer
                                                 if (i < _objCharacter.Foci.Count)
                                                 {
                                                     Focus objFocus = _objCharacter.Foci[i];
-                                                    if (objFocus.GearId == objGear.InternalId)
+                                                    if (objFocus.GearObject == objGear)
                                                     {
                                                         _objCharacter.Foci.RemoveAt(i);
                                                     }
@@ -4672,7 +4795,7 @@ namespace Chummer
                                                 if (i < _objCharacter.Foci.Count)
                                                 {
                                                     Focus objFocus = _objCharacter.Foci[i];
-                                                    if (objFocus.GearId == objGear.InternalId)
+                                                    if (objFocus.GearObject == objGear)
                                                     {
                                                         _objCharacter.Foci.RemoveAt(i);
                                                     }
@@ -4705,11 +4828,11 @@ namespace Chummer
                             if (_objOptions.MysAdeptSecondMAGAttribute && _objCharacter.IsMysticAdept)
                                 intMaxFocusTotal = Math.Min(intMaxFocusTotal, _objCharacter.MAGAdept.TotalValue * 5);
 
-                            HashSet<string> setNewGearIds = new HashSet<string>();
+                            HashSet<Gear> setNewGears = new HashSet<Gear>();
                             foreach (Gear objGear in notifyCollectionChangedEventArgs.NewItems)
-                                setNewGearIds.Add(objGear.InternalId);
+                                setNewGears.Add(objGear);
 
-                            int intFociTotal = _objCharacter.Foci.Where(x => !setNewGearIds.Contains(x.GearId)).Sum(x => x.Rating);
+                            int intFociTotal = _objCharacter.Foci.Where(x => !setNewGears.Contains(x.GearObject)).Sum(x => x.Rating);
 
                             foreach (Gear objGear in notifyCollectionChangedEventArgs.NewItems)
                             {
@@ -4718,26 +4841,23 @@ namespace Chummer
                                     case "Foci":
                                     case "Metamagic Foci":
                                         {
-                                            TreeNode objNode = objGear.CreateTreeNode(cmsGear);
+                                            TreeNode objNode = objGear.CreateTreeNode(cmsFocus);
+                                            if (objNode == null)
+                                                continue;
                                             objNode.Text = objNode.Text.Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language));
                                             for (int i = _objCharacter.Foci.Count - 1; i >= 0; --i)
                                             {
                                                 if (i < _objCharacter.Foci.Count)
                                                 {
                                                     Focus objFocus = _objCharacter.Foci[i];
-                                                    if (objFocus.GearId == objGear.InternalId)
+                                                    if (objFocus.GearObject == objGear)
                                                     {
-                                                        objFocus.Rating = objGear.Rating;
                                                         intFociTotal += objFocus.Rating;
                                                         // Do not let the number of BP spend on bonded Foci exceed MAG * 5.
                                                         if (intFociTotal > intMaxFocusTotal && !_objCharacter.IgnoreRules)
                                                         {
                                                             // Mark the Gear a Bonded.
-                                                            foreach (Gear objCharacterGear in _objCharacter.Gear)
-                                                            {
-                                                                if (objCharacterGear.InternalId == objFocus.GearId)
-                                                                    objCharacterGear.Bonded = false;
-                                                            }
+                                                            objGear.Bonded = false;
                                                             _objCharacter.Foci.RemoveAt(i);
                                                             objNode.Checked = false;
                                                             if (!blnWarned)
@@ -4775,7 +4895,7 @@ namespace Chummer
                                                         }
                                                     }
 
-                                                    AddToTree(objStack.CreateTreeNode(objGear, cmsGear));
+                                                    AddToTree(objStack.CreateTreeNode(objGear, cmsFocus));
                                                 }
                                             }
                                         }
@@ -4786,7 +4906,7 @@ namespace Chummer
                         break;
                     case NotifyCollectionChangedAction.Reset:
                         {
-                            RefreshFociFromGear(treFoci, cmsGear);
+                            RefreshFociFromGear(treFoci, cmsFocus);
                         }
                         break;
                 }
@@ -4812,6 +4932,69 @@ namespace Chummer
                 else
                     lstParentNodeChildren.Add(objNode);
             }
+        }
+
+        /// <summary>
+        /// Refreshes a single focus' rating (for changing ratings in create mode)
+        /// </summary>
+        /// <param name="treFoci">TreeView of foci.</param>
+        /// <param name="objFocusGear">Gear to which the changed focus belongs.</param>
+        /// <param name="intNewRating">New rating that the focus is supposed to have.</param>
+        /// <returns>True if the new rating complies by focus limits or the gear is not bonded, false otherwise</returns>
+        protected bool RefreshSingleFocusRating(TreeView treFoci, Gear objFocusGear, int intNewRating)
+        {
+            if (objFocusGear.Bonded)
+            {
+                int intMaxFocusTotal = _objCharacter.MAG.TotalValue * 5;
+                if (_objOptions.MysAdeptSecondMAGAttribute && _objCharacter.IsMysticAdept)
+                    intMaxFocusTotal = Math.Min(intMaxFocusTotal, _objCharacter.MAGAdept.TotalValue * 5);
+
+                int intFociTotal = _objCharacter.Foci.Where(x => x.GearObject != objFocusGear).Sum(x => x.Rating);
+
+                if (intFociTotal + intNewRating > intMaxFocusTotal && !_objCharacter.IgnoreRules)
+                {
+                    MessageBox.Show(LanguageManager.GetString("Message_FocusMaximumForce", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_FocusMaximum", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return false;
+                }
+            }
+
+            objFocusGear.Rating = intNewRating;
+
+            switch (objFocusGear.Category)
+            {
+                case "Foci":
+                case "Metamagic Foci":
+                {
+                    TreeNode nodFocus = treFoci.FindNode(objFocusGear.InternalId);
+                    if (nodFocus != null)
+                    {
+                        nodFocus.Text = objFocusGear.DisplayName(GlobalOptions.Language).Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language));
+                    }
+                }
+                    break;
+                case "Stacked Focus":
+                    {
+                        for (int i = _objCharacter.StackedFoci.Count - 1; i >= 0; --i)
+                        {
+                            if (i < _objCharacter.StackedFoci.Count)
+                            {
+                                StackedFocus objStack = _objCharacter.StackedFoci[i];
+                                if (objStack.GearId == objFocusGear.InternalId)
+                                {
+                                    TreeNode nodFocus = treFoci.FindNode(objStack.InternalId);
+                                    if (nodFocus != null)
+                                    {
+                                        nodFocus.Text = objFocusGear.DisplayName(GlobalOptions.Language).Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language));
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    break;
+            }
+
+            return true;
         }
         
         protected void RefreshMartialArts(TreeView treMartialArts, ContextMenuStrip cmsMartialArts, ContextMenuStrip cmsTechnique, NotifyCollectionChangedEventArgs notifyCollectionChangedEventArgs = null)
@@ -4899,6 +5082,8 @@ namespace Chummer
             void AddToTree(MartialArt objMartialArt, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objMartialArt.CreateTreeNode(cmsMartialArts, cmsTechnique);
+                if (objNode == null)
+                    return;
 
                 TreeNode objParentNode;
                 if (objMartialArt.IsQuality)
@@ -5009,6 +5194,8 @@ namespace Chummer
             void AddToTree(MartialArtTechnique objTechnique, bool blnSingleAdd = true)
             {
                 TreeNode objNode = objTechnique.CreateTreeNode(cmsTechnique);
+                if (objNode == null)
+                    return;
 
                 if (blnSingleAdd)
                 {
@@ -5538,6 +5725,10 @@ namespace Chummer
 
             void AddToTree(Lifestyle objLifestyle, bool blnSingleAdd = true)
             {
+                TreeNode objNode = objLifestyle.CreateTreeNode(cmsBasicLifestyle, cmsAdvancedLifestyle);
+                if (objNode == null)
+                    return;
+
                 if (objParentNode == null)
                 {
                     objParentNode = new TreeNode()
@@ -5548,7 +5739,7 @@ namespace Chummer
                     treLifestyles.Nodes.Add(objParentNode);
                     objParentNode.Expand();
                 }
-                TreeNode objNode = objLifestyle.CreateTreeNode(cmsBasicLifestyle, cmsAdvancedLifestyle);
+                
                 if (blnSingleAdd)
                 {
                     TreeNodeCollection lstParentNodeChildren = objParentNode.Nodes;
@@ -6183,16 +6374,12 @@ namespace Chummer
                 MessageBox.Show(ex.ToString());
                 return;
             }
-
-            XmlNodeList xmlContactList = xmlDoc.SelectNodes("/chummer/contacts/contact");
-            if (xmlContactList != null)
+            
+            foreach (XPathNavigator xmlContact in xmlDoc.GetFastNavigator().Select("/chummer/contacts/contact"))
             {
-                foreach (XmlNode xmlContact in xmlContactList)
-                {
-                    Contact objContact = new Contact(CharacterObject);
-                    objContact.Load(xmlContact);
-                    CharacterObject.Contacts.Add(objContact);
-                }
+                Contact objContact = new Contact(CharacterObject);
+                objContact.Load(xmlContact);
+                CharacterObject.Contacts.Add(objContact);
             }
         }
         #endregion
@@ -6268,29 +6455,48 @@ namespace Chummer
                         {
                             foreach (Spirit objSpirit in notifyCollectionChangedEventArgs.OldItems)
                             {
+                                int intMoveUpAmount = 0;
                                 if (objSpirit.EntityType == SpiritType.Spirit)
                                 {
-                                    for (int i = panSpirits.Controls.Count - 1; i >= 0; i--)
+                                    int intSpirits = panSpirits.Controls.Count;
+                                    for (int i = 0; i < intSpirits; ++i)
                                     {
-                                        if (panSpirits.Controls[i] is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
+                                        Control objLoopControl = panSpirits.Controls[i];
+                                        if (objLoopControl is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
                                         {
+                                            intMoveUpAmount = objSpiritControl.Height;
                                             panSpirits.Controls.RemoveAt(i);
                                             objSpiritControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
                                             objSpiritControl.DeleteSpirit -= DeleteSpirit;
                                             objSpiritControl.Dispose();
+                                            i -= 1;
+                                            intSpirits -= 1;
+                                        }
+                                        else if (intMoveUpAmount != 0)
+                                        {
+                                            objLoopControl.Top -= intMoveUpAmount;
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    for (int i = panSprites.Controls.Count - 1; i >= 0; i--)
+                                    int intSprites = panSprites.Controls.Count;
+                                    for (int i = 0; i < intSprites; ++i)
                                     {
-                                        if (panSprites.Controls[i] is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
+                                        Control objLoopControl = panSprites.Controls[i];
+                                        if (objLoopControl is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
                                         {
-                                            panSpirits.Controls.RemoveAt(i);
+                                            intMoveUpAmount = objSpiritControl.Height;
+                                            panSprites.Controls.RemoveAt(i);
                                             objSpiritControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
                                             objSpiritControl.DeleteSpirit -= DeleteSpirit;
                                             objSpiritControl.Dispose();
+                                            i -= 1;
+                                            intSprites -= 1;
+                                        }
+                                        else if (intMoveUpAmount != 0)
+                                        {
+                                            objLoopControl.Top -= intMoveUpAmount;
                                         }
                                     }
                                 }
@@ -6299,37 +6505,54 @@ namespace Chummer
                         break;
                     case NotifyCollectionChangedAction.Replace:
                         {
+                            int intSpirits = panSpirits.Controls.Count;
+                            int intSprites = panSprites.Controls.Count;
                             foreach (Spirit objSpirit in notifyCollectionChangedEventArgs.OldItems)
                             {
+                                int intMoveUpAmount = 0;
                                 if (objSpirit.EntityType == SpiritType.Spirit)
                                 {
-                                    for (int i = panSpirits.Controls.Count - 1; i >= 0; i--)
+                                    for (int i = 0; i < intSpirits; ++i)
                                     {
-                                        if (panSpirits.Controls[i] is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
+                                        Control objLoopControl = panSpirits.Controls[i];
+                                        if (objLoopControl is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
                                         {
+                                            intMoveUpAmount = objSpiritControl.Height;
                                             panSpirits.Controls.RemoveAt(i);
                                             objSpiritControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
                                             objSpiritControl.DeleteSpirit -= DeleteSpirit;
                                             objSpiritControl.Dispose();
+                                            i -= 1;
+                                            intSpirits -= 1;
+                                        }
+                                        else if (intMoveUpAmount != 0)
+                                        {
+                                            objLoopControl.Top -= intMoveUpAmount;
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    for (int i = panSprites.Controls.Count - 1; i >= 0; i--)
+                                    for (int i = 0; i < intSprites; ++i)
                                     {
-                                        if (panSprites.Controls[i] is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
+                                        Control objLoopControl = panSprites.Controls[i];
+                                        if (objLoopControl is SpiritControl objSpiritControl && objSpiritControl.SpiritObject == objSpirit)
                                         {
-                                            panSpirits.Controls.RemoveAt(i);
+                                            intMoveUpAmount = objSpiritControl.Height;
+                                            panSprites.Controls.RemoveAt(i);
                                             objSpiritControl.ContactDetailChanged -= MakeDirtyWithCharacterUpdate;
                                             objSpiritControl.DeleteSpirit -= DeleteSpirit;
                                             objSpiritControl.Dispose();
+                                            i -= 1;
+                                            intSprites -= 1;
+                                        }
+                                        else if (intMoveUpAmount != 0)
+                                        {
+                                            objLoopControl.Top -= intMoveUpAmount;
                                         }
                                     }
                                 }
                             }
-                            int intSpirits = panSpirits.Controls.Count;
-                            int intSprites = panSprites.Controls.Count;
                             foreach (Spirit objSpirit in notifyCollectionChangedEventArgs.NewItems)
                             {
                                 bool blnIsSpirit = objSpirit.EntityType == SpiritType.Spirit;
@@ -6525,6 +6748,11 @@ namespace Chummer
             IsDirty = true;
         }
 
+        public void MakeDirty(object sender, EventArgs e)
+        {
+            IsDirty = true;
+        }
+
         public bool IsCharacterUpdateRequested { get; set; }
 
         public Character CharacterObject => _objCharacter;
@@ -6698,60 +6926,34 @@ namespace Chummer
 
         /// <summary>
         /// Processes the string strDrain into a calculated Drain dicepool and appropriate display attributes and labels.
+        /// TODO: DataBind the controls that would use this method
         /// </summary>
-        /// <param name="strDrain"></param>
-        /// <param name="drain"></param>
-        /// <param name="attributeText"></param>
-        /// <param name="valueText"></param>
-        /// <param name="tooltip"></param>
-        protected void CalculateTraditionDrain(string strDrain, Improvement.ImprovementType drain, Label attributeText = null, Label valueText = null, ToolTip tooltip = null)
+        /// <param name="eDrainType"></param>
+        protected string GetTraditionDrainToolTip(Improvement.ImprovementType eDrainType)
         {
-            if (string.IsNullOrWhiteSpace(strDrain) || (attributeText == null && valueText == null && tooltip == null))
-                return;
-            StringBuilder objDrain = valueText != null ? new StringBuilder(strDrain) : null;
-            StringBuilder objDisplayDrain = attributeText != null ? new StringBuilder(strDrain) : null;
-            StringBuilder objTip = tooltip != null ? new StringBuilder(strDrain) : null;
-            int intDrain = 0;
+            string strDrain = eDrainType == Improvement.ImprovementType.FadingResistance ? _objCharacter.TechnomancerFading : _objCharacter.TraditionDrain;
+            
+            StringBuilder objTip = new StringBuilder(strDrain);
+
             // Update the Fading CharacterAttribute Value.
             foreach (string strAttribute in AttributeSection.AttributeStrings)
             {
-                CharacterAttrib objAttrib = _objCharacter.GetAttribute(strAttribute);
-                if (strDrain.Contains(objAttrib.Abbrev))
+                objTip.CheapReplace(strAttribute, () =>
                 {
-                    string strAttribTotalValue = objAttrib.TotalValue.ToString();
-                    objDrain?.Replace(objAttrib.Abbrev, strAttribTotalValue);
-                    objDisplayDrain?.Replace(objAttrib.Abbrev, objAttrib.DisplayAbbrev);
-                    objTip?.Replace(objAttrib.Abbrev, objAttrib.DisplayAbbrev + " (" + strAttribTotalValue + ')');
-                }
-            }
-            if (objDrain != null)
-            {
-                try
-                {
-                    intDrain = Convert.ToInt32(Math.Ceiling((double)CommonFunctions.EvaluateInvariantXPath(objDrain.ToString())));
-                }
-                catch (XPathException) { }
-                catch (OverflowException) { } // Result is text and not a double
-                catch (InvalidCastException) { } // Result is text and not a double
+                    CharacterAttrib objAttrib = _objCharacter.GetAttribute(strAttribute);
+                    return objAttrib.DisplayAbbrev + " (" + objAttrib.TotalValue + ')';
+                });
             }
 
-            if (valueText != null || tooltip != null)
+            int intBonusDrain = ImprovementManager.ValueOf(_objCharacter, eDrainType);
+            if (intBonusDrain != 0)
             {
-                int intBonusDrain = ImprovementManager.ValueOf(_objCharacter, drain);
-                if (intBonusDrain != 0)
-                {
-                    intDrain += intBonusDrain;
-                    objTip?.Append(" + " + LanguageManager.GetString("Tip_Modifiers", GlobalOptions.Language) + " (" + intBonusDrain.ToString() + ')');
-                }
+                if (objTip.Length > 0)
+                    objTip.Append(" + ");
+                objTip.Append(LanguageManager.GetString("Tip_Modifiers", GlobalOptions.Language) + " (" + intBonusDrain.ToString() + ')');
             }
 
-            if (attributeText != null)
-                attributeText.Text = objDisplayDrain.ToString();
-            if (valueText != null)
-            {
-                valueText.Text = intDrain.ToString();
-                tooltip?.SetToolTip(valueText, objTip.ToString());
-            }
+            return objTip.ToString();
         }
 
         /// <summary>

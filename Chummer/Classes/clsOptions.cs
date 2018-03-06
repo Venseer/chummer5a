@@ -20,6 +20,7 @@
 using System.Collections.Generic;
  using System.Collections.ObjectModel;
  using System.Collections.Specialized;
+ using System.ComponentModel;
  using System.Globalization;
 using System.IO;
  using System.Linq;
@@ -34,28 +35,20 @@ namespace Chummer
     {
         None = 0,
         Gear,
-        OperatingSystem,
         Cyberware,
-        Bioware,
         Armor,
         Weapon,
         Vehicle,
         Lifestyle,
     }
 
-    public class SourcebookInfo : IDisposable
+    public sealed class SourcebookInfo : IDisposable
     {
-        string _strCode = string.Empty;
         string _strPath = string.Empty;
-        int _intOffset;
         PdfReader _objPdfReader;
 
         #region Properties
-        public string Code
-        {
-            get => _strCode;
-            set => _strCode = value;
-        }
+        public string Code { get; set; } = string.Empty;
 
         public string Path
         {
@@ -71,11 +64,7 @@ namespace Chummer
             }
         }
 
-        public int Offset
-        {
-            get => _intOffset;
-            set => _intOffset = value;
-        }
+        public int Offset { get; set; }
 
         internal PdfReader CachedPdfReader
         {
@@ -97,7 +86,7 @@ namespace Chummer
         #region IDisposable Support
         private bool disposedValue; // To detect redundant calls
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -120,32 +109,39 @@ namespace Chummer
         #endregion
     }
 
-    public class CustomDataDirectoryInfo
+    public class CustomDataDirectoryInfo : IComparable
     {
-        private string _strName = string.Empty;
-        private string _strPath = string.Empty;
-        private bool _blnEnabled;
-
         #region Properties
 
-        public string Name
-        {
-            get => _strName;
-            set => _strName = value;
-        }
+        public string Name { get; set; } = string.Empty;
 
-        public string Path
-        {
-            get => _strPath;
-            set => _strPath = value;
-        }
+        public string Path { get; set; } = string.Empty;
 
-        public bool Enabled
-        {
-            get => _blnEnabled;
-            set => _blnEnabled = value;
-        }
+        public bool Enabled { get; set; }
+
         #endregion
+
+        public int CompareTo(object obj)
+        {
+            if (obj == null)
+                return 1;
+            if (obj is CustomDataDirectoryInfo objOtherDirectoryInfo)
+            {
+                int intReturn = string.Compare(Name, objOtherDirectoryInfo.Name, StringComparison.Ordinal);
+                if (intReturn == 0)
+                {
+                    intReturn = string.Compare(Path, objOtherDirectoryInfo.Path, StringComparison.Ordinal);
+                    if (intReturn == 0)
+                    {
+                        intReturn = Enabled == objOtherDirectoryInfo.Enabled ? 0 : (Enabled ? -1 : 1);
+                    }
+                }
+
+                return intReturn;
+            }
+
+            return string.Compare(Name, obj.ToString(), StringComparison.Ordinal);
+        }
     }
 
     /// <summary>
@@ -159,6 +155,8 @@ namespace Chummer
 
         public static string ErrorMessage { get; } = string.Empty;
         public static event TextEventHandler MRUChanged;
+        public static event PropertyChangedEventHandler ClipboardChanged;
+
         public const int MaxMruSize = 10;
         private static readonly MostRecentlyUsedCollection<string> _lstMostRecentlyUsedCharacters = new MostRecentlyUsedCollection<string>(MaxMruSize);
         private static readonly MostRecentlyUsedCollection<string> _lstFavoritedCharacters = new MostRecentlyUsedCollection<string>(MaxMruSize);
@@ -169,7 +167,6 @@ namespace Chummer
 
         private static bool _blnAutomaticUpdate;
         private static bool _blnLiveCustomData;
-        private static bool _blnLocalisedUpdatesOnly;
         private static bool _blnStartupFullscreen;
         private static bool _blnSingleDiceRoller = true;
         private static string _strLanguage = DefaultLanguage;
@@ -346,7 +343,7 @@ namespace Chummer
             catch (Exception ex)
             {
                 if (!string.IsNullOrEmpty(ErrorMessage))
-                    ErrorMessage += "\n\n";
+                    ErrorMessage += Environment.NewLine + Environment.NewLine;
                 ErrorMessage += ex.ToString();
             }
             if (_objBaseChummerKey == null)
@@ -363,9 +360,6 @@ namespace Chummer
             LoadBoolFromRegistry(ref _lifeModuleEnabled, "lifemodule");
 
             LoadBoolFromRegistry(ref _omaeEnabled, "omaeenabled");
-
-            // Whether or not the app should only download localised files in the user's selected language.
-            LoadBoolFromRegistry(ref _blnLocalisedUpdatesOnly, "localisedupdatesonly");
 
             // Whether or not the app should use logging.
             LoadBoolFromRegistry(ref _blnUseLogging, "uselogging");
@@ -491,16 +485,7 @@ namespace Chummer
             get => _lifeModuleEnabled;
             set => _lifeModuleEnabled = value;
         }
-
-        /// <summary>
-        /// Whether or not the app should only download localised files in the user's selected language.
-        /// </summary>
-        public static bool LocalisedUpdatesOnly
-        {
-            get => _blnLocalisedUpdatesOnly;
-            set => _blnLocalisedUpdatesOnly = value;
-        }
-
+        
         /// <summary>
         /// Whether or not the app should use logging.
         /// </summary>
@@ -624,10 +609,22 @@ namespace Chummer
         /// </summary>
         public static CultureInfo SystemCultureInfo => s_ObjSystemCultureInfo;
 
+        private static XmlDocument _xmlClipboard = new XmlDocument();
         /// <summary>
         /// Clipboard.
         /// </summary>
-        public static XmlDocument Clipboard { get; set; } = new XmlDocument();
+        public static XmlDocument Clipboard
+        {
+            get => _xmlClipboard;
+            set
+            {
+                if (_xmlClipboard != value)
+                {
+                    _xmlClipboard = value;
+                    ClipboardChanged?.Invoke(null, new PropertyChangedEventArgs(nameof(Clipboard)));
+                }
+            }
+        }
 
         /// <summary>
         /// Type of data that is currently stored in the clipboard.

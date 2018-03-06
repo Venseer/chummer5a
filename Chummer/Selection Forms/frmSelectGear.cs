@@ -78,7 +78,7 @@ namespace Chummer
             // Load the Gear information.
             _xmlBaseGearDataNode = XmlManager.Load("gear.xml").GetFastNavigator().SelectSingleNode("/chummer");
             _setBlackMarketMaps = _objCharacter.GenerateBlackMarketMappings(_xmlBaseGearDataNode);
-            foreach (string strCategory in strAllowedCategories.TrimEnd(',').Split(','))
+            foreach (string strCategory in strAllowedCategories.TrimEndOnce(',').Split(','))
             {
                 string strLoop = strCategory.Trim();
                 if (!string.IsNullOrEmpty(strLoop))
@@ -126,7 +126,7 @@ namespace Chummer
                 {
                     continue;
                 }
-                if (!_lstCategory.Select(x => x.Value).Contains(strCategory) && RefreshList(strCategory, false, true).Count > 0)
+                if (_lstCategory.All(x => x.Value.ToString() != strCategory) && RefreshList(strCategory, false, true).Count > 0)
                 {
                     string strInnerText = strCategory;
                     _lstCategory.Add(new ListItem(strInnerText, objXmlCategory.SelectSingleNode("@translate")?.Value ?? strCategory));
@@ -201,14 +201,6 @@ namespace Chummer
                 if (objXmlGear != null)
                 {
                     string strName = objXmlGear.SelectSingleNode("name")?.Value ?? string.Empty;
-                    // If a Grenade is selected, show the Aerodynamic checkbox.
-                    if (strName.StartsWith("Grenade:"))
-                        chkAerodynamic.Visible = true;
-                    else
-                    {
-                        chkAerodynamic.Visible = false;
-                        chkAerodynamic.Checked = false;
-                    }
 
                     // Quantity.
                     nudGearQty.Enabled = true;
@@ -257,16 +249,12 @@ namespace Chummer
                 {
                     nudGearQty.Enabled = false;
                     nudGearQty.Value = 1;
-                    chkAerodynamic.Visible = false;
-                    chkAerodynamic.Checked = false;
                 }
             }
             else
             {
                 nudGearQty.Enabled = false;
                 nudGearQty.Value = 1;
-                chkAerodynamic.Visible = false;
-                chkAerodynamic.Checked = false;
             }
 
             UpdateGearInfo();
@@ -288,6 +276,7 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
+            AddAgain = false;
             AcceptForm();
         }
 
@@ -303,13 +292,14 @@ namespace Chummer
 
         private void lstGear_DoubleClick(object sender, EventArgs e)
         {
+            AddAgain = false;
             AcceptForm();
         }
 
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             AddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
 
         private void nudGearQty_ValueChanged(object sender, EventArgs e)
@@ -388,6 +378,7 @@ namespace Chummer
         /// </summary>
         public bool ShowPositiveCapacityOnly
         {
+            get => _blnShowPositiveCapacityOnly;
             set
             {
                 _blnShowPositiveCapacityOnly = value;
@@ -401,6 +392,7 @@ namespace Chummer
         /// </summary>
         public bool ShowNegativeCapacityOnly
         {
+            get => _blnShowNegativeCapacityOnly;
             set
             {
                 _blnShowNegativeCapacityOnly = value;
@@ -414,6 +406,7 @@ namespace Chummer
         /// </summary>
         public bool ShowArmorCapacityOnly
         {
+            get => _blnShowArmorCapacityOnly;
             set => _blnShowArmorCapacityOnly = value;
         }
 
@@ -488,12 +481,7 @@ namespace Chummer
         {
             set => _eCapacityStyle = value;
         }
-
-        /// <summary>
-        /// Whether or not a Grenade is Aerodynamic.
-        /// </summary>
-        public bool Aerodynamic => chkAerodynamic.Checked;
-
+        
         /// <summary>
         /// Whether or not the selected Vehicle is used.
         /// </summary>
@@ -617,14 +605,8 @@ namespace Chummer
                 }
             }
 
-            try
-            {
-                lblAvail.Text = strPrefix + (Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strAvailExpr.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)))) + _intAvailModifier).ToString() + strAvail;
-            }
-            catch (XPathException)
-            {
-                lblAvail.Text = strPrefix + strAvailExpr + strAvail;
-            }
+            object objProcess = CommonFunctions.EvaluateInvariantXPath(strAvailExpr.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out bool blnIsSuccess);
+            lblAvail.Text = strPrefix + (blnIsSuccess ? (Convert.ToInt32(objProcess) + _intAvailModifier).ToString() : strAvailExpr) + strAvail;
 
             decimal decMultiplier = nudGearQty.Value / nudGearQty.Increment;
             if (chkDoItYourself.Checked)
@@ -670,7 +652,8 @@ namespace Chummer
                 {
                     try
                     {
-                        decimal decCost = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(objCostNode.Value.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))), GlobalOptions.InvariantCultureInfo) * decMultiplier;
+                        objProcess = CommonFunctions.EvaluateInvariantXPath(objCostNode.Value.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out blnIsSuccess);
+                        decimal decCost = blnIsSuccess ? Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo) * decMultiplier : 0;
                         decCost *= 1 + (nudMarkup.Value / 100.0m);
                         if (chkBlackMarketDiscount.Checked)
                             decCost *= 0.9m;
@@ -689,7 +672,7 @@ namespace Chummer
 
                     if (objCostNode.Value.StartsWith("FixedValues("))
                     {
-                        string[] strValues = objCostNode.Value.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                        string[] strValues = objCostNode.Value.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                         string strCost = "0";
                         if (nudRating.Value > 0)
                             strCost = strValues[decimal.ToInt32(nudRating.Value) - 1].Trim('[', ']');
@@ -704,7 +687,7 @@ namespace Chummer
                     {
                         decimal decMin;
                         decimal decMax = decimal.MaxValue;
-                        string strCost = objCostNode.Value.TrimStart("Variable(", true).TrimEnd(')');
+                        string strCost = objCostNode.Value.TrimStartOnce("Variable(", true).TrimEndOnce(')');
                         if (strCost.Contains('-'))
                         {
                             string[] strValues = strCost.Split('-');
@@ -729,7 +712,7 @@ namespace Chummer
 
             // Capacity.
             // XPathExpression cannot evaluate while there are square brackets, so remove them if necessary.
-            string strCapacityField = _blnShowArmorCapacityOnly ? "armorcapacity" : "capacity";
+            string strCapacityField = ShowArmorCapacityOnly ? "armorcapacity" : "capacity";
 
             if (_eCapacityStyle == CapacityStyle.Zero)
                 lblCapacity.Text = '[' + 0.ToString(GlobalOptions.CultureInfo) + ']';
@@ -749,21 +732,22 @@ namespace Chummer
                             lblCapacity.Text = "*";
                         else
                         {
-                            bool blnSquareBrackets = strFirstHalf.Contains('[');
+                            bool blnSquareBrackets = strFirstHalf.StartsWith('[');
                             strCapacity = strFirstHalf;
                             if (blnSquareBrackets && strCapacity.Length > 2)
                                 strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
 
                             if (strCapacity.StartsWith("FixedValues("))
                             {
-                                string[] strValues = strCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                                string[] strValues = strCapacity.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                                 if (strValues.Length >= decimal.ToInt32(nudRating.Value))
                                     lblCapacity.Text = strValues[decimal.ToInt32(nudRating.Value) - 1];
                                 else
                                 {
                                     try
                                     {
-                                        lblCapacity.Text = ((double)CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)))).ToString("#,0.##", GlobalOptions.CultureInfo);
+                                        objProcess = CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out blnIsSuccess);
+                                        lblCapacity.Text = blnIsSuccess ? ((double)objProcess).ToString("#,0.##", GlobalOptions.CultureInfo) : strCapacity;
                                     }
                                     catch (XPathException)
                                     {
@@ -783,7 +767,8 @@ namespace Chummer
                             {
                                 try
                                 {
-                                    lblCapacity.Text = ((double)CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)))).ToString("#,0.##", GlobalOptions.CultureInfo);
+                                    objProcess = CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out blnIsSuccess);
+                                    lblCapacity.Text = blnIsSuccess ? ((double)objProcess).ToString("#,0.##", GlobalOptions.CultureInfo) : strCapacity;
                                 }
                                 catch (XPathException)
                                 {
@@ -809,25 +794,21 @@ namespace Chummer
                         lblCapacity.Text = "*";
                     else
                     {
-                        bool blnSquareBrackets = strCapacityText.Contains('[');
+                        bool blnSquareBrackets = strCapacityText.StartsWith('[');
                         strCapacity = strCapacityText;
                         if (blnSquareBrackets && strCapacity.Length > 2)
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                         if (strCapacityText.StartsWith("FixedValues("))
                         {
-                            string[] strValues = strCapacityText.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                            string[] strValues = strCapacityText.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                             lblCapacity.Text = strValues[Math.Max(Math.Min(decimal.ToInt32(nudRating.Value), strValues.Length) - 1, 0)];
                         }
                         else
                         {
-                            string strCalculatedCapacity = string.Empty;
                             try
                             {
-                                strCalculatedCapacity = ((double)CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)))).ToString("#,0.##", GlobalOptions.CultureInfo);
-                            }
-                            catch (XPathException)
-                            {
-                                lblCapacity.Text = strCapacity;
+                                objProcess = CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out blnIsSuccess);
+                                lblCapacity.Text = blnIsSuccess ? ((double)objProcess).ToString("#,0.##", GlobalOptions.CultureInfo) : strCapacity;
                             }
                             catch (OverflowException) // Result is text and not a double
                             {
@@ -837,8 +818,6 @@ namespace Chummer
                             {
                                 lblCapacity.Text = strCapacity;
                             }
-                            if (!string.IsNullOrEmpty(strCalculatedCapacity))
-                                lblCapacity.Text = strCalculatedCapacity;
                         }
                         if (blnSquareBrackets)
                             lblCapacity.Text = '[' + lblCapacity.Text + ']';
@@ -902,15 +881,15 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strFilter.Append(" and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ')');
+                    strFilter.Append(" and (" + objCategoryFilter.ToString().TrimEndOnce(" or ") + ')');
                 }
             }
-            if (_blnShowArmorCapacityOnly)
-                strFilter.Append(" and contains(armorcapacity, \"[\")");
-            else if (_blnShowPositiveCapacityOnly)
-                strFilter.Append(" and not(contains(capacity, \"[\"))");
-            else if (_blnShowNegativeCapacityOnly)
-                strFilter.Append(" and contains(capacity, \"[\")");
+            if (ShowArmorCapacityOnly)
+                strFilter.Append(" and (contains(armorcapacity, \"[\") or category = \"Custom\")");
+            else if (ShowPositiveCapacityOnly)
+                strFilter.Append(" and (not(contains(capacity, \"[\")) or category = \"Custom\")");
+            else if (ShowNegativeCapacityOnly)
+                strFilter.Append(" and (contains(capacity, \"[\") or category = \"Custom\")");
             if (_objParentNode == null)
                 strFilter.Append(" and not(requireparent)");
             foreach (string strPrefix in ForceItemPrefixStrings)

@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -26,6 +27,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
+using System.Xml.XPath;
 
 namespace Chummer
 {
@@ -42,6 +44,7 @@ namespace Chummer
     /// <summary>
     /// A Contact or Enemy.
     /// </summary>
+    [DebuggerDisplay("{" + nameof(Name) + "} ({DisplayRoleMethod(GlobalOptions.DefaultLanguage)})")]
     public class Contact : INotifyPropertyChanged, IHasName, IHasMugshots
     {
         private string _strName = string.Empty;
@@ -69,11 +72,11 @@ namespace Chummer
         private bool _blnFree;
         private bool _blnIsGroup;
         private readonly Character _objCharacter;
-        private bool _blnMadeMan;
         private bool _blnBlackmail;
         private bool _blnFamily;
-        private bool _readonly;
-        private bool _blnForceLoyalty;
+        private bool _blnGroupEnabled = true;
+        private bool _blnReadOnly;
+        private int _intForcedLoyalty;
 
         private readonly List<Image> _lstMugshots = new List<Image>();
         private int _intMainMugshotIndex = -1;
@@ -134,11 +137,13 @@ namespace Chummer
             objWriter.WriteElementString("colour", _objColour.ToArgb().ToString());
             objWriter.WriteElementString("free", _blnFree.ToString());
             objWriter.WriteElementString("group", _blnIsGroup.ToString());
-            objWriter.WriteElementString("forceloyalty", _blnForceLoyalty.ToString());
+            objWriter.WriteElementString("forcedloyalty", _intForcedLoyalty.ToString(GlobalOptions.InvariantCultureInfo));
             objWriter.WriteElementString("family", _blnFamily.ToString());
             objWriter.WriteElementString("blackmail", _blnBlackmail.ToString());
+            objWriter.WriteElementString("groupenabled", _blnGroupEnabled.ToString());
 
-            if (ReadOnly) objWriter.WriteElementString("readonly", string.Empty);
+            if (_blnReadOnly)
+                objWriter.WriteElementString("readonly", string.Empty);
 
             if (_strUnique != null)
             {
@@ -159,7 +164,7 @@ namespace Chummer
         /// Load the Contact from the XmlNode.
         /// </summary>
         /// <param name="objNode">XmlNode to load.</param>
-        public void Load(XmlNode objNode)
+        public void Load(XPathNavigator objNode)
         {
             objNode.TryGetStringFieldQuickly("name", ref _strName);
             objNode.TryGetStringFieldQuickly("role", ref _strRole);
@@ -173,7 +178,9 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("preferredpayment", ref _strPreferredPayment);
             objNode.TryGetStringFieldQuickly("hobbiesvice", ref _strHobbiesVice);
             objNode.TryGetStringFieldQuickly("personallife", ref _strPersonalLife);
-            _eContactType = ConvertToContactType(objNode["type"]?.InnerText);
+            string strTemp = string.Empty;
+            if (objNode.TryGetStringFieldQuickly("type", ref strTemp))
+                _eContactType = ConvertToContactType(strTemp);
             objNode.TryGetStringFieldQuickly("file", ref _strFileName);
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             objNode.TryGetStringFieldQuickly("groupname", ref _strGroupName);
@@ -182,24 +189,36 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("guid", ref _strUnique);
             objNode.TryGetBoolFieldQuickly("family", ref _blnFamily);
             objNode.TryGetBoolFieldQuickly("blackmail", ref _blnBlackmail);
-            if (objNode["colour"] != null)
+            if (objNode.SelectSingleNode("colour") != null)
             {
                 int intTmp = _objColour.ToArgb();
                 if (objNode.TryGetInt32FieldQuickly("colour", ref intTmp))
                     _objColour = Color.FromArgb(intTmp);
             }
 
-            if (objNode["readonly"] != null)
-                _readonly = true;
-            if (objNode["forceloyalty"] != null)
+            _blnReadOnly = objNode.SelectSingleNode("readonly") != null;
+
+            if (!objNode.TryGetInt32FieldQuickly("forcedloyalty", ref _intForcedLoyalty))
             {
-                objNode.TryGetBoolFieldQuickly("forceloyalty", ref _blnForceLoyalty);
-            }
-            else if (objNode["mademan"] != null)
-            {
-                objNode.TryGetBoolFieldQuickly("mademan", ref _blnForceLoyalty);
+                if (objNode.SelectSingleNode("forceloyalty") != null)
+                {
+                    bool blnIsLoyaltyForced = false;
+                    if (objNode.TryGetBoolFieldQuickly("forceloyalty", ref blnIsLoyaltyForced) && blnIsLoyaltyForced)
+                        _intForcedLoyalty = _intLoyalty;
+                }
+                else if (objNode.SelectSingleNode("mademan") != null)
+                {
+                    bool blnIsLoyaltyForced = false;
+                    if (objNode.TryGetBoolFieldQuickly("mademan", ref blnIsLoyaltyForced) && blnIsLoyaltyForced)
+                        _intForcedLoyalty = _intLoyalty;
+                }
             }
 
+            if (!objNode.TryGetBoolFieldQuickly("groupenabled", ref _blnGroupEnabled))
+            {
+                objNode.TryGetBoolFieldQuickly("mademan", ref _blnGroupEnabled);
+            }
+            
             RefreshLinkedCharacter(false);
 
             // Mugshots
@@ -231,7 +250,7 @@ namespace Chummer
             objWriter.WriteElementString("hobbiesvice", DisplayHobbiesViceMethod(strLanguageToPrint));
             objWriter.WriteElementString("personallife", DisplayPersonalLifeMethod(strLanguageToPrint));
             objWriter.WriteElementString("type", LanguageManager.GetString("String_" + EntityType.ToString(), strLanguageToPrint));
-            objWriter.WriteElementString("forceloyalty", ForceLoyalty.ToString());
+            objWriter.WriteElementString("forcedloyalty", ForcedLoyalty.ToString(objCulture));
             objWriter.WriteElementString("blackmail", Blackmail.ToString());
             objWriter.WriteElementString("family", Family.ToString());
             if (_objCharacter.Options.PrintNotes)
@@ -247,10 +266,24 @@ namespace Chummer
 
         public bool ReadOnly
         {
-            get => _readonly;
-            set => _readonly = value;
+            get => _blnReadOnly;
+            set
+            {
+                if (_blnReadOnly != value)
+                {
+                    _blnReadOnly = value;
+                    if (PropertyChanged != null)
+                    {
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(ReadOnly)));
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(NotReadOnly)));
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(GroupEnabled)));
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(LoyaltyEnabled)));
+                    }
+                }
+            }
         }
 
+        public bool NotReadOnly => !ReadOnly;
 
         /// <summary>
         /// Total points used for this contact.
@@ -259,11 +292,13 @@ namespace Chummer
         {
             get
             {
-                if (Free) return 0;
-                int intReturn = 0;
-                if (Family) intReturn += 1;
-                if (Blackmail) intReturn += 2;
-                intReturn += Connection + Loyalty;
+                if (Free)
+                    return 0;
+                int intReturn = Connection + Loyalty;
+                if (Family)
+                    intReturn += 1;
+                if (Blackmail)
+                    intReturn += 2;
                 return intReturn;
             }
         }
@@ -320,7 +355,18 @@ namespace Chummer
         public int Connection
         {
             get => _intConnection;
-            set => _intConnection = value;
+            set
+            {
+                if (_intConnection != value)
+                {
+                    _intConnection = value;
+                    if (PropertyChanged != null)
+                    {
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Connection)));
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(QuickText)));
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -328,8 +374,26 @@ namespace Chummer
         /// </summary>
         public int Loyalty
         {
-            get => _intLoyalty;
-            set => _intLoyalty = value;
+            get
+            {
+                if (ForcedLoyalty > 0)
+                    return ForcedLoyalty;
+                if (IsGroup)
+                    return 1;
+                return _intLoyalty;
+            }
+            set
+            {
+                if (_intLoyalty != value)
+                {
+                    _intLoyalty = value;
+                    if (PropertyChanged != null)
+                    {
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Loyalty)));
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(QuickText)));
+                    }
+                }
+            }
         }
 
         public string DisplayMetatypeMethod(string strLanguage)
@@ -545,24 +609,22 @@ namespace Chummer
             get => _blnIsGroup;
             set
             {
-                _blnIsGroup = value;
-
-                if (value && !ForceLoyalty)
+                if (_blnIsGroup != value)
                 {
-                    _intLoyalty = 1;
+                    _blnIsGroup = value;
+                    if (PropertyChanged != null)
+                    {
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(IsGroup)));
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(LoyaltyEnabled)));
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(QuickText)));
+                    }
                 }
             }
         }
 
-        public bool IsGroupOrMadeMan
-        {
-            get => IsGroup || MadeMan;
-            set => IsGroup = value;
-        }
+        public bool LoyaltyEnabled => !ReadOnly && !IsGroup && ForcedLoyalty <= 0;
 
-        public bool LoyaltyEnabled => !IsGroup && !ForceLoyalty;
-
-        public int ConnectionMaximum => !_objCharacter.Created ? (_objCharacter.FriendsInHighPlaces ? 12 : 6) : 12;
+        public int ConnectionMaximum => _objCharacter.Created || _objCharacter.FriendsInHighPlaces ? 12 : 6;
 
         public string QuickText => $"({Connection}/{(IsGroup ? $"{Loyalty}G" : Loyalty.ToString())})";
 
@@ -633,7 +695,14 @@ namespace Chummer
         public Color Colour
         {
             get => _objColour;
-            set => _objColour = value;
+            set
+            {
+                if (_objColour != value)
+                {
+                    _objColour = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Colour)));
+                }
+            }
         }
 
         /// <summary>
@@ -642,7 +711,14 @@ namespace Chummer
         public bool Free
         {
             get => _blnFree;
-            set => _blnFree = value;
+            set
+            {
+                if (_blnFree != value)
+                {
+                    _blnFree = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Free)));
+                }
+            }
         }
         /// <summary>
         /// Unique ID for this contact
@@ -650,39 +726,76 @@ namespace Chummer
         public string GUID => _strUnique;
 
         /// <summary>
-        /// Is this contact a made man
+        /// Whether or not the contact's group status can be modified through the UI
         /// </summary>
-        public bool MadeMan
+        public bool GroupEnabled
         {
-            get => _blnMadeMan;
+            get => _blnGroupEnabled && !ReadOnly;
             set
             {
-                _blnMadeMan = value;
-                if (value)
+                if (_blnGroupEnabled != value)
                 {
-                    _intLoyalty = 3;
+                    _blnGroupEnabled = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GroupEnabled)));
                 }
             }
         }
 
-        public bool NotMadeMan => !MadeMan;
-
         public bool Blackmail
         {
             get => _blnBlackmail;
-            set => _blnBlackmail = value;
+            set
+            {
+                if (_blnBlackmail != value)
+                {
+                    _blnBlackmail = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Blackmail)));
+                }
+            }
         }
 
         public bool Family
         {
             get => _blnFamily;
-            set => _blnFamily = value;
+            set
+            {
+                if (_blnFamily != value)
+                {
+                    _blnFamily = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Family)));
+                }
+            }
         }
 
-        public bool ForceLoyalty
+        public int ForcedLoyalty
         {
-            get => _blnForceLoyalty;
-            set => _blnForceLoyalty = value;
+            get => _intForcedLoyalty;
+            set
+            {
+                if (_intForcedLoyalty != value)
+                {
+                    _intForcedLoyalty = value;
+                    if (PropertyChanged != null)
+                    {
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(ForcedLoyalty)));
+                        PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(LoyaltyEnabled)));
+                    }
+                }
+            }
+        }
+
+        public void RecalculateForcedLoyalty()
+        {
+            int intMaxForcedLoyalty = 0;
+            foreach (Improvement objImprovement in CharacterObject.Improvements)
+            {
+                if (objImprovement.ImproveType == Improvement.ImprovementType.ContactForcedLoyalty && objImprovement.ImprovedName == GUID && objImprovement.Enabled)
+                {
+                    intMaxForcedLoyalty = Math.Max(intMaxForcedLoyalty, objImprovement.Value);
+                }
+            }
+
+            ForcedLoyalty = intMaxForcedLoyalty;
         }
 
         public Character CharacterObject => _objCharacter;
@@ -693,11 +806,6 @@ namespace Chummer
 
         public void RefreshForControl()
         {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Loyalty)));
-                PropertyChanged.Invoke(this, new PropertyChangedEventArgs(nameof(Connection)));
-            }
             RefreshLinkedCharacter(false);
         }
 
@@ -859,36 +967,31 @@ namespace Chummer
             objWriter.WriteEndElement();
         }
 
-        public void LoadMugshots(XmlNode xmlSavedNode)
+        public void LoadMugshots(XPathNavigator xmlSavedNode)
         {
             xmlSavedNode.TryGetInt32FieldQuickly("mainmugshotindex", ref _intMainMugshotIndex);
-            using (XmlNodeList xmlMugshotsList = xmlSavedNode.SelectNodes("mugshots/mugshot"))
+            XPathNodeIterator xmlMugshotsList = xmlSavedNode.Select("mugshots/mugshot");
+            List<string> lstMugshotsBase64 = new List<string>(xmlMugshotsList.Count);
+            foreach (XPathNavigator objXmlMugshot in xmlMugshotsList)
             {
-                if (xmlMugshotsList != null)
+                string strMugshot = objXmlMugshot.Value;
+                if (!string.IsNullOrWhiteSpace(strMugshot))
                 {
-                    List<string> lstMugshotsBase64 = new List<string>(xmlMugshotsList.Count);
-                    foreach (XmlNode objXmlMugshot in xmlMugshotsList)
-                    {
-                        string strMugshot = objXmlMugshot.InnerText;
-                        if (!string.IsNullOrWhiteSpace(strMugshot))
-                        {
-                            lstMugshotsBase64.Add(strMugshot);
-                        }
-                    }
-                    if (lstMugshotsBase64.Count > 1)
-                    {
-                        Image[] objMugshotImages = new Image[lstMugshotsBase64.Count];
-                        Parallel.For(0, lstMugshotsBase64.Count, i =>
-                        {
-                            objMugshotImages[i] = lstMugshotsBase64[i].ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
-                        });
-                        _lstMugshots.AddRange(objMugshotImages);
-                    }
-                    else if (lstMugshotsBase64.Count == 1)
-                    {
-                        _lstMugshots.Add(lstMugshotsBase64[0].ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb));
-                    }
+                    lstMugshotsBase64.Add(strMugshot);
                 }
+            }
+            if (lstMugshotsBase64.Count > 1)
+            {
+                Image[] objMugshotImages = new Image[lstMugshotsBase64.Count];
+                Parallel.For(0, lstMugshotsBase64.Count, i =>
+                {
+                    objMugshotImages[i] = lstMugshotsBase64[i].ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                });
+                _lstMugshots.AddRange(objMugshotImages);
+            }
+            else if (lstMugshotsBase64.Count == 1)
+            {
+                _lstMugshots.Add(lstMugshotsBase64[0].ToImage(System.Drawing.Imaging.PixelFormat.Format32bppPArgb));
             }
         }
 

@@ -22,8 +22,10 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
- using System.Net;
- using Application = System.Windows.Forms.Application;
+#if DEBUG
+using System.Net;
+#endif
+using Application = System.Windows.Forms.Application;
 using System.Text;
 using Microsoft.Win32;
 
@@ -43,9 +45,24 @@ namespace Chummer
         public frmOptions()
         {
             InitializeComponent();
+#if !DEBUG
+            // tabPage3 only contains cmdUploadPastebin, which is not used if DEBUG is not enabled
+            // Remove this line if cmdUploadPastebin_Click has some functionality if DEBUG is not enabled or if tabPage3 gets some other control that can be used if DEBUG is not enabled
+            tabControl2.TabPages.Remove(tabPage3);
+#endif
             LanguageManager.TranslateWinForm(_strSelectedLanguage, this);
 
-            _lstCustomDataDirectoryInfos = new List<CustomDataDirectoryInfo>(GlobalOptions.CustomDataDirectoryInfo);
+            _lstCustomDataDirectoryInfos = new List<CustomDataDirectoryInfo>();
+            foreach (CustomDataDirectoryInfo objInfo in GlobalOptions.CustomDataDirectoryInfo)
+            {
+                CustomDataDirectoryInfo objCustomDataDirectory = new CustomDataDirectoryInfo
+                {
+                    Name = objInfo.Name,
+                    Path = objInfo.Path,
+                    Enabled = objInfo.Enabled
+                };
+                _lstCustomDataDirectoryInfos.Add(objCustomDataDirectory);
+            }
             string strCustomDataRootPath = Path.Combine(Application.StartupPath, "customdata");
             if (Directory.Exists(strCustomDataRootPath))
             {
@@ -158,6 +175,7 @@ namespace Chummer
             _characterOptions.MetatypeCostsKarmaMultiplier = decimal.ToInt32(nudMetatypeCostsKarmaMultiplier.Value);
             _characterOptions.MoreLethalGameplay = chkMoreLethalGameplay.Checked;
             _characterOptions.NoSingleArmorEncumbrance = chkNoSingleArmorEncumbrance.Checked;
+            _characterOptions.NoArmorEncumbrance = chkNoArmorEncumbrance.Checked;
             _characterOptions.NuyenPerBP = decimal.ToInt32(nudKarmaNuyenPer.Value);
             _characterOptions.PrintExpenses = chkPrintExpenses.Checked;
             _characterOptions.PrintFreeExpenses = chkPrintFreeExpenses.Checked;
@@ -784,6 +802,7 @@ namespace Chummer
 
         private void PopulateCustomDataDirectoryTreeView()
         {
+            object objOldSelected = treCustomDataDirectories.SelectedNode?.Tag;
             if (_lstCustomDataDirectoryInfos.Count != treCustomDataDirectories.Nodes.Count)
             {
                 treCustomDataDirectories.Nodes.Clear();
@@ -810,6 +829,9 @@ namespace Chummer
                     objLoopNode.Checked = objLoopInfo.Enabled;
                 }
             }
+
+            if (objOldSelected != null)
+                treCustomDataDirectories.SelectedNode = treCustomDataDirectories.FindNodeByTag(objOldSelected);
         }
 
         /// <summary>
@@ -861,6 +883,7 @@ namespace Chummer
             chkMetatypeCostsKarma.Checked = _characterOptions.MetatypeCostsKarma;
             chkMoreLethalGameplay.Checked = _characterOptions.MoreLethalGameplay;
             chkNoSingleArmorEncumbrance.Checked = _characterOptions.NoSingleArmorEncumbrance;
+            chkNoArmorEncumbrance.Checked = _characterOptions.NoArmorEncumbrance;
             chkPrintExpenses.Checked = _characterOptions.PrintExpenses;
             chkPrintFreeExpenses.Checked = _characterOptions.PrintFreeExpenses;
             chkPrintFreeExpenses.Enabled = chkPrintExpenses.Checked;
@@ -1028,25 +1051,41 @@ namespace Chummer
                 }
 
                 // Save the Custom Data Directory Info.
-                if (objRegistry.OpenSubKey("CustomDataDirectory") != null)
-                    objRegistry.DeleteSubKeyTree("CustomDataDirectory");
-                RegistryKey objCustomDataDirectoryRegistry = objRegistry.CreateSubKey("CustomDataDirectory");
-                if (objCustomDataDirectoryRegistry != null)
+                bool blnDoCustomDataDirectoryRefresh = _lstCustomDataDirectoryInfos.Count != GlobalOptions.CustomDataDirectoryInfo.Count;
+                if (!blnDoCustomDataDirectoryRefresh)
                 {
                     for (int i = 0; i < _lstCustomDataDirectoryInfos.Count; ++i)
                     {
-                        CustomDataDirectoryInfo objCustomDataDirectory = _lstCustomDataDirectoryInfos[i];
-                        RegistryKey objLoopKey = objCustomDataDirectoryRegistry.CreateSubKey(objCustomDataDirectory.Name);
-                        if (objLoopKey != null)
+                        if (_lstCustomDataDirectoryInfos[i].CompareTo(GlobalOptions.CustomDataDirectoryInfo[i]) != 0)
                         {
-                            objLoopKey.SetValue("Path", objCustomDataDirectory.Path.Replace(Application.StartupPath, "$CHUMMER"));
-                            objLoopKey.SetValue("Enabled", objCustomDataDirectory.Enabled);
-                            objLoopKey.SetValue("LoadOrder", i);
-                            objLoopKey.Close();
+                            blnDoCustomDataDirectoryRefresh = true;
+                            break;
                         }
                     }
+                }
 
-                    objCustomDataDirectoryRegistry.Close();
+                if (blnDoCustomDataDirectoryRefresh)
+                {
+                    if (objRegistry.OpenSubKey("CustomDataDirectory") != null)
+                        objRegistry.DeleteSubKeyTree("CustomDataDirectory");
+                    RegistryKey objCustomDataDirectoryRegistry = objRegistry.CreateSubKey("CustomDataDirectory");
+                    if (objCustomDataDirectoryRegistry != null)
+                    {
+                        for (int i = 0; i < _lstCustomDataDirectoryInfos.Count; ++i)
+                        {
+                            CustomDataDirectoryInfo objCustomDataDirectory = _lstCustomDataDirectoryInfos[i];
+                            RegistryKey objLoopKey = objCustomDataDirectoryRegistry.CreateSubKey(objCustomDataDirectory.Name);
+                            if (objLoopKey != null)
+                            {
+                                objLoopKey.SetValue("Path", objCustomDataDirectory.Path.Replace(Application.StartupPath, "$CHUMMER"));
+                                objLoopKey.SetValue("Enabled", objCustomDataDirectory.Enabled);
+                                objLoopKey.SetValue("LoadOrder", i);
+                                objLoopKey.Close();
+                            }
+                        }
+
+                        objCustomDataDirectoryRegistry.Close();
+                    }
                 }
 
                 objRegistry.Close();
@@ -1514,8 +1553,9 @@ namespace Chummer
 
             string strOldSelected = cboXSLT.SelectedValue?.ToString() ?? string.Empty;
             // Strip away the language prefix
-            if (strOldSelected.Contains(Path.DirectorySeparatorChar))
-                strOldSelected = strOldSelected.Substring(strOldSelected.LastIndexOf(Path.DirectorySeparatorChar) + 1);
+            int intPos = strOldSelected.LastIndexOf(Path.DirectorySeparatorChar);
+            if (intPos != -1)
+                strOldSelected = strOldSelected.Substring(intPos + 1);
 
             cboXSLT.BeginUpdate();
             cboXSLT.ValueMember = "Value";
@@ -1718,7 +1758,7 @@ namespace Chummer
                     txtCharacterRosterPath.Text = dlgSelectFolder.SelectedPath;
             }
         }
-
+        
         private void cmdAddCustomDirectory_Click(object sender, EventArgs e)
         {
             // Prompt the user to select a save file to associate with this Contact.
@@ -1876,6 +1916,20 @@ namespace Chummer
             if (!chkPrintFreeExpenses.Enabled)
                 chkPrintFreeExpenses.Checked = true;
             OptionsChanged(sender, e);
+        }
+
+        private void treCustomDataDirectories_AfterCheck(object sender, TreeViewEventArgs e)
+        {
+            TreeNode objNode = e.Node;
+            if (objNode != null)
+            {
+                CustomDataDirectoryInfo objInfoToRemove = _lstCustomDataDirectoryInfos.FirstOrDefault(x => x.Name == objNode.Tag.ToString());
+                if (objInfoToRemove != null)
+                {
+                    objInfoToRemove.Enabled = objNode.Checked;
+                    OptionsChanged(sender, e);
+                }
+            }
         }
     }
 }

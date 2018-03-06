@@ -4206,7 +4206,7 @@
     </string>
     <string>
       <key>Message_CyberwareSuite_DuplicateName</key>
-      <text>"{0}" という名前のスイートはデータファイル "{1}" にすでに存在します. 別の名前にしてください</text>
+      <text>"{0}" という名前のスイートはデータファイルにすでに存在します. 別の名前にしてください</text>
     </string>
     <string>
       <key>MessageTitle_CyberwareSuite_DuplicateName</key>
@@ -4311,7 +4311,7 @@
     </string>
     <string>
       <key>Message_CreatePACKSKit_DuplicateName</key>
-      <text>"{0}" という名前のKitはデータファイル "{1}" にすでに存在します. 別の名前にしてください</text>
+      <text>"{0}" という名前のKitはデータファイルにすでに存在します. 別の名前にしてください</text>
     </string>
     <string>
       <key>MessageTitle_CreatePACKSKit_DuplicateName</key>
@@ -6042,7 +6042,7 @@
     </string>
     <!-- Select Program Window -->
     <string>
-      <key>Title_SelectProgram</key>
+      <key>Title_SelectComplexForm</key>
       <text>プログラムを選択</text>
     </string>
     <string>
@@ -7305,15 +7305,15 @@
       <text>Power Point</text>
     </string>
     <string>
-      <key>Label_SelectProgram_Target</key>
+      <key>Label_SelectComplexForm_Target</key>
       <text>Target:</text>
     </string>
     <string>
-      <key>Label_SelectProgram_Duration</key>
+      <key>Label_SelectComplexForm_Duration</key>
       <text>Duration:</text>
     </string>
     <string>
-      <key>Label_SelectProgram_FV</key>
+      <key>Label_SelectComplexForm_FV</key>
       <text>FV:</text>
     </string>
     <string>

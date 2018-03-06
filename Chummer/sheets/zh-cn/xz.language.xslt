@@ -154,6 +154,7 @@
   <xsl:variable name="lang.Name"      select="'姓名'"/>
   <xsl:variable name="lang.Native"    select="'母语'"/>
   <xsl:variable name="lang.No"      select="'不'"/>
+  <xsl:variable name="lang.None"      select="'None'"/>
   <xsl:variable name="lang.Notes"      select="'备注'"/>
   <xsl:variable name="lang.Notoriety"    select="'恶名'"/>
   <xsl:variable name="lang.Nuyen"      select="'新円'"/>
@@ -262,6 +263,7 @@
   <xsl:variable name="lang.ComplexForms"    select="'复合程式'"/>
   <xsl:variable name="lang.ConditionMonitor"  select="'CM'"/>
   <xsl:variable name="lang.ContactList"    select="'人脉表'"/>
+  <xsl:variable name="lang.CoreTrack"  select="'Core Damage Track'"/>
   <xsl:variable name="lang.CritterPowers"    select="'怪物能力'"/>
   <xsl:variable name="lang.CurrentEdge"    select="'当前极限点'"/>
   <xsl:variable name="lang.DamageType"  select="'Damage Type'"/>
@@ -285,6 +287,7 @@
   <xsl:variable name="lang.MatrixHot"      select="'矩阵（热模）'"/>
   <xsl:variable name="lang.MatrixTrack"    select="'矩阵伤害'"/>
   <xsl:variable name="lang.MeleeWeapons"    select="'近战武器'"/>
+  <xsl:variable name="lang.MentalAttributes"  select="'精神属性'"/>
   <xsl:variable name="lang.NotAddictedYet"  select="'Not Addicted Yet'"/>
   <xsl:variable name="lang.Nothing2Show4Devices"    select="'No Devices to list'"/>
   <xsl:variable name="lang.Nothing2Show4Notes"    select="'No Notes to list'"/>
@@ -293,9 +296,9 @@
   <xsl:variable name="lang.OtherArmor"      select="'其他护甲'"/>
   <xsl:variable name="lang.OtherMugshots"    select="'其他肖像'"/>
   <xsl:variable name="lang.PageBreak"      select="'Page Break: '"/>
-  <xsl:variable name="lang.ToxinsAndPathogens"  select="'Toxins and Pathogens'"/>
   <xsl:variable name="lang.PersonalData"    select="'个人信息'"/>
   <xsl:variable name="lang.PersonalLife"    select="'Personal Life'"/>
+  <xsl:variable name="lang.PhysicalAttributes"  select="'物理属性'"/>
   <xsl:variable name="lang.PhysicalNaturalRecovery"  select="'Natural Recovery Pool (1 day)'"/>
   <xsl:variable name="lang.PhysicalTrack"  select="'物理伤害'"/>
   <xsl:variable name="lang.PreferredPayment"    select="'Preferred Payment Method'"/>
@@ -308,12 +311,14 @@
   <xsl:variable name="lang.RiggerInitiative"  select="'机师主动性'"/>
   <xsl:variable name="lang.SkillGroup"    select="'技能组'"/>
   <xsl:variable name="lang.SkillGroups"    select="'技能组'"/>
+  <xsl:variable name="lang.SpecialAttributes"  select="'特殊属性'"/>
   <xsl:variable name="lang.StreetCred"    select="'信誉'"/>
   <xsl:variable name="lang.StreetName"    select="'Street Name'"/>
   <xsl:variable name="lang.StunNaturalRecovery"  select="'Natural Recovery Pool (1 hour)'"/>
   <xsl:variable name="lang.StunTrack"    select="'&#160;&#160;晕眩伤害'"/>
   <xsl:variable name="lang.SubmersionGrade"  select="'深潜阶层'"/>
   <xsl:variable name="lang.TotalArmor"  select="'Total of equipped single highest armor and accessories'"/>
+  <xsl:variable name="lang.ToxinsAndPathogens"  select="'Toxins and Pathogens'"/>
   <xsl:variable name="lang.UnnamedCharacter"  select="'未命名角色'"/>
   <xsl:variable name="lang.VehicleBody"    select="'机体'"/>
   <xsl:variable name="lang.VehicleCost"    select="'载具售价'"/>

@@ -154,65 +154,14 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
-            if (lstSpells.SelectedValue != null)
-            {
-                // Display the Spell information.
-                XPathNavigator objXmlSpell = _xmlBaseSpellDataNode.SelectSingleNode("spells/spell[id = \"" + lstSpells.SelectedValue.ToString() + "\"]");
-                // Count the number of Spells the character currently has and make sure they do not try to select more Spells than they are allowed.
-                // The maximum number of Spells a character can start with is 2 x (highest of Spellcasting or Ritual Spellcasting Skill).
-                int intSpellCount = 0;
-                int intRitualCount = 0;
-                int intAlchPrepCount = 0;
-
-                foreach (Spell objspell in _objCharacter.Spells)
-                {
-                    if (objspell.Alchemical)
-                    { intAlchPrepCount++; }
-                    else if (objspell.Category == "Rituals")
-                    { intRitualCount++; }
-                    else
-                    { intSpellCount++; }
-                }
-                if (!_objCharacter.IgnoreRules)
-                {
-                    if (!_objCharacter.Created)
-                    {
-                        int intSpellLimit = (_objCharacter.MAG.TotalValue * 2);
-                        if (chkAlchemical.Checked)
-                        {
-                            if (intAlchPrepCount >= intSpellLimit)
-                            {
-                                MessageBox.Show(LanguageManager.GetString("Message_SpellLimit", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_SpellLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                return;
-                            }
-                        }
-                        else if (objXmlSpell?.SelectSingleNode("category")?.Value == "Rituals")
-                        {
-                            if (intRitualCount >= intSpellLimit)
-                            {
-                                MessageBox.Show(LanguageManager.GetString("Message_SpellLimit", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_SpellLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                return;
-                            }
-                        }
-                        else if (intSpellCount >= intSpellLimit)
-                        {
-                            MessageBox.Show(LanguageManager.GetString("Message_SpellLimit", GlobalOptions.Language),
-                                LanguageManager.GetString("MessageTitle_SpellLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            return;
-                        }
-                    }
-                    if (!objXmlSpell.RequirementsMet(_objCharacter, LanguageManager.GetString("String_DescSpell", GlobalOptions.Language)))
-                    {
-                        return;
-                    }
-                }
-                AcceptForm();
-            }
+            _blnAddAgain = false;
+            AcceptForm();
         }
 
         private void treSpells_DoubleClick(object sender, EventArgs e)
         {
-            cmdOK_Click(sender, e);
+            _blnAddAgain = false;
+            AcceptForm();
         }
 
         private void cmdCancel_Click(object sender, EventArgs e)
@@ -233,7 +182,7 @@ namespace Chummer
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             _blnAddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
 
         private void txtSearch_KeyDown(object sender, KeyEventArgs e)
@@ -345,7 +294,7 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ')';
+                    strFilter += " and (" + objCategoryFilter.ToString().TrimEndOnce(" or ") + ')';
                 }
             }
             if (_objCharacter.Options.ExtendAnyDetectionSpell)
@@ -414,6 +363,58 @@ namespace Chummer
             string strSelectedItem = lstSpells.SelectedValue?.ToString();
             if (string.IsNullOrEmpty(strSelectedItem))
                 return;
+
+            // Display the Spell information.
+            XPathNavigator objXmlSpell = _xmlBaseSpellDataNode.SelectSingleNode("spells/spell[id = \"" + strSelectedItem + "\"]");
+            // Count the number of Spells the character currently has and make sure they do not try to select more Spells than they are allowed.
+            // The maximum number of Spells a character can start with is 2 x (highest of Spellcasting or Ritual Spellcasting Skill).
+            int intSpellCount = 0;
+            int intRitualCount = 0;
+            int intAlchPrepCount = 0;
+
+            foreach (Spell objspell in _objCharacter.Spells)
+            {
+                if (objspell.Alchemical)
+                { intAlchPrepCount++; }
+                else if (objspell.Category == "Rituals")
+                { intRitualCount++; }
+                else
+                { intSpellCount++; }
+            }
+            if (!_objCharacter.IgnoreRules)
+            {
+                if (!_objCharacter.Created)
+                {
+                    int intSpellLimit = (_objCharacter.MAG.TotalValue * 2);
+                    if (chkAlchemical.Checked)
+                    {
+                        if (intAlchPrepCount >= intSpellLimit)
+                        {
+                            MessageBox.Show(LanguageManager.GetString("Message_SpellLimit", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_SpellLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            return;
+                        }
+                    }
+                    else if (objXmlSpell?.SelectSingleNode("category")?.Value == "Rituals")
+                    {
+                        if (intRitualCount >= intSpellLimit)
+                        {
+                            MessageBox.Show(LanguageManager.GetString("Message_SpellLimit", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_SpellLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            return;
+                        }
+                    }
+                    else if (intSpellCount >= intSpellLimit)
+                    {
+                        MessageBox.Show(LanguageManager.GetString("Message_SpellLimit", GlobalOptions.Language),
+                            LanguageManager.GetString("MessageTitle_SpellLimit", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                }
+                if (!objXmlSpell.RequirementsMet(_objCharacter, LanguageManager.GetString("String_DescSpell", GlobalOptions.Language)))
+                {
+                    return;
+                }
+            }
+            
             _strSelectedSpell = strSelectedItem;
             s_StrSelectCategory = (_objCharacter.Options.SearchInCategoryOnly || txtSearch.TextLength == 0)
                 ? cboCategory.SelectedValue?.ToString()
@@ -474,12 +475,26 @@ namespace Chummer
 
             StringBuilder objDescriptors = new StringBuilder();
             bool blnExtendedFound = false;
+            bool blnAlchemicalFound = false;
             foreach (string strDescriptor in strDescriptorsIn)
             {
                 switch (strDescriptor.Trim())
                 {
+                    case "Active":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescActive", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
                     case "Adept":
                         objDescriptors.Append(LanguageManager.GetString("String_DescAdept", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Alchemical Preparation":
+                        blnAlchemicalFound = true;
+                        objDescriptors.Append(LanguageManager.GetString("String_DescAlchemicalPreparation", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Area":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescArea", GlobalOptions.Language));
                         objDescriptors.Append(", ");
                         break;
                     case "Anchored":
@@ -494,8 +509,33 @@ namespace Chummer
                         objDescriptors.Append(LanguageManager.GetString("String_DescContractual", GlobalOptions.Language));
                         objDescriptors.Append(", ");
                         break;
+                    case "Direct":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescDirect", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Directional":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescDirectional", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Elemental":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescElemental", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Environmental":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescEnvironmental", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Extended Area":
+                        blnExtendedFound = true;
+                        objDescriptors.Append(LanguageManager.GetString("String_DescExtendedArea", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
                     case "Geomancy":
                         objDescriptors.Append(LanguageManager.GetString("String_DescGeomancy", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Indirect":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescIndirect", GlobalOptions.Language));
                         objDescriptors.Append(", ");
                         break;
                     case "Mana":
@@ -506,12 +546,52 @@ namespace Chummer
                         objDescriptors.Append(LanguageManager.GetString("String_DescMaterialLink", GlobalOptions.Language));
                         objDescriptors.Append(", ");
                         break;
+                    case "Mental":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescMental", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
                     case "Minion":
                         objDescriptors.Append(LanguageManager.GetString("String_DescMinion", GlobalOptions.Language));
                         objDescriptors.Append(", ");
                         break;
+                    case "Multi-Sense":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescMultiSense", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Negative":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescNegative", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Obvious":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescObvious", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
                     case "Organic Link":
                         objDescriptors.Append(LanguageManager.GetString("String_DescOrganicLink", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Passive":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescPassive", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Physical":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescPhysical", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Psychic":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescPsychic", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Realistic":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescRealistic", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Single-Sense":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescSingleSense", GlobalOptions.Language));
+                        objDescriptors.Append(", ");
+                        break;
+                    case "Touch":
+                        objDescriptors.Append(LanguageManager.GetString("String_DescTouch", GlobalOptions.Language));
                         objDescriptors.Append(", ");
                         break;
                     case "Spell":
@@ -525,7 +605,12 @@ namespace Chummer
                 }
             }
 
-            if (xmlSpell.SelectSingleNode("category")?.Value == "Rituals")
+            if (blnAlchemicalFound)
+            {
+                chkAlchemical.Enabled = false;
+                chkAlchemical.Checked = true;
+            }
+            else if (xmlSpell.SelectSingleNode("category")?.Value == "Rituals")
             {
                 chkAlchemical.Enabled = false;
                 chkAlchemical.Checked = false;
@@ -540,7 +625,7 @@ namespace Chummer
                 objDescriptors.Append(", ");
             }
 
-            if (chkAlchemical.Checked && !blnExtendedFound)
+            if (chkAlchemical.Checked && !blnAlchemicalFound)
             {
                 objDescriptors.Append(LanguageManager.GetString("String_DescAlchemicalPreparation", GlobalOptions.Language));
                 objDescriptors.Append(", ");
@@ -574,7 +659,12 @@ namespace Chummer
                     break;
             }
 
-            if (xmlSpell.SelectSingleNode("category")?.Value == "Detection")
+            if (blnExtendedFound)
+            {
+                chkExtended.Checked = true;
+                chkExtended.Enabled = false;
+            }
+            else if (xmlSpell.SelectSingleNode("category")?.Value == "Detection")
             {
                 chkExtended.Enabled = true;
             }
@@ -585,12 +675,15 @@ namespace Chummer
             }
 
             string strRange = xmlSpell.SelectSingleNode("range")?.Value ?? string.Empty;
-            strRange = strRange.CheapReplace("Self", () => LanguageManager.GetString("String_SpellRangeSelf", GlobalOptions.Language));
-            strRange = strRange.CheapReplace("LOS", () => LanguageManager.GetString("String_SpellRangeLineOfSight", GlobalOptions.Language));
-            strRange = strRange.CheapReplace("LOI", () => LanguageManager.GetString("String_SpellRangeLineOfInfluence", GlobalOptions.Language));
-            strRange = strRange.CheapReplace("T", () => LanguageManager.GetString("String_SpellRangeTouch", GlobalOptions.Language));
-            strRange = strRange.CheapReplace("(A)", () => '(' + LanguageManager.GetString("String_SpellRangeArea", GlobalOptions.Language) + ')');
-            strRange = strRange.CheapReplace("MAG", () => LanguageManager.GetString("String_AttributeMAGShort", GlobalOptions.Language));
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
+            {
+                strRange = strRange.CheapReplace("Self", () => LanguageManager.GetString("String_SpellRangeSelf", GlobalOptions.Language))
+                    .CheapReplace("LOS", () => LanguageManager.GetString("String_SpellRangeLineOfSight", GlobalOptions.Language))
+                    .CheapReplace("LOI", () => LanguageManager.GetString("String_SpellRangeLineOfInfluence", GlobalOptions.Language))
+                    .CheapReplace("T", () => LanguageManager.GetString("String_SpellRangeTouch", GlobalOptions.Language))
+                    .CheapReplace("(A)", () => '(' + LanguageManager.GetString("String_SpellRangeArea", GlobalOptions.Language) + ')')
+                    .CheapReplace("MAG", () => LanguageManager.GetString("String_AttributeMAGShort", GlobalOptions.Language));
+            }
             lblRange.Text = strRange;
 
             switch (xmlSpell.SelectSingleNode("damage")?.Value)
@@ -609,14 +702,18 @@ namespace Chummer
                     break;
             }
 
-            string strDV = xmlSpell.SelectSingleNode("dv")?.Value.Replace('/', '÷').CheapReplace("F", () => LanguageManager.GetString("String_SpellForce", GlobalOptions.Language)) ?? string.Empty;
-            strDV = strDV.CheapReplace("Overflow damage", () => LanguageManager.GetString("String_SpellOverflowDamage", GlobalOptions.Language));
-            strDV = strDV.CheapReplace("Damage Value", () => LanguageManager.GetString("String_SpellDamageValue", GlobalOptions.Language));
-            strDV = strDV.CheapReplace("Toxin DV", () => LanguageManager.GetString("String_SpellToxinDV", GlobalOptions.Language));
-            strDV = strDV.CheapReplace("Disease DV", () => LanguageManager.GetString("String_SpellDiseaseDV", GlobalOptions.Language));
-            strDV = strDV.CheapReplace("Radiation Power", () => LanguageManager.GetString("String_SpellRadiationPower", GlobalOptions.Language));
+            string strDV = xmlSpell.SelectSingleNode("dv")?.Value.Replace('/', '÷') ?? string.Empty;
+            if (GlobalOptions.Language != GlobalOptions.DefaultLanguage)
+            {
+                strDV = strDV.CheapReplace("F", () => LanguageManager.GetString("String_SpellForce", GlobalOptions.Language))
+                    .CheapReplace("Overflow damage", () => LanguageManager.GetString("String_SpellOverflowDamage", GlobalOptions.Language))
+                    .CheapReplace("Damage Value", () => LanguageManager.GetString("String_SpellDamageValue", GlobalOptions.Language))
+                    .CheapReplace("Toxin DV", () => LanguageManager.GetString("String_SpellToxinDV", GlobalOptions.Language))
+                    .CheapReplace("Disease DV", () => LanguageManager.GetString("String_SpellDiseaseDV", GlobalOptions.Language))
+                    .CheapReplace("Radiation Power", () => LanguageManager.GetString("String_SpellRadiationPower", GlobalOptions.Language));
+            }
 
-            if (chkExtended.Checked)
+            if (chkExtended.Checked && !blnExtendedFound)
             {
                 // Add +2 to the DV value if Extended is selected.
                 int intPos = strDV.IndexOf(')') + 1;
@@ -639,31 +736,34 @@ namespace Chummer
 
             if (chkLimited.Checked)
             {
-                int intPos;
-                if (strDV.Contains('-'))
+                int intPos = strDV.IndexOf('-');
+                if (intPos != -1)
                 {
-                    intPos = strDV.IndexOf('-') + 1;
+                    intPos = intPos + 1;
                     string strAfter = strDV.Substring(intPos, strDV.Length - intPos);
                     strDV = strDV.Substring(0, intPos);
                     int intAfter = Convert.ToInt32(strAfter);
                     intAfter += 2;
                     strDV += intAfter.ToString();
                 }
-                else if (strDV.Contains('+'))
-                {
-                    intPos = strDV.IndexOf('+');
-                    string strAfter = strDV.Substring(intPos, strDV.Length - intPos);
-                    strDV = strDV.Substring(0, intPos);
-                    int intAfter = Convert.ToInt32(strAfter);
-                    intAfter -= 2;
-                    if (intAfter > 0)
-                        strDV += '+' + intAfter.ToString();
-                    else if (intAfter < 0)
-                        strDV += intAfter.ToString();
-                }
                 else
                 {
-                    strDV += "-2";
+                    intPos = strDV.IndexOf('+');
+                    if (intPos != -1)
+                    {
+                        string strAfter = strDV.Substring(intPos, strDV.Length - intPos);
+                        strDV = strDV.Substring(0, intPos);
+                        int intAfter = Convert.ToInt32(strAfter);
+                        intAfter -= 2;
+                        if (intAfter > 0)
+                            strDV += '+' + intAfter.ToString();
+                        else if (intAfter < 0)
+                            strDV += intAfter.ToString();
+                    }
+                    else
+                    {
+                        strDV += "-2";
+                    }
                 }
             }
 

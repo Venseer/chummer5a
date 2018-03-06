@@ -640,9 +640,10 @@ namespace Chummer
             // This statement is wrapped in a try/catch since trying 1 div 2 results in an error with XSLT.
             try
             {
-                intValue = Convert.ToInt32(Math.Ceiling((double)CommonFunctions.EvaluateInvariantXPath(strIn.Replace("/", " div ").Replace("F", strForce).Replace("1D6", strForce).Replace("2D6", strForce))));
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(strIn.Replace("/", " div ").Replace("F", strForce).Replace("1D6", strForce).Replace("2D6", strForce), out bool blnIsSuccess);
+                if (blnIsSuccess)
+                    intValue = Convert.ToInt32(Math.Ceiling((double)objProcess));
             }
-            catch (XPathException) { }
             catch (OverflowException) { } // Result is text and not a double
             catch (InvalidCastException) { }
 
@@ -739,7 +740,7 @@ namespace Chummer
                             strbldQualities.Append(')');
                         }
                     }
-                    strbldQualities.Append('\n');
+                    strbldQualities.Append(Environment.NewLine);
                 }
 
                 lblQualities.Text = strbldQualities.Length == 0 ? LanguageManager.GetString("String_None", GlobalOptions.Language) : strbldQualities.ToString();
@@ -801,7 +802,7 @@ namespace Chummer
                             strbldQualities.Append(')');
                         }
                     }
-                    strbldQualities.Append('\n');
+                    strbldQualities.Append(Environment.NewLine);
                 }
 
                 lblQualities.Text = strbldQualities.Length == 0 ? LanguageManager.GetString("String_None", GlobalOptions.Language) : strbldQualities.ToString();
@@ -872,21 +873,34 @@ namespace Chummer
 
                 // If the Metatype has Force enabled, show the Force NUD.
                 string strEssMax = objXmlMetatype.SelectSingleNode("essmax")?.Value ?? string.Empty;
-                if (objXmlMetatype.SelectSingleNode("forcecreature") != null || (!string.IsNullOrEmpty(strEssMax) && strEssMax.Contains("D6")))
+                int intPos = strEssMax.IndexOf("D6", StringComparison.Ordinal);
+                if (objXmlMetatype.SelectSingleNode("forcecreature") != null || intPos != -1)
                 {
                     lblForceLabel.Visible = true;
                     nudForce.Visible = true;
 
-                    int intPos = !string.IsNullOrEmpty(strEssMax) ? strEssMax.IndexOf("D6", StringComparison.Ordinal) : - 1;
                     if (intPos != -1)
                     {
-                        intPos -= 1;
-                        lblForceLabel.Text = strEssMax.Substring(intPos, 3);
-                        nudForce.Maximum = Convert.ToInt32(strEssMax.Substring(intPos, 1)) * 6;
+                        if (intPos > 0)
+                        {
+                            intPos -= 1;
+                            lblForceLabel.Text = strEssMax.Substring(intPos, 3);
+                            nudForce.Maximum = Convert.ToInt32(strEssMax.Substring(intPos, 1)) * 6;
+                        }
+                        else
+                        {
+                            lblForceLabel.Text = "1D6";
+                            nudForce.Maximum = 6;
+                        }
                     }
                     else
                     {
-                        lblForceLabel.Text = LanguageManager.GetString("String_Force", GlobalOptions.Language);
+                        // TODO: Unhardcode whether Force is called "Force" or "Level"
+                        lblForceLabel.Text = LanguageManager.GetString(objXmlMetatype.SelectSingleNode("bodmax")?.Value == "0" &&
+                                                                       objXmlMetatype.SelectSingleNode("agimax")?.Value == "0" &&
+                                                                       objXmlMetatype.SelectSingleNode("reamax")?.Value == "0" &&
+                                                                       objXmlMetatype.SelectSingleNode("strmax")?.Value == "0" &&
+                                                                       objXmlMetatype.SelectSingleNode("magmin")?.Value.Contains('F') != true ? "String_Level" : "String_Force", GlobalOptions.Language);
                         nudForce.Maximum = 100;
                     }
                 }

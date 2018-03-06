@@ -1,3 +1,22 @@
+/*  This file is part of Chummer5a.
+ *
+ *  Chummer5a is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Chummer5a is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Chummer5a.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  You can obtain the full source code for Chummer5a at
+ *  https://github.com/chummer5a/chummer5a
+ */
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,6 +27,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
+
 // ReSharper disable LocalizableElement
 
 namespace Translator
@@ -61,6 +81,7 @@ namespace Translator
                 if (!_workerSectionLoader.IsBusy)
                     _workerSectionLoader.RunWorkerAsync();
             }
+
             if (_blnQueueStringsLoaderRun)
             {
                 if (!_workerStringsLoader.IsBusy)
@@ -69,6 +90,7 @@ namespace Translator
         }
 
         #region Control Events
+
         private void frmTranslate_FormClosing(object sender, FormClosingEventArgs e)
         {
             Application.Idle -= RunQueuedWorkers;
@@ -90,6 +112,7 @@ namespace Translator
                 LoadStrings();
                 return;
             }
+
             LoadSection();
         }
 
@@ -119,9 +142,11 @@ namespace Translator
                         Cursor = Cursors.Default;
                         return;
                     }
+
                     pbTranslateProgressBar.PerformStep();
                 }
             }
+
             for (int i = 0; i < rowIndex; ++i)
             {
                 DataGridViewCellCollection objCurrentRowCells = dgvSection.Rows[i].Cells;
@@ -138,9 +163,11 @@ namespace Translator
                         Cursor = Cursors.Default;
                         return;
                     }
+
                     pbTranslateProgressBar.PerformStep();
                 }
             }
+
             Cursor = Cursors.Default;
             MessageBox.Show("Search text was not found.");
         }
@@ -158,6 +185,7 @@ namespace Translator
                 cboSection.Visible = true;
                 LoadSections();
             }
+
             _blnLoading = false;
         }
 
@@ -183,12 +211,14 @@ namespace Translator
             string strEnglish = item.Cells["English"].Value.ToString();
             string strId = item.Cells["Id"].Value.ToString();
             string strPage = item.Cells[cboFile.Text == "books.xml" ? "Code" : "Page"].Value.ToString();
+            bool blnHasNameOnPage = cboFile.Text == "qualities.xml";
+            string strNameOnPage = blnHasNameOnPage ? item.Cells["NameOnPage"].Value.ToString() : string.Empty;
             string strSection = cboSection.Text;
             if (strSection == "[Show All Sections]")
                 strSection = "*";
             string strBaseXPath = "/chummer/chummer[@file=\"" + cboFile.Text + "\"]/" + strSection + '/';
             XmlNode xmlNodeLocal = _objDataDoc.SelectSingleNode(strBaseXPath + "/id[text()=\"" + strId + "\"]/..") ??
-                _objDataDoc.SelectSingleNode(strBaseXPath + "/name[text()=\"" + strEnglish + "\"]/..");
+                                   _objDataDoc.SelectSingleNode(strBaseXPath + "/name[text()=\"" + strEnglish + "\"]/..");
             if (xmlNodeLocal == null)
             {
                 xmlNodeLocal = _objDataDoc.SelectSingleNode(strBaseXPath + "*[text()=\"" + strEnglish + "\"]");
@@ -215,8 +245,27 @@ namespace Translator
             {
                 XmlElement element = xmlNodeLocal["translate"];
                 if (element != null) element.InnerText = strTranslated;
-                XmlElement xmlElement = xmlNodeLocal.Name == "book" ? xmlNodeLocal["altcode"] : xmlNodeLocal["altpage"];
-                if (xmlElement != null) xmlElement.InnerText = strPage;
+                element = xmlNodeLocal.Name == "book" ? xmlNodeLocal["altcode"] : xmlNodeLocal["altpage"];
+                if (element != null) element.InnerText = strPage;
+                if (blnHasNameOnPage)
+                {
+                    element = xmlNodeLocal["altnameonpage"];
+                    if (string.IsNullOrWhiteSpace(strNameOnPage) && element != null)
+                    {
+                        xmlNodeLocal.RemoveChild(element);
+                    }
+                    else
+                    {
+                        if (element == null)
+                        {
+                            element = _objDataDoc.CreateElement("altnameonpage");
+                            xmlNodeLocal.AppendChild(element);
+                        }
+
+                        element.InnerText = strNameOnPage;
+                    }
+                }
+
 
                 XmlAttribute objAttrib = xmlNodeLocal.Attributes?["translated"];
                 if (objAttrib != null)
@@ -233,6 +282,7 @@ namespace Translator
                     xmlNodeLocal.Attributes?.Append(objAttrib);
                 }
             }
+
             Save(_objDataDoc);
         }
 
@@ -243,6 +293,7 @@ namespace Translator
                 item.DefaultCellStyle.BackColor = Color.Empty;
                 return;
             }
+
             item.DefaultCellStyle.BackColor = item.Cells["English"].Value.ToString() == item.Cells["Text"].Value.ToString() ? Color.Wheat : Color.Empty;
         }
 
@@ -253,6 +304,7 @@ namespace Translator
                 btnSearch.PerformClick();
                 return;
             }
+
             if ((e.KeyCode == Keys.F) && (e.Modifiers == Keys.Control))
                 txtSearch.Focus();
         }
@@ -297,6 +349,7 @@ namespace Translator
                 XmlNode root = _objTranslationDoc.SelectSingleNode("/chummer/strings/.");
                 root?.AppendChild(newNode);
             }
+
             Save(_objTranslationDoc, false);
         }
 
@@ -307,6 +360,7 @@ namespace Translator
                 btnSearch.PerformClick();
                 return;
             }
+
             if ((e.KeyCode == Keys.F) && (e.Modifiers == Keys.Control))
                 txtSearch.Focus();
         }
@@ -326,6 +380,7 @@ namespace Translator
                 btnSearch.PerformClick();
                 return;
             }
+
             if ((e.KeyCode == Keys.F) && (e.Modifiers == Keys.Control))
                 txtSearch.Focus();
         }
@@ -343,6 +398,7 @@ namespace Translator
 
             Application.Idle += RunQueuedWorkers;
         }
+
         private void txtSearch_GotFocus(object sender, EventArgs e)
         {
             //txtSearch.SelectAll();
@@ -353,9 +409,11 @@ namespace Translator
             if ((e.KeyChar == '\r') && !txtSearch.AcceptsReturn)
                 btnSearch.PerformClick();
         }
+
         #endregion
 
         #region BackgroundWorker Events
+
         private void DoLoadStrings(object sender, DoWorkEventArgs e)
         {
             _blnQueueStringsLoaderRun = false;
@@ -366,6 +424,7 @@ namespace Translator
                 e.Cancel = true;
                 return;
             }
+
             DataTable dataTable = new DataTable("strings");
             dataTable.Columns.Add("Key");
             dataTable.Columns.Add("English");
@@ -407,7 +466,7 @@ namespace Translator
 
                         if (!blnTranslated || !chkOnlyTranslation.Checked)
                         {
-                            object[] objArray = { strKey, strEnglish, strTranslated, blnTranslated };
+                            object[] objArray = {strKey, strEnglish, strTranslated, blnTranslated};
                             lock (arrayRowsToDisplayLock)
                                 arrayRowsToDisplay[i] = objArray;
                         }
@@ -424,17 +483,20 @@ namespace Translator
                     e.Cancel = true;
                     return;
                 }
+
                 if (_workerStringsLoader.CancellationPending)
                 {
                     e.Cancel = true;
                     return;
                 }
+
                 DataRowCollection objDataTableRows = dataTable.Rows;
                 foreach (object[] objArray in arrayRowsToDisplay)
                 {
                     if (objArray != null)
                         objDataTableRows.Add(objArray);
                 }
+
                 DataSet dataSet = new DataSet("strings");
                 dataSet.Tables.Add(dataTable);
                 e.Result = dataSet;
@@ -464,9 +526,11 @@ namespace Translator
                 {
                     TranslatedIndicator(row);
                 }
+
                 dgvTranslate.Visible = true;
                 dgvSection.Visible = false;
             }
+
             pbTranslateProgressBar.Value = 0;
             Cursor = Cursors.Default;
         }
@@ -476,6 +540,7 @@ namespace Translator
             _blnQueueSectionLoaderRun = false;
             string strFileName = _strSectionLoaderArgs[0];
             string strSection = _strSectionLoaderArgs[1];
+            bool blnHasNameOnPage = strFileName == "qualities.xml";
             DataTable dataTable = new DataTable("strings");
             dataTable.Columns.Add("Id");
             dataTable.Columns.Add("English");
@@ -490,7 +555,10 @@ namespace Translator
                 dataTable.Columns.Add("Book");
                 dataTable.Columns.Add("Page");
             }
+
             dataTable.Columns.Add("Translated?");
+            if (blnHasNameOnPage)
+                dataTable.Columns.Add("NameOnPage");
             if (strSection == "[Show All Sections]")
                 strSection = "*";
             if (_workerSectionLoader.CancellationPending)
@@ -498,6 +566,7 @@ namespace Translator
                 e.Cancel = true;
                 return;
             }
+
             XmlNodeList xmlBaseList = _objDataDoc.SelectNodes("/chummer/chummer[@file=\"" + strFileName + "\"]/" + strSection);
             int intSegmentsToProcess = 0;
             if (xmlBaseList != null)
@@ -534,6 +603,7 @@ namespace Translator
                             string strTranslated;
                             string strSource = string.Empty;
                             bool blnTranslated;
+                            string strNameOnPage = string.Empty;
                             XmlNode xmlChildNameNode = xmlChildNode["name"];
                             if (xmlChildNameNode == null)
                             {
@@ -546,16 +616,24 @@ namespace Translator
                                 strName = xmlChildNameNode.InnerText;
                                 strPage = (strFileName == "books.xml" ? xmlChildNode["altcode"]?.InnerText : xmlChildNode["altpage"]?.InnerText) ?? string.Empty;
                                 // if we have an Id get the Node using it
-                                XmlNode xmlNodeLocal = !string.IsNullOrEmpty(strId) ? xmlDocument.SelectSingleNode("/chummer/" + strSection + "/*[id=\"" + strId + "\"]") : xmlDocument.SelectSingleNode("/chummer/" + strSection + "/*[name=\"" + strName + "\"]");
+                                XmlNode xmlNodeLocal = !string.IsNullOrEmpty(strId)
+                                    ? xmlDocument.SelectSingleNode("/chummer/" + strSection + "/*[id=\"" + strId + "\"]")
+                                    : xmlDocument.SelectSingleNode("/chummer/" + strSection + "/*[name=\"" + strName + "\"]");
                                 if (xmlNodeLocal == null) MessageBox.Show(strName);
                                 strSource = xmlNodeLocal?["source"]?.InnerText ?? string.Empty;
                                 strTranslated = xmlChildNode["translate"]?.InnerText ?? string.Empty;
                                 blnTranslated = strName != strTranslated || xmlChildNode.Attributes?["translated"]?.InnerText == bool.TrueString;
+                                if (blnHasNameOnPage)
+                                    strNameOnPage = xmlChildNode["altnameonpage"]?.InnerText ?? string.Empty;
                             }
 
                             if (!blnTranslated || !chkOnlyTranslation.Checked)
                             {
-                                object[] objArray = {strId, strName, strTranslated, strSource, strPage, blnTranslated};
+                                object[] objArray;
+                                if (blnHasNameOnPage)
+                                    objArray = new object[] {strId, strName, strTranslated, strSource, strPage, blnTranslated, strNameOnPage};
+                                else
+                                    objArray = new object[] {strId, strName, strTranslated, strSource, strPage, blnTranslated};
                                 lock (arrayRowsToDisplayLock)
                                     arrayRowsToDisplay[i] = objArray;
                             }
@@ -617,19 +695,30 @@ namespace Translator
                 dgvSection.Columns[3].FillWeight = 0.5f;
                 dgvSection.Columns[4].FillWeight = 0.5f;
                 dgvSection.Columns[5].FillWeight = 0.5f;
+                if (cboFile.Text == "qualities.xml")
+                {
+                    dgvSection.Columns[1].FillWeight = 3.5f;
+                    dgvSection.Columns[2].FillWeight = 3.5f;
+                    dgvSection.Columns[6].FillWeight = 1f;
+                }
+
                 foreach (DataGridViewRow row in dgvSection.Rows)
                 {
                     TranslatedIndicator(row);
                 }
+
                 dgvTranslate.Visible = false;
                 dgvSection.Visible = true;
             }
+
             pbTranslateProgressBar.Value = 0;
             Cursor = Cursors.Default;
         }
+
         #endregion BackgroundWorker Events
 
         #region Methods
+
         private void LoadSection()
         {
             if (_blnLoading || cboSection.SelectedIndex < 0)
@@ -662,7 +751,7 @@ namespace Translator
                     lstSectionStrings.Insert(0, "[Show All Sections]");
                 }
             }
-            
+
             string strOldSelected = cboSection.SelectedValue?.ToString() ?? string.Empty;
 
             _blnLoading = true;
@@ -682,6 +771,7 @@ namespace Translator
                 if (cboSection.SelectedIndex == -1 && cboSection.Items.Count > 0)
                     cboSection.SelectedIndex = 0;
             }
+
             Cursor = Cursors.Default;
         }
 
@@ -692,22 +782,24 @@ namespace Translator
 
             Cursor = Cursors.WaitCursor;
             pbTranslateProgressBar.Value = 0;
-            
+
             _blnQueueStringsLoaderRun = true;
         }
 
         private void Save(XmlDocument objXmlDocument, bool blnData = true)
         {
             string strPath = Path.Combine(ApplicationPath, "lang", Code + (blnData ? "_data.xml" : ".xml"));
-            XmlWriterSettings xwsSettings = new XmlWriterSettings { IndentChars = ("\t"), Indent = true };
+            XmlWriterSettings xwsSettings = new XmlWriterSettings {IndentChars = ("\t"), Indent = true};
             using (XmlWriter xwWriter = XmlWriter.Create(strPath, xwsSettings))
             {
                 objXmlDocument.Save(xwWriter);
             }
         }
+
         #endregion
 
         #region Properties
+
         public string Language => _strLanguage;
 
         public string Code => _strCode;

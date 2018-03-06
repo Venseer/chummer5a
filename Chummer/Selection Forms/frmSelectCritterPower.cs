@@ -193,6 +193,7 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
 
@@ -251,13 +252,13 @@ namespace Chummer
                     string strRange = objXmlPower.SelectSingleNode("range")?.Value ?? string.Empty;
                     if (!string.IsNullOrEmpty(strRange))
                     {
-                        strRange = strRange.CheapReplace("Self", () => LanguageManager.GetString("String_SpellRangeSelf", GlobalOptions.Language));
-                        strRange = strRange.CheapReplace("Special", () => LanguageManager.GetString("String_SpellDurationSpecial", GlobalOptions.Language));
-                        strRange = strRange.CheapReplace("LOS", () => LanguageManager.GetString("String_SpellRangeLineOfSight", GlobalOptions.Language));
-                        strRange = strRange.CheapReplace("LOI", () => LanguageManager.GetString("String_SpellRangeLineOfInfluence", GlobalOptions.Language));
-                        strRange = strRange.CheapReplace("T", () => LanguageManager.GetString("String_SpellRangeTouch", GlobalOptions.Language));
-                        strRange = strRange.CheapReplace("(A)", () => "(" + LanguageManager.GetString("String_SpellRangeArea", GlobalOptions.Language) + ')');
-                        strRange = strRange.CheapReplace("MAG", () => LanguageManager.GetString("String_AttributeMAGShort", GlobalOptions.Language));
+                        strRange = strRange.CheapReplace("Self", () => LanguageManager.GetString("String_SpellRangeSelf", GlobalOptions.Language))
+                            .CheapReplace("Special", () => LanguageManager.GetString("String_SpellDurationSpecial", GlobalOptions.Language))
+                            .CheapReplace("LOS", () => LanguageManager.GetString("String_SpellRangeLineOfSight", GlobalOptions.Language))
+                            .CheapReplace("LOI", () => LanguageManager.GetString("String_SpellRangeLineOfInfluence", GlobalOptions.Language))
+                            .CheapReplace("T", () => LanguageManager.GetString("String_SpellRangeTouch", GlobalOptions.Language))
+                            .CheapReplace("(A)", () => "(" + LanguageManager.GetString("String_SpellRangeArea", GlobalOptions.Language) + ')')
+                            .CheapReplace("MAG", () => LanguageManager.GetString("String_AttributeMAGShort", GlobalOptions.Language));
                     }
                     lblCritterPowerRange.Text = strRange;
 
@@ -402,7 +403,7 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strFilter += " and (" + objCategoryFilter.ToString().TrimEnd(" or ") + ')';
+                    strFilter += " and (" + objCategoryFilter.ToString().TrimEndOnce(" or ") + ')';
                 }
                 if (!blnHasToxic)
                     strFilter += " and (not(toxic) or toxic != \"True\")";
@@ -423,13 +424,14 @@ namespace Chummer
 
         private void trePowers_DoubleClick(object sender, EventArgs e)
         {
+            _blnAddAgain = false;
             AcceptForm();
         }
 
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             _blnAddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
         #endregion
 

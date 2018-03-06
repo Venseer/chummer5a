@@ -17,7 +17,7 @@
  *  https://github.com/chummer5a/chummer5a
  */
  using System;
-using System.IO;
+ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml;
@@ -28,11 +28,11 @@ namespace Chummer
     public sealed partial class frmCreateCyberwareSuite : Form
     {
         private readonly Character _objCharacter;
-        private readonly Improvement.ImprovementSource _objSource = Improvement.ImprovementSource.Cyberware;
-        private readonly string _strType = "cyberware";
+        private readonly Improvement.ImprovementSource _objSource;
+        private readonly string _strType;
 
         #region Control Events
-        public frmCreateCyberwareSuite(Character objCharacter, Improvement.ImprovementSource objSource)
+        public frmCreateCyberwareSuite(Character objCharacter, Improvement.ImprovementSource objSource = Improvement.ImprovementSource.Cyberware)
         {
             InitializeComponent();
             _objSource = objSource;
@@ -72,37 +72,19 @@ namespace Chummer
                 return;
             }
 
-            // See if a Suite with this name already exists for the Custom category. This is done without the XmlManager since we need to check each file individually.
-            XmlDocument objXmlDocument = new XmlDocument();
-            string strCustomPath = Path.Combine(Application.StartupPath, "data");
-            foreach (string strFile in Directory.GetFiles(strCustomPath, "custom*_" + _strType + ".xml"))
+            // See if a Suite with this name already exists for the Custom category.
+            // This was originally done without the XmlManager, but because amends and overrides and toggling custom data directories can change names, we need to use it.
+            string strName = txtName.Text;
+            if (XmlManager.Load(_strType + ".xml", GlobalOptions.Language).SelectSingleNode("/chummer/suites/suite[name = \"" + strName + "\"]") != null)
             {
-                try
-                {
-                    using (StreamReader objStreamReader = new StreamReader(strFile, Encoding.UTF8, true))
-                    {
-                        objXmlDocument.Load(objStreamReader);
-                    }
-                }
-                catch (IOException ex)
-                {
-                    MessageBox.Show(ex.ToString());
-                    return;
-                }
-                catch (XmlException ex)
-                {
-                    MessageBox.Show(ex.ToString());
-                    return;
-                }
-                XmlNodeList objXmlSuiteList = objXmlDocument.SelectNodes("/chummer/suites/suite[name = \"" + txtName.Text + "\"]");
-                if (objXmlSuiteList?.Count > 0)
-                {
-                    MessageBox.Show(LanguageManager.GetString("Message_CyberwareSuite_DuplicateName", GlobalOptions.Language).Replace("{0}", txtName.Text).Replace("{1}", strFile.Replace(strCustomPath + Path.DirectorySeparatorChar, string.Empty)), LanguageManager.GetString("MessageTitle_CyberwareSuite_DuplicateName", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
+                MessageBox.Show(
+                    LanguageManager.GetString("Message_CyberwareSuite_DuplicateName", GlobalOptions.Language).Replace("{0}", strName),
+                    LanguageManager.GetString("MessageTitle_CyberwareSuite_DuplicateName", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
             }
 
-            string strPath = Path.Combine(strCustomPath, txtFileName.Text);
+            string strPath = Path.Combine(Application.StartupPath, "data", txtFileName.Text);
+
             bool blnNewFile = !File.Exists(strPath);
 
             // If this is not a new file, read in the existing contents.
@@ -143,9 +125,10 @@ namespace Chummer
             {
                 // <cyberwares>
                 objWriter.WriteStartElement(_strType + "s");
-                XmlNodeList objXmlCyberwareList = objXmlCurrentDocument.SelectNodes("/chummer/" + _strType + "s");
-                foreach (XmlNode objXmlCyberware in objXmlCyberwareList)
-                    objXmlCyberware.WriteContentTo(objWriter);
+                using (XmlNodeList xmlCyberwareList = objXmlCurrentDocument.SelectNodes("/chummer/" + _strType + "s"))
+                    if (xmlCyberwareList?.Count > 0)
+                        foreach (XmlNode xmlCyberware in xmlCyberwareList)
+                            xmlCyberware.WriteContentTo(objWriter);
                 // </cyberwares>
                 objWriter.WriteEndElement();
             }
@@ -156,9 +139,10 @@ namespace Chummer
             // If this is not a new file, write out the current contents.
             if (!blnNewFile)
             {
-                XmlNodeList objXmlCyberwareList = objXmlCurrentDocument.SelectNodes("/chummer/suites");
-                foreach (XmlNode objXmlCyberware in objXmlCyberwareList)
-                    objXmlCyberware.WriteContentTo(objWriter);
+                using (XmlNodeList xmlCyberwareList = objXmlCurrentDocument.SelectNodes("/chummer/suites"))
+                    if (xmlCyberwareList?.Count > 0)
+                        foreach (XmlNode xmlCyberware in xmlCyberwareList)
+                            xmlCyberware.WriteContentTo(objWriter);
             }
 
             string strGrade = string.Empty;

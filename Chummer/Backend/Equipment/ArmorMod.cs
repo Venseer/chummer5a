@@ -19,13 +19,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.XPath;
 using Chummer.Backend.Attributes;
 
 namespace Chummer.Backend.Equipment
@@ -33,6 +33,7 @@ namespace Chummer.Backend.Equipment
     /// <summary>
     /// A piece of Armor Modification.
     /// </summary>
+    [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
     public class ArmorMod : IHasInternalId, IHasName, IHasXmlNode
     {
         private Guid _guiID;
@@ -98,7 +99,7 @@ namespace Chummer.Backend.Equipment
             // Check for a Variable Cost.
             if (!blnSkipCost && _strCost.StartsWith("Variable("))
             {
-                string strFirstHalf = _strCost.TrimStart("Variable(", true).TrimEnd(')');
+                string strFirstHalf = _strCost.TrimStartOnce("Variable(", true).TrimEndOnce(')');
                 string strSecondHalf = string.Empty;
                 int intHyphenIndex = strFirstHalf.IndexOf('-');
                 if (intHyphenIndex != -1)
@@ -308,6 +309,23 @@ namespace Chummer.Backend.Equipment
                             _lstGear.Add(objGear);
                         }
             }
+
+            if (blnCopy)
+            {
+                if (!string.IsNullOrEmpty(Extra))
+                    ImprovementManager.ForcedValue = Extra;
+                ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.ArmorMod, _guiID.ToString("D"), Bonus, false, 1, DisplayNameShort(GlobalOptions.Language));
+                if (!string.IsNullOrEmpty(ImprovementManager.SelectedValue))
+                {
+                    Extra = ImprovementManager.SelectedValue;
+                }
+
+                if (!_blnEquipped)
+                {
+                    _blnEquipped = true;
+                    Equipped = false;
+                }
+            }
         }
 
         /// <summary>
@@ -449,7 +467,15 @@ namespace Chummer.Backend.Equipment
         public int Armor
         {
             get => _intArmorValue;
-            set => _intArmorValue = value;
+            set
+            {
+                if (_intArmorValue != value)
+                {
+                    _intArmorValue = value;
+                    if (Equipped && Parent?.Equipped == true)
+                        _objCharacter?.RefreshEncumbrance();
+                }
+            }
         }
 
         /// <summary>
@@ -545,7 +571,7 @@ namespace Chummer.Backend.Equipment
                     _blnEquipped = value;
                     if (value)
                     {
-                        if (Parent.Equipped)
+                        if (Parent?.Equipped == true)
                         {
                             ImprovementManager.EnableImprovements(_objCharacter, _objCharacter.Improvements.Where(x => x.ImproveSource == Improvement.ImprovementSource.ArmorMod && x.SourceName == InternalId).ToList());
                             // Add the Improvements from any Gear in the Armor.
@@ -567,6 +593,9 @@ namespace Chummer.Backend.Equipment
                             objGear.ChangeEquippedStatus(false);
                         }
                     }
+
+                    if (Parent?.Equipped == true)
+                        _objCharacter?.RefreshEncumbrance();
                 }
             }
         }
@@ -654,7 +683,7 @@ namespace Chummer.Backend.Equipment
             {
                 if (strAvail.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strAvail.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strAvail.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strAvail = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                 }
 
@@ -675,13 +704,9 @@ namespace Chummer.Backend.Equipment
                     objAvail.CheapReplace(strAvail, objLoopAttribute.Abbrev + "Base", () => objLoopAttribute.TotalBase.ToString());
                 }
 
-                try
-                {
-                    intAvail = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(objAvail.ToString()));
-                }
-                catch (XPathException)
-                {
-                }
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objAvail.ToString(), out bool blnIsSuccess);
+                if (blnIsSuccess)
+                    intAvail = Convert.ToInt32(objProcess);
             }
 
             if (blnCheckChildren)
@@ -721,14 +746,15 @@ namespace Chummer.Backend.Equipment
                     return "0";
                 if (strCapacity.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strCapacity.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strCapacity = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                 }
-                strCapacity = strCapacity.CheapReplace("Capacity", () => Convert.ToDecimal(Parent.TotalArmorCapacity, GlobalOptions.CultureInfo).ToString(GlobalOptions.InvariantCultureInfo));
-                strCapacity = strCapacity.Replace("Rating", Rating.ToString());
+                strCapacity = strCapacity.CheapReplace("Capacity", () => Convert.ToDecimal(Parent?.TotalArmorCapacity, GlobalOptions.CultureInfo).ToString(GlobalOptions.InvariantCultureInfo))
+                    .Replace("Rating", Rating.ToString());
 
                 //Rounding is always 'up'. For items that generate capacity, this means making it a larger negative number.
-                string strReturn = ((double)CommonFunctions.EvaluateInvariantXPath(strCapacity)).ToString("#,0.##", GlobalOptions.CultureInfo);
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(strCapacity, out bool blnIsSuccess);
+                string strReturn = blnIsSuccess ? ((double)objProcess).ToString("#,0.##", GlobalOptions.CultureInfo) : strCapacity;
 
                 return strReturn;
             }
@@ -758,15 +784,15 @@ namespace Chummer.Backend.Equipment
                 foreach (Gear objChildGear in Gear)
                 {
                     string strCapacity = objChildGear.CalculatedCapacity;
-                    if (strCapacity.Contains("/["))
+                    intPos = strCapacity.IndexOf("/[", StringComparison.Ordinal);
+                    if (intPos != -1)
                     {
                         // If this is a multiple-capacity item, use only the second half.
-                        int intLoopPos = strCapacity.IndexOf("/[", StringComparison.Ordinal);
-                        strCapacity = strCapacity.Substring(intLoopPos + 1);
+                        strCapacity = strCapacity.Substring(intPos + 1);
                     }
 
                     // Only items that contain square brackets should consume Capacity. Everything else is treated as [0].
-                    strCapacity = strCapacity.Contains('[') ? strCapacity.Substring(1, strCapacity.Length - 2) : "0";
+                    strCapacity = strCapacity.StartsWith('[') ? strCapacity.Substring(1, strCapacity.Length - 2) : "0";
                     decCapacity -= (Convert.ToDecimal(strCapacity, GlobalOptions.CultureInfo) * objChildGear.Quantity);
                 }
 
@@ -783,20 +809,21 @@ namespace Chummer.Backend.Equipment
             {
                 string strCapacity = ArmorCapacity;
                 if (string.IsNullOrEmpty(strCapacity))
-                    return "0";
+                    return (0.0m).ToString("#,0.##", GlobalOptions.CultureInfo);
                 if (strCapacity.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strCapacity.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strCapacity = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                 }
-                strCapacity = strCapacity.CheapReplace("Capacity", () => Convert.ToDecimal(Parent.TotalArmorCapacity, GlobalOptions.CultureInfo).ToString(GlobalOptions.InvariantCultureInfo));
-                strCapacity = strCapacity.Replace("Rating", Rating.ToString());
-                bool blnSquareBrackets = strCapacity.Contains('[');
+                strCapacity = strCapacity.CheapReplace("Capacity", () => Convert.ToDecimal(Parent?.TotalArmorCapacity, GlobalOptions.CultureInfo).ToString(GlobalOptions.InvariantCultureInfo))
+                    .Replace("Rating", Rating.ToString());
+                bool blnSquareBrackets = strCapacity.StartsWith('[');
                 if (blnSquareBrackets)
                     strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
 
                 //Rounding is always 'up'. For items that generate capacity, this means making it a larger negative number.
-                string strReturn = ((double)CommonFunctions.EvaluateInvariantXPath(strCapacity)).ToString("#,0.##", GlobalOptions.CultureInfo);
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(strCapacity, out bool blnIsSuccess);
+                string strReturn = blnIsSuccess ? ((double)objProcess).ToString("#,0.##", GlobalOptions.CultureInfo) : strCapacity;
                 if (blnSquareBrackets)
                     strReturn = '[' + strReturn + ']';
 
@@ -831,7 +858,7 @@ namespace Chummer.Backend.Equipment
                 string strCostExpr = Cost;
                 if (strCostExpr.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strCostExpr.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strCostExpr.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strCostExpr = strValues[Math.Max(Math.Min(Rating, strValues.Length) - 1, 0)];
                 }
 
@@ -845,7 +872,8 @@ namespace Chummer.Backend.Equipment
                     objCost.CheapReplace(strCostExpr, objLoopAttribute.Abbrev + "Base", () => objLoopAttribute.TotalBase.ToString());
                 }
 
-                decimal decReturn = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(objCost.ToString()).ToString(), GlobalOptions.InvariantCultureInfo);
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(objCost.ToString(), out bool blnIsSuccess);
+                decimal decReturn = blnIsSuccess ? Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo) : 0;
 
                 if (DiscountCost)
                     decReturn *= 0.9m;
@@ -940,6 +968,9 @@ namespace Chummer.Backend.Equipment
         #region Methods
         public TreeNode CreateTreeNode(ContextMenuStrip cmsArmorMod, ContextMenuStrip cmsArmorGear)
         {
+            if (IncludedInArmor && !string.IsNullOrEmpty(Source) && !_objCharacter.Options.BookEnabled(Source))
+                return null;
+
             TreeNode objNode = new TreeNode
             {
                 Name = InternalId,
@@ -953,12 +984,14 @@ namespace Chummer.Backend.Equipment
                 objNode.ForeColor = SystemColors.GrayText;
             objNode.ToolTipText = Notes.WordWrap(100);
 
-            TreeNodeCollection lstModChildNodes = objNode.Nodes;
+            TreeNodeCollection lstChildNodes = objNode.Nodes;
             foreach (Gear objGear in Gear)
             {
-                lstModChildNodes.Add(objGear.CreateTreeNode(cmsArmorGear));
+                TreeNode objLoopNode = objGear.CreateTreeNode(cmsArmorGear);
+                if (objLoopNode != null)
+                    lstChildNodes.Add(objLoopNode);
             }
-            if (lstModChildNodes.Count > 0)
+            if (lstChildNodes.Count > 0)
                 objNode.Expand();
 
             return objNode;

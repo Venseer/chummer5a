@@ -55,19 +55,21 @@ namespace Chummer
             // Populate the Advanced Lifestyle ComboBoxes.
             // Lifestyles.
             List<ListItem> lstLifestyles = new List<ListItem>();
-            foreach (XmlNode objXmlLifestyle in _xmlDocument.SelectNodes("/chummer/lifestyles/lifestyle[" + _objCharacter.Options.BookXPath() + "]"))
-            {
-                string strLifestyleName = objXmlLifestyle["name"]?.InnerText;
+            using (XmlNodeList xmlLifestyleList = _xmlDocument.SelectNodes("/chummer/lifestyles/lifestyle[" + _objCharacter.Options.BookXPath() + "]"))
+                if (xmlLifestyleList?.Count > 0)
+                    foreach (XmlNode objXmlLifestyle in xmlLifestyleList)
+                    {
+                        string strLifestyleName = objXmlLifestyle["name"]?.InnerText;
 
-                if (!string.IsNullOrEmpty(strLifestyleName) &&
-                    strLifestyleName != "ID ERROR. Re-add life style to fix" &&
-                    (_eType == LifestyleType.Advanced || objXmlLifestyle["slp"]?.InnerText == "remove") &&
-                    !strLifestyleName.Contains("Hospitalized") &&
-                    _objCharacter.Options.Books.Contains(objXmlLifestyle["source"]?.InnerText))
-                {
-                    lstLifestyles.Add(new ListItem(strLifestyleName, objXmlLifestyle["translate"]?.InnerText ?? strLifestyleName));
-                }
-            }
+                        if (!string.IsNullOrEmpty(strLifestyleName) &&
+                            strLifestyleName != "ID ERROR. Re-add life style to fix" &&
+                            (_eType == LifestyleType.Advanced || objXmlLifestyle["slp"]?.InnerText == "remove") &&
+                            !strLifestyleName.Contains("Hospitalized") &&
+                            _objCharacter.Options.Books.Contains(objXmlLifestyle["source"]?.InnerText))
+                        {
+                            lstLifestyles.Add(new ListItem(strLifestyleName, objXmlLifestyle["translate"]?.InnerText ?? strLifestyleName));
+                        }
+                    }
             // Populate the Qualities list.
             if (_objSourceLifestyle != null)
             {
@@ -94,9 +96,14 @@ namespace Chummer
                 TreeNode nodGridsParent = treLifestyleQualities.Nodes[3];
                 foreach (LifestyleQuality objQuality in _objSourceLifestyle.FreeGrids)
                 {
-                    nodGridsParent.Nodes.Add(objQuality.CreateTreeNode());
-                    nodGridsParent.Expand();
                     _objLifestyle.FreeGrids.Add(objQuality);
+
+                    TreeNode objLoopNode = objQuality.CreateTreeNode();
+                    if (objLoopNode != null)
+                    {
+                        nodGridsParent.Nodes.Add(objLoopNode);
+                        nodGridsParent.Expand();
+                    }
                 }
             }
             cboBaseLifestyle.BeginUpdate();
@@ -133,6 +140,7 @@ namespace Chummer
                 MessageBox.Show(LanguageManager.GetString("Message_SelectAdvancedLifestyle_LifestyleName", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_SelectAdvancedLifestyle_LifestyleName", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
+            _blnAddAgain = false;
             AcceptForm();
         }
 
@@ -167,7 +175,7 @@ namespace Chummer
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             _blnAddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
 
         private void cboBaseLifestyle_SelectedIndexChanged(object sender, EventArgs e)
@@ -222,24 +230,30 @@ namespace Chummer
                 //objNode.ContextMenuStrip = cmsQuality;
                 if (objQuality.InternalId.IsEmptyGuid())
                     continue;
-
-                TreeNode nodParent;
-                // Add the Quality to the appropriate parent node.
-                if (objQuality.Type == QualityType.Positive)
-                {
-                    nodParent = treLifestyleQualities.Nodes[0];
-                }
-                else if (objQuality.Type == QualityType.Negative)
-                {
-                    nodParent = treLifestyleQualities.Nodes[1];
-                }
-                else
-                {
-                    nodParent = treLifestyleQualities.Nodes[2];
-                }
-                nodParent.Nodes.Add(objQuality.CreateTreeNode());
-                nodParent.Expand();
+                
                 _objLifestyle.LifestyleQualities.Add(objQuality);
+
+                TreeNode objLoopNode = objQuality.CreateTreeNode();
+                if (objLoopNode != null)
+                {
+                    TreeNode nodParent;
+                    // Add the Quality to the appropriate parent node.
+                    if (objQuality.Type == QualityType.Positive)
+                    {
+                        nodParent = treLifestyleQualities.Nodes[0];
+                    }
+                    else if (objQuality.Type == QualityType.Negative)
+                    {
+                        nodParent = treLifestyleQualities.Nodes[1];
+                    }
+                    else
+                    {
+                        nodParent = treLifestyleQualities.Nodes[2];
+                    }
+
+                    nodParent.Nodes.Add(objQuality.CreateTreeNode());
+                    nodParent.Expand();
+                }
 
                 CalculateValues();
             }
@@ -393,11 +407,16 @@ namespace Chummer
                     XmlNode xmlQuality = _xmlDocument.SelectSingleNode("/chummer/qualities/quality[name = \"Not a Home\"]");
                     LifestyleQuality objQuality = new LifestyleQuality(_objCharacter);
                     objQuality.Create(xmlQuality, _objLifestyle, _objCharacter, QualitySource.BuiltIn);
+
                     _objLifestyle.LifestyleQualities.Add(objQuality);
 
-                    TreeNode nodParent = treLifestyleQualities.Nodes[1];
-                    nodParent.Nodes.Add(objQuality.CreateTreeNode());
-                    nodParent.Expand();
+                    TreeNode objLoopNode = objQuality.CreateTreeNode();
+                    if (objLoopNode != null)
+                    {
+                        TreeNode nodParent = treLifestyleQualities.Nodes[1];
+                        nodParent.Nodes.Add(objQuality.CreateTreeNode());
+                        nodParent.Expand();
+                    }
                 }
             }
             else
@@ -460,9 +479,16 @@ namespace Chummer
                         _objCharacter.Pushtext.Push(strPush);
                     }
                     objQuality.Create(xmlQuality, _objLifestyle, _objCharacter, QualitySource.BuiltIn);
-                    treLifestyleQualities.Nodes[3].Nodes.Add(objQuality.CreateTreeNode());
-                    treLifestyleQualities.Nodes[3].Expand();
+
                     _objLifestyle.FreeGrids.Add(objQuality);
+
+                    TreeNode objLoopNode = objQuality.CreateTreeNode();
+                    if (objLoopNode != null)
+                    {
+                        TreeNode nodParent = treLifestyleQualities.Nodes[3];
+                        nodParent.Nodes.Add(objQuality.CreateTreeNode());
+                        nodParent.Expand();
+                    }
                 }
             }
 
@@ -613,27 +639,6 @@ namespace Chummer
         {
             _objSourceLifestyle = objLifestyle;
             _eType = objLifestyle.StyleType;
-        }
-
-        /// <summary>
-        /// Sort the contents of a TreeView alphabetically.
-        /// </summary>
-        /// <param name="treTree">TreeView to sort.</param>
-        private static void SortTree(TreeView treTree)
-        {
-            List<TreeNode> lstNodes = new List<TreeNode>();
-            foreach (TreeNode objNode in treTree.Nodes)
-                lstNodes.Add(objNode);
-            treTree.Nodes.Clear();
-            try
-            {
-                lstNodes.Sort(CompareTreeNodes.CompareText);
-            }
-            catch (ArgumentException)
-            {
-            }
-            foreach (TreeNode objNode in lstNodes)
-                treTree.Nodes.Add(objNode);
         }
 
         private void MoveControls()

@@ -236,18 +236,13 @@ namespace Chummer
                     // Not a simple integer, so we need to start mucking around with strings
                     if (!string.IsNullOrEmpty(strMinRating) && !int.TryParse(strMinRating, out intMinRating))
                     {
-                        strMinRating = strMinRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString());
-                        strMinRating = strMinRating.CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString());
-                        strMinRating = strMinRating.CheapReplace("MinimumSTR", () => (ParentVehicle?.TotalBody ?? 3).ToString());
-                        strMinRating = strMinRating.CheapReplace("MinimumAGI", () => (ParentVehicle?.Pilot ?? 3).ToString());
-                        try
-                        {
-                            intMinRating = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strMinRating));
-                        }
-                        catch (XPathException)
-                        {
-                            intMinRating = 1;
-                        }
+                        strMinRating = strMinRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString())
+                            .CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString())
+                            .CheapReplace("MinimumSTR", () => (ParentVehicle?.TotalBody ?? 3).ToString())
+                            .CheapReplace("MinimumAGI", () => (ParentVehicle?.Pilot ?? 3).ToString());
+
+                        object objProcess = CommonFunctions.EvaluateInvariantXPath(strMinRating, out bool blnIsSuccess);
+                        intMinRating = blnIsSuccess ? Convert.ToInt32(objProcess) : 1;
                     }
                     nudRating.Minimum = intMinRating;
 
@@ -256,17 +251,13 @@ namespace Chummer
                     // Not a simple integer, so we need to start mucking around with strings
                     if (!string.IsNullOrEmpty(strMaxRating) && !int.TryParse(strMaxRating, out intMaxRating))
                     {
-                        strMaxRating = strMaxRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString());
-                        strMaxRating = strMaxRating.CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString());
-                        strMaxRating = strMaxRating.CheapReplace("MinimumSTR", () => (ParentVehicle?.TotalBody ?? 3).ToString());
-                        strMaxRating = strMaxRating.CheapReplace("MinimumAGI", () => (ParentVehicle?.Pilot ?? 3).ToString());
-                        try
-                        {
-                            intMaxRating = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strMaxRating));
-                        }
-                        catch (XPathException)
-                        {
-                        }
+                        strMaxRating = strMaxRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString())
+                            .CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString())
+                            .CheapReplace("MinimumSTR", () => (ParentVehicle?.TotalBody ?? 3).ToString())
+                            .CheapReplace("MinimumAGI", () => (ParentVehicle?.Pilot ?? 3).ToString());
+
+                        object objProcess = CommonFunctions.EvaluateInvariantXPath(strMaxRating, out bool blnIsSuccess);
+                        intMaxRating = blnIsSuccess ? Convert.ToInt32(objProcess) : 1;
                     }
                     nudRating.Maximum = intMaxRating;
                     if (chkHideOverAvailLimit.Checked)
@@ -375,6 +366,7 @@ namespace Chummer
 
         private void cmdOK_Click(object sender, EventArgs e)
         {
+            AddAgain = false;
             AcceptForm();
         }
 
@@ -393,13 +385,14 @@ namespace Chummer
 
         private void lstCyberware_DoubleClick(object sender, EventArgs e)
         {
+            AddAgain = false;
             AcceptForm();
         }
 
         private void cmdOKAdd_Click(object sender, EventArgs e)
         {
             AddAgain = true;
-            cmdOK_Click(sender, e);
+            AcceptForm();
         }
 
         private void txtSearch_TextChanged(object sender, EventArgs e)
@@ -615,7 +608,7 @@ namespace Chummer
                 return;
             }
 
-            string strSelectCategory = objXmlCyberware.SelectSingleNode("category").Value;
+            string strSelectCategory = objXmlCyberware.SelectSingleNode("category")?.Value ?? string.Empty;
             bool blnForceNoESSModifier = objXmlCyberware.SelectSingleNode("forcegrade")?.Value == "None";
 
             // Place the Genetech cost multiplier in a varaible that can be safely modified.
@@ -636,7 +629,7 @@ namespace Chummer
                 string strAvailExpr = strAvail;
                 if (strAvailExpr.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strAvailExpr.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strAvailExpr.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strAvailExpr = strValues[Math.Max(Math.Min(intRating, strValues.Length) - 1, 0)];
                 }
 
@@ -663,18 +656,19 @@ namespace Chummer
                     strAvailExpr = strAvailExpr.Substring(1, strAvailExpr.Length - 1);
                 }
 
-                strAvailExpr = strAvailExpr.CheapReplace("MinRating", () => nudRating.Minimum.ToString(GlobalOptions.InvariantCultureInfo));
-                strAvailExpr = strAvailExpr.CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
+                strAvailExpr = strAvailExpr.CheapReplace("MinRating", () => nudRating.Minimum.ToString(GlobalOptions.InvariantCultureInfo))
+                    .CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
 
-                try
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(strAvailExpr, out bool blnIsSuccess);
+                if (blnIsSuccess)
                 {
-                    int intAvail = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strAvailExpr)) + _intAvailModifier;
+                    int intAvail = Convert.ToInt32(objProcess) + _intAvailModifier;
                     // Avail cannot go below 0.
                     if (intAvail < 0)
                         intAvail = 0;
                     lblAvail.Text = strPrefix + intAvail.ToString() + strSuffix;
                 }
-                catch (XPathException)
+                else
                 {
                     lblAvail.Text = strAvail;
                 }
@@ -697,7 +691,7 @@ namespace Chummer
                 {
                     if (strCost.StartsWith("FixedValues("))
                     {
-                        string[] strValues = strCost.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                        string[] strValues = strCost.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                         strCost = strValues[Math.Max(Math.Min(intRating, strValues.Length) - 1, 0)];
                     }
                     // Check for a Variable Cost.
@@ -705,7 +699,7 @@ namespace Chummer
                     {
                         decimal decMin;
                         decimal decMax = decimal.MaxValue;
-                        strCost = strCost.TrimStart("Variable(", true).TrimEnd(')');
+                        strCost = strCost.TrimStartOnce("Variable(", true).TrimEndOnce(')');
                         if (strCost.Contains('-'))
                         {
                             string[] strValues = strCost.Split('-');
@@ -723,24 +717,15 @@ namespace Chummer
                     }
                     else
                     {
-                        if (strCost.Contains("Parent Cost") || strCost.Contains("Parent Gear Cost"))
+                        strCost = strCost.CheapReplace("Parent Cost", () => CyberwareParent?.Cost ?? "0")
+                            .CheapReplace("Parent Gear Cost", () => CyberwareParent?.Gear.AsParallel().Sum(x => x.TotalCost).ToString(GlobalOptions.InvariantCultureInfo) ?? "0")
+                            .CheapReplace("MinRating", () => nudRating.Minimum.ToString(GlobalOptions.InvariantCultureInfo))
+                            .CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
+
+                        object objProcess = CommonFunctions.EvaluateInvariantXPath(strCost, out bool blnIsSuccess);
+                        if (blnIsSuccess)
                         {
-                            if (CyberwareParent != null)
-                            {
-                                strCost = strCost.CheapReplace("Parent Cost", () => CyberwareParent.Cost);
-                                strCost = strCost.CheapReplace("Parent Gear Cost", () => CyberwareParent.Gear.AsParallel().Sum(x => x.TotalCost).ToString(GlobalOptions.InvariantCultureInfo));
-                            }
-                            else
-                            {
-                                strCost = strCost.Replace("Parent Cost", "0");
-                                strCost = strCost.Replace("Parent Gear Cost", "0");
-                            }
-                        }
-                        strCost = strCost.CheapReplace("MinRating", () => nudRating.Minimum.ToString(GlobalOptions.InvariantCultureInfo));
-                        strCost = strCost.CheapReplace("Rating", () => nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo));
-                        try
-                        {
-                            decItemCost = (Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(strCost), GlobalOptions.InvariantCultureInfo) * _decCostMultiplier * decGenetechCostModifier);
+                            decItemCost = (Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo) * _decCostMultiplier * decGenetechCostModifier);
                             decItemCost *= 1 + (nudMarkup.Value / 100.0m);
 
                             if (chkBlackMarketDiscount.Checked)
@@ -750,7 +735,7 @@ namespace Chummer
 
                             lblCost.Text = decItemCost.ToString(_objCharacter.Options.NuyenFormat, GlobalOptions.CultureInfo) + '¥';
                         }
-                        catch (XPathException)
+                        else
                         {
                             lblCost.Text = strCost + '¥';
                         }
@@ -796,15 +781,20 @@ namespace Chummer
 
                     decCharacterESSModifier *= CharacterTotalESSMultiplier;
                 }
-                string strEss = objXmlCyberware.SelectSingleNode("ess").Value;
+                string strEss = objXmlCyberware.SelectSingleNode("ess")?.Value ?? string.Empty;
                 if (strEss.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strEss.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strEss.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strEss = strValues[Math.Max(Math.Min(intRating, strValues.Length) - 1, 0)];
                 }
-                decESS = decCharacterESSModifier * Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(strEss.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))), GlobalOptions.InvariantCultureInfo);
-                if (!_objCharacter.Options.DontRoundEssenceInternally)
-                    decESS = decimal.Round(decESS, _objCharacter.Options.EssenceDecimals, MidpointRounding.AwayFromZero);
+
+                object objProcess = CommonFunctions.EvaluateInvariantXPath(strEss.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out bool blnIsSuccess);
+                if (blnIsSuccess)
+                {
+                    decESS = decCharacterESSModifier * Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo);
+                    if (!_objCharacter.Options.DontRoundEssenceInternally)
+                        decESS = decimal.Round(decESS, _objCharacter.Options.EssenceDecimals, MidpointRounding.AwayFromZero);
+                }
             }
             lblEssence.Text = decESS.ToString(strESSFormat, GlobalOptions.CultureInfo);
             if (objXmlCyberware.SelectSingleNode("addtoparentess") != null)
@@ -813,7 +803,7 @@ namespace Chummer
             // Capacity.
             // XPathExpression cannot evaluate while there are square brackets, so remove them if necessary.
             string strCapacity = objXmlCyberware.SelectSingleNode("capacity")?.Value ?? string.Empty;
-            bool blnSquareBrackets = strCapacity.Contains('[');
+            bool blnSquareBrackets = strCapacity.StartsWith('[');
             if (string.IsNullOrEmpty(strCapacity))
             {
                 lblCapacity.Text = 0.ToString(GlobalOptions.CultureInfo);
@@ -822,7 +812,7 @@ namespace Chummer
             {
                 if (strCapacity.StartsWith("FixedValues("))
                 {
-                    string[] strValues = strCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                    string[] strValues = strCapacity.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                     strCapacity = strValues[Math.Max(Math.Min(intRating, strValues.Length) - 1, 0)];
                 }
                 if (strCapacity == "[*]")
@@ -835,15 +825,19 @@ namespace Chummer
                         string strFirstHalf = strCapacity.Substring(0, intPos);
                         string strSecondHalf = strCapacity.Substring(intPos + 1, strCapacity.Length - intPos - 1);
 
-                        blnSquareBrackets = strFirstHalf.Contains('[');
+                        blnSquareBrackets = strFirstHalf.StartsWith('[');
                         if (blnSquareBrackets && strFirstHalf.Length > 1)
                             strFirstHalf = strFirstHalf.Substring(1, strCapacity.Length - 2);
-                        lblCapacity.Text = CommonFunctions.EvaluateInvariantXPath(strFirstHalf.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))).ToString();
+
+                        object objProcess = CommonFunctions.EvaluateInvariantXPath(strFirstHalf.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out bool blnIsSuccess);
+                        lblCapacity.Text = blnIsSuccess ? objProcess.ToString() : strFirstHalf;
+
                         if (blnSquareBrackets)
                             lblCapacity.Text = $"[{lblCapacity.Text}]";
 
                         strSecondHalf = strSecondHalf.Trim('[', ']');
-                        strSecondHalf = '[' + CommonFunctions.EvaluateInvariantXPath(strSecondHalf.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))).ToString() + ']';
+                        objProcess = CommonFunctions.EvaluateInvariantXPath(strSecondHalf.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out blnIsSuccess);
+                        strSecondHalf = '[' + (blnIsSuccess ? objProcess.ToString() : strSecondHalf) + ']';
 
                         lblCapacity.Text += '/' + strSecondHalf;
                     }
@@ -851,7 +845,8 @@ namespace Chummer
                     {
                         if (blnSquareBrackets)
                             strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
-                        lblCapacity.Text = CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))).ToString();
+                        object objProcess = CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out bool blnIsSuccess);
+                        lblCapacity.Text = blnIsSuccess ? objProcess.ToString() : strCapacity;
                         if (blnSquareBrackets)
                             lblCapacity.Text = $"[{lblCapacity.Text}]";
                     }
@@ -890,7 +885,7 @@ namespace Chummer
                 }
                 if (objCategoryFilter.Length > 0)
                 {
-                    strCategoryFilter += objCategoryFilter.ToString().TrimEnd(" or ");
+                    strCategoryFilter += objCategoryFilter.ToString().TrimEndOnce(" or ");
                 }
             }
             strFilter += " and " + strCategoryFilter + " or category = \"None\")";
@@ -997,36 +992,26 @@ namespace Chummer
                     }
                 }
                 string strMaxRating = xmlCyberware.SelectSingleNode("rating")?.Value;
-                int intMaxRating = 0;
                 string strMinRating = xmlCyberware.SelectSingleNode("minrating")?.Value;
                 int intMinRating = 1;
                 // If our rating tag is a complex property, check to make sure our maximum rating is not less than our minimum rating
-                if ((!string.IsNullOrEmpty(strMaxRating) && !int.TryParse(strMaxRating, out intMaxRating)) || (!string.IsNullOrEmpty(strMinRating) && !int.TryParse(strMinRating, out intMinRating)))
+                if ((!string.IsNullOrEmpty(strMaxRating) && !int.TryParse(strMaxRating, out int intMaxRating)) || (!string.IsNullOrEmpty(strMinRating) && !int.TryParse(strMinRating, out intMinRating)))
                 {
-                    strMinRating = strMinRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString());
-                    strMinRating = strMinRating.CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString());
-                    strMinRating = strMinRating.CheapReplace("MinimumSTR", () => (ParentVehicle?.TotalBody ?? 3).ToString());
-                    strMinRating = strMinRating.CheapReplace("MinimumAGI", () => (ParentVehicle?.Pilot ?? 3).ToString());
-                    try
-                    {
-                        intMinRating = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strMinRating));
-                    }
-                    catch (XPathException)
-                    {
-                        intMinRating = 1;
-                    }
+                    strMinRating = strMinRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString())
+                        .CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString())
+                        .CheapReplace("MinimumSTR", () => (ParentVehicle?.TotalBody ?? 3).ToString())
+                        .CheapReplace("MinimumAGI", () => (ParentVehicle?.Pilot ?? 3).ToString());
 
-                    strMaxRating = strMaxRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString());
-                    strMaxRating = strMaxRating.CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString());
-                    strMaxRating = strMaxRating.CheapReplace("MinimumSTR", () => (ParentVehicle?.TotalBody ?? 3).ToString());
-                    strMaxRating = strMaxRating.CheapReplace("MinimumAGI", () => (ParentVehicle?.Pilot ?? 3).ToString());
-                    try
-                    {
-                        intMaxRating = Convert.ToInt32(CommonFunctions.EvaluateInvariantXPath(strMaxRating));
-                    }
-                    catch (XPathException)
-                    {
-                    }
+                    object objProcess = CommonFunctions.EvaluateInvariantXPath(strMinRating, out bool blnIsSuccess);
+                    intMinRating = blnIsSuccess ? Convert.ToInt32(objProcess) : 1;
+
+                    strMaxRating = strMaxRating.CheapReplace("MaximumSTR", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.TotalBody * 2) : _objCharacter.STR.TotalMaximum).ToString())
+                        .CheapReplace("MaximumAGI", () => (ParentVehicle != null ? Math.Max(1, ParentVehicle.Pilot * 2) : _objCharacter.AGI.TotalMaximum).ToString())
+                        .CheapReplace("MinimumSTR", () => (ParentVehicle?.TotalBody ?? 3).ToString())
+                        .CheapReplace("MinimumAGI", () => (ParentVehicle?.Pilot ?? 3).ToString());
+
+                    objProcess = CommonFunctions.EvaluateInvariantXPath(strMaxRating, out blnIsSuccess);
+                    intMaxRating = blnIsSuccess ? Convert.ToInt32(objProcess) : 1;
                     if (intMaxRating < intMinRating)
                         continue;
                 }
@@ -1037,7 +1022,7 @@ namespace Chummer
                     bool blnAnyParentIsModular = !string.IsNullOrEmpty(objParent?.PlugsIntoModularMount);
                     while (objParent != null && !blnAnyParentIsModular)
                     {
-                        objParent = CyberwareParent;
+                        objParent = objParent.Parent;
                         blnAnyParentIsModular = !string.IsNullOrEmpty(objParent?.PlugsIntoModularMount);
                     }
 
@@ -1046,7 +1031,7 @@ namespace Chummer
                         string strAvailExpr = xmlCyberware.SelectSingleNode("avail")?.Value ?? string.Empty;
                         if (strAvailExpr.StartsWith("FixedValues("))
                         {
-                            string[] strValues = strAvailExpr.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                            string[] strValues = strAvailExpr.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                             strAvailExpr = strValues[Math.Max(Math.Min(intMinRating - 1, strValues.Length - 1), 0)];
                         }
                         if (strAvailExpr.EndsWith('F', 'R'))
@@ -1125,7 +1110,7 @@ namespace Chummer
                     strCapacity = strCapacity.Substring(1, strCapacity.Length - 2);
                     if (strCapacity.StartsWith("FixedValues("))
                     {
-                        string[] strValues = strCapacity.TrimStart("FixedValues(", true).TrimEnd(')').Split(',');
+                        string[] strValues = strCapacity.TrimStartOnce("FixedValues(", true).TrimEndOnce(')').Split(',');
                         strCapacity = strValues[Math.Max(Math.Min(decimal.ToInt32(nudRating.Value), strValues.Length) - 1, 0)];
                     }
 
@@ -1133,7 +1118,9 @@ namespace Chummer
 
                     if (strCapacity != "*")
                     {
-                        decCapacity = Convert.ToDecimal(CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo))), GlobalOptions.InvariantCultureInfo);
+                        object objProcess = CommonFunctions.EvaluateInvariantXPath(strCapacity.Replace("Rating", nudRating.Value.ToString(GlobalOptions.InvariantCultureInfo)), out bool blnIsSuccess);
+                        if (blnIsSuccess)
+                            decCapacity = Convert.ToDecimal(objProcess, GlobalOptions.InvariantCultureInfo);
                     }
 
                     if (MaximumCapacity - decCapacity < 0)
@@ -1169,6 +1156,7 @@ namespace Chummer
             SelectedCyberware = strSelectedId;
             SelectedRating = decimal.ToInt32(nudRating.Value);
             BlackMarketDiscount = chkBlackMarketDiscount.Checked;
+            Markup = nudMarkup.Value;
 
             if (nudESSDiscount.Visible)
                 SelectedESSDiscount = decimal.ToInt32(nudESSDiscount.Value);
@@ -1181,6 +1169,9 @@ namespace Chummer
         /// Populate the list of Cyberware Grades.
         /// </summary>
         /// <param name="blnIgnoreSecondHand">Whether or not Secon-Hand Grades should be added to the list.</param>
+        /// <param name="blnForce">Force grades to be repopulated.</param>
+        /// <param name="strForceGrade">If not empty, force this grade to be selected.</param>
+        /// <param name="blnHideBannedGrades">Whether to hide grades banned by the character's gameplay options.</param>
         private void PopulateGrades(bool blnIgnoreSecondHand = false, bool blnForce = false, string strForceGrade = "", bool blnHideBannedGrades = true)
         {
             if (_blnPopulatingGrades)
@@ -1265,15 +1256,7 @@ namespace Chummer
             if (_strSubsystems.Length > 0)
             {
                 // Populate the Cyberware Category list.
-                string strSubsystem = ". = \"";
-                if (_strSubsystems.Contains(','))
-                {
-                    strSubsystem += _strSubsystems.Replace(",", "\" or . = \"");
-                }
-                else
-                {
-                    strSubsystem += _strSubsystems;
-                }
+                string strSubsystem = ". = \"" + _strSubsystems.Replace(",", "\" or . = \"");
                 objXmlCategoryList = _xmlBaseCyberwareDataNode.Select("categories/category[" + strSubsystem + "\"]");
             }
             else
