@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.Xml;
+using System.Xml.XPath;
 using Chummer.Backend.Attributes;
 using Chummer.Backend.Equipment;
 using Chummer.Backend.Skills;
@@ -295,6 +296,56 @@ namespace Chummer.Classes
             Log.Info("Calling CreateImprovement");
             CreateImprovement(frmPickItem.SelectedItem, _objImprovementSource, SourceName,
                 Improvement.ImprovementType.Restricted, _strUnique);
+        }
+        
+        public void selecttradition(XmlNode bonusNode)
+        {
+            Log.Info("selecttradition");
+
+            // Populate the Magician Traditions list.
+            XPathNavigator xmlTraditionsBaseChummerNode = XmlManager.Load("traditions.xml").GetFastNavigator().SelectSingleNode("/chummer");
+            List<ListItem> lstTraditions = new List<ListItem>();
+            if (xmlTraditionsBaseChummerNode != null)
+            {
+                foreach (XPathNavigator xmlTradition in xmlTraditionsBaseChummerNode.Select("traditions/tradition[" + _objCharacter.Options.BookXPath() + "]"))
+                {
+                    string strName = xmlTradition.SelectSingleNode("name")?.Value;
+                    if (!string.IsNullOrEmpty(strName))
+                        lstTraditions.Add(new ListItem(strName, xmlTradition.SelectSingleNode("translate")?.Value ?? strName));
+                }
+            }
+
+            if (lstTraditions.Count > 1)
+            {
+                lstTraditions.Sort(CompareListItems.CompareNames);
+            }
+
+            frmSelectItem frmPickItem = new frmSelectItem
+            {
+                DropdownItems = lstTraditions,
+                SelectedItem = _objCharacter.MagicTradition
+            };
+            if (!string.IsNullOrEmpty(ForcedValue))
+                frmPickItem.ForceItem = ForcedValue;
+            frmPickItem.AllowAutoSelect = false;
+            frmPickItem.ShowDialog();
+
+            // Make sure the dialogue window was not canceled.
+            if (frmPickItem.DialogResult == DialogResult.Cancel)
+            {
+                throw new AbortedException();
+            }
+
+            SelectedValue = frmPickItem.SelectedName;
+            if (_blnConcatSelectedValue)
+                SourceName += " (" + SelectedValue + ')';
+
+            Log.Info("_strSelectedValue = " + SelectedValue);
+            Log.Info("SourceName = " + SourceName);
+
+            // Create the Improvement.
+            Log.Info("Calling CreateImprovement");
+            CreateImprovement(frmPickItem.SelectedItem, _objImprovementSource, SourceName, Improvement.ImprovementType.Tradition, _strUnique);
         }
 
         public void cyberseeker(XmlNode bonusNode)
@@ -2000,7 +2051,6 @@ namespace Chummer.Classes
             Log.Info("activesoft");
             string strNodeOuterXml = bonusNode.OuterXml;
             Log.Info("activesoft = " + strNodeOuterXml);
-            Log.Info("Calling CreateImprovement");
             string strForcedValue = ForcedValue;
             Log.Info("_strForcedValue = " + strForcedValue);
 
@@ -2071,7 +2121,6 @@ namespace Chummer.Classes
         {
             string strNodeOuterXml = bonusNode.OuterXml;
             Log.Info("skillsoft = " + strNodeOuterXml);
-            Log.Info("Calling CreateImprovement");
             string strForcedValue = ForcedValue;
             Log.Info("_strForcedValue = " + strForcedValue);
 
@@ -2447,7 +2496,10 @@ namespace Chummer.Classes
             string strCondition = bonusNode["condition"]?.InnerText ?? string.Empty;
             int intBonus = strBonus == "Rating" ? _intRating : Convert.ToInt32(strBonus);
             Log.Info("Calling CreateImprovement");
-            CreateImprovement(strLimit, _objImprovementSource, SourceName, Improvement.ImprovementType.LimitModifier,
+            LimitModifier lm = new LimitModifier(_objCharacter);
+            lm.Create(_strFriendlyName,intBonus,strLimit,strCondition);
+            _objCharacter.LimitModifiers.Add(lm);
+            CreateImprovement(lm.InternalId, _objImprovementSource, SourceName, Improvement.ImprovementType.LimitModifier,
                 _strFriendlyName, intBonus, 0, 0, 0, 0, 0, string.Empty, false, string.Empty, strCondition);
         }
 
@@ -3579,8 +3631,7 @@ namespace Chummer.Classes
             {
                 string strSelection = string.Empty;
                 ForcedValue = string.Empty;
-
-
+                
                 Log.Info("objXmlSpecificPower = " + bonusNode.OuterXml);
 
                 string strPowerName = bonusNode["name"]?.InnerText;
@@ -5917,6 +5968,37 @@ namespace Chummer.Classes
             Log.Info("weaponaccuracy = " + bonusNode.OuterXml);
             Log.Info("Calling CreateImprovement");
             CreateImprovement(bonusNode["name"]?.InnerText ?? string.Empty, _objImprovementSource, SourceName, Improvement.ImprovementType.WeaponAccuracy, _strUnique, ImprovementManager.ValueToInt(_objCharacter, bonusNode["value"]?.InnerText, _intRating));
+        }
+
+        public void weaponskillaccuracy(XmlNode bonusNode)
+        {
+            Log.Info("weaponskillaccuracy");
+            Log.Info("weaponskillaccuracy = " + bonusNode.OuterXml);
+
+            string strForcedValue = ForcedValue;
+            Log.Info("_strForcedValue = " + strForcedValue);
+
+            XmlNode xmlSelectSkillNode = bonusNode["selectskill"];
+            if (xmlSelectSkillNode != null)
+            {
+                bool blnDummy = false;
+                SelectedValue = string.IsNullOrEmpty(strForcedValue) ? ImprovementManager.DoSelectSkill(xmlSelectSkillNode, _objCharacter, _intRating, _strFriendlyName, ref blnDummy) : strForcedValue;
+                if (blnDummy)
+                    throw new AbortedException();
+            }
+            else
+            {
+                SelectedValue = string.IsNullOrEmpty(strForcedValue) ? (bonusNode["name"]?.InnerText ?? string.Empty) : strForcedValue;
+            }
+
+            string strVal = bonusNode["value"]?.InnerText;
+
+            if (_blnConcatSelectedValue && !string.IsNullOrEmpty(SelectedValue))
+                SourceName += " (" + SelectedValue + ')';
+            
+            Log.Info("Calling CreateImprovement");
+            CreateImprovement(SelectedValue, _objImprovementSource, SourceName, Improvement.ImprovementType.WeaponSkillAccuracy, _strUnique,
+                ImprovementManager.ValueToInt(_objCharacter, strVal, _intRating));
         }
 
         public void metageneticlimit(XmlNode bonusNode)

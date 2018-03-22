@@ -72,6 +72,7 @@ namespace Chummer
             this.lblSecurityTotal = new System.Windows.Forms.Label();
             this.lblAreaTotal = new System.Windows.Forms.Label();
             this.lblComfortTotal = new System.Windows.Forms.Label();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.nudPercentage)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudRoommates)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudSecurity)).BeginInit();
@@ -215,7 +216,6 @@ namespace Chummer
             this.lblSource.Size = new System.Drawing.Size(47, 13);
             this.lblSource.TabIndex = 21;
             this.lblSource.Text = "[Source]";
-            this.lblSource.Click += new System.EventHandler(CommonFunctions.OpenPDFFromControl);
             // 
             // lblSourceLabel
             // 
@@ -358,6 +358,7 @@ namespace Chummer
             this.cmdAddQuality.Name = "cmdAddQuality";
             this.cmdAddQuality.Size = new System.Drawing.Size(122, 23);
             this.cmdAddQuality.TabIndex = 51;
+            this.cmdAddQuality.Tag = "Button_AddQuality";
             this.cmdAddQuality.Text = "Add Quality";
             this.cmdAddQuality.UseVisualStyleBackColor = true;
             this.cmdAddQuality.Click += new System.EventHandler(this.cmdAddQuality_Click);
@@ -368,6 +369,7 @@ namespace Chummer
             this.cmdDeleteQuality.Name = "cmdDeleteQuality";
             this.cmdDeleteQuality.Size = new System.Drawing.Size(122, 23);
             this.cmdDeleteQuality.TabIndex = 52;
+            this.cmdDeleteQuality.Tag = "Button_DeleteQuality";
             this.cmdDeleteQuality.Text = "Delete Quality";
             this.cmdDeleteQuality.UseVisualStyleBackColor = true;
             this.cmdDeleteQuality.Click += new System.EventHandler(this.cmdDeleteQuality_Click);
@@ -377,15 +379,16 @@ namespace Chummer
             this.treLifestyleQualities.Location = new System.Drawing.Point(1, 36);
             this.treLifestyleQualities.Name = "treLifestyleQualities";
             treeNode5.Name = "nodPositiveLifestyleQualities";
-            treeNode5.Tag = "Label_SummaryPositiveQualities";
+            treeNode5.Tag = "Label_SelectAdvancedLifestyle_PositiveQualities";
             treeNode5.Text = "Positive Qualities";
             treeNode6.Name = "nodNegativeLifestyleQualities";
-            treeNode6.Tag = "Label_SummaryNegativeQualities";
+            treeNode6.Tag = "Label_SelectAdvancedLifestyle_NegativeQualities";
             treeNode6.Text = "Negative Qualities";
             treeNode7.Name = "nodLifestyleEntertainments";
             treeNode7.Tag = "Node_SelectAdvancedLifestyle_Entertainments";
             treeNode7.Text = "Entertainments";
             treeNode8.Name = "nodFreeMatrixGrids";
+            treeNode8.Tag = "Node_SelectAdvancedLifestyle_Entertainments";
             treeNode8.Text = "Free Matrix Grids";
             this.treLifestyleQualities.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
             treeNode5,
@@ -438,7 +441,6 @@ namespace Chummer
             this.lblQualitySource.Size = new System.Drawing.Size(47, 13);
             this.lblQualitySource.TabIndex = 69;
             this.lblQualitySource.Text = "[Source]";
-            this.lblQualitySource.Click += new System.EventHandler(CommonFunctions.OpenPDFFromControl);
             // 
             // lblQualitySourceLabel
             // 
@@ -479,8 +481,8 @@ namespace Chummer
             this.chkPrimaryTenant.Name = "chkPrimaryTenant";
             this.chkPrimaryTenant.Size = new System.Drawing.Size(97, 17);
             this.chkPrimaryTenant.TabIndex = 74;
-            this.chkPrimaryTenant.Text = "Primary Tenant";
             this.chkPrimaryTenant.Tag = "Label_SelectAdvancedLifestyle_Tenant";
+            this.chkPrimaryTenant.Text = "Primary Tenant";
             this.chkPrimaryTenant.UseVisualStyleBackColor = true;
             this.chkPrimaryTenant.CheckedChanged += new System.EventHandler(this.chkPrimaryTenant_CheckedChanged);
             // 
@@ -517,6 +519,17 @@ namespace Chummer
             this.lblComfortTotal.Text = "[0]";
             this.lblComfortTotal.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(423, 225);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(142, 17);
+            this.checkBox1.TabIndex = 78;
+            this.checkBox1.Tag = "Label_SelectAdvancedLifestyle_LPContribution";
+            this.checkBox1.Text = "Quality Contributes to LP";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            // 
             // frmSelectLifestyleAdvanced
             // 
             this.AcceptButton = this.cmdOK;
@@ -524,6 +537,7 @@ namespace Chummer
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.cmdCancel;
             this.ClientSize = new System.Drawing.Size(572, 342);
+            this.Controls.Add(this.checkBox1);
             this.Controls.Add(this.lblSecurityTotal);
             this.Controls.Add(this.lblAreaTotal);
             this.Controls.Add(this.lblComfortTotal);
@@ -652,5 +666,6 @@ namespace Chummer
         private System.Windows.Forms.Label lblSecurityTotal;
         private System.Windows.Forms.Label lblAreaTotal;
         private System.Windows.Forms.Label lblComfortTotal;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }

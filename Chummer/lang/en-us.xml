@@ -1952,10 +1952,6 @@
       <text>You must select a Martial Art to which to add a Technique.</text>
     </string>
     <string>
-      <key>Message_SelectLimitModifier</key>
-      <text>You must select a Limit to which to add a Modifier.</text>
-    </string>
-    <string>
       <key>MessageTitle_SelectMartialArtTechnique</key>
       <text>Select Martial Art</text>
     </string>
@@ -3869,6 +3865,10 @@
     <string>
       <key>Button_SwapQuality</key>
       <text>Swap Quality</text>
+    </string>
+    <string>
+      <key>Button_DeleteQuality</key>
+      <text>Delete Quality</text>
     </string>
 	<string>
 		<key>Label_QualityLevel</key>
@@ -7625,6 +7625,14 @@ Only one attribute may be at its Maximum value during character creation.</text>
     <string>
       <key>Label_SelectAdvancedLifestyle_Tenant</key>
       <text>Primary Tenant</text>
+    </string>
+    <string>
+      <key>Label_SelectAdvancedLifestyle_LPContribution</key>
+      <text>Contributes tp Lifestyle Points</text>
+    </string>
+    <string>
+      <key>Label_Options_KarmaMysticAdeptPowerPoint</key>
+      <text>Mystic Adept Power Point</text>
     </string>
     <!-- End Region-->
     <!-- Region Select Armor Window -->

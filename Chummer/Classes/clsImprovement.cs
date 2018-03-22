@@ -298,7 +298,9 @@ namespace Chummer
             ContactMakeFree,
             FreeWare,
             WeaponAccuracy,
+            WeaponSkillAccuracy,
             MetageneticLimit,
+            Tradition,
             NumImprovementTypes, // 🡐 This one should always be the last defined enum
         }
 
@@ -312,6 +314,7 @@ namespace Chummer
             Bioware,
             ArmorEncumbrance,
             Gear,
+            VehicleMod,
             Spell,
             Initiation,
             Submersion,
@@ -1266,6 +1269,7 @@ namespace Chummer
                     // Immediately reset cached essence to make sure this fires off before any other property changers would
                     _objCharacter.ResetCachedEssence();
                     // TODO: Change essence loss improvement regeneration to take place only when Essence-related improvements or Cyberware is changed instead of on every character update.
+                    yield return () => _objCharacter.RefreshEssenceLossImprovements();
                     break;
                 case ImprovementType.FreeSpellsATT:
                     break;
@@ -1553,6 +1557,8 @@ namespace Chummer
                     break;
                 case ImprovementType.FreeWare:
                     break;
+                case ImprovementType.WeaponSkillAccuracy:
+                    break;
                 case ImprovementType.WeaponAccuracy:
                     break;
                 case ImprovementType.MetageneticLimit:
@@ -1568,21 +1574,26 @@ namespace Chummer
                 Tag = SourceName,
                 Text = CustomName,
                 ToolTipText = Notes.WordWrap(100),
-                ContextMenuStrip = cmsImprovement
+                ContextMenuStrip = cmsImprovement,
+                ForeColor = PreferredColor
             };
-            if (!string.IsNullOrEmpty(Notes))
-            {
-                if (Enabled)
-                    nodImprovement.ForeColor = Color.SaddleBrown;
-                else
-                    nodImprovement.ForeColor = Color.SandyBrown;
-            }
-            else if (Enabled)
-                nodImprovement.ForeColor = SystemColors.WindowText;
-            else
-                nodImprovement.ForeColor = SystemColors.GrayText;
-
             return nodImprovement;
+        }
+
+        public Color PreferredColor
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(Notes))
+                {
+                    if (Enabled)
+                        return Color.SaddleBrown;
+                    return Color.SandyBrown;
+                }
+                if (Enabled)
+                    return SystemColors.WindowText;
+                return SystemColors.GrayText;
+            }
         }
         #endregion
         #endregion
@@ -1649,6 +1660,18 @@ namespace Chummer
         }
     }
 
+    public class TransactingImprovement
+    {
+        public TransactingImprovement(Improvement objImprovement)
+        {
+            ImprovementObject = objImprovement;
+        }
+
+        public Improvement ImprovementObject { get; }
+
+        public bool IsCommitting { get; set; }
+    }
+
     public static class ImprovementManager
     {
         // String that will be used to limit the selection in Pick forms.
@@ -1656,7 +1679,7 @@ namespace Chummer
 
         private static string s_StrSelectedValue = string.Empty;
         private static string s_StrForcedValue = string.Empty;
-        private static readonly ConcurrentDictionary<Character, List<Improvement>> s_DictionaryTransactions = new ConcurrentDictionary<Character, List<Improvement>>(8, 10);
+        private static readonly ConcurrentDictionary<Character, List<TransactingImprovement>> s_DictionaryTransactions = new ConcurrentDictionary<Character, List<TransactingImprovement>>(8, 10);
         private static readonly ConcurrentDictionary<ImprovementDictionaryKey, int> s_DictionaryCachedValues = new ConcurrentDictionary<ImprovementDictionaryKey, int>(8, (int)Improvement.ImprovementType.NumImprovementTypes);
         private static readonly ConcurrentDictionary<ImprovementDictionaryKey, int> s_DictionaryCachedAugmentedValues = new ConcurrentDictionary<ImprovementDictionaryKey, int>(8, (int)Improvement.ImprovementType.NumImprovementTypes);
 
@@ -1720,7 +1743,7 @@ namespace Chummer
                 if (objKey.CharacterObject == objCharacter)
                     s_DictionaryCachedAugmentedValues.TryRemove(objKey, out int _);
             }
-            s_DictionaryTransactions.TryRemove(objCharacter, out List<Improvement> _);
+            s_DictionaryTransactions.TryRemove(objCharacter, out List<TransactingImprovement> _);
         }
         #endregion
 
@@ -2551,9 +2574,15 @@ namespace Chummer
                 strTemp = xmlBonusNode.SelectSingleNode("@excludecategory")?.InnerText;
                 if (!string.IsNullOrEmpty(strTemp))
                     frmPickSkill.ExcludeCategory = strTemp;
+                strTemp = xmlBonusNode.SelectSingleNode("@excludeskillgroup")?.InnerText;
+                if (!string.IsNullOrEmpty(strTemp))
+                    frmPickSkill.ExcludeSkillGroup = strTemp;
                 strTemp = xmlBonusNode.SelectSingleNode("@limittoskill")?.InnerText;
                 if (!string.IsNullOrEmpty(strTemp))
                     frmPickSkill.LimitToSkill = strTemp;
+                strTemp = xmlBonusNode.SelectSingleNode("@excludeskill")?.InnerText;
+                if (!string.IsNullOrEmpty(strTemp))
+                    frmPickSkill.ExcludeSkill = strTemp;
                 strTemp = xmlBonusNode.SelectSingleNode("@limittoattribute")?.InnerText;
                 if (!string.IsNullOrEmpty(strTemp))
                     frmPickSkill.LinkedAttribute = strTemp;
@@ -2591,9 +2620,10 @@ namespace Chummer
         /// <param name="blnConcatSelectedValue">Whether or not any selected values should be concatinated with the SourceName string when storing.</param>
         /// <param name="intRating">Selected Rating value that is used to replace the Rating string in an Improvement.</param>
         /// <param name="strFriendlyName">Friendly name to show in any dialogue windows that ask for a value.</param>
+        /// <param name="blnAddImprovementsToCharacter">If True, adds created improvements to the character. Set to false if all we need is a SelectedValue.</param>
         /// <returns>True if successfull</returns>
         public static bool CreateImprovements(Character objCharacter, Improvement.ImprovementSource objImprovementSource, string strSourceName,
-            XmlNode nodBonus, bool blnConcatSelectedValue = false, int intRating = 1, string strFriendlyName = "")
+            XmlNode nodBonus, bool blnConcatSelectedValue = false, int intRating = 1, string strFriendlyName = "", bool blnAddImprovementsToCharacter = true)
         {
             Log.Enter("CreateImprovements");
             Log.Info("objImprovementSource = " + objImprovementSource.ToString());
@@ -2620,7 +2650,7 @@ namespace Chummer
             Log.Info("_strLimitSelection = " + s_StrLimitSelection);
 
             // If there is no character object, don't attempt to add any Improvements.
-            if (objCharacter == null)
+            if (objCharacter == null && blnAddImprovementsToCharacter)
             {
                 Log.Info("_objCharacter = Null");
                 Log.Exit("CreateImprovements");
@@ -2643,9 +2673,9 @@ namespace Chummer
                     {
                         LimitSelection = s_StrForcedValue;
                     }
-                    else if (objCharacter.Pushtext.Count != 0)
+                    else if (objCharacter?.Pushtext.Count != 0)
                     {
-                        LimitSelection = objCharacter.Pushtext.Pop();
+                        LimitSelection = objCharacter?.Pushtext.Pop();
                     }
 
                     Log.Info("_strForcedValue = " + SelectedValue);
@@ -2667,7 +2697,6 @@ namespace Chummer
                         // Make sure the dialogue window was not canceled.
                         if (frmPickText.DialogResult == DialogResult.Cancel)
                         {
-
                             Rollback(objCharacter);
                             ForcedValue = string.Empty;
                             LimitSelection = string.Empty;
@@ -2694,7 +2723,7 @@ namespace Chummer
                 foreach (XmlNode bonusNode in nodBonus.ChildNodes)
                 {
                     if (!ProcessBonus(objCharacter, objImprovementSource, ref strSourceName, blnConcatSelectedValue, intRating,
-                        strFriendlyName, bonusNode, strUnique))
+                        strFriendlyName, bonusNode, strUnique, !blnAddImprovementsToCharacter))
                     {
                         Rollback(objCharacter);
                         return false;
@@ -2703,9 +2732,20 @@ namespace Chummer
             }
 
             // If we've made it this far, everything went OK, so commit the Improvements.
-            Log.Info("Calling Commit");
-            Commit(objCharacter);
-            Log.Info("Returned from Commit");
+            
+            if (blnAddImprovementsToCharacter)
+            {
+                Log.Info("Calling Commit");
+                Commit(objCharacter);
+                Log.Info("Returned from Commit");
+            }
+            else
+            {
+                Log.Info("Calling scheduled Rollback due to blnAddImprovementsToCharacter = false");
+                Rollback(objCharacter);
+                Log.Info("Returned from scheduled Rollback");
+            }
+
             // Clear the Forced Value and Limit Selection strings once we're done to prevent these from forcing their values on other Improvements.
             s_StrForcedValue = string.Empty;
             s_StrLimitSelection = string.Empty;
@@ -2727,7 +2767,7 @@ namespace Chummer
         }
 
         private static bool ProcessBonus(Character objCharacter, Improvement.ImprovementSource objImprovementSource, ref string strSourceName,
-            bool blnConcatSelectedValue, int intRating, string strFriendlyName, XmlNode bonusNode, string strUnique)
+            bool blnConcatSelectedValue, int intRating, string strFriendlyName, XmlNode bonusNode, string strUnique, bool blnIgnoreMethodNotFound = false)
         {
             if (bonusNode == null)
                 return false;
@@ -2757,7 +2797,7 @@ namespace Chummer
                 s_StrLimitSelection = container.LimitSelection;
                 s_StrSelectedValue = container.SelectedValue;
             }
-            else if (bonusNode.ChildNodes.Count == 0)
+            else if (blnIgnoreMethodNotFound || bonusNode.ChildNodes.Count == 0)
             {
                 return true;
             }
@@ -3714,6 +3754,13 @@ namespace Chummer
                             objCharacter.Metamagics.Remove(objMetamagic);
                         }
                         break;
+                    case Improvement.ImprovementType.LimitModifier:
+                        LimitModifier limitMod = objCharacter.LimitModifiers.FirstOrDefault(x => x.InternalId == objImprovement.ImprovedName);
+                        if (limitMod != null)
+                        {
+                            objCharacter.LimitModifiers.Remove(limitMod);
+                        }
+                        break;
                     case Improvement.ImprovementType.CritterPower:
                         CritterPower objCritterPower = objCharacter.CritterPowers.FirstOrDefault(x => x.InternalId == objImprovement.ImprovedName || ( x.Name == objImprovement.ImprovedName && x.Extra == objImprovement.UniqueName));
                         if (objCritterPower != null)
@@ -3836,6 +3883,9 @@ namespace Chummer
                             }
 
                             objImprovedPower.OnPropertyChanged(nameof(objImprovedPower.TotalRating));
+
+                            if(objImprovedPower.Deleting)
+                                objImprovedPower.UnbindPower();
                         }
                         break;
                     case Improvement.ImprovementType.MagiciansWayDiscount:
@@ -3957,8 +4007,8 @@ namespace Chummer
                 ClearCachedValue(objCharacter, objImprovement.ImproveType, objImprovement.ImprovedName);
 
                 // Add the Improvement to the Transaction List.
-                if (!s_DictionaryTransactions.TryAdd(objCharacter, new List<Improvement> {objImprovement}))
-                    s_DictionaryTransactions[objCharacter].Add(objImprovement);
+                if (!s_DictionaryTransactions.TryAdd(objCharacter, new List<TransactingImprovement> { new TransactingImprovement(objImprovement) }))
+                    s_DictionaryTransactions[objCharacter].Add(new TransactingImprovement(objImprovement));
             }
 
             Log.Exit("CreateImprovement");
@@ -3971,9 +4021,18 @@ namespace Chummer
         {
             Log.Enter("Commit");
             // Clear all of the Improvements from the Transaction List.
-            if (s_DictionaryTransactions.TryGetValue(objCharacter, out List<Improvement> lstTransaction))
+            if (s_DictionaryTransactions.TryGetValue(objCharacter, out List<TransactingImprovement> lstTransaction))
             {
-                lstTransaction.ProcessRelevantEvents();
+                List<Improvement> lstImprovementsToProcess = new List<Improvement>();
+                foreach (TransactingImprovement objLoopTransactingImprovement in lstTransaction)
+                {
+                    if (!objLoopTransactingImprovement.IsCommitting)
+                    {
+                        objLoopTransactingImprovement.IsCommitting = true;
+                        lstImprovementsToProcess.Add(objLoopTransactingImprovement.ImprovementObject);
+                    }
+                }
+                lstImprovementsToProcess.ProcessRelevantEvents();
                 lstTransaction.Clear();
             }
 
@@ -3986,13 +4045,13 @@ namespace Chummer
         private static void Rollback(Character objCharacter)
         {
             Log.Enter("Rollback");
-            if (s_DictionaryTransactions.TryGetValue(objCharacter, out List<Improvement> lstTransaction))
+            if (s_DictionaryTransactions.TryGetValue(objCharacter, out List<TransactingImprovement> lstTransaction))
             {
                 // Remove all of the Improvements that were added.
-                foreach (Improvement objImprovement in lstTransaction)
+                foreach (TransactingImprovement objTransactingImprovement in lstTransaction)
                 {
-                    RemoveImprovements(objCharacter, objImprovement.ImproveSource, objImprovement.SourceName);
-                    ClearCachedValue(objCharacter, objImprovement.ImproveType, objImprovement.ImprovedName);
+                    RemoveImprovements(objCharacter, objTransactingImprovement.ImprovementObject.ImproveSource, objTransactingImprovement.ImprovementObject.SourceName);
+                    ClearCachedValue(objCharacter, objTransactingImprovement.ImprovementObject.ImproveType, objTransactingImprovement.ImprovementObject.ImprovedName);
                 }
 
                 lstTransaction.Clear();
@@ -4010,8 +4069,10 @@ namespace Chummer
             // Create a hashset of events to fire to make sure we only ever fire each event once
             HashSet<Action> setEventsToFire = new HashSet<Action>();
             foreach (Improvement objImprovement in lstImprovements)
-            foreach (Action funcEventToFire in objImprovement.GetRelevantPropertyChangers())
-                setEventsToFire.Add(funcEventToFire);
+            {
+                foreach (Action funcEventToFire in objImprovement.GetRelevantPropertyChangers())
+                    setEventsToFire.Add(funcEventToFire);
+            }
             // Fire each event once
             foreach (Action funcEventToFire in setEventsToFire)
                 funcEventToFire.Invoke();

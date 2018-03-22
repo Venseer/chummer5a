@@ -272,7 +272,7 @@ namespace Chummer
                     MessageBox.Show(LanguageManager.GetString("Warning_NoLimitFound", GlobalOptions.Language));
                     return;
                 }
-                using (frmSelectLimitModifier frmPickLimitModifier = new frmSelectLimitModifier(objLimitModifier))
+                using (frmSelectLimitModifier frmPickLimitModifier = new frmSelectLimitModifier(objLimitModifier, "Physical", "Mental", "Social"))
                 {
                     frmPickLimitModifier.ShowDialog(this);
 
@@ -283,9 +283,7 @@ namespace Chummer
                     _objCharacter.LimitModifiers.Remove(objLimitModifier);
                     // Create the new limit modifier.
                     objLimitModifier = new LimitModifier(_objCharacter);
-                    string strLimit = treLimit.SelectedNode.Parent.Text;
-                    string strCondition = frmPickLimitModifier.SelectedCondition;
-                    objLimitModifier.Create(frmPickLimitModifier.SelectedName, frmPickLimitModifier.SelectedBonus, strLimit, strCondition);
+                    objLimitModifier.Create(frmPickLimitModifier.SelectedName, frmPickLimitModifier.SelectedBonus, frmPickLimitModifier.SelectedLimitType, frmPickLimitModifier.SelectedCondition);
                     objLimitModifier.Guid = new Guid(strGuid);
 
                     _objCharacter.LimitModifiers.Add(objLimitModifier);
@@ -974,11 +972,10 @@ namespace Chummer
                                 Name = strName,
                                 Text = strName,
                                 Tag = objImprovement.SourceName,
-                                ContextMenuStrip = cmsLimitModifier
+                                ContextMenuStrip = cmsLimitModifier,
+                                ForeColor = objImprovement.PreferredColor,
+                                ToolTipText = objImprovement.Notes.WordWrap(100)
                             };
-                            if (!string.IsNullOrEmpty(objImprovement.Notes))
-                                objNode.ForeColor = Color.SaddleBrown;
-                            objNode.ToolTipText = objImprovement.Notes.WordWrap(100);
                             if (string.IsNullOrEmpty(objImprovement.ImprovedName))
                             {
                                 if (objImprovement.ImproveType == Improvement.ImprovementType.SocialLimit)
@@ -5432,11 +5429,10 @@ namespace Chummer
                                 Name = strName,
                                 Text = strName,
                                 Tag = objImprovement.SourceName,
-                                ContextMenuStrip = cmsLimitModifier
+                                ContextMenuStrip = cmsLimitModifier,
+                                ForeColor = objImprovement.PreferredColor,
+                                ToolTipText = objImprovement.Notes.WordWrap(100)
                             };
-                            if (!string.IsNullOrEmpty(objImprovement.Notes))
-                                objNode.ForeColor = Color.SaddleBrown;
-                            objNode.ToolTipText = objImprovement.Notes.WordWrap(100);
                             if (string.IsNullOrEmpty(objImprovement.ImprovedName))
                             {
                                 if (objImprovement.ImproveType == Improvement.ImprovementType.SocialLimit)

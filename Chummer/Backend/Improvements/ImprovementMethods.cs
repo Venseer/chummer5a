@@ -61,6 +61,8 @@ namespace Chummer
                     return objImprovementAdder.disabletab;
                 case "SELECTRESTRICTED":
                     return objImprovementAdder.selectrestricted;
+                case "SELECTTRADITION":
+                    return objImprovementAdder.selecttradition;
                 case "CYBERSEEKER":
                     return objImprovementAdder.cyberseeker;
                 case "BLOCKSKILLGROUPDEFAULTING":
@@ -549,6 +551,8 @@ namespace Chummer
                     return objImprovementAdder.addware;
                 case "WEAPONACCURACY":
                     return objImprovementAdder.weaponaccuracy;
+                case "WEAPONSKILLACCURACY":
+                    return objImprovementAdder.weaponskillaccuracy;
                 case "METAGENETICLIMIT":
                     return objImprovementAdder.metageneticlimit;
                 // No method matches, return a null pointer

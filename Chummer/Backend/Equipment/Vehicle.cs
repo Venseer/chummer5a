@@ -204,13 +204,7 @@ namespace Chummer.Backend.Equipment
 
                     if (decMin != 0 || decMax != decimal.MaxValue)
                     {
-                        string strNuyenFormat = _objCharacter.Options.NuyenFormat;
-                        int intDecimalPlaces = strNuyenFormat.IndexOf('.');
-                        if (intDecimalPlaces == -1)
-                            intDecimalPlaces = 0;
-                        else
-                            intDecimalPlaces = strNuyenFormat.Length - intDecimalPlaces - 1;
-                        frmSelectNumber frmPickNumber = new frmSelectNumber(intDecimalPlaces);
+                        frmSelectNumber frmPickNumber = new frmSelectNumber(_objCharacter.Options.NuyenDecimals);
                         if (decMax > 1000000)
                             decMax = 1000000;
                         frmPickNumber.Minimum = decMin;
@@ -266,15 +260,11 @@ namespace Chummer.Backend.Equipment
                                 if (objXmlMod != null)
                                 {
                                     VehicleMod objMod = new VehicleMod(_objCharacter);
-                                    int intRating = 0;
+                                    string strForcedValue = objXmlVehicleMod.Attributes["select"]?.InnerText ?? string.Empty;
+                                    int.TryParse(objXmlVehicleMod.Attributes["rating"]?.InnerText, out int intRating);
 
-                                    if (objXmlVehicleMod.Attributes["rating"] != null)
-                                        int.TryParse(objXmlVehicleMod.Attributes["rating"].InnerText, out intRating);
-
-                                    if (objXmlVehicleMod.Attributes["select"] != null)
-                                        objMod.Extra = objXmlVehicleMod.Attributes["select"].InnerText;
-
-                                    objMod.Create(objXmlMod, intRating, this);
+                                    objMod.Extra = strForcedValue;
+                                    objMod.Create(objXmlMod, intRating, this, 0, strForcedValue);
                                     objMod.IncludedInVehicle = true;
 
                                     _lstVehicleMods.Add(objMod);
@@ -410,13 +400,13 @@ namespace Chummer.Backend.Equipment
                         // Find the first free Weapon Mount in the Vehicle.
                         foreach (WeaponMount objWeaponMount in _lstWeaponMounts)
                         {
-                            if (!string.IsNullOrWhiteSpace(objWeaponMount.WeaponMountCategories) && objWeaponMount.WeaponMountCategories.Contains(objWeapon.Category) && objWeaponMount.Weapons.Count == 0)
-                            {
-                                objWeaponMount.Weapons.Add(objWeapon);
-                                foreach (Weapon objSubWeapon in objSubWeapons)
-                                    objWeaponMount.Weapons.Add(objSubWeapon);
-                                break;
-                            }
+                            if (!objWeaponMount.AllowedWeaponCategories.Contains(objWeapon.Category) &&
+                                !objWeaponMount.AllowedWeapons.Contains(objWeapon.Name) &&
+                                objWeaponMount.Weapons.Count != 0) continue;
+                            objWeaponMount.Weapons.Add(objWeapon);
+                            foreach (Weapon objSubWeapon in objSubWeapons)
+                                objWeaponMount.Weapons.Add(objSubWeapon);
+                            break;
                         }
 
                         // If a free Weapon Mount could not be found, just attach it to the first one found and let the player deal with it.
@@ -2771,6 +2761,7 @@ namespace Chummer.Backend.Equipment
             return decReturn;
         }
 
+        #region UI Methods
         /// <summary>
         /// Add a Vehicle to the TreeView.
         /// </summary>
@@ -2793,13 +2784,10 @@ namespace Chummer.Backend.Equipment
                 Name = InternalId,
                 Text = DisplayName(GlobalOptions.Language),
                 Tag = InternalId,
-                ContextMenuStrip = cmsVehicle
+                ContextMenuStrip = cmsVehicle,
+                ForeColor = PreferredColor,
+                ToolTipText = Notes.WordWrap(100)
             };
-            if (!string.IsNullOrEmpty(Notes))
-                objNode.ForeColor = Color.SaddleBrown;
-            else if (!string.IsNullOrEmpty(ParentID))
-                objNode.ForeColor = SystemColors.GrayText;
-            objNode.ToolTipText = Notes.WordWrap(100);
 
             TreeNodeCollection lstChildNodes = objNode.Nodes;
             // Populate the list of Vehicle Locations.
@@ -2880,6 +2868,24 @@ namespace Chummer.Backend.Equipment
 
             return objNode;
         }
+
+        public Color PreferredColor
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(Notes))
+                {
+                    return Color.SaddleBrown;
+                }
+                if (!string.IsNullOrEmpty(ParentID))
+                {
+                    return SystemColors.GrayText;
+                }
+
+                return SystemColors.WindowText;
+            }
+        }
+        #endregion
 
         /// <summary>
         /// Locate a piece of Cyberware within this vehicle based on a predicate.
