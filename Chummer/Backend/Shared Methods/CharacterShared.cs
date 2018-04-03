@@ -178,23 +178,20 @@ namespace Chummer
         /// Update the label and tooltip for the character's Armor Rating.
         /// </summary>
         /// <param name="lblArmor"></param>
-        /// <param name="tipTooltip"></param>
         /// <param name="lblCMArmor"></param>
-        protected void UpdateArmorRating(Label lblArmor, ToolTip tipTooltip, Label lblCMArmor = null)
+        protected void UpdateArmorRating(Label lblArmor, Label lblCMArmor = null)
         {
-            if (tipTooltip != null)
+            int intTotalArmorRating = _objCharacter.TotalArmorRating;
+            int intArmorRating = _objCharacter.ArmorRating;
+            string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
+            string strArmorToolTip = LanguageManager.GetString("Tip_Armor", GlobalOptions.Language) + strSpaceCharacter + '(' + intArmorRating.ToString(GlobalOptions.CultureInfo) + ')';
+            if (intArmorRating != intTotalArmorRating)
+                strArmorToolTip += strSpaceCharacter + '+' + strSpaceCharacter + LanguageManager.GetString("Tip_Modifiers", GlobalOptions.Language) + strSpaceCharacter + '(' +
+                                   (intTotalArmorRating - intArmorRating).ToString(GlobalOptions.CultureInfo) + ')';
+            GlobalOptions.ToolTipProcessor.SetToolTip(lblArmor, strArmorToolTip);
+            if (lblCMArmor != null)
             {
-                int intTotalArmorRating = _objCharacter.TotalArmorRating;
-                int intArmorRating = _objCharacter.ArmorRating;
-                string strArmorToolTip = LanguageManager.GetString("Tip_Armor", GlobalOptions.Language) + " (" + intArmorRating.ToString() + ')';
-                if (intArmorRating != intTotalArmorRating)
-                    strArmorToolTip += " + " + LanguageManager.GetString("Tip_Modifiers", GlobalOptions.Language) + " (" +
-                                       (intTotalArmorRating - intArmorRating).ToString() + ')';
-                tipTooltip.SetToolTip(lblArmor, strArmorToolTip);
-                if (lblCMArmor != null)
-                {
-                    tipTooltip.SetToolTip(lblCMArmor, strArmorToolTip);
-                }
+                GlobalOptions.ToolTipProcessor.SetToolTip(lblCMArmor, strArmorToolTip);
             }
         }
 
@@ -205,44 +202,41 @@ namespace Chummer
         /// <param name="lblMental"></param>
         /// <param name="lblSocial"></param>
         /// <param name="lblAstral"></param>
-        /// <param name="tipTooltip"></param>
-        protected void RefreshLimits(Label lblPhysical, Label lblMental, Label lblSocial, Label lblAstral, ToolTip tipTooltip)
+        protected void RefreshLimits(Label lblPhysical, Label lblMental, Label lblSocial, Label lblAstral)
         {
-            if (tipTooltip != null)
-            {
-                StringBuilder objPhysical = new StringBuilder(
+            StringBuilder objPhysical = new StringBuilder(
                     $"({_objCharacter.STR.DisplayAbbrev} [{_objCharacter.STR.TotalValue}] * 2) + {_objCharacter.BOD.DisplayAbbrev} [{_objCharacter.BOD.TotalValue}] + {_objCharacter.REA.DisplayAbbrev} [{_objCharacter.REA.TotalValue}] / 3");
-                StringBuilder objMental = new StringBuilder(
-                    $"({_objCharacter.LOG.DisplayAbbrev} [{_objCharacter.LOG.TotalValue}] * 2) + {_objCharacter.INT.DisplayAbbrev} [{_objCharacter.INT.TotalValue}] + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] / 3");
-                StringBuilder objSocial = new StringBuilder(
-                    $"({_objCharacter.CHA.DisplayAbbrev} [{_objCharacter.CHA.TotalValue}] * 2) + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] + {_objCharacter.ESS.DisplayAbbrev} [{_objCharacter.Essence().ToString(GlobalOptions.CultureInfo)}] / 3");
+            StringBuilder objMental = new StringBuilder(
+                $"({_objCharacter.LOG.DisplayAbbrev} [{_objCharacter.LOG.TotalValue}] * 2) + {_objCharacter.INT.DisplayAbbrev} [{_objCharacter.INT.TotalValue}] + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] / 3");
+            StringBuilder objSocial = new StringBuilder(
+                $"({_objCharacter.CHA.DisplayAbbrev} [{_objCharacter.CHA.TotalValue}] * 2) + {_objCharacter.WIL.DisplayAbbrev} [{_objCharacter.WIL.TotalValue}] + {_objCharacter.ESS.DisplayAbbrev} [{_objCharacter.Essence().ToString(GlobalOptions.CultureInfo)}] / 3");
 
-                foreach (Improvement objLoopImprovement in _objCharacter.Improvements)
+            foreach (Improvement objLoopImprovement in _objCharacter.Improvements)
+            {
+                if (objLoopImprovement.Enabled)
                 {
-                    if (objLoopImprovement.Enabled)
+                    switch (objLoopImprovement.ImproveType)
                     {
-                        switch (objLoopImprovement.ImproveType)
-                        {
-                            case Improvement.ImprovementType.PhysicalLimit:
-                                objPhysical.Append($" + {_objCharacter.GetObjectName(objLoopImprovement, GlobalOptions.Language)} ({objLoopImprovement.Value})");
-                                break;
-                            case Improvement.ImprovementType.MentalLimit:
-                                objMental.Append($" + {_objCharacter.GetObjectName(objLoopImprovement, GlobalOptions.Language)} ({objLoopImprovement.Value})");
-                                break;
-                            case Improvement.ImprovementType.SocialLimit:
-                                objSocial.Append($" + {_objCharacter.GetObjectName(objLoopImprovement, GlobalOptions.Language)} ({objLoopImprovement.Value})");
-                                break;
-                        }
+                        case Improvement.ImprovementType.PhysicalLimit:
+                            objPhysical.Append($" + {_objCharacter.GetObjectName(objLoopImprovement, GlobalOptions.Language)} ({objLoopImprovement.Value})");
+                            break;
+                        case Improvement.ImprovementType.MentalLimit:
+                            objMental.Append($" + {_objCharacter.GetObjectName(objLoopImprovement, GlobalOptions.Language)} ({objLoopImprovement.Value})");
+                            break;
+                        case Improvement.ImprovementType.SocialLimit:
+                            objSocial.Append($" + {_objCharacter.GetObjectName(objLoopImprovement, GlobalOptions.Language)} ({objLoopImprovement.Value})");
+                            break;
                     }
                 }
-
-                tipTooltip.SetToolTip(lblPhysical, objPhysical.ToString());
-                tipTooltip.SetToolTip(lblMental, objMental.ToString());
-                tipTooltip.SetToolTip(lblSocial, objSocial.ToString());
-                tipTooltip.SetToolTip(lblAstral, LanguageManager.GetString("Label_Options_Maximum", GlobalOptions.Language) + " (" +
-                    LanguageManager.GetString("String_LimitMentalShort", GlobalOptions.Language) + ", " +
-                    LanguageManager.GetString("String_LimitSocialShort", GlobalOptions.Language) + ')');
             }
+
+            GlobalOptions.ToolTipProcessor.SetToolTip(lblPhysical, objPhysical.ToString());
+            GlobalOptions.ToolTipProcessor.SetToolTip(lblMental, objMental.ToString());
+            GlobalOptions.ToolTipProcessor.SetToolTip(lblSocial, objSocial.ToString());
+            string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
+            GlobalOptions.ToolTipProcessor.SetToolTip(lblAstral, LanguageManager.GetString("Label_Options_Maximum", GlobalOptions.Language) + strSpaceCharacter + '(' +
+                LanguageManager.GetString("String_LimitMentalShort", GlobalOptions.Language) + ',' + strSpaceCharacter +
+                LanguageManager.GetString("String_LimitSocialShort", GlobalOptions.Language) + ')');
         }
 
         /// <summary>
@@ -2089,7 +2083,7 @@ namespace Chummer
             {
                 foreach (TreeNode objQualityNode in objQualityTypeNode.Nodes)
                 {
-                    objQualityNode.Text = ((Quality)objQualityNode.Tag).DisplayName(GlobalOptions.Language);
+                    objQualityNode.Text = ((Quality)objQualityNode.Tag).DisplayName(GlobalOptions.CultureInfo, GlobalOptions.Language);
                 }
             }
             treQualities.SortCustom(objSelectedNode?.Tag);
@@ -4957,7 +4951,7 @@ namespace Chummer
                     TreeNode nodFocus = treFoci.FindNode(objFocusGear.InternalId);
                     if (nodFocus != null)
                     {
-                        nodFocus.Text = objFocusGear.DisplayName(GlobalOptions.Language).Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language));
+                        nodFocus.Text = objFocusGear.DisplayName(GlobalOptions.CultureInfo, GlobalOptions.Language).Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language));
                     }
                 }
                     break;
@@ -4973,7 +4967,7 @@ namespace Chummer
                                     TreeNode nodFocus = treFoci.FindNode(objStack.InternalId);
                                     if (nodFocus != null)
                                     {
-                                        nodFocus.Text = objFocusGear.DisplayName(GlobalOptions.Language).Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language));
+                                        nodFocus.Text = objFocusGear.DisplayName(GlobalOptions.CultureInfo, GlobalOptions.Language).Replace(LanguageManager.GetString("String_Rating", GlobalOptions.Language), LanguageManager.GetString("String_Force", GlobalOptions.Language));
                                     }
                                     break;
                                 }
@@ -6269,8 +6263,9 @@ namespace Chummer
             
             int intEnemyMax = CharacterObject.GameplayOptionQualityLimit;
             int intQualityMax = CharacterObject.GameplayOptionQualityLimit;
-            string strEnemyPoints = intEnemyMax.ToString() + ' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
-            string strQualityPoints = intQualityMax.ToString() + ' ' + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
+            string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
+            string strEnemyPoints = intEnemyMax.ToString() + strSpaceCharacter + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
+            string strQualityPoints = intQualityMax.ToString() + strSpaceCharacter + LanguageManager.GetString("String_Karma", GlobalOptions.Language);
 
             if (intBPUsed < (intEnemyMax * -1) && !CharacterObject.IgnoreRules)
             {
@@ -6751,11 +6746,6 @@ namespace Chummer
 
         protected ObservableCollection<CharacterAttrib> SpecialAttributes => _lstSpecialAttributes;
 
-        protected void ForceUpdateWindowTitle(object sender, EventArgs e)
-        {
-            UpdateWindowTitle(false);
-        }
-
         protected virtual string FormMode => string.Empty;
 
         protected void ShiftTabsOnMouseScroll(object sender, MouseEventArgs e)
@@ -6787,8 +6777,9 @@ namespace Chummer
         {
             if (Text.EndsWith('*') == _blnIsDirty && blnCanSkip)
                 return;
-            
-            string strTitle = _objCharacter.CharacterName + " - " + FormMode + " (" + _objOptions.Name + ')';
+
+            string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
+            string strTitle = _objCharacter.CharacterName + strSpaceCharacter + '-' + strSpaceCharacter + FormMode + strSpaceCharacter + '(' + _objOptions.Name + ')';
             if (_blnIsDirty)
                 strTitle += '*';
             this.DoThreadSafe(() => Text = strTitle);
@@ -6920,7 +6911,7 @@ namespace Chummer
         protected string GetTraditionDrainToolTip(Improvement.ImprovementType eDrainType)
         {
             string strDrain = eDrainType == Improvement.ImprovementType.FadingResistance ? _objCharacter.TechnomancerFading : _objCharacter.TraditionDrain;
-            
+            string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
             StringBuilder objTip = new StringBuilder(strDrain);
 
             // Update the Fading CharacterAttribute Value.
@@ -6929,7 +6920,7 @@ namespace Chummer
                 objTip.CheapReplace(strAttribute, () =>
                 {
                     CharacterAttrib objAttrib = _objCharacter.GetAttribute(strAttribute);
-                    return objAttrib.DisplayAbbrev + " (" + objAttrib.TotalValue + ')';
+                    return objAttrib.DisplayAbbrev + strSpaceCharacter + '(' + objAttrib.TotalValue + ')';
                 });
             }
 
@@ -6937,8 +6928,8 @@ namespace Chummer
             if (intBonusDrain != 0)
             {
                 if (objTip.Length > 0)
-                    objTip.Append(" + ");
-                objTip.Append(LanguageManager.GetString("Tip_Modifiers", GlobalOptions.Language) + " (" + intBonusDrain.ToString() + ')');
+                    objTip.Append(strSpaceCharacter + '+' + strSpaceCharacter);
+                objTip.Append(LanguageManager.GetString("Tip_Modifiers", GlobalOptions.Language) + strSpaceCharacter + '(' + intBonusDrain.ToString() + ')');
             }
 
             return objTip.ToString();

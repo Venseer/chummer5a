@@ -101,8 +101,8 @@ namespace Chummer
             lstMetatypes.Height = cmdOK.Bottom - lstMetatypes.Top;
 
             // Add Possession and Inhabitation to the list of Critter Tradition variations.
-            tipTooltip.SetToolTip(chkPossessionBased, LanguageManager.GetString("Tip_Metatype_PossessionTradition", GlobalOptions.Language));
-            tipTooltip.SetToolTip(chkBloodSpirit, LanguageManager.GetString("Tip_Metatype_BloodSpirit", GlobalOptions.Language));
+            GlobalOptions.ToolTipProcessor.SetToolTip(chkPossessionBased, LanguageManager.GetString("Tip_Metatype_PossessionTradition", GlobalOptions.Language));
+            GlobalOptions.ToolTipProcessor.SetToolTip(chkBloodSpirit, LanguageManager.GetString("Tip_Metatype_BloodSpirit", GlobalOptions.Language));
             
             List<ListItem> lstMethods = new List<ListItem>
             {
@@ -684,7 +684,7 @@ namespace Chummer
                         string strSelect = objXmlQuality.SelectSingleNode("@select")?.Value;
                         if (!string.IsNullOrEmpty(strSelect))
                         {
-                            strbldQualities.Append(" (");
+                            strbldQualities.Append(LanguageManager.GetString("String_Space", GlobalOptions.Language) + '(');
                             strbldQualities.Append(LanguageManager.TranslateExtra(strSelect, GlobalOptions.Language));
                             strbldQualities.Append(')');
                         }
@@ -695,7 +695,7 @@ namespace Chummer
                         string strSelect = objXmlQuality.SelectSingleNode("@select")?.Value;
                         if (!string.IsNullOrEmpty(strSelect))
                         {
-                            strbldQualities.Append(" (");
+                            strbldQualities.Append(LanguageManager.GetString("String_Space", GlobalOptions.Language) + '(');
                             strbldQualities.Append(strSelect);
                             strbldQualities.Append(')');
                         }
@@ -746,7 +746,7 @@ namespace Chummer
                         string strSelect = objXmlQuality.SelectSingleNode("@select")?.Value;
                         if (!string.IsNullOrEmpty(strSelect))
                         {
-                            strbldQualities.Append(" (");
+                            strbldQualities.Append(LanguageManager.GetString("String_Space", GlobalOptions.Language) + '(');
                             strbldQualities.Append(LanguageManager.TranslateExtra(strSelect, GlobalOptions.Language));
                             strbldQualities.Append(')');
                         }
@@ -757,7 +757,7 @@ namespace Chummer
                         string strSelect = objXmlQuality.SelectSingleNode("@select")?.Value;
                         if (!string.IsNullOrEmpty(strSelect))
                         {
-                            strbldQualities.Append(" (");
+                            strbldQualities.Append(LanguageManager.GetString("String_Space", GlobalOptions.Language) + '(');
                             strbldQualities.Append(strSelect);
                             strbldQualities.Append(')');
                         }

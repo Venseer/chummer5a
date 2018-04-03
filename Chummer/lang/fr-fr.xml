@@ -45,7 +45,7 @@
     </string>
     <string>
       <key>String_Of</key>
-      <text>sur</text>
+      <text xml:space="preserve"> sur </text>
     </string>
     <string>
       <key>String_Remaining</key>
@@ -1258,7 +1258,7 @@
     </string>
     <string>
       <key>Message_RegisteredSpriteLimit</key>
-      <text>Le nombre de sprites enregistrés ne peut pas excéder votre score de CHR.</text>
+      <text>Le nombre de sprites enregistrés ne peut pas excéder votre score de LOG.</text>
     </string>
     <string>
       <key>MessageTitle_RegisteredSpriteLimit</key>

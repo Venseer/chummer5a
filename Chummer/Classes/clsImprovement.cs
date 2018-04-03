@@ -149,7 +149,6 @@ namespace Chummer
             SocialLimit,
             FriendsInHighPlaces,
             Erased,
-            BornRich,
             Fame,
             MadeMan,
             Overclocker,
@@ -778,35 +777,32 @@ namespace Chummer
                 {
                     string strTargetAttribute = ImprovedName;
                     bool blnIsBase = strTargetAttribute.EndsWith("Base");
+                    
+                    HashSet<string> setAttributePropertiesChanged = new HashSet<string>();
+                    if (AugmentedMaximum != 0)
+                        setAttributePropertiesChanged.Add(nameof(CharacterAttrib.AugmentedMaximumModifiers));
+                    if (Maximum != 0)
+                        setAttributePropertiesChanged.Add(nameof(CharacterAttrib.MaximumModifiers));
+                    if (Minimum != 0)
+                        setAttributePropertiesChanged.Add(nameof(CharacterAttrib.MinimumModifiers));
                     if (blnIsBase)
+                    {
                         strTargetAttribute = strTargetAttribute.TrimEndOnce("Base", true);
-                    if (AugmentedMaximum != 0 || Maximum != 0 || Minimum != 0)
-                    {
-                        foreach (CharacterAttrib objCharacterAttrib in _objCharacter.AttributeSection.AttributeList.Concat(_objCharacter.AttributeSection.SpecialAttributeList))
-                        {
-                            if (objCharacterAttrib.Abbrev == strTargetAttribute)
-                            {
-                                yield return () => objCharacterAttrib.OnPropertyChanged(nameof(CharacterAttrib.AugmentedMetatypeLimits));
-                            }
-                        }
+                        if (Augmented != 0)
+                            setAttributePropertiesChanged.Add(nameof(CharacterAttrib.AttributeValueModifiers));
                     }
-                    else if (Augmented != 0)
+                    else
                     {
-                        foreach (CharacterAttrib objCharacterAttrib in _objCharacter.AttributeSection.AttributeList.Concat(_objCharacter.AttributeSection.SpecialAttributeList))
-                        {
-                            if (objCharacterAttrib.Abbrev == strTargetAttribute)
-                            {
-                                yield return () => objCharacterAttrib.OnPropertyChanged(nameof(CharacterAttrib.AttributeModifiers));
-                            }
-                        }
+                        if (Augmented != 0)
+                            setAttributePropertiesChanged.Add(nameof(CharacterAttrib.AttributeModifiers));
                     }
-                    else if (!blnIsBase && Value != 0)
+                    if (setAttributePropertiesChanged.Count > 0)
                     {
                         foreach (CharacterAttrib objCharacterAttrib in _objCharacter.AttributeSection.AttributeList.Concat(_objCharacter.AttributeSection.SpecialAttributeList))
                         {
                             if (objCharacterAttrib.Abbrev == strTargetAttribute)
                             {
-                                yield return () => objCharacterAttrib.OnPropertyChanged(nameof(CharacterAttrib.TotalValue));
+                                yield return () => objCharacterAttrib.OnMultiplePropertyChanged(setAttributePropertiesChanged.ToArray());
                             }
                         }
                     }
@@ -850,6 +846,9 @@ namespace Chummer
                 case ImprovementType.Reach:
                     break;
                 case ImprovementType.Nuyen:
+                {
+                    yield return () => _objCharacter.OnPropertyChanged(nameof(Character.StartingNuyenModifiers));
+                }
                     break;
                 case ImprovementType.PhysicalCM:
                 {
@@ -959,6 +958,9 @@ namespace Chummer
                 }
                     break;
                 case ImprovementType.NuyenMaxBP:
+                {
+                    yield return () => _objCharacter.OnPropertyChanged(nameof(Character.TotalNuyenMaximumBP));
+                }
                     break;
                 case ImprovementType.CMOverflow:
                 {
@@ -988,14 +990,16 @@ namespace Chummer
                 }
                     break;
                 case ImprovementType.DamageResistance:
+                {
+                    yield return () => _objCharacter.OnPropertyChanged(nameof(Character.DamageResistancePool));
+                }
                     break;
                 case ImprovementType.RestrictedItemCount:
                     break;
                 case ImprovementType.JudgeIntentions:
                 {
-                    yield return () => _objCharacter.OnPropertyChanged(nameof(Character.JudgeIntentions));
-                    yield return () => _objCharacter.OnPropertyChanged(nameof(Character.JudgeIntentionsResist));
-                    }
+                    yield return () => _objCharacter.OnMultiplePropertyChanged(nameof(Character.JudgeIntentions), nameof(Character.JudgeIntentionsResist));
+                }
                     break;
                 case ImprovementType.JudgeIntentionsOffense:
                 {
@@ -1123,8 +1127,6 @@ namespace Chummer
                     break;
                 case ImprovementType.Erased:
                     break;
-                case ImprovementType.BornRich:
-                    break;
                 case ImprovementType.Fame:
                     break;
                 case ImprovementType.MadeMan:
@@ -1229,8 +1231,6 @@ namespace Chummer
                     if (objTargetGroup != null)
                     {
                         yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.FreeLevels));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Karma));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Base));
                     }
                 }
                     break;
@@ -1250,8 +1250,6 @@ namespace Chummer
                     if (objTargetGroup != null)
                     {
                         yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.FreeBase));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Karma));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Base));
                     }
                 }
                     break;
@@ -1281,7 +1279,8 @@ namespace Chummer
                     {
                         if (objCharacterAttrib.Abbrev == strTargetAttribute)
                         {
-                            yield return () => objCharacterAttrib.OnPropertyChanged(nameof(CharacterAttrib.AugmentedMetatypeLimits));
+                            yield return () => objCharacterAttrib.OnMultiplePropertyChanged(nameof(CharacterAttrib.MetatypeMaximum),
+                                                                                            nameof(CharacterAttrib.MetatypeMinimum));
                         }
                     }
                 }
@@ -1545,11 +1544,6 @@ namespace Chummer
                     if (objTargetGroup != null)
                     {
                         yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.IsDisabled));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Rating));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.BaseUnbroken));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.KarmaUnbroken));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Karma));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Base));
                     }
                 }
                     break;
@@ -1576,11 +1570,6 @@ namespace Chummer
                     foreach (SkillGroup objTargetGroup in _objCharacter.SkillsSection.SkillGroups.Where(x => x.GetRelevantSkillCategories.Contains(ImprovedName)))
                     {
                         yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.IsDisabled));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Rating));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.BaseUnbroken));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.KarmaUnbroken));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Karma));
-                        yield return () => objTargetGroup.OnPropertyChanged(nameof(SkillGroup.Base));
                     }
                 }
                     break;
@@ -3012,9 +3001,6 @@ namespace Chummer
                                 case "Critter":
                                     objCharacter.CritterEnabled = true;
                                     break;
-                                case "Initiation":
-                                    objCharacter.InitiationEnabled = true;
-                                    break;
                             }
                         }
                         // Determine if access to any special tabs has been regained
@@ -3024,6 +3010,9 @@ namespace Chummer
                             {
                                 case "Cyberware":
                                     objCharacter.CyberwareDisabled = true;
+                                    break;
+                                case "Initiation":
+                                    objCharacter.InitiationForceDisabled = true;
                                     break;
                             }
                         }
@@ -3047,9 +3036,6 @@ namespace Chummer
                         break;
                     case Improvement.ImprovementType.Erased:
                         objCharacter.Erased = true;
-                        break;
-                    case Improvement.ImprovementType.BornRich:
-                        objCharacter.BornRich = true;
                         break;
                     case Improvement.ImprovementType.Fame:
                         objCharacter.Fame = true;
@@ -3332,9 +3318,6 @@ namespace Chummer
                                     case "Critter":
                                         objCharacter.CritterEnabled = false;
                                         break;
-                                    case "Initiation":
-                                        objCharacter.InitiationEnabled = false;
-                                        break;
                                 }
                             }
                             // Determine if access to any special tabs has been regained
@@ -3344,6 +3327,9 @@ namespace Chummer
                                 {
                                     case "Cyberware":
                                         objCharacter.CyberwareDisabled = false;
+                                        break;
+                                    case "Initiation":
+                                        objCharacter.InitiationForceDisabled = false;
                                         break;
                                 }
                             }
@@ -3375,10 +3361,6 @@ namespace Chummer
                     case Improvement.ImprovementType.Erased:
                         if (!blnHasDuplicate)
                             objCharacter.Erased = false;
-                        break;
-                    case Improvement.ImprovementType.BornRich:
-                        if (!blnHasDuplicate)
-                            objCharacter.BornRich = false;
                         break;
                     case Improvement.ImprovementType.Fame:
                         if (!blnHasDuplicate)
@@ -3749,9 +3731,6 @@ namespace Chummer
                                     case "Critter":
                                         objCharacter.CritterEnabled = false;
                                         break;
-                                    case "Initiation":
-                                        objCharacter.InitiationEnabled = false;
-                                        break;
                                 }
                             }
                             // Determine if access to any special tabs has been regained
@@ -3761,6 +3740,9 @@ namespace Chummer
                                 {
                                     case "Cyberware":
                                         objCharacter.CyberwareDisabled = false;
+                                        break;
+                                    case "Initiation":
+                                        objCharacter.InitiationForceDisabled = false;
                                         break;
                                 }
                             }
@@ -3787,15 +3769,20 @@ namespace Chummer
                                 objCharacter.PrototypeTranshuman = 0;
                         }
                         else
+                        {
                             objCharacter.PrototypeTranshuman -= Convert.ToDecimal(strImprovedName);
+
+                            if (objCharacter.PrototypeTranshuman <= 0 && !blnReapplyImprovements)
+                            {
+                                foreach (Cyberware objCyberware in objCharacter.Cyberware)
+                                    if (objCyberware.PrototypeTranshuman)
+                                        objCyberware.PrototypeTranshuman = false;
+                            }
+                        }
                         break;
                     case Improvement.ImprovementType.Erased:
                         if (!blnHasDuplicate)
                             objCharacter.Erased = false;
-                        break;
-                    case Improvement.ImprovementType.BornRich:
-                        if (!blnHasDuplicate)
-                            objCharacter.BornRich = false;
                         break;
                     case Improvement.ImprovementType.Fame:
                         if (!blnHasDuplicate)

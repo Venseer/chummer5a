@@ -43,7 +43,11 @@
 		</string>
 		<string>
 			<key>String_Of</key>
-			<text>von</text>
+			<text xml:space="preserve"> von </text>
+		</string>
+		<string>
+			<key>String_Space</key>
+			<text xml:space="preserve"> </text>
 		</string>
 		<string>
 			<key>String_Remaining</key>
@@ -1111,7 +1115,7 @@
 		</string>
 		<string>
 			<key>Message_RegisteredSpriteLimit</key>
-			<text>Die Anzahl registrierter Sprites kann Ihr Charisma-Attribut nicht überschreiten.</text>
+			<text>Die Anzahl registrierter Sprites kann Ihr Logik-Attribut nicht überschreiten.</text>
 		</string>
 		<string>
 			<key>MessageTitle_RegisteredSpriteLimit</key>
@@ -1936,6 +1940,14 @@
 		<string>
 			<key>String_ExpenseLifestyle</key>
 			<text>Gekaufter Lebensstil</text>
+		</string>
+		<string>
+			<key>String_ExpenseDecreaseLifestyle</key>
+			<text>Verringerter Lebensstil</text>
+		</string>
+		<string>
+			<key>String_ExpenseModifiedLifestyle</key>
+			<text>Modifizierter Lebensstil</text>
 		</string>
 		<string>
 			<key>String_ExpensePurchaseCyberware</key>
@@ -3594,6 +3606,10 @@
 		<string>
 			<key>Tip_Skill_Wounds</key>
 			<text>Wunden</text>
+		</string>
+		<string>
+			<key>Tip_Skill_OffHand</key>
+			<text>Nebenhand</text>
 		</string>
 		<string>
 			<key>Tip_SkillGroup_Skills</key>

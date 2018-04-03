@@ -235,35 +235,36 @@ namespace Chummer
                         string strPage = objXmlProgram.SelectSingleNode("altpage")?.Value ?? objXmlProgram.SelectSingleNode("page")?.Value;
                         if (!string.IsNullOrEmpty(strPage))
                         {
-                            lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + ' ' + strPage;
-                            tipTooltip.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + ' ' + LanguageManager.GetString("String_Page", GlobalOptions.Language) + " " + strPage);
+                            string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
+                            lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + strSpaceCharacter + strPage;
+                            GlobalOptions.ToolTipProcessor.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + strSpaceCharacter + LanguageManager.GetString("String_Page", GlobalOptions.Language) + " " + strPage);
                         }
                         else
                         {
                             string strUnknown = LanguageManager.GetString("String_Unknown", GlobalOptions.Language);
                             lblSource.Text = strUnknown;
-                            tipTooltip.SetToolTip(lblSource, strUnknown);
+                            GlobalOptions.ToolTipProcessor.SetToolTip(lblSource, strUnknown);
                         }
                     }
                     else
                     {
                         string strUnknown = LanguageManager.GetString("String_Unknown", GlobalOptions.Language);
                         lblSource.Text = strUnknown;
-                        tipTooltip.SetToolTip(lblSource, strUnknown);
+                        GlobalOptions.ToolTipProcessor.SetToolTip(lblSource, strUnknown);
                     }
                 }
                 else
                 {
                     lblRequiresProgram.Text = string.Empty;
                     lblSource.Text = string.Empty;
-                    tipTooltip.SetToolTip(lblSource, string.Empty);
+                    GlobalOptions.ToolTipProcessor.SetToolTip(lblSource, string.Empty);
                 }
             }
             else
             {
                 lblRequiresProgram.Text = string.Empty;
                 lblSource.Text = string.Empty;
-                tipTooltip.SetToolTip(lblSource, string.Empty);
+                GlobalOptions.ToolTipProcessor.SetToolTip(lblSource, string.Empty);
             }
         }
 

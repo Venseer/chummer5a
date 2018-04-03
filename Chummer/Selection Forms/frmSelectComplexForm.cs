@@ -78,7 +78,7 @@ namespace Chummer
                 lblDuration.Text = string.Empty;
                 lblSource.Text = string.Empty;
                 lblFV.Text = string.Empty;
-                tipTooltip.SetToolTip(lblSource, string.Empty);
+                GlobalOptions.ToolTipProcessor.SetToolTip(lblSource, string.Empty);
                 return;
             }
 
@@ -144,18 +144,19 @@ namespace Chummer
                 
                 string strSource = xmlComplexForm.SelectSingleNode("source")?.Value ?? LanguageManager.GetString("String_Unknown", GlobalOptions.Language);
                 string strPage = xmlComplexForm.SelectSingleNode("altpage")?.Value ?? xmlComplexForm.SelectSingleNode("page")?.Value ?? LanguageManager.GetString("String_Unknown", GlobalOptions.Language);
-                lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + ' ' + strPage;
+                string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
+                lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + strSpaceCharacter + strPage;
 
-                tipTooltip.SetToolTip(lblSource,
-                    CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + ' ' +
-                    LanguageManager.GetString("String_Page", GlobalOptions.Language) + ' ' + strPage);
+                GlobalOptions.ToolTipProcessor.SetToolTip(lblSource,
+                    CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + strSpaceCharacter +
+                    LanguageManager.GetString("String_Page", GlobalOptions.Language) + strSpaceCharacter + strPage);
             }
             else
             {
                 lblDuration.Text = string.Empty;
                 lblSource.Text = string.Empty;
                 lblFV.Text = string.Empty;
-                tipTooltip.SetToolTip(lblSource, string.Empty);
+                GlobalOptions.ToolTipProcessor.SetToolTip(lblSource, string.Empty);
             }
         }
 

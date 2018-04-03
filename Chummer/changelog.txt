@@ -1,4 +1,12 @@
-Future Build 199
+Future Build 200
+
+Application Changes:
+
+- Fixed a bug where changing tabs would often mark a character as having changes that need to be saved.
+- Implemented a cap on Lifestyle Points from assorted sources for Advanced Lifestyles; currently this is hardcoded to the base LP * 2. Closes #2640
+- Fixed an issue with old lifestyles not loading properly.
+
+Build 199
 
 Application Changes:
 
@@ -132,6 +140,13 @@ Application Changes:
 - Fixed an issue where the option to calculate contact points based off of total CHA value would sometimes not work.
 - Fixed issues where the tooltips and/or displayed values for Street Cred, Notoriety, and Public Awareness were sometimes incorrect or missing factors that contributed to the particular value.
 - Fixed an issue where the enabletab and disabletab bonus nodes would work off of any children nodes in a semi-chaotic fashion instead of checking only "name" nodes for tabs that should be affected.
+- Fixed an issue where magic users who were neither adepts nor had any magician abilities could not select a tradition.
+- The Initiation tab now defaults to being enabled if the user has either magic or resonance enabled, and now works through the disabletab bonus as an opt-out instead of the enabletab bonus as an opt-in.
+- Fixed an issue where switching from a mystic adept to a physical adept when the character had spells and/or rituals that could still be used by a physical adept would still cause the character to lose access to those spells.
+- Unhardcoded the Born Rich bonus.
+- Corrected Advanced Lifestyle cost calculation for increased Comforts, Area and Security values. Fixes #2625
+- Made the Garage Lifestyle qualities available multiple times per Lifestyle
+- Moved the logic for toggling Prototype Transhuman-affected bioware from Character into the Improvement system. Resolves an issue with Reapply Improvements permanently disabling the Cyberware's bonus. Existing characters that have been affected by this behaviour will need to amend it manually. 
 
 Data Changes:
 
@@ -204,6 +219,8 @@ New Strings:
 - Checkbox_Randomize1D6
 - String_ExpenseDecreaseLifestyle
 - String_ExpenseModifiedLifestyle
+- String_Space
+- Tip_Skill_OffHand
 
 Changed Strings:
 
@@ -212,6 +229,7 @@ Changed Strings:
 - Message_ComplexFormLimit
 - Message_PriorityComplexFormLimit
 - Label_SelectAdvancedLifestyle_LPContribution
+- String_Of
 
 Removed Strings:
 

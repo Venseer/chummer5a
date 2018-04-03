@@ -208,7 +208,7 @@ namespace Chummer.Backend.Attributes
         {
             get
             {
-                if (_objCharacter.DEPEnabled && Abbrev == "EDG")
+                if (_objCharacter.IsAI && Abbrev == "EDG")
                     return _objCharacter.DEP.TotalValue;
 
                 int intReturn = _intMetatypeMax;
@@ -289,10 +289,19 @@ namespace Chummer.Backend.Attributes
             }
         }
 
+        private int _intCachedValue = int.MinValue;
         /// <summary>
         /// Current value of the CharacterAttribute before modifiers are applied.
         /// </summary>
-        public int Value => Math.Min(Math.Max(Base + FreeBase + RawMinimum + AttributeValueModifiers, TotalMinimum) + Karma, TotalMaximum);
+        public int Value
+        {
+            get
+            {
+                if (_intCachedValue == int.MinValue)
+                    _intCachedValue = Math.Min(Math.Max(Base + FreeBase + RawMinimum + AttributeValueModifiers, TotalMinimum) + Karma, TotalMaximum);
+                return _intCachedValue;
+            }
+        }
 
         /// <summary>
         /// Total Maximum value of the CharacterAttribute before essence modifiers are applied but .
@@ -420,7 +429,16 @@ namespace Chummer.Backend.Attributes
         {
             get
             {
-                return _objCharacter.Improvements.Where(objImprovement => objImprovement.ImproveType == Improvement.ImprovementType.Attribute && (objImprovement.ImprovedName == Abbrev || objImprovement.ImprovedName == Abbrev + "Base") && objImprovement.Enabled).Sum(objImprovement => objImprovement.Maximum * objImprovement.Rating);
+                int intModifier = 0;
+                foreach (Improvement objImprovement in _objCharacter.Improvements)
+                {
+                    if (objImprovement.ImproveType == Improvement.ImprovementType.Attribute &&
+                        (objImprovement.ImprovedName == Abbrev || objImprovement.ImprovedName == Abbrev + "Base") && objImprovement.Enabled)
+                    {
+                        intModifier += objImprovement.Maximum * objImprovement.Rating;
+                    }
+                }
+                return intModifier;
             }
         }
 
@@ -497,10 +515,19 @@ namespace Chummer.Backend.Attributes
             return intReturn;
         }
 
+        private int _intCachedTotalValue = int.MinValue;
         /// <summary>
         /// The CharacterAttribute's total value (Value + Modifiers).
         /// </summary>
-        public int TotalValue => CalculatedTotalValue();
+        public int TotalValue
+        {
+            get
+            {
+                if (_intCachedTotalValue == int.MinValue)
+                    _intCachedTotalValue = CalculatedTotalValue();
+                return _intCachedTotalValue;
+            }
+        }
 
         /// <summary>
         /// The CharacterAttribute's combined Minimum value (Metatype Minimum + Modifiers), uncapped by its zero.
@@ -583,7 +610,7 @@ namespace Chummer.Backend.Attributes
         public string DisplayNameShort(string strLanguage)
         {
             if (Abbrev == "MAGAdept")
-                return LanguageManager.GetString("String_AttributeMAGShort", strLanguage) + " (" + LanguageManager.GetString("String_DescAdept", strLanguage) + ')';
+                return LanguageManager.GetString("String_AttributeMAGShort", strLanguage) + LanguageManager.GetString("String_Space", strLanguage) + '(' + LanguageManager.GetString("String_DescAdept", strLanguage) + ')';
 
             return LanguageManager.GetString("String_Attribute" + Abbrev + "Short", strLanguage);
         }
@@ -591,7 +618,7 @@ namespace Chummer.Backend.Attributes
         public string DisplayNameLong(string strLanguage)
         {
             if (Abbrev == "MAGAdept")
-                return LanguageManager.GetString("String_AttributeMAGLong", strLanguage) + " (" + LanguageManager.GetString("String_DescAdept", strLanguage) + ')';
+                return LanguageManager.GetString("String_AttributeMAGLong", strLanguage) + LanguageManager.GetString("String_Space", strLanguage) + '(' + LanguageManager.GetString("String_DescAdept", strLanguage) + ')';
 
             return LanguageManager.GetString("String_Attribute" + Abbrev + "Long", strLanguage);
         }
@@ -601,9 +628,9 @@ namespace Chummer.Backend.Attributes
         public string GetDisplayNameFormatted(string strLanguage)
         {
             if (Abbrev == "MAGAdept")
-                return LanguageManager.GetString("String_AttributeMAGLong", strLanguage) + " (" + LanguageManager.GetString("String_AttributeMAGShort", strLanguage) + ") (" + LanguageManager.GetString("String_DescAdept", strLanguage) + ')';
+                return LanguageManager.GetString("String_AttributeMAGLong", strLanguage) + LanguageManager.GetString("String_Space", strLanguage) + '(' + LanguageManager.GetString("String_AttributeMAGShort", strLanguage) + ") (" + LanguageManager.GetString("String_DescAdept", strLanguage) + ')';
 
-            return DisplayNameLong(strLanguage) + " (" + DisplayNameShort(strLanguage) + ')';
+            return DisplayNameLong(strLanguage) + LanguageManager.GetString("String_Space", strLanguage) + '(' + DisplayNameShort(strLanguage) + ')';
         }
 
         /// <summary>
@@ -616,6 +643,10 @@ namespace Chummer.Backend.Attributes
         /// </summary>
         public string AugmentedMetatypeLimits => $"{TotalMinimum} / {TotalMaximum} ({TotalAugmentedMaximum})";
 
+        public string CareerRemainingString => TotalValue.ToString(GlobalOptions.CultureInfo) +
+            LanguageManager.GetString("String_Of", GlobalOptions.Language) +
+            Value.ToString(GlobalOptions.CultureInfo) + LanguageManager.GetString("String_Space", GlobalOptions.Language)
+            + LanguageManager.GetString("String_Remaining", GlobalOptions.Language);
         #endregion
 
         #region Methods
@@ -634,6 +665,7 @@ namespace Chummer.Backend.Attributes
 
         public string UpgradeToolTip => string.Format(LanguageManager.GetString("Tip_ImproveItem", GlobalOptions.Language), (Value + 1), UpgradeKarmaCost);
 
+        private string _strCachedToolTip = string.Empty;
         /// <summary>
         /// ToolTip that shows how the CharacterAttribute is calculating its Modified Rating.
         /// </summary>
@@ -641,7 +673,11 @@ namespace Chummer.Backend.Attributes
         {
             get
             {
-                string strModifier = string.Empty;
+                if (!string.IsNullOrEmpty(_strCachedToolTip))
+                    return _strCachedToolTip;
+
+                string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
+                StringBuilder strModifier = new StringBuilder();
 
                 HashSet<string> lstUniqueName = new HashSet<string>();
                 List<Tuple<string, int, string>> lstUniquePair = new List<Tuple<string, int, string>>();
@@ -663,8 +699,8 @@ namespace Chummer.Backend.Attributes
                         else if (!(objImprovement.Value == 0 && objImprovement.Augmented == 0))
                         {
                             int intValue = objImprovement.Augmented * objImprovement.Rating;
-                            strModifier += " + " + _objCharacter.GetObjectName(objImprovement, GlobalOptions.Language) + " (" +
-                                           (intValue).ToString() + ')';
+                            strModifier.Append(strSpaceCharacter + '+' + strSpaceCharacter + _objCharacter.GetObjectName(objImprovement, GlobalOptions.Language) + strSpaceCharacter + '(' +
+                                           (intValue).ToString(GlobalOptions.CultureInfo) + ')');
                             intBaseValue += intValue;
                         }
                     }
@@ -676,7 +712,7 @@ namespace Chummer.Backend.Attributes
                     // Run through the list of UniqueNames and pick out the highest value for each one.
                     int intHighest = int.MinValue;
 
-                    string strNewModifier = string.Empty;
+                    StringBuilder strNewModifier = new StringBuilder();
                     foreach (Tuple<string, int, string> strValues in lstUniquePair)
                     {
                         if (strValues.Item1 == "precedence0")
@@ -684,7 +720,7 @@ namespace Chummer.Backend.Attributes
                             if (strValues.Item2 > intHighest)
                             {
                                 intHighest = strValues.Item2;
-                                strNewModifier = " + " + strValues.Item3 + " (" + strValues.Item2.ToString() + ')';
+                                strNewModifier = new StringBuilder(strSpaceCharacter + '+' + strSpaceCharacter + strValues.Item3 + strSpaceCharacter + '(' + strValues.Item2.ToString(GlobalOptions.CultureInfo) + ')');
                             }
                         }
                     }
@@ -695,7 +731,7 @@ namespace Chummer.Backend.Attributes
                             if (strValues.Item1 == "precedence-1")
                             {
                                 intHighest += strValues.Item2;
-                                strNewModifier += " + " + strValues.Item3 + " (" + strValues.Item2.ToString() + ')';
+                                strNewModifier.Append(strSpaceCharacter + '+' + strSpaceCharacter + strValues.Item3 + strSpaceCharacter + '(' + strValues.Item2.ToString(GlobalOptions.CultureInfo) + ')');
                             }
                         }
                     }
@@ -707,12 +743,12 @@ namespace Chummer.Backend.Attributes
                 {
                     // Retrieve all of the items that are precedence1 and nothing else.
                     int intHighest = int.MinValue;
-                    string strNewModifier = string.Empty;
+                    StringBuilder strNewModifier = new StringBuilder();
                     foreach (Tuple<string, int, string> strValues in lstUniquePair)
                     {
                         if (strValues.Item1 == "precedence1" || strValues.Item1 == "precedence-1")
                         {
-                            strNewModifier += " + " + strValues.Item3 + " (" + strValues.Item2.ToString() + ')';
+                            strNewModifier.Append(strSpaceCharacter + '+' + strSpaceCharacter + strValues.Item3 + strSpaceCharacter + '(' + strValues.Item2.ToString(GlobalOptions.CultureInfo) + ')');
                             intHighest += strValues.Item2;
                         }
                     }
@@ -732,7 +768,7 @@ namespace Chummer.Backend.Attributes
                                 if (strValues.Item2 > intHighest)
                                 {
                                     intHighest = strValues.Item2;
-                                    strModifier += " + " + strValues.Item3 + " (" + strValues.Item2.ToString() + ')';
+                                    strModifier.Append(strSpaceCharacter + '+' + strSpaceCharacter + strValues.Item3 + strSpaceCharacter + '(' + strValues.Item2.ToString(GlobalOptions.CultureInfo) + ')');
                                 }
                             }
                         }
@@ -758,8 +794,8 @@ namespace Chummer.Backend.Attributes
                         }
                         else
                         {
-                            strModifier += " + " + _objCharacter.GetObjectName(objImprovement, GlobalOptions.Language) + " (" +
-                                               (objImprovement.Augmented * objImprovement.Rating).ToString() + ')';
+                            strModifier.Append(strSpaceCharacter + '+' + strSpaceCharacter + _objCharacter.GetObjectName(objImprovement, GlobalOptions.Language) + strSpaceCharacter + '(' +
+                                               (objImprovement.Augmented * objImprovement.Rating).ToString(GlobalOptions.CultureInfo) + ')');
                         }
                     }
                 }
@@ -775,36 +811,28 @@ namespace Chummer.Backend.Attributes
                             if (strValues.Item2 > intHighest)
                             {
                                 intHighest = strValues.Item2;
-                                strModifier += " + " + strValues.Item3 + " (" + strValues.Item2.ToString() + ')';
+                                strModifier.Append(strSpaceCharacter + '+' + strSpaceCharacter + strValues.Item3 + strSpaceCharacter + '(' + strValues.Item2.ToString(GlobalOptions.CultureInfo) + ')');
                             }
                         }
                     }
                 }
 
                 //// If this is AGI or STR, factor in any Cyberlimbs.
-                StringBuilder strCyberlimb = new StringBuilder();
                 if ((Abbrev == "AGI" || Abbrev == "STR") && !_objCharacter.Options.DontUseCyberlimbCalculation)
                 {
                     foreach (Cyberware objCyberware in _objCharacter.Cyberware)
                     {
                         if (objCyberware.Category == "Cyberlimb")
                         {
-                            strCyberlimb.Append(Environment.NewLine);
-                            strCyberlimb.Append(objCyberware.DisplayName(GlobalOptions.Language) + " (");
-                            strCyberlimb.Append(Abbrev == "AGI" ? objCyberware.TotalAgility.ToString() : objCyberware.TotalStrength.ToString());
-                            strCyberlimb.Append(')');
+                            strModifier.Append(Environment.NewLine);
+                            strModifier.Append(objCyberware.DisplayName(GlobalOptions.Language) + strSpaceCharacter + '(');
+                            strModifier.Append(Abbrev == "AGI" ? objCyberware.TotalAgility.ToString(GlobalOptions.CultureInfo) : objCyberware.TotalStrength.ToString(GlobalOptions.CultureInfo));
+                            strModifier.Append(')');
                         }
                     }
-                    strModifier += strCyberlimb;
                 }
-                /*
-                if ((Abbrev == "RES" || Abbrev == "MAG" || Abbrev == "MAGAdept" || Abbrev == "DEP") && _objCharacter.EssencePenalty != 0)
-                {
-                    strModifier += $" + -{_objCharacter.EssencePenalty} ({LanguageManager.GetString("String_AttributeESSLong")})";
-                }
-                */
 
-                return DisplayAbbrev + " (" + Value.ToString() + ')' + strModifier;
+                return _strCachedToolTip = DisplayAbbrev + strSpaceCharacter + '(' + Value.ToString() + ')' + strModifier.ToString();
             }
         }
 
@@ -841,6 +869,8 @@ namespace Chummer.Backend.Attributes
 
         public int KarmaMaximum => TotalMaximum - TotalBase;
         public int PriorityMaximum => TotalMaximum - Karma - FreeBase - RawMinimum;
+
+        private int _intCachedUpgradeKarmaCost = int.MinValue;
         /// <summary>
         /// Karma price to upgrade. Returns negative if impossible
         /// </summary>
@@ -849,6 +879,9 @@ namespace Chummer.Backend.Attributes
         {
             get
             {
+                if (_intCachedUpgradeKarmaCost != int.MinValue)
+                    return _intCachedUpgradeKarmaCost;
+
                 int intValue = Value;
                 int upgrade;
                 int intOptionsCost = _objCharacter.Options.KarmaAttribute;
@@ -885,7 +918,7 @@ namespace Chummer.Backend.Attributes
                     upgrade = decimal.ToInt32(decimal.Ceiling(upgrade * decMultiplier));
                 upgrade += intExtra;
 
-                return Math.Max(upgrade, Math.Min(1, intOptionsCost));
+                return _intCachedUpgradeKarmaCost = Math.Max(upgrade, Math.Min(1, intOptionsCost));
             }
         }
 
@@ -961,11 +994,38 @@ namespace Chummer.Backend.Attributes
         }
 
         [NotifyPropertyChangedInvocator]
-        public void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        public void OnPropertyChanged([CallerMemberName] string strPropertyName = null)
         {
-            ICollection<string> lstNamesOfChangedProperties = AttributeDependancyGraph.GetWithAllDependants(propertyName);
+            OnMultiplePropertyChanged(strPropertyName);
+        }
+
+        public void OnMultiplePropertyChanged(params string[] lstPropertyNames)
+        {
+            ICollection<string> lstNamesOfChangedProperties = null;
+            foreach (string strPropertyName in lstPropertyNames)
+            {
+                if (lstNamesOfChangedProperties == null)
+                    lstNamesOfChangedProperties = AttributeDependancyGraph.GetWithAllDependants(strPropertyName);
+                else
+                {
+                    foreach (string strLoopChangedProperty in AttributeDependancyGraph.GetWithAllDependants(strPropertyName))
+                        lstNamesOfChangedProperties.Add(strLoopChangedProperty);
+                }
+            }
+
+            if ((lstNamesOfChangedProperties?.Count > 0) != true)
+                return;
+
             if (lstNamesOfChangedProperties.Contains(nameof(CanUpgradeCareer)))
                 _intCachedCanUpgradeCareer = -1;
+            if (lstNamesOfChangedProperties.Contains(nameof(Value)))
+                _intCachedValue = int.MinValue;
+            if (lstNamesOfChangedProperties.Contains(nameof(TotalValue)))
+                _intCachedTotalValue = int.MinValue;
+            if (lstNamesOfChangedProperties.Contains(nameof(UpgradeKarmaCost)))
+                _intCachedUpgradeKarmaCost = int.MinValue;
+            if (lstNamesOfChangedProperties.Contains(nameof(ToolTip)))
+                _strCachedToolTip = string.Empty;
             if (PropertyChanged != null)
             {
                 foreach (string strPropertyToChange in lstNamesOfChangedProperties)
@@ -1020,27 +1080,36 @@ namespace Chummer.Backend.Attributes
             new DependancyGraph<string>(
                 new DependancyGraphNode<string>(nameof(ToolTip),
                     new DependancyGraphNode<string>(nameof(DisplayValue),
+                        new DependancyGraphNode<string>(nameof(HasModifiers)),
                         new DependancyGraphNode<string>(nameof(TotalValue),
                             new DependancyGraphNode<string>(nameof(AttributeModifiers)),
+                            new DependancyGraphNode<string>(nameof(TotalAugmentedMaximum),
+                                new DependancyGraphNode<string>(nameof(AugmentedMaximumModifiers)),
+                                new DependancyGraphNode<string>(nameof(TotalMaximum),
+                                    new DependancyGraphNode<string>(nameof(MetatypeMaximum)),
+                                    new DependancyGraphNode<string>(nameof(MaximumModifiers))
+                                )
+                            ),
                             new DependancyGraphNode<string>(nameof(Value),
                                 new DependancyGraphNode<string>(nameof(Karma)),
                                 new DependancyGraphNode<string>(nameof(Base)),
                                 new DependancyGraphNode<string>(nameof(FreeBase)),
-                                new DependancyGraphNode<string>(nameof(AugmentedMetatypeLimits),
-                                    new DependancyGraphNode<string>(nameof(TotalMinimum),
-                                        new DependancyGraphNode<string>(nameof(RawMinimum),
-                                            new DependancyGraphNode<string>(nameof(MetatypeMinimum))
-                                        )
-                                    ),
-                                    new DependancyGraphNode<string>(nameof(TotalAugmentedMaximum),
-                                        new DependancyGraphNode<string>(nameof(TotalMaximum),
-                                            new DependancyGraphNode<string>(nameof(MetatypeMaximum))
-                                        )
+                                new DependancyGraphNode<string>(nameof(AttributeValueModifiers)),
+                                new DependancyGraphNode<string>(nameof(TotalMinimum),
+                                    new DependancyGraphNode<string>(nameof(RawMinimum),
+                                        new DependancyGraphNode<string>(nameof(MetatypeMinimum)),
+                                        new DependancyGraphNode<string>(nameof(MinimumModifiers))
                                     )
-                               )
+                                ),
+                                new DependancyGraphNode<string>(nameof(TotalMaximum))
                             )
                         )
                     )
+                ),
+                new DependancyGraphNode<string>(nameof(AugmentedMetatypeLimits),
+                    new DependancyGraphNode<string>(nameof(TotalMinimum)),
+                    new DependancyGraphNode<string>(nameof(TotalMaximum)),
+                    new DependancyGraphNode<string>(nameof(TotalAugmentedMaximum))
                 ),
                 new DependancyGraphNode<string>(nameof(UpgradeToolTip),
                     new DependancyGraphNode<string>(nameof(UpgradeKarmaCost),
@@ -1051,6 +1120,20 @@ namespace Chummer.Backend.Attributes
                     new DependancyGraphNode<string>(nameof(UpgradeKarmaCost)),
                     new DependancyGraphNode<string>(nameof(Value)),
                     new DependancyGraphNode<string>(nameof(TotalMaximum))
+                ),
+                new DependancyGraphNode<string>(nameof(KarmaMaximum),
+                    new DependancyGraphNode<string>(nameof(TotalMaximum)),
+                    new DependancyGraphNode<string>(nameof(TotalBase))
+                ),
+                new DependancyGraphNode<string>(nameof(PriorityMaximum),
+                    new DependancyGraphNode<string>(nameof(TotalMaximum)),
+                    new DependancyGraphNode<string>(nameof(Karma)),
+                    new DependancyGraphNode<string>(nameof(FreeBase)),
+                    new DependancyGraphNode<string>(nameof(RawMinimum))
+                ),
+                new DependancyGraphNode<string>(nameof(CareerRemainingString),
+                    new DependancyGraphNode<string>(nameof(TotalValue)),
+                    new DependancyGraphNode<string>(nameof(Value))
                 )
             );
         
@@ -1062,7 +1145,7 @@ namespace Chummer.Backend.Attributes
         public string GetDisplayAbbrev(string strLanguage)
         {
             if (Abbrev == "MAGAdept")
-                return LanguageManager.GetString("String_AttributeMAGShort", strLanguage) + " (" + LanguageManager.GetString("String_DescAdept", strLanguage) + ')';
+                return LanguageManager.GetString("String_AttributeMAGShort", strLanguage) + LanguageManager.GetString("String_Space", strLanguage) + '(' + LanguageManager.GetString("String_DescAdept", strLanguage) + ')';
 
             return LanguageManager.GetString($"String_Attribute{Abbrev}Short", strLanguage);
         }
