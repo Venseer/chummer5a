@@ -5,6 +5,25 @@ Application Changes:
 - Fixed a bug where changing tabs would often mark a character as having changes that need to be saved.
 - Implemented a cap on Lifestyle Points from assorted sources for Advanced Lifestyles; currently this is hardcoded to the base LP * 2. Closes #2640
 - Fixed an issue with old lifestyles not loading properly.
+- Changed MadeMan from selectcontact to addcontact and added backwards compatibility to convert old characters
+- Tooltips of fading, drain, and armor dice values will now spell out each modifier instead of having them all grouped under one umbrella.
+- Fixed issues where AI characters' limit values' tooltips displayed values as if the character was following AI rules from Data Trails.
+- Values for the counterspelling dice numerical up-down are now saved with characters, and their effects on spell defense dice are now displayed separately through parentheses next to base values for those spell defense dice.
+- Fixed behaviour of Jack of All Trades improvement again to properly deduct karma for skills over the threshold.
+
+Data Changes:
+- Regression fix for shapeshifters not properly getting their MAG attribute enabled. 
+
+New Strings:
+
+- String_Handling
+- String_Sensor
+- String_Pilot
+- String_VehicleBody
+
+Removed Strings:
+
+- String_AttributePilot
 
 Build 199
 

@@ -132,7 +132,7 @@ namespace Chummer
             this.lblSpellDefenceDecAttLOGLabel = new System.Windows.Forms.Label();
             this.lblSpellDefenceDecAttINTLabel = new System.Windows.Forms.Label();
             this.lblSpellDefenceDecAttCHALabel = new System.Windows.Forms.Label();
-            this.lbllSpellDefenceManipPhysicalLabel = new System.Windows.Forms.Label();
+            this.lblSpellDefenceManipPhysicalLabel = new System.Windows.Forms.Label();
             this.lblSpellDefenceManipMentalLabel = new System.Windows.Forms.Label();
             this.lblSpellDefenceIllusionPhysicalLabel = new System.Windows.Forms.Label();
             this.lblSpellDefenceIllusionManaLabel = new System.Windows.Forms.Label();
@@ -325,10 +325,10 @@ namespace Chummer
             this.tabSkills = new System.Windows.Forms.TabPage();
             this.tabSkillUc = new Chummer.UI.Skills.SkillsTabUserControl();
             this.tabLimits = new System.Windows.Forms.TabPage();
-            this.lblAstral = new System.Windows.Forms.Label();
-            this.lblSocial = new System.Windows.Forms.Label();
-            this.lblMental = new System.Windows.Forms.Label();
-            this.lblPhysical = new System.Windows.Forms.Label();
+            this.lblAstral = new LabelWithToolTip();
+            this.lblSocial = new LabelWithToolTip();
+            this.lblMental = new LabelWithToolTip();
+            this.lblPhysical = new LabelWithToolTip();
             this.cmdAddLimitModifier = new System.Windows.Forms.Button();
             this.treLimit = new System.Windows.Forms.TreeView();
             this.cmdDeleteLimitModifier = new System.Windows.Forms.Button();
@@ -359,7 +359,7 @@ namespace Chummer
             this.lblMentorSpirit = new System.Windows.Forms.Label();
             this.lblMentorSpiritLabel = new System.Windows.Forms.Label();
             this.lblMentorSpiritInformation = new System.Windows.Forms.Label();
-            this.lblDrainAttributesValue = new System.Windows.Forms.Label();
+            this.lblDrainAttributesValue = new LabelWithToolTip();
             this.lblDrainAttributes = new System.Windows.Forms.Label();
             this.lblDrainAttributesLabel = new System.Windows.Forms.Label();
             this.cboTradition = new System.Windows.Forms.ComboBox();
@@ -395,7 +395,7 @@ namespace Chummer
             this.lblTarget = new System.Windows.Forms.Label();
             this.lblTargetLabel = new System.Windows.Forms.Label();
             this.cboStream = new System.Windows.Forms.ComboBox();
-            this.lblFadingAttributesValue = new System.Windows.Forms.Label();
+            this.lblFadingAttributesValue = new LabelWithToolTip();
             this.lblFadingAttributes = new System.Windows.Forms.Label();
             this.lblFadingAttributesLabel = new System.Windows.Forms.Label();
             this.lblStreamLabel = new System.Windows.Forms.Label();
@@ -754,9 +754,9 @@ namespace Chummer
             this.lblNumMugshots = new System.Windows.Forms.Label();
             this.nudMugshotIndex = new System.Windows.Forms.NumericUpDown();
             this.btnCreateBackstory = new System.Windows.Forms.Button();
-            this.lblPublicAwareTotal = new System.Windows.Forms.Label();
-            this.lblNotorietyTotal = new System.Windows.Forms.Label();
-            this.lblStreetCredTotal = new System.Windows.Forms.Label();
+            this.lblPublicAwareTotal = new LabelWithToolTip();
+            this.lblNotorietyTotal = new LabelWithToolTip();
+            this.lblStreetCredTotal = new LabelWithToolTip();
             this.lblCharacterName = new System.Windows.Forms.Label();
             this.txtCharacterName = new System.Windows.Forms.TextBox();
             this.txtPlayerName = new System.Windows.Forms.TextBox();
@@ -850,40 +850,40 @@ namespace Chummer
             this.lblSwimLabel = new System.Windows.Forms.Label();
             this.lblCMPhysical = new System.Windows.Forms.Label();
             this.lblMovement = new System.Windows.Forms.Label();
-            this.lblMemory = new System.Windows.Forms.Label();
+            this.lblMemory = new LabelWithToolTip();
             this.lblMovementLabel = new System.Windows.Forms.Label();
             this.lblMatrixINIHot = new System.Windows.Forms.Label();
-            this.lblLiftCarry = new System.Windows.Forms.Label();
+            this.lblLiftCarry = new LabelWithToolTip();
             this.lblMatrixINICold = new System.Windows.Forms.Label();
-            this.lblJudgeIntentions = new System.Windows.Forms.Label();
+            this.lblJudgeIntentions = new LabelWithToolTip();
             this.lblCMStun = new System.Windows.Forms.Label();
-            this.lblComposure = new System.Windows.Forms.Label();
+            this.lblComposure = new LabelWithToolTip();
             this.lblINI = new System.Windows.Forms.Label();
             this.lblRemainingNuyen = new System.Windows.Forms.Label();
             this.lblAstralINI = new System.Windows.Forms.Label();
             this.lblMatrixINI = new System.Windows.Forms.Label();
             this.lblESSMax = new System.Windows.Forms.Label();
-            this.lblArmor = new System.Windows.Forms.Label();
+            this.lblArmor = new LabelWithToolTip();
             this.tabDefences = new System.Windows.Forms.TabPage();
             this.tlpSpellDefense = new System.Windows.Forms.TableLayoutPanel();
-            this.lbllSpellDefenceManipPhysical = new System.Windows.Forms.Label();
+            this.lblSpellDefenceManipPhysical = new LabelWithToolTip();
             this.nudCounterspellingDice = new System.Windows.Forms.NumericUpDown();
-            this.lblSpellDefenceManipMental = new System.Windows.Forms.Label();
-            this.lblSpellDefenceIllusionPhysical = new System.Windows.Forms.Label();
-            this.lblSpellDefenceIndirectDodge = new System.Windows.Forms.Label();
-            this.lblSpellDefenceIllusionMana = new System.Windows.Forms.Label();
-            this.lblSpellDefenceIndirectSoak = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDecAttWIL = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDecAttLOG = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDirectSoakMana = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDecAttINT = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDirectSoakPhysical = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDecAttCHA = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDetection = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDecAttSTR = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDecAttBOD = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDecAttAGI = new System.Windows.Forms.Label();
-            this.lblSpellDefenceDecAttREA = new System.Windows.Forms.Label();
+            this.lblSpellDefenceManipMental = new LabelWithToolTip();
+            this.lblSpellDefenceIllusionPhysical = new LabelWithToolTip();
+            this.lblSpellDefenceIndirectDodge = new LabelWithToolTip();
+            this.lblSpellDefenceIllusionMana = new LabelWithToolTip();
+            this.lblSpellDefenceIndirectSoak = new LabelWithToolTip();
+            this.lblSpellDefenceDecAttWIL = new LabelWithToolTip();
+            this.lblSpellDefenceDecAttLOG = new LabelWithToolTip();
+            this.lblSpellDefenceDirectSoakMana = new LabelWithToolTip();
+            this.lblSpellDefenceDecAttINT = new LabelWithToolTip();
+            this.lblSpellDefenceDirectSoakPhysical = new LabelWithToolTip();
+            this.lblSpellDefenceDecAttCHA = new LabelWithToolTip();
+            this.lblSpellDefenceDetection = new LabelWithToolTip();
+            this.lblSpellDefenceDecAttSTR = new LabelWithToolTip();
+            this.lblSpellDefenceDecAttBOD = new LabelWithToolTip();
+            this.lblSpellDefenceDecAttAGI = new LabelWithToolTip();
+            this.lblSpellDefenceDecAttREA = new LabelWithToolTip();
             this.panel1 = new System.Windows.Forms.Panel();
             this.cmsLimitModifier = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.tssLimitModifierNotes = new System.Windows.Forms.ToolStripMenuItem();
@@ -1697,15 +1697,15 @@ namespace Chummer
             this.lblSpellDefenceDecAttCHALabel.Tag = "Label_SpellDefenceDecAttCHA";
             this.lblSpellDefenceDecAttCHALabel.Text = "Decrease Attribute (CHA)";
             // 
-            // lbllSpellDefenceManipPhysicalLabel
+            // lblSpellDefenceManipPhysicalLabel
             // 
-            this.lbllSpellDefenceManipPhysicalLabel.AutoSize = true;
-            this.lbllSpellDefenceManipPhysicalLabel.Location = new System.Drawing.Point(3, 346);
-            this.lbllSpellDefenceManipPhysicalLabel.Name = "lbllSpellDefenceManipPhysicalLabel";
-            this.lbllSpellDefenceManipPhysicalLabel.Size = new System.Drawing.Size(115, 13);
-            this.lbllSpellDefenceManipPhysicalLabel.TabIndex = 59;
-            this.lbllSpellDefenceManipPhysicalLabel.Tag = "Label_SpellDefenceManipPhysical";
-            this.lbllSpellDefenceManipPhysicalLabel.Text = "Manipulation - Physical";
+            this.lblSpellDefenceManipPhysicalLabel.AutoSize = true;
+            this.lblSpellDefenceManipPhysicalLabel.Location = new System.Drawing.Point(3, 346);
+            this.lblSpellDefenceManipPhysicalLabel.Name = "lblSpellDefenceManipPhysicalLabel";
+            this.lblSpellDefenceManipPhysicalLabel.Size = new System.Drawing.Size(115, 13);
+            this.lblSpellDefenceManipPhysicalLabel.TabIndex = 59;
+            this.lblSpellDefenceManipPhysicalLabel.Tag = "Label_SpellDefenceManipPhysical";
+            this.lblSpellDefenceManipPhysicalLabel.Text = "Manipulation - Physical";
             // 
             // lblSpellDefenceManipMentalLabel
             // 
@@ -3370,7 +3370,6 @@ namespace Chummer
             this.txtAlias.Name = "txtAlias";
             this.txtAlias.Size = new System.Drawing.Size(252, 20);
             this.txtAlias.TabIndex = 91;
-            this.txtAlias.TextChanged += new System.EventHandler(this.txtAlias_TextChanged);
             // 
             // lblAlias
             // 
@@ -3547,7 +3546,6 @@ namespace Chummer
             0,
             0,
             0});
-            this.nudNuyen.ValueChanged += new System.EventHandler(this.nudNuyen_ValueChanged);
             // 
             // lblNuyenTotal
             // 
@@ -8664,7 +8662,6 @@ namespace Chummer
             this.txtCharacterName.Name = "txtCharacterName";
             this.txtCharacterName.Size = new System.Drawing.Size(100, 20);
             this.txtCharacterName.TabIndex = 66;
-            this.txtCharacterName.TextChanged += new System.EventHandler(this.txtCharacterName_TextChanged);
             // 
             // txtPlayerName
             // 
@@ -8672,7 +8669,6 @@ namespace Chummer
             this.txtPlayerName.Name = "txtPlayerName";
             this.txtPlayerName.Size = new System.Drawing.Size(100, 20);
             this.txtPlayerName.TabIndex = 64;
-            this.txtPlayerName.TextChanged += new System.EventHandler(this.txtPlayerName_TextChanged);
             // 
             // lblPlayerName
             // 
@@ -8692,7 +8688,6 @@ namespace Chummer
             this.txtNotes.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtNotes.Size = new System.Drawing.Size(618, 100);
             this.txtNotes.TabIndex = 25;
-            this.txtNotes.TextChanged += new System.EventHandler(this.txtNotes_TextChanged);
             this.txtNotes.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtNotes_KeyDown);
             // 
             // lblNotes
@@ -8745,7 +8740,6 @@ namespace Chummer
             this.txtConcept.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtConcept.Size = new System.Drawing.Size(618, 100);
             this.txtConcept.TabIndex = 19;
-            this.txtConcept.TextChanged += new System.EventHandler(this.txtConcept_TextChanged);
             this.txtConcept.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtNotes_KeyDown);
             // 
             // lblConcept
@@ -8766,7 +8760,6 @@ namespace Chummer
             this.txtBackground.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtBackground.Size = new System.Drawing.Size(618, 96);
             this.txtBackground.TabIndex = 17;
-            this.txtBackground.TextChanged += new System.EventHandler(this.txtBackground_TextChanged);
             this.txtBackground.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtNotes_KeyDown);
             this.txtBackground.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtBackground_KeyPress);
             // 
@@ -8788,7 +8781,6 @@ namespace Chummer
             this.txtDescription.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtDescription.Size = new System.Drawing.Size(618, 101);
             this.txtDescription.TabIndex = 15;
-            this.txtDescription.TextChanged += new System.EventHandler(this.txtDescription_TextChanged);
             this.txtDescription.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtNotes_KeyDown);
             // 
             // lblDescription
@@ -8807,7 +8799,6 @@ namespace Chummer
             this.txtSkin.Name = "txtSkin";
             this.txtSkin.Size = new System.Drawing.Size(100, 20);
             this.txtSkin.TabIndex = 13;
-            this.txtSkin.TextChanged += new System.EventHandler(this.txtSkin_TextChanged);
             // 
             // lblSkin
             // 
@@ -8825,7 +8816,6 @@ namespace Chummer
             this.txtWeight.Name = "txtWeight";
             this.txtWeight.Size = new System.Drawing.Size(100, 20);
             this.txtWeight.TabIndex = 11;
-            this.txtWeight.TextChanged += new System.EventHandler(this.txtWeight_TextChanged);
             // 
             // lblWeight
             // 
@@ -8843,7 +8833,6 @@ namespace Chummer
             this.txtHeight.Name = "txtHeight";
             this.txtHeight.Size = new System.Drawing.Size(100, 20);
             this.txtHeight.TabIndex = 9;
-            this.txtHeight.TextChanged += new System.EventHandler(this.txtHeight_TextChanged);
             // 
             // lblHeight
             // 
@@ -8861,7 +8850,6 @@ namespace Chummer
             this.txtHair.Name = "txtHair";
             this.txtHair.Size = new System.Drawing.Size(100, 20);
             this.txtHair.TabIndex = 7;
-            this.txtHair.TextChanged += new System.EventHandler(this.txtHair_TextChanged);
             // 
             // lblHair
             // 
@@ -8879,7 +8867,6 @@ namespace Chummer
             this.txtEyes.Name = "txtEyes";
             this.txtEyes.Size = new System.Drawing.Size(100, 20);
             this.txtEyes.TabIndex = 5;
-            this.txtEyes.TextChanged += new System.EventHandler(this.txtEyes_TextChanged);
             // 
             // lblEyes
             // 
@@ -8897,7 +8884,6 @@ namespace Chummer
             this.txtAge.Name = "txtAge";
             this.txtAge.Size = new System.Drawing.Size(100, 20);
             this.txtAge.TabIndex = 3;
-            this.txtAge.TextChanged += new System.EventHandler(this.txtAge_TextChanged);
             // 
             // lblAge
             // 
@@ -8915,7 +8901,6 @@ namespace Chummer
             this.txtSex.Name = "txtSex";
             this.txtSex.Size = new System.Drawing.Size(100, 20);
             this.txtSex.TabIndex = 1;
-            this.txtSex.TextChanged += new System.EventHandler(this.txtSex_TextChanged);
             // 
             // lblSex
             // 
@@ -9869,10 +9854,10 @@ namespace Chummer
             this.tlpSpellDefense.ColumnCount = 2;
             this.tlpSpellDefense.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tlpSpellDefense.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.tlpSpellDefense.Controls.Add(this.lbllSpellDefenceManipPhysical, 1, 17);
+            this.tlpSpellDefense.Controls.Add(this.lblSpellDefenceManipPhysical, 1, 17);
             this.tlpSpellDefense.Controls.Add(this.nudCounterspellingDice, 1, 0);
             this.tlpSpellDefense.Controls.Add(this.lblSpellDefenceManipMental, 1, 16);
-            this.tlpSpellDefense.Controls.Add(this.lbllSpellDefenceManipPhysicalLabel, 0, 17);
+            this.tlpSpellDefense.Controls.Add(this.lblSpellDefenceManipPhysicalLabel, 0, 17);
             this.tlpSpellDefense.Controls.Add(this.lblCounterspellingDiceLabel, 0, 0);
             this.tlpSpellDefense.Controls.Add(this.lblSpellDefenceIndirectDodgeLabel, 0, 1);
             this.tlpSpellDefense.Controls.Add(this.lblSpellDefenceManipMentalLabel, 0, 16);
@@ -9929,14 +9914,14 @@ namespace Chummer
             this.tlpSpellDefense.Size = new System.Drawing.Size(179, 366);
             this.tlpSpellDefense.TabIndex = 99;
             // 
-            // lbllSpellDefenceManipPhysical
+            // lblSpellDefenceManipPhysical
             // 
-            this.lbllSpellDefenceManipPhysical.AutoSize = true;
-            this.lbllSpellDefenceManipPhysical.Location = new System.Drawing.Point(136, 346);
-            this.lbllSpellDefenceManipPhysical.Name = "lbllSpellDefenceManipPhysical";
-            this.lbllSpellDefenceManipPhysical.Size = new System.Drawing.Size(13, 13);
-            this.lbllSpellDefenceManipPhysical.TabIndex = 60;
-            this.lbllSpellDefenceManipPhysical.Text = "0";
+            this.lblSpellDefenceManipPhysical.AutoSize = true;
+            this.lblSpellDefenceManipPhysical.Location = new System.Drawing.Point(136, 346);
+            this.lblSpellDefenceManipPhysical.Name = "lblSpellDefenceManipPhysical";
+            this.lblSpellDefenceManipPhysical.Size = new System.Drawing.Size(13, 13);
+            this.lblSpellDefenceManipPhysical.TabIndex = 60;
+            this.lblSpellDefenceManipPhysical.Text = "0";
             // 
             // nudCounterspellingDice
             // 
@@ -9944,7 +9929,6 @@ namespace Chummer
             this.nudCounterspellingDice.Name = "nudCounterspellingDice";
             this.nudCounterspellingDice.Size = new System.Drawing.Size(40, 20);
             this.nudCounterspellingDice.TabIndex = 61;
-            this.nudCounterspellingDice.ValueChanged += new System.EventHandler(this.nudCounterspellingDice_Changed);
             // 
             // lblSpellDefenceManipMental
             // 
@@ -10487,7 +10471,7 @@ namespace Chummer
         private System.Windows.Forms.TabPage tabOtherInfo;
         private System.Windows.Forms.Label lblESSMax;
         private System.Windows.Forms.Label lblESS;
-        private System.Windows.Forms.Label lblArmor;
+        private LabelWithToolTip lblArmor;
         private System.Windows.Forms.Label lblArmorLabel;
         private System.Windows.Forms.Label lblAstralINI;
         private System.Windows.Forms.Label lblMatrixINI;
@@ -10743,7 +10727,7 @@ namespace Chummer
         private System.Windows.Forms.Label lblComplexFormSourceLabel;
         private System.Windows.Forms.TreeView treComplexForms;
         private System.Windows.Forms.ComboBox cboStream;
-        private System.Windows.Forms.Label lblFadingAttributesValue;
+        private LabelWithToolTip lblFadingAttributesValue;
         private System.Windows.Forms.Label lblFadingAttributes;
         private System.Windows.Forms.Label lblFadingAttributesLabel;
         private System.Windows.Forms.Label lblStreamLabel;
@@ -10772,13 +10756,13 @@ namespace Chummer
         private System.Windows.Forms.ToolStripMenuItem mnuSpecialChangeMetatype;
         private System.Windows.Forms.ToolStripMenuItem mnuSpecialChangeOptions;
         private System.Windows.Forms.ToolStripMenuItem mnuSpecialCreatePACKSKit;
-        private System.Windows.Forms.Label lblMemory;
+        private LabelWithToolTip lblMemory;
         private System.Windows.Forms.Label lblMemoryLabel;
-        private System.Windows.Forms.Label lblLiftCarry;
+        private LabelWithToolTip lblLiftCarry;
         private System.Windows.Forms.Label lblLiftCarryLabel;
-        private System.Windows.Forms.Label lblJudgeIntentions;
+        private LabelWithToolTip lblJudgeIntentions;
         private System.Windows.Forms.Label lblJudgeIntentionsLabel;
-        private System.Windows.Forms.Label lblComposure;
+        private LabelWithToolTip lblComposure;
         private System.Windows.Forms.Label lblComposureLabel;
         private System.Windows.Forms.CheckBox chkGearEquipped;
         private System.Windows.Forms.ToolStripMenuItem mnuSpecialMutantCritter;
@@ -10863,9 +10847,9 @@ namespace Chummer
         private System.Windows.Forms.ToolStripMenuItem mnuSpecialReapplyImprovements;
         private System.Windows.Forms.ContextMenuStrip cmsSpellButton;
         private System.Windows.Forms.ToolStripMenuItem tsCreateSpell;
-        private System.Windows.Forms.Label lblPublicAwareTotal;
-        private System.Windows.Forms.Label lblNotorietyTotal;
-        private System.Windows.Forms.Label lblStreetCredTotal;
+        private LabelWithToolTip lblPublicAwareTotal;
+        private LabelWithToolTip lblNotorietyTotal;
+        private LabelWithToolTip lblStreetCredTotal;
         private System.Windows.Forms.Label lblPublicAware;
         private System.Windows.Forms.Label lblNotoriety;
         private System.Windows.Forms.Label lblStreetCred;
@@ -10964,11 +10948,11 @@ namespace Chummer
         private System.Windows.Forms.ContextMenuStrip cmsCustomLimitModifier;
         private System.Windows.Forms.ToolStripMenuItem tssLimitModifierEdit;
         private System.Windows.Forms.Label lblSocialLabel;
-        private System.Windows.Forms.Label lblSocial;
+        private LabelWithToolTip lblSocial;
         private System.Windows.Forms.Label lblMentalLabel;
-        private System.Windows.Forms.Label lblMental;
+        private LabelWithToolTip lblMental;
         private System.Windows.Forms.Label lblPhysicalLabel;
-        private System.Windows.Forms.Label lblPhysical;
+        private LabelWithToolTip lblPhysical;
         private System.Windows.Forms.Label lblWeaponAccuracy;
         private System.Windows.Forms.Label lblWeaponAccuracyLabel;
         private SplitButton cmdAddMartialArt;
@@ -10986,7 +10970,7 @@ namespace Chummer
         private System.Windows.Forms.Label lblMentorSpirit;
         private System.Windows.Forms.Label lblMentorSpiritLabel;
         private System.Windows.Forms.Label lblMentorSpiritInformation;
-        private System.Windows.Forms.Label lblDrainAttributesValue;
+        private LabelWithToolTip lblDrainAttributesValue;
         private System.Windows.Forms.Label lblDrainAttributes;
         private System.Windows.Forms.Label lblDrainAttributesLabel;
         private System.Windows.Forms.ComboBox cboTradition;
@@ -11057,7 +11041,7 @@ namespace Chummer
         private System.Windows.Forms.Label lblArmorDeviceRating;
         private System.Windows.Forms.Label lblArmorDeviceRatingLabel;
         private System.Windows.Forms.Label lblAstralLabel;
-        private System.Windows.Forms.Label lblAstral;
+        private LabelWithToolTip lblAstral;
         private System.Windows.Forms.ComboBox cboDrain;
         private System.Windows.Forms.TextBox txtTraditionName;
         private System.Windows.Forms.Label lblTraditionName;
@@ -11114,27 +11098,27 @@ namespace Chummer
         private System.Windows.Forms.ComboBox cboVehicleGearAttack;
         private System.Windows.Forms.TabPage tabDefences;
         private System.Windows.Forms.Label lblSpellDefenceDirectSoakPhysicalLabel;
-        private System.Windows.Forms.Label lblSpellDefenceDirectSoakMana;
+        private LabelWithToolTip lblSpellDefenceDirectSoakMana;
         private System.Windows.Forms.Label lblSpellDefenceDirectSoakManaLabel;
-        private System.Windows.Forms.Label lblSpellDefenceIndirectSoak;
+        private LabelWithToolTip lblSpellDefenceIndirectSoak;
         private System.Windows.Forms.Label lblSpellDefenceIndirectSoakLabel;
-        private System.Windows.Forms.Label lblSpellDefenceIndirectDodge;
+        private LabelWithToolTip lblSpellDefenceIndirectDodge;
         private System.Windows.Forms.Label lblSpellDefenceIndirectDodgeLabel;
         private System.Windows.Forms.Label lblCounterspellingDiceLabel;
         private System.Windows.Forms.NumericUpDown nudCounterspellingDice;
-        private System.Windows.Forms.Label lbllSpellDefenceManipPhysical;
-        private System.Windows.Forms.Label lbllSpellDefenceManipPhysicalLabel;
-        private System.Windows.Forms.Label lblSpellDefenceManipMental;
+        private LabelWithToolTip lblSpellDefenceManipPhysical;
+        private System.Windows.Forms.Label lblSpellDefenceManipPhysicalLabel;
+        private LabelWithToolTip lblSpellDefenceManipMental;
         private System.Windows.Forms.Label lblSpellDefenceManipMentalLabel;
-        private System.Windows.Forms.Label lblSpellDefenceIllusionPhysical;
+        private LabelWithToolTip lblSpellDefenceIllusionPhysical;
         private System.Windows.Forms.Label lblSpellDefenceIllusionPhysicalLabel;
-        private System.Windows.Forms.Label lblSpellDefenceIllusionMana;
+        private LabelWithToolTip lblSpellDefenceIllusionMana;
         private System.Windows.Forms.Label lblSpellDefenceIllusionManaLabel;
-        private System.Windows.Forms.Label lblSpellDefenceDecAttWIL;
-        private System.Windows.Forms.Label lblSpellDefenceDecAttLOG;
-        private System.Windows.Forms.Label lblSpellDefenceDecAttINT;
-        private System.Windows.Forms.Label lblSpellDefenceDecAttCHA;
-        private System.Windows.Forms.Label lblSpellDefenceDecAttSTR;
+        private LabelWithToolTip lblSpellDefenceDecAttWIL;
+        private LabelWithToolTip lblSpellDefenceDecAttLOG;
+        private LabelWithToolTip lblSpellDefenceDecAttINT;
+        private LabelWithToolTip lblSpellDefenceDecAttCHA;
+        private LabelWithToolTip lblSpellDefenceDecAttSTR;
         private System.Windows.Forms.Label lblSpellDefenceDecAttWILLabel;
         private System.Windows.Forms.Label lblSpellDefenceDecAttLOGLabel;
         private System.Windows.Forms.Label lblSpellDefenceDecAttINTLabel;
@@ -11142,13 +11126,13 @@ namespace Chummer
         private System.Windows.Forms.Label lblSpellDefenceDecAttSTRLabel;
         private System.Windows.Forms.Label lblSpellDefenceDecAttREALabel;
         private System.Windows.Forms.Label lblSpellDefenceDecAttAGILabel;
-        private System.Windows.Forms.Label lblSpellDefenceDecAttREA;
-        private System.Windows.Forms.Label lblSpellDefenceDecAttAGI;
-        private System.Windows.Forms.Label lblSpellDefenceDecAttBOD;
+        private LabelWithToolTip lblSpellDefenceDecAttREA;
+        private LabelWithToolTip lblSpellDefenceDecAttAGI;
+        private LabelWithToolTip lblSpellDefenceDecAttBOD;
         private System.Windows.Forms.Label lblSpellDefenceDecAttBODLabel;
-        private System.Windows.Forms.Label lblSpellDefenceDetection;
+        private LabelWithToolTip lblSpellDefenceDetection;
         private System.Windows.Forms.Label lblSpellDefenceDetectionLabel;
-        private System.Windows.Forms.Label lblSpellDefenceDirectSoakPhysical;
+        private LabelWithToolTip lblSpellDefenceDirectSoakPhysical;
         private System.Windows.Forms.TreeView treMetamagic;
         private System.Windows.Forms.Label lblVehiclePowertrainLabel;
         private System.Windows.Forms.Label lblVehicleWeaponsmod;

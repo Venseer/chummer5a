@@ -68,7 +68,7 @@ namespace Chummer
         public frmSelectCyberware(Character objCharacter, Improvement.ImprovementSource objWareSource, XmlNode objParentNode = null)
         {
             InitializeComponent();
-            
+
             _objCharacter = objCharacter;
             _objParentNode = objParentNode?.CreateNavigator();
 
@@ -142,7 +142,7 @@ namespace Chummer
             lblESSDiscountLabel.Visible = _objCharacter.Options.AllowCyberwareESSDiscounts;
             lblESSDiscountPercentLabel.Visible = _objCharacter.Options.AllowCyberwareESSDiscounts;
             nudESSDiscount.Visible = _objCharacter.Options.AllowCyberwareESSDiscounts;
-            
+
             _blnLoading = false;
             RefreshList(_strSelectedCategory);
         }
@@ -282,7 +282,7 @@ namespace Chummer
                 string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
                 lblSource.Text = CommonFunctions.LanguageBookShort(strSource, GlobalOptions.Language) + strSpaceCharacter + strPage;
                 GlobalOptions.ToolTipProcessor.SetToolTip(lblSource, CommonFunctions.LanguageBookLong(strSource, GlobalOptions.Language) + strSpaceCharacter + LanguageManager.GetString("String_Page", GlobalOptions.Language) + ' ' + strPage);
-                
+
                 Grade objForcedGrade = null;
                 if (!string.IsNullOrEmpty(strForceGrade))
                 {
@@ -453,7 +453,7 @@ namespace Chummer
             if (e.KeyCode == Keys.Up)
                 txtSearch.Select(txtSearch.Text.Length, 0);
         }
-        
+
         private void chkPrototypeTranshuman_CheckedChanged(object sender, EventArgs e)
         {
             if (_blnLoading)
@@ -889,8 +889,8 @@ namespace Chummer
                 }
             }
             strFilter += " and " + strCategoryFilter + " or category = \"None\")";
-            
-            if (_objCharacter.IsAI && ParentVehicle == null)
+
+            if (ParentVehicle == null && _objCharacter.IsAI)
                 strFilter += " and (name = \"Essence Hole\" or name = \"Essence Antihole\" or mountsto)";
             else if (_objParentNode != null)
                 strFilter += " and (requireparent or contains(capacity, \"[\")) and not(mountsto)";
@@ -1220,7 +1220,7 @@ namespace Chummer
                         lstGrade.Add(new ListItem(objWareGrade.SourceId.ToString("D"), objWareGrade.DisplayName(GlobalOptions.Language)));
                     }
                 }
-                
+
                 string strOldSelected = cboGrade.SelectedValue?.ToString();
                 bool blnOldSkipListRefresh = _blnSkipListRefresh;
                 if (strForceGrade == _strNoneGradeId || strOldSelected == _strNoneGradeId || lstGrade.Any(x => x.Value.ToString() == strOldSelected))
