@@ -603,6 +603,10 @@ namespace Chummer
             lblSpellDefenceManipPhysical.DataBindings.Add("ToolTipText", CharacterObject, nameof(Character.SpellDefenseManipulationPhysicalToolTip), false, DataSourceUpdateMode.OnPropertyChanged);
             nudCounterspellingDice.DataBindings.Add("Value", CharacterObject, nameof(Character.CurrentCounterspellingDice), false, DataSourceUpdateMode.OnPropertyChanged);
 
+            lblMovement.DataBindings.Add("Text", CharacterObject, nameof(Character.DisplayMovement), false, DataSourceUpdateMode.OnPropertyChanged);
+            lblSwim.DataBindings.Add("Text", CharacterObject, nameof(Character.DisplaySwim), false, DataSourceUpdateMode.OnPropertyChanged);
+            lblFly.DataBindings.Add("Text", CharacterObject, nameof(Character.DisplayFly), false, DataSourceUpdateMode.OnPropertyChanged);
+
             lblRemainingNuyen.DataBindings.Add("Text", CharacterObject, nameof(Character.DisplayNuyen), false, DataSourceUpdateMode.OnPropertyChanged);
 
             lblStreetCredTotal.DataBindings.Add("Text", CharacterObject, nameof(Character.TotalStreetCred), false, DataSourceUpdateMode.OnPropertyChanged);
@@ -843,6 +847,17 @@ namespace Chummer
                 case nameof(Character.DisplayEssence):
                     tssEssence.Text = CharacterObject.DisplayEssence;
                     break;
+                case nameof(Character.NuyenBP):
+                case nameof(Character.MetatypeBP):
+                case nameof(Character.BuildKarma):
+                case nameof(Character.ContactPoints):
+                case nameof(Character.SpellLimit):
+                case nameof(Character.CFPLimit):
+                case nameof(Character.AIAdvancedProgramLimit):
+                case nameof(Character.SpellKarmaCost):
+                case nameof(Character.ComplexFormKarmaCost):
+                case nameof(Character.AIProgramKarmaCost):
+                case nameof(Character.AIAdvancedProgramKarmaCost):
                 case nameof(Character.MysticAdeptPowerPoints):
                 case nameof(Character.TraditionDrain):
                 case nameof(Character.SpiritCombat):
@@ -879,8 +894,11 @@ namespace Chummer
                             GlobalOptions.ToolTipProcessor.SetToolTip(cmdAddMetamagic, strInitTip);
                             chkInitiationGroup.Text = LanguageManager.GetString("Checkbox_JoinedGroup", GlobalOptions.Language);
 
-                            treMetamagic.Top = cmdAddMetamagic.Top + cmdAddMetamagic.Height + 6;
+                            treMetamagic.Top = chkInitiationSchooling.Top + chkInitiationSchooling.Height + 6;
                             cmdAddMetamagic.Left = treMetamagic.Left + treMetamagic.Width - cmdAddMetamagic.Width;
+                            cmdDeleteMetamagic.Left = cmdAddMetamagic.Left;
+                            lblMetamagicSourceLabel.Left = treMetamagic.Left + treMetamagic.Left + treMetamagic.Width + 6;
+                            lblMetamagicSource.Left = lblMetamagicSourceLabel.Left + lblMetamagicSourceLabel.Width + 6;
 
                             if (!SpecialAttributes.Contains(CharacterObject.MAG))
                             {
@@ -933,8 +951,11 @@ namespace Chummer
                             GlobalOptions.ToolTipProcessor.SetToolTip(cmdAddMetamagic, strInitTip);
                             chkInitiationGroup.Text = LanguageManager.GetString("Checkbox_JoinedNetwork", GlobalOptions.Language);
 
-                            treMetamagic.Top = cmdAddMetamagic.Top + cmdAddMetamagic.Height + 6;
+                            treMetamagic.Top = chkInitiationSchooling.Top + chkInitiationSchooling.Height + 6;
                             cmdAddMetamagic.Left = treMetamagic.Left + treMetamagic.Width - cmdAddMetamagic.Width;
+                            cmdDeleteMetamagic.Left = cmdAddMetamagic.Left;
+                            lblMetamagicSourceLabel.Left = treMetamagic.Left + treMetamagic.Left + treMetamagic.Width + 6;
+                            lblMetamagicSource.Left = lblMetamagicSourceLabel.Left + lblMetamagicSourceLabel.Width + 6;
 
                             if (!SpecialAttributes.Contains(CharacterObject.RES))
                             {
@@ -12065,13 +12086,6 @@ namespace Chummer
                 lblCritterPowerPoints.Text = CharacterObject.CalculateFreeSpritePowerPoints();
             }
 
-            // Movement.
-            lblMovement.Text = CharacterObject.GetMovement(GlobalOptions.CultureInfo, GlobalOptions.Language);
-            //strTip = _objCharacter.CalculatedMovementSpeed;
-            //GlobalOptions.ToolTipProcessor.SetToolTip(lblMovement, strTip);
-            lblSwim.Text = CharacterObject.GetSwim(GlobalOptions.CultureInfo, GlobalOptions.Language);
-            lblFly.Text = CharacterObject.GetFly(GlobalOptions.CultureInfo, GlobalOptions.Language);
-            
             // If the Viewer window is open for this character, call its RefreshView method which updates it asynchronously
             PrintWindow?.RefreshCharacters();
             if (Program.MainForm.PrintMultipleCharactersForm?.CharacterList?.Contains(CharacterObject) == true)
