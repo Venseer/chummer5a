@@ -1,4 +1,4 @@
-Future Build 200
+Build 200
 
 Application Changes:
 
@@ -20,6 +20,10 @@ Application Changes:
 - Fixed an issue with Martial Arts Techniques not being able to be purchased for different martial arts.
 - Ugly workaround for issue with foci binding panel not being visible.
 - Fixed behaviour of contacts to allow being flagged as free without having an associated improvement.
+- Fixed an issue with the selection and creation of Cyberware Suites through the special menu not working properly.
+- Fixed modular cyberware that doesn't have an inherent location being unable to mount to modular mount points with sides, such as arms.
+- Fixed an issue in which the first technique purchased for a martial art in career mode would not be free.
+- Fixed behaviour loading lifestyles that caused a crash if loading a lifestyle that had more than the base amount of points spent on comforts, area or security.
 
 Data Changes:
 - Regression fix for shapeshifters not properly getting their MAG attribute enabled. 
