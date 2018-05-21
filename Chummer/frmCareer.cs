@@ -2818,7 +2818,9 @@ namespace Chummer
         private void cmdDeleteSpell_Click(object sender, EventArgs e)
         {
             // Locate the Spell that is selected in the tree.
-            if ((!(treSpells.SelectedNode?.Tag is Spell objSpell)) || objSpell.Grade == 0) return;
+            if (!(treSpells.SelectedNode?.Tag is Spell objSpell)) return;
+            // Spells that come from Initiation Grades can't be deleted normally. 
+            if (objSpell.Grade != 0) return;
             if (!objSpell.Remove(CharacterObject)) return;
             IsCharacterUpdateRequested = true;
             IsDirty = true;
@@ -3241,7 +3243,7 @@ namespace Chummer
             bool blnAddAgain;
             do
             {
-                blnAddAgain = PickGear(string.Empty);
+                blnAddAgain = PickGear(null);
             }
             while (blnAddAgain);
         }
@@ -4539,7 +4541,7 @@ namespace Chummer
                 {
                     strGuid = parent.InternalId;
                 }
-                blnAddAgain = PickGear(strGuid, objGear.Category == "Ammunition", objGear, objGear.Name);
+                blnAddAgain = PickGear(objGear, null, objGear.Category == "Ammunition", objGear, objGear.Name);
             } while (blnAddAgain);
         }
 
@@ -4805,102 +4807,9 @@ namespace Chummer
             List<Weapon> lstWeapons = new List<Weapon>();
             Quality objNewQuality = new Quality(CharacterObject);
 
-            objNewQuality.Create(objXmlQuality, QualitySource.Selected, lstWeapons);
-
-            bool blnAddItem = true;
-            int intKarmaCost = (objNewQuality.BP - objQuality.BP) * CharacterObjectOptions.KarmaQuality;
-            // Make sure the character has enough Karma to pay for the Quality.
-            if (objNewQuality.Type == QualityType.Positive)
+            if (objNewQuality.Swap(objQuality, CharacterObject, objXmlQuality))
             {
-                if (!CharacterObjectOptions.DontDoubleQualityPurchases)
-                {
-                    intKarmaCost *= 2;
-                }
-                if (intKarmaCost > CharacterObject.Karma)
-                {
-                    MessageBox.Show(LanguageManager.GetString("Message_NotEnoughKarma", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_NotEnoughKarma", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    blnAddItem = false;
-                }
-
-                if (blnAddItem)
-                {
-                    if (!CharacterObject.ConfirmKarmaExpense(LanguageManager.GetString("Message_QualitySwap", GlobalOptions.Language).Replace("{0}", objQuality.DisplayNameShort(GlobalOptions.Language)).Replace("{1}", objNewQuality.DisplayNameShort(GlobalOptions.Language))))
-                        blnAddItem = false;
-                }
-
-                if (blnAddItem)
-                {
-                    // Create the Karma expense.
-                    ExpenseLogEntry objExpense = new ExpenseLogEntry(CharacterObject);
-                    objExpense.Create(intKarmaCost * -1, LanguageManager.GetString("String_ExpenseSwapPositiveQuality", GlobalOptions.Language).Replace("{0}", objQuality.DisplayNameShort(GlobalOptions.Language)).Replace("{1}", objNewQuality.DisplayNameShort(GlobalOptions.Language)), ExpenseType.Karma, DateTime.Now);
-                    CharacterObject.ExpenseEntries.AddWithSort(objExpense);
-                    CharacterObject.Karma -= intKarmaCost;
-                }
-            }
-            else
-            {
-                if (!CharacterObjectOptions.DontDoubleQualityRefunds)
-                {
-                    intKarmaCost *= 2;
-                }
-                // This should only happen when a character is trading up to a less-costly Quality.
-                if (intKarmaCost > 0)
-                {
-                    if (intKarmaCost > CharacterObject.Karma)
-                    {
-                        MessageBox.Show(LanguageManager.GetString("Message_NotEnoughKarma", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_NotEnoughKarma", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        blnAddItem = false;
-                    }
-
-                    if (blnAddItem)
-                    {
-                        if (!CharacterObject.ConfirmKarmaExpense(LanguageManager.GetString("Message_QualitySwap", GlobalOptions.Language).Replace("{0}", objQuality.DisplayNameShort(GlobalOptions.Language)).Replace("{1}", objNewQuality.DisplayNameShort(GlobalOptions.Language))))
-                            blnAddItem = false;
-                    }
-
-                    if (blnAddItem)
-                    {
-                        // Create the Karma expense.
-                        ExpenseLogEntry objExpense = new ExpenseLogEntry(CharacterObject);
-                        objExpense.Create(intKarmaCost * -1, LanguageManager.GetString("String_ExpenseSwapNegativeQuality", GlobalOptions.Language).Replace("{0}", objQuality.DisplayNameShort(GlobalOptions.Language)).Replace("{1}", objNewQuality.DisplayNameShort(GlobalOptions.Language)), ExpenseType.Karma, DateTime.Now);
-                        CharacterObject.ExpenseEntries.AddWithSort(objExpense);
-                        CharacterObject.Karma -= intKarmaCost;
-                    }
-                }
-            }
-
-            if (blnAddItem)
-            {
-                // Add any created Weapons to the character.
-                foreach (Weapon objWeapon in lstWeapons)
-                {
-                    CharacterObject.Weapons.Add(objWeapon);
-                }
-
-                // Remove any Improvements for the old Quality.
-                ImprovementManager.RemoveImprovements(CharacterObject, Improvement.ImprovementSource.Quality, objQuality.InternalId);
-                CharacterObject.Qualities.Remove(objQuality);
-
-                // Remove any Weapons created by the old Quality if applicable.
-                if (!objQuality.WeaponID.IsEmptyGuid())
-                {
-                    List<Weapon> lstOldWeapons = CharacterObject.Weapons.DeepWhere(x => x.Children, x => x.ParentID == objQuality.InternalId).ToList();
-                    foreach (Weapon objWeapon in lstOldWeapons)
-                    {
-                        objWeapon.DeleteWeapon();
-                        // We can remove here because lstWeapons is separate from the Weapons that were yielded through DeepWhere
-                        if (objWeapon.Parent != null)
-                            objWeapon.Parent.Children.Remove(objWeapon);
-                        else
-                            CharacterObject.Weapons.Remove(objWeapon);
-                    }
-                }
-
-                // Add the new Quality to the character.
-                CharacterObject.Qualities.Add(objNewQuality);
-
                 IsCharacterUpdateRequested = true;
-
                 IsDirty = true;
             }
         }
@@ -6192,7 +6101,7 @@ namespace Chummer
         private void tsGearAddAsPlugin_Click(object sender, EventArgs e)
         {
             // Make sure a parent items is selected, then open the Select Gear window.
-            if (!(treGear.SelectedNode?.Tag is IHasInternalId selectedId))
+            if (!(treGear.SelectedNode?.Tag is IHasChildren<Gear> iParent))
             {
                 MessageBox.Show(LanguageManager.GetString("Message_SelectGear", GlobalOptions.Language), LanguageManager.GetString("MessageTitle_SelectGear", GlobalOptions.Language), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
@@ -6201,7 +6110,7 @@ namespace Chummer
             bool blnAddAgain;
             do
             {
-                blnAddAgain = PickGear(selectedId.InternalId);
+                blnAddAgain = PickGear(iParent);
             }
             while (blnAddAgain);
         }
@@ -10809,7 +10718,7 @@ namespace Chummer
             bool blnAddAgain;
             do
             {
-                blnAddAgain = PickGear(string.Empty, true, null, string.Empty, lstAmmoPrefixStrings);
+                blnAddAgain = PickGear(null, null, true, null, string.Empty, lstAmmoPrefixStrings);
             }
             while (blnAddAgain);
         }
@@ -13701,6 +13610,9 @@ namespace Chummer
                 chkIncludedInWeapon.Checked = false;
                 tabWeaponMatrixCM.Visible = false;
 
+                lblWeaponCapacity.Visible = false;
+                lblWeaponCapacityLabel.Visible = false;
+
                 lblWeaponDeviceRatingLabel.Visible = false;
                 lblWeaponDeviceRating.Visible = false;
                 lblWeaponFirewallLabel.Visible = false;
@@ -13763,6 +13675,9 @@ namespace Chummer
                 lblWeaponSleazeLabel.Visible = true;
                 lblWeaponDataProcessingLabel.Visible = true;
                 lblWeaponFirewallLabel.Visible = true;
+
+                lblWeaponCapacity.Visible = false;
+                lblWeaponCapacityLabel.Visible = false;
 
                 cmdWeaponMoveToVehicle.Enabled = cmdDeleteWeapon.Enabled && CharacterObject.Vehicles.Count > 0;
 
@@ -13909,6 +13824,9 @@ namespace Chummer
                 lblWeaponAmmo.Text = string.Empty;
                 lblWeaponRating.Text = objSelectedAccessory.Rating.ToString();
 
+                lblWeaponCapacity.Visible = false;
+                lblWeaponCapacityLabel.Visible = false;
+
                 StringBuilder strSlotsText = new StringBuilder(objSelectedAccessory.Mount);
                 if (strSlotsText.Length > 0 && GlobalOptions.Language != GlobalOptions.DefaultLanguage)
                 {
@@ -14001,6 +13919,10 @@ namespace Chummer
                 chkWeaponAccessoryInstalled.Checked = objGear.Equipped;
                 chkIncludedInWeapon.Enabled = false;
                 chkIncludedInWeapon.Checked = false;
+
+                lblWeaponCapacity.Visible = true;
+                lblWeaponCapacityLabel.Visible = true;
+                lblWeaponCapacity.Text = objGear.CalculatedCapacity + LanguageManager.GetString("String_Space", GlobalOptions.Language) + '(' + objGear.CapacityRemaining.ToString("#,0.##", GlobalOptions.CultureInfo) + LanguageManager.GetString("String_Space", GlobalOptions.Language) + LanguageManager.GetString("String_Remaining", GlobalOptions.Language) + ')';
 
                 objGear.RefreshMatrixAttributeCBOs(cboWeaponGearAttack, cboWeaponGearSleaze, cboWeaponGearDataProcessing, cboWeaponGearFirewall);
                 lblWeaponDeviceRatingLabel.Visible = true;
@@ -14700,19 +14622,14 @@ namespace Chummer
         /// <param name="objStackGear">Whether or not the selected item should stack with a matching item on the character.</param>
         /// <param name="strForceItemValue">Force the user to select an item with the passed name.</param>
         /// <param name="lstForceItemPrefixes">Force the user to select an item that begins with one of the strings in this list.</param>
-        private bool PickGear(string strSelectedId, bool blnAmmoOnly = false, Gear objStackGear = null, string strForceItemValue = "", IEnumerable<string> lstForceItemPrefixes = null)
+        private bool PickGear(IHasChildren<Gear> iParent, Location objLocation = null, bool blnAmmoOnly = false, Gear objStackGear = null, string strForceItemValue = "", IEnumerable<string> lstForceItemPrefixes = null)
         {
             bool blnNullParent = false;
-            Gear objSelectedGear = null;
-            Location objLocation = null;
-            if (!string.IsNullOrEmpty(strSelectedId))
-                objSelectedGear = CharacterObject.Gear.DeepFindById(strSelectedId);
-            if (objSelectedGear == null)
+
+            if (!((iParent is Gear ? iParent : null) is Gear objSelectedGear))
             {
                 objSelectedGear = new Gear(CharacterObject);
                 blnNullParent = true;
-                objLocation =
-                    CharacterObject.GearLocations.FirstOrDefault(location => location.InternalId == strSelectedId);
             }
 
             // Open the Gear XML file and locate the selected Gear.
@@ -14914,9 +14831,10 @@ namespace Chummer
                 }
                 else
                 {
-                    objGear.Location = objLocation;
                     CharacterObject.Gear.Add(objGear);
                 }
+
+                objLocation?.Children.Add(objGear);
             }
             
             IsCharacterUpdateRequested = true;
@@ -17873,11 +17791,11 @@ namespace Chummer
 
         private void tsGearLocationAddGear_Click(object sender, EventArgs e)
         {
-            if (!(treGear.SelectedNode?.Tag is IHasInternalId objSelectedId)) return;
+            if (!(treGear.SelectedNode?.Tag is Location objLocation)) return;
             bool blnAddAgain;
             do
             {
-                blnAddAgain = PickGear(objSelectedId.InternalId);
+                blnAddAgain = PickGear(null, objLocation);
             }
             while (blnAddAgain);
         }
