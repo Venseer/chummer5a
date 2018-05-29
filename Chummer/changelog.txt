@@ -16,6 +16,10 @@ Application Changes:
 - Refactored behaviour of the Swap Quality button to be a method attached to the quality itself. 
 - Fixed an issue with Swap Quality causing constant prompts about unavailable qualities.
 - Fixed behaviour of the SpecialTab and EnableAttribute bonuses causing their relevant children being removed when using Reapply Improvements.
+- Added missing DamageResistance bonus improvements to all types of armour for sheets.
+- Fixed behaviour of improvements that reduce the maximum of an attribute is reduced to match the value when another attribute is already at maximum.
+- Fixed a regression with shapeshifter attributes not resetting bindings properly.
+- Fixed Martial Arts techniques not being properly displayed using their localised names in the treeview.
 
 Data Changes:
 
