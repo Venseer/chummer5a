@@ -208,12 +208,12 @@ namespace Chummer
         #endif
         private readonly ObservableCollection<LimitModifier> _lstLimitModifiers = new ObservableCollection<LimitModifier>();
         private readonly ObservableCollection<Armor> _lstArmor = new ObservableCollection<Armor>();
-        private readonly ObservableCollection<Cyberware> _lstCyberware = new ObservableCollection<Cyberware>();
-        private readonly ObservableCollection<Weapon> _lstWeapons = new ObservableCollection<Weapon>();
+        private readonly TaggedObservableCollection<Cyberware> _lstCyberware = new TaggedObservableCollection<Cyberware>();
+        private readonly TaggedObservableCollection<Weapon> _lstWeapons = new TaggedObservableCollection<Weapon>();
         private readonly ObservableCollection<Quality> _lstQualities = new ObservableCollection<Quality>();
         private readonly ObservableCollection<Lifestyle> _lstLifestyles = new ObservableCollection<Lifestyle>();
         private readonly ObservableCollection<Gear> _lstGear = new ObservableCollection<Gear>();
-        private readonly ObservableCollection<Vehicle> _lstVehicles = new ObservableCollection<Vehicle>();
+        private readonly TaggedObservableCollection<Vehicle> _lstVehicles = new TaggedObservableCollection<Vehicle>();
         private readonly ObservableCollection<Metamagic> _lstMetamagics = new ObservableCollection<Metamagic>();
         private readonly ObservableCollection<Art> _lstArts = new ObservableCollection<Art>();
         private readonly ObservableCollection<Enhancement> _lstEnhancements = new ObservableCollection<Enhancement>();
@@ -2045,6 +2045,18 @@ namespace Chummer
                 }
             }
             Timekeeper.Finish("load_char_imp");
+
+            Timekeeper.Start("load_char_contacts");
+
+            // Contacts.
+            foreach (XPathNavigator xmlContact in xmlCharacterNavigator.Select("contacts/contact"))
+            {
+                Contact objContact = new Contact(this);
+                objContact.Load(xmlContact);
+                _lstContacts.Add(objContact);
+            }
+
+            Timekeeper.Finish("load_char_contacts");
             Timekeeper.Start("load_char_quality");
             // Qualities
             Quality objLivingPersonaQuality = null;
@@ -2121,10 +2133,41 @@ namespace Chummer
                         if (LastSavedVersion <= new Version("5.200.0") && objQuality.Name == "Made Man" &&
                             objQuality.Bonus["selectcontact"] != null)
                         {
-                            string selectedContactGUID = Improvements
-                                .FirstOrDefault(x => x.SourceName == objQuality.InternalId &&
-                                                     x.ImproveType == Improvement.ImprovementType.ContactForcedLoyalty)
-                                .ImprovedName;
+                            string selectedContactGUID = (Improvements.FirstOrDefault(x => x.SourceName == objQuality.InternalId && x.ImproveType == Improvement.ImprovementType.ContactForcedLoyalty))?.ImprovedName;
+                            if (string.IsNullOrWhiteSpace(selectedContactGUID))
+                            {
+                                selectedContactGUID = Contacts.FirstOrDefault(x => x.Name == objQuality.Extra)?.GUID;
+                            }
+
+                            if (string.IsNullOrWhiteSpace(selectedContactGUID))
+                            {
+                                // Populate the Magician Traditions list.
+                                List<ListItem> lstContacts = new List<ListItem>();
+                                foreach (Contact objContact in Contacts.Where(contact => contact.IsGroup))
+                                {
+                                    lstContacts.Add(new ListItem(objContact.Name, objContact.GUID));
+                                }
+
+                                if (lstContacts.Count > 1)
+                                {
+                                    lstContacts.Sort(CompareListItems.CompareNames);
+                                }
+
+                                frmSelectItem frmPickItem = new frmSelectItem
+                                {
+                                    DropdownItems = lstContacts
+                                };
+                                frmPickItem.ShowDialog();
+
+                                // Make sure the dialogue window was not canceled.
+                                if (frmPickItem.DialogResult == DialogResult.Cancel)
+                                {
+                                    return false;
+                                }
+
+                                selectedContactGUID = frmPickItem.SelectedItem;
+                                frmPickItem.Dispose();
+                            }
                             objQuality.Bonus = xmlRootQualitiesNode.SelectSingleNode("quality[name=\"Made Man\"]/bonus");
                             objQuality.Extra = string.Empty;
                             ImprovementManager.RemoveImprovements(this, Improvement.ImprovementSource.Quality, objQuality.InternalId);
@@ -2284,18 +2327,6 @@ namespace Chummer
             }
 
             Timekeeper.Finish("load_char_wloc");
-
-            Timekeeper.Start("load_char_contacts");
-            
-            // Contacts.
-            foreach (XPathNavigator xmlContact in xmlCharacterNavigator.Select("contacts/contact"))
-            {
-                Contact objContact = new Contact(this);
-                objContact.Load(xmlContact);
-                _lstContacts.Add(objContact);
-            }
-
-            Timekeeper.Finish("load_char_contacts");
 
             Timekeeper.Start("load_char_sfoci");
 
@@ -4362,7 +4393,7 @@ namespace Chummer
         /// <returns></returns>
         public IList<ListItem> ConstructModularCyberlimbList(Cyberware objModularCyberware)
         {
-            string strSpaceCharacter = LanguageManager.GetString("String_Error", GlobalOptions.Language);
+            string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
             List<ListItem> lstReturn = new List<ListItem>
             {
                 new ListItem("None", LanguageManager.GetString("String_None", GlobalOptions.Language))
@@ -4429,7 +4460,7 @@ namespace Chummer
 
         public string CalculateKarmaValue(string strLanguage, out int intReturn)
         {
-            string strSpaceCharacter = LanguageManager.GetString("String_Error", GlobalOptions.Language);
+            string strSpaceCharacter = LanguageManager.GetString("String_Space", GlobalOptions.Language);
             string strMessage = LanguageManager.GetString("Message_KarmaValue", strLanguage) + Environment.NewLine;
             string strKarmaString = LanguageManager.GetString("String_Karma", strLanguage);
             int intExtraKarmaToRemoveForPointBuyComparison = 0;
@@ -8263,12 +8294,12 @@ namespace Chummer
         /// <summary>
         /// Cyberware and Bioware.
         /// </summary>
-        public ObservableCollection<Cyberware> Cyberware => _lstCyberware;
+        public TaggedObservableCollection<Cyberware> Cyberware => _lstCyberware;
 
         /// <summary>
         /// Weapons.
         /// </summary>
-        public ObservableCollection<Weapon> Weapons => _lstWeapons;
+        public TaggedObservableCollection<Weapon> Weapons => _lstWeapons;
 
         /// <summary>
         /// Lifestyles.
@@ -8283,7 +8314,7 @@ namespace Chummer
         /// <summary>
         /// Vehicles.
         /// </summary>
-        public ObservableCollection<Vehicle> Vehicles => _lstVehicles;
+        public TaggedObservableCollection<Vehicle> Vehicles => _lstVehicles;
 
         /// <summary>
         /// Metamagics and Echoes.
