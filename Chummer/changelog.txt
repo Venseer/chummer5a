@@ -36,6 +36,13 @@ Application Changes:
 - Fixed an issue with attribute tooltips not updating properly if bonuses and penalties even out.
 - Fixed a typo in the Select Spell window that prevented categories from being translated.
 - Fixed skill names in weapon dicepool tooltips not showing the correct translated displayname.
+- Fixed behaviour of lifestyles causing a crash after being edited.
+- Fixed a crash when toggling the state of Adept Way discounting for powers.
+- Fixed an issue with foci not properly being removed when unbonded.
+- PDF is now the default export choice.
+- Fixed a regression with condition monitor checkboxes not properly remaining highlighted when first loaded.
+- Fixed an issue with foci not updating their displayname properly in the Foci window.
+- Fixed a regression in which attribute modifiers could exceed the current value + 4.
 
 Data Changes:
 
@@ -47,6 +54,8 @@ Data Changes:
 - Fixed translation for Commanding Voice in German.
 - Added a customdata entry to move Commanding Voice from Stolen Souls into Street Grimoire, per German data changes.
 - Added a customdata entry to swap the pricing of seeker shafts and monotip arrow heads per German data changes.
+- Added content from Street Lethal. 
+- Fixed incorrect REA and INT stats for the Nosferatu quality
 
 New Strings:
 
