@@ -3254,7 +3254,7 @@ namespace Chummer
             bool blnAddAgain;
             do
             {
-                blnAddAgain = treGear.SelectedNode.Tag is Location objLocation
+                blnAddAgain = treGear.SelectedNode?.Tag is Location objLocation
                     ? PickGear(null, objLocation)
                     : PickGear(null);
             }
@@ -5339,7 +5339,15 @@ namespace Chummer
 
             if (frmPickImprovement.DialogResult == DialogResult.Cancel)
                 return;
+            TreeNode newNode = treImprovements.FindNode(frmPickImprovement.NewImprovement.InternalId);
 
+            if (newNode != null)
+            {
+                newNode.Text = frmPickImprovement.NewImprovement.CustomName;
+                newNode.ForeColor = frmPickImprovement.NewImprovement.PreferredColor;
+                newNode.ToolTipText = frmPickImprovement.NewImprovement.Notes;
+            }
+            else {Utils.BreakIfDebug();}
             IsCharacterUpdateRequested = true;
 
             IsDirty = true;
@@ -12446,27 +12454,18 @@ namespace Chummer
 
         private void treImprovements_DoubleClick(object sender, EventArgs e)
         {
-            if (treImprovements.SelectedNode?.Level > 0)
+            if (treImprovements.SelectedNode?.Tag is Improvement objImprovement)
             {
-                string strSelectedId = treImprovements.SelectedNode?.Tag.ToString();
-                Improvement objImprovement = CharacterObject.Improvements.FirstOrDefault(x => x.SourceName == strSelectedId);
-
-                if (objImprovement != null)
+                // Edit the selected Improvement.
+                frmCreateImprovement frmPickImprovement = new frmCreateImprovement(CharacterObject)
                 {
-                    // Edit the selected Improvement.
-                    frmCreateImprovement frmPickImprovement = new frmCreateImprovement(CharacterObject)
-                    {
-                        EditImprovementObject = objImprovement
-                    };
-                    frmPickImprovement.ShowDialog(this);
+                    EditImprovementObject = objImprovement
+                };
+                frmPickImprovement.ShowDialog(this);
 
-                    if (frmPickImprovement.DialogResult != DialogResult.Cancel)
-                    {
-                        IsCharacterUpdateRequested = true;
-
-                        IsDirty = true;
-                    }
-                }
+                if (frmPickImprovement.DialogResult == DialogResult.Cancel) return;
+                IsCharacterUpdateRequested = true;
+                IsDirty = true;
             }
         }
 
