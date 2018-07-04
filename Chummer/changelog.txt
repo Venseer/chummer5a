@@ -3,11 +3,15 @@ Future Build 202
 Application Changes:
 
 - Fixed incorect behavior with filtering columns on the select window browse tab. 
-- Fixsed an issue with carbines defaulting to using the Pistols skill.
+- Fixed an issue with carbines defaulting to using the Pistols skill.
+- Changed JSON to be the default export method.
+- Fixed behaviour of sell methods for Armor Mods, Gear, Vehicles, Weapons, Weapon Accessories and Weapon Mounts.
+- Fixed odd behaviour when using the optional rule to have mystic adepts purchase a second magic attribute.
 
 Data Changes:
 
 - Added alternate Druid tradition from Forbidden Arcana. 
+- Fixed an incorrect availability on the Krime Tingler.
 
 Build 201
 
