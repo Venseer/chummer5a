@@ -4814,6 +4814,10 @@ namespace Chummer
                     continue;
                 }
 
+                if (frmPickArmorMod.FreeCost)
+                {
+                    objMod.Cost = "0";
+                }
                 objArmor.ArmorMods.Add(objMod);
 
                 // Add any Weapons created by the Mod.
@@ -5002,7 +5006,7 @@ namespace Chummer
                 objWeaponMount = selectedMount;
                 objVehicle = selectedMount.Parent;
             }
-            else if (treVehicles.SelectedNode?.Tag is VehicleMod selectedMod && (objMod.Name.StartsWith("Mechanical Arm") || objMod.Name.Contains("Drone Arm")))
+            else if (treVehicles.SelectedNode?.Tag is VehicleMod selectedMod && (selectedMod.Name.StartsWith("Mechanical Arm") || selectedMod.Name.Contains("Drone Arm")))
             {
                 objMod = selectedMod;
                 objVehicle = selectedMod.Parent;
