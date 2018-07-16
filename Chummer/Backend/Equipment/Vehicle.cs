@@ -35,7 +35,7 @@ namespace Chummer.Backend.Equipment
     /// Vehicle.
     /// </summary>
     [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
-    public class Vehicle : IHasInternalId, IHasName, IHasXmlNode, IHasMatrixAttributes, IHasNotes, ICanSell, IHasCustomName, IHasMatrixConditionMonitor, IHasPhysicalConditionMonitor, IHasLocation
+    public class Vehicle : IHasInternalId, IHasName, IHasXmlNode, IHasMatrixAttributes, IHasNotes, ICanSell, IHasCustomName, IHasMatrixConditionMonitor, IHasPhysicalConditionMonitor, IHasLocation, IHasSource
     {
         private Guid _guiID;
         private string _strName = string.Empty;
@@ -397,7 +397,10 @@ namespace Chummer.Backend.Equipment
                     Weapons.Add(objWeapon);
                 }
             }
+            SourceDetail = new SourceString(_strSource, _strPage);
         }
+
+        public SourceString SourceDetail { get; set; }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -714,6 +717,7 @@ namespace Chummer.Backend.Equipment
                     objLocation.Load(objXmlLocation);
                 }
             }
+            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
         /// <summary>
@@ -3116,6 +3120,23 @@ namespace Chummer.Backend.Equipment
             objExpense.Create(decAmount, LanguageManager.GetString("String_ExpenseSoldVehicle", GlobalOptions.Language) + ' ' + DisplayNameShort(GlobalOptions.Language), ExpenseType.Nuyen, DateTime.Now);
             characterObject.ExpenseEntries.AddWithSort(objExpense);
             characterObject.Nuyen += decAmount;
+        }
+
+        public void SetSourceDetail(Control sourceControl)
+        {
+            if (SourceDetail != null)
+            {
+                SourceDetail.SetControl(sourceControl);
+            }
+            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
+            {
+                SourceDetail = new SourceString(_strSource, _strPage);
+                SourceDetail.SetControl(sourceControl);
+            }
+            else
+            {
+                Utils.BreakIfDebug();
+            }
         }
     }
 }

@@ -72,7 +72,7 @@ namespace Chummer
     /// A Quality.
     /// </summary>
     [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
-    public class Quality : IHasInternalId, IHasName, IHasXmlNode, IHasNotes
+    public class Quality : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, IHasSource
     {
         private Guid _guiID;
         private string _strName = string.Empty;
@@ -311,7 +311,10 @@ namespace Chummer
                 else
                     Notes = strQualityNotes;
             }
+            SourceDetail = new SourceString(_strSource, _strPage);
         }
+
+        public SourceString SourceDetail { get; set; }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -410,6 +413,7 @@ namespace Chummer
             {
                 objNode.TryGetStringFieldQuickly("stage", ref _strStage);
             }
+            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
         /// <summary>
@@ -1094,6 +1098,23 @@ namespace Chummer
 
 
             return true;
+        }
+
+        public void SetSourceDetail(Control sourceControl)
+        {
+            if (SourceDetail != null)
+            {
+                SourceDetail.SetControl(sourceControl);
+            }
+            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
+            {
+                SourceDetail = new SourceString(_strSource, _strPage);
+                SourceDetail.SetControl(sourceControl);
+            }
+            else
+            {
+                Utils.BreakIfDebug();
+            }
         }
     }
 }

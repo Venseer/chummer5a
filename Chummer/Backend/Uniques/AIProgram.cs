@@ -28,7 +28,7 @@ namespace Chummer
     /// An AI Program or Advanced Program.
     /// </summary>
     [DebuggerDisplay("{DisplayNameShort(GlobalOptions.DefaultLanguage)}")]
-    public class AIProgram : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanRemove
+    public class AIProgram : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanRemove, IHasSource
     {
         private Guid _guiID;
         private string _strName = string.Empty;
@@ -68,7 +68,10 @@ namespace Chummer
             string strCategory = string.Empty;
             if (objXmlProgramNode.TryGetStringFieldQuickly("category", ref strCategory))
                 _boolIsAdvancedProgram = strCategory == "Advanced Programs";
+            SourceDetail = new SourceString(_strSource, _strPage);
         }
+
+        public SourceString SourceDetail { get; set; }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -104,6 +107,7 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("extra", ref _strExtra);
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             _boolIsAdvancedProgram = objNode["isadvancedprogram"]?.InnerText == bool.TrueString;
+            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
         /// <summary>
@@ -313,6 +317,23 @@ namespace Chummer
                 InternalId);
 
             return characterObject.AIPrograms.Remove(this);
+        }
+
+        public void SetSourceDetail(Control sourceControl)
+        {
+            if (SourceDetail != null)
+            {
+                SourceDetail.SetControl(sourceControl);
+            }
+            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
+            {
+                SourceDetail = new SourceString(_strSource, _strPage);
+                SourceDetail.SetControl(sourceControl);
+            }
+            else
+            {
+                Utils.BreakIfDebug();
+            }
         }
     }
 }

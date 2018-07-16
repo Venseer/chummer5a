@@ -33,7 +33,7 @@ namespace Chummer
     /// A Magician Spell.
     /// </summary>
     [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
-    public class Spell : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanRemove
+    public class Spell : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanRemove, IHasSource
     {
         private Guid _guiID;
         private string _strName = string.Empty;
@@ -106,12 +106,15 @@ namespace Chummer
             objXmlSpellNode.TryGetStringFieldQuickly("page", ref _strPage);
             _objImprovementSource = objSource;
 
+            SourceDetail = new SourceString(_strSource, _strPage);
             /*
             if (_strNotes == string.Empty)
             {
                 _strNotes = CommonFunctions.GetText($"{_strSource} {_strPage}", Name);
             }*/
         }
+
+        public SourceString SourceDetail { get; set; }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -178,6 +181,7 @@ namespace Chummer
 
             objNode.TryGetStringFieldQuickly("extra", ref _strExtra);
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
+            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
         /// <summary>
@@ -913,6 +917,23 @@ namespace Chummer
             ImprovementManager.RemoveImprovements(characterObject, Improvement.ImprovementSource.Spell, InternalId);
             return true;
 
+        }
+
+        public void SetSourceDetail(Control sourceControl)
+        {
+            if (SourceDetail != null)
+            {
+                SourceDetail.SetControl(sourceControl);
+            }
+            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
+            {
+                SourceDetail = new SourceString(_strSource, _strPage);
+                SourceDetail.SetControl(sourceControl);
+            }
+            else
+            {
+                Utils.BreakIfDebug();
+            }
         }
     }
 }

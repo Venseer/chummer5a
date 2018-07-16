@@ -35,7 +35,7 @@ namespace Chummer.Backend.Equipment
     /// Standard Character Gear.
     /// </summary>
     [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
-    public class Gear : IHasChildrenAndCost<Gear>, IHasName, IHasInternalId, IHasXmlNode, IHasMatrixAttributes, IHasNotes, ICanSell, IHasLocation, ICanEquip
+    public class Gear : IHasChildrenAndCost<Gear>, IHasName, IHasInternalId, IHasXmlNode, IHasMatrixAttributes, IHasNotes, ICanSell, IHasLocation, ICanEquip, IHasSource
     {
         private Guid _guiID;
         private string _SourceGuid;
@@ -168,6 +168,7 @@ namespace Chummer.Backend.Equipment
             objXmlGear.TryGetInt32FieldQuickly("childavailmodifier", ref _intChildAvailModifier);
             objXmlGear.TryGetBoolFieldQuickly("allowrename", ref _blnAllowRename);
 
+            SourceDetail = new SourceString(_strSource, _strPage);
             // Check for a Custom name
             if (_strName == "Custom Item")
             {
@@ -373,6 +374,8 @@ namespace Chummer.Backend.Equipment
 
             objXmlGear.TryGetStringFieldQuickly("programs", ref _strProgramLimit);
         }
+
+        public SourceString SourceDetail { get; set; }
 
         public void CreateChildren(XmlDocument xmlGearDocument, XmlNode xmlParentGearNode, bool blnAddImprovements)
         {
@@ -817,6 +820,7 @@ namespace Chummer.Backend.Equipment
             _nodWeaponBonus = objNode["weaponbonus"];
             objNode.TryGetStringFieldQuickly("source", ref _strSource);
             objNode.TryGetStringFieldQuickly("page", ref _strPage);
+            SourceDetail = new SourceString(_strSource, _strPage);
             bool blnNeedCommlinkLegacyShim = !objNode.TryGetStringFieldQuickly("canformpersona", ref _strCanFormPersona);
             if (!objNode.TryGetStringFieldQuickly("devicerating", ref _strDeviceRating))
                 GetNode()?.TryGetStringFieldQuickly("devicerating", ref _strDeviceRating);
@@ -2704,6 +2708,23 @@ namespace Chummer.Backend.Equipment
                 DateTime.Now);
             CharacterObject.ExpenseEntries.AddWithSort(objExpense);
             CharacterObject.Nuyen += decAmount;
+        }
+
+        public void SetSourceDetail(Control sourceControl)
+        {
+            if (SourceDetail != null)
+            {
+                SourceDetail.SetControl(sourceControl);
+            }
+            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
+            {
+                SourceDetail = new SourceString(_strSource, _strPage);
+                SourceDetail.SetControl(sourceControl);
+            }
+            else
+            {
+                Utils.BreakIfDebug();
+            }
         }
     }
 }

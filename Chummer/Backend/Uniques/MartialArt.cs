@@ -29,7 +29,7 @@ namespace Chummer
     /// A Martial Art.
     /// </summary>
     [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
-    public class MartialArt : IHasChildren<MartialArtTechnique>, IHasName, IHasInternalId, IHasXmlNode, IHasNotes, ICanRemove
+    public class MartialArt : IHasChildren<MartialArtTechnique>, IHasName, IHasInternalId, IHasXmlNode, IHasNotes, ICanRemove, IHasSource
     {
         private string _strName = string.Empty;
         private string _strSource = string.Empty;
@@ -67,6 +67,7 @@ namespace Chummer
                 ImprovementManager.CreateImprovements(_objCharacter, Improvement.ImprovementSource.MartialArt, InternalId,
                     objXmlArtNode["bonus"], false, 1, DisplayNameShort(GlobalOptions.Language));
             }
+            SourceDetail = new SourceString(_strSource, _strPage);
 
             /*
             if (string.IsNullOrEmpty(_strNotes))
@@ -78,6 +79,8 @@ namespace Chummer
                 }
             }*/
         }
+
+        public SourceString SourceDetail { get; set; }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -139,6 +142,7 @@ namespace Chummer
                     }
 
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
+            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
         /// <summary>
@@ -394,5 +398,21 @@ namespace Chummer
         }
         #endregion
 
+        public void SetSourceDetail(Control sourceControl)
+        {
+            if (SourceDetail != null)
+            {
+                SourceDetail.SetControl(sourceControl);
+            }
+            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
+            {
+                SourceDetail = new SourceString(_strSource, _strPage);
+                SourceDetail.SetControl(sourceControl);
+            }
+            else
+            {
+                Utils.BreakIfDebug();
+            }
+        }
     }
 }

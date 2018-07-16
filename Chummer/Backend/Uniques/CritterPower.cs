@@ -29,7 +29,7 @@ namespace Chummer
     /// A Critter Power.
     /// </summary>
     [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
-    public class CritterPower : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanRemove
+    public class CritterPower : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanRemove, IHasSource
     {
         private Guid _guiID;
         private string _strName = string.Empty;
@@ -98,6 +98,7 @@ namespace Chummer
             objXmlPowerNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlPowerNode.TryGetStringFieldQuickly("page", ref _strPage);
             objXmlPowerNode.TryGetInt32FieldQuickly("karma", ref _intKarma);
+            SourceDetail = new SourceString(_strSource, _strPage);
 
             /*
             if (string.IsNullOrEmpty(_strNotes))
@@ -109,6 +110,8 @@ namespace Chummer
                 }
             }*/
         }
+
+        public SourceString SourceDetail { get; set; }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -163,6 +166,7 @@ namespace Chummer
             objNode.TryGetInt32FieldQuickly("grade", ref _intGrade);
             _nodBonus = objNode["bonus"];
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
+            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
         /// <summary>
@@ -567,6 +571,23 @@ namespace Chummer
             ImprovementManager.RemoveImprovements(characterObject, Improvement.ImprovementSource.CritterPower, InternalId);
 
             return characterObject.CritterPowers.Remove(this);
+        }
+
+        public void SetSourceDetail(Control sourceControl)
+        {
+            if (SourceDetail != null)
+            {
+                SourceDetail.SetControl(sourceControl);
+            }
+            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
+            {
+                SourceDetail = new SourceString(_strSource, _strPage);
+                SourceDetail.SetControl(sourceControl);
+            }
+            else
+            {
+                Utils.BreakIfDebug();
+            }
         }
     }
 }
