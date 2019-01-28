@@ -28,8 +28,9 @@ namespace Chummer
     /// <summary>
     /// A Critter Power.
     /// </summary>
+    [HubClassTag("SourceID", true, "Name", "Extra")]
     [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
-    public class CritterPower : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanRemove, IHasSource
+    public class CritterPower : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanRemove, IHasSource, ICanSort
     {
         private Guid _guiID;
         private string _strName = string.Empty;
@@ -49,6 +50,7 @@ namespace Chummer
         private bool _blnCountTowardsLimit = true;
         private int _intRating;
         private int _intGrade;
+        private int _intSortOrder;
 
         #region Constructor, Create, Save, Load, and Print Methods
         public CritterPower(Character objCharacter)
@@ -98,7 +100,6 @@ namespace Chummer
             objXmlPowerNode.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlPowerNode.TryGetStringFieldQuickly("page", ref _strPage);
             objXmlPowerNode.TryGetInt32FieldQuickly("karma", ref _intKarma);
-            SourceDetail = new SourceString(_strSource, _strPage);
 
             /*
             if (string.IsNullOrEmpty(_strNotes))
@@ -111,7 +112,28 @@ namespace Chummer
             }*/
         }
 
-        public SourceString SourceDetail { get; set; }
+        private SourceString _objCachedSourceDetail;
+        public SourceString SourceDetail
+        {
+            get
+            {
+                if (_objCachedSourceDetail == null)
+                {
+                    string strSource = Source;
+                    string strPage = Page(GlobalOptions.Language);
+                    if (!string.IsNullOrEmpty(strSource) && !string.IsNullOrEmpty(strPage))
+                    {
+                        _objCachedSourceDetail = new SourceString(strSource, strPage, GlobalOptions.Language);
+                    }
+                    else
+                    {
+                        Utils.BreakIfDebug();
+                    }
+                }
+
+                return _objCachedSourceDetail;
+            }
+        }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -140,8 +162,11 @@ namespace Chummer
             else
                 objWriter.WriteElementString("bonus", string.Empty);
             objWriter.WriteElementString("notes", _strNotes);
+            objWriter.WriteElementString("sortorder", _intSortOrder.ToString());
             objWriter.WriteEndElement();
-            _objCharacter.SourceProcess(_strSource);
+
+            if (Grade >= 0)
+                _objCharacter.SourceProcess(_strSource);
         }
 
         /// <summary>
@@ -166,7 +191,7 @@ namespace Chummer
             objNode.TryGetInt32FieldQuickly("grade", ref _intGrade);
             _nodBonus = objNode["bonus"];
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
-            SourceDetail = new SourceString(_strSource, _strPage);
+            objNode.TryGetInt32FieldQuickly("sortorder", ref _intSortOrder);
         }
 
         /// <summary>
@@ -178,6 +203,7 @@ namespace Chummer
         {
             objWriter.WriteStartElement("critterpower");
             objWriter.WriteElementString("name", DisplayNameShort(strLanguageToPrint));
+            objWriter.WriteElementString("fullname", DisplayName(strLanguageToPrint));
             objWriter.WriteElementString("name_english", Name);
             objWriter.WriteElementString("extra", LanguageManager.TranslateExtra(_strExtra, strLanguageToPrint));
             objWriter.WriteElementString("category", DisplayCategory(strLanguageToPrint));
@@ -195,6 +221,9 @@ namespace Chummer
         #endregion
 
         #region Properties
+
+        public Guid SourceID { get { return _guiID; } }
+
         /// <summary>
         /// Internal identifier which will be used to identify this Critter Power in the Improvement system.
         /// </summary>
@@ -508,6 +537,15 @@ namespace Chummer
             set => _intKarma = value;
         }
 
+        /// <summary>
+        /// Used by our sorting algorithm to remember which order the user moves things to
+        /// </summary>
+        public int SortOrder
+        {
+            get => _intSortOrder;
+            set => _intSortOrder = value;
+        }
+
         private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
 
@@ -563,10 +601,14 @@ namespace Chummer
         }
         #endregion
 
-        public bool Remove(Character characterObject)
+        public bool Remove(Character characterObject, bool blnConfirmDelete = true)
         {
-            if (!characterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteCritterPower", GlobalOptions.Language)))
-                return false;
+            if (blnConfirmDelete)
+            {
+                if (!characterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteCritterPower",
+                    GlobalOptions.Language)))
+                    return false;
+            }
 
             ImprovementManager.RemoveImprovements(characterObject, Improvement.ImprovementSource.CritterPower, InternalId);
 
@@ -575,19 +617,9 @@ namespace Chummer
 
         public void SetSourceDetail(Control sourceControl)
         {
-            if (SourceDetail != null)
-            {
-                SourceDetail.SetControl(sourceControl);
-            }
-            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
-            {
-                SourceDetail = new SourceString(_strSource, _strPage);
-                SourceDetail.SetControl(sourceControl);
-            }
-            else
-            {
-                Utils.BreakIfDebug();
-            }
+            if (_objCachedSourceDetail?.Language != GlobalOptions.Language)
+                _objCachedSourceDetail = null;
+            SourceDetail.SetControl(sourceControl);
         }
     }
 }

@@ -35,11 +35,10 @@ namespace Chummer
         private bool _blnSilentMode;
         private string _strDownloadFile = string.Empty;
         private string _strLatestVersion = string.Empty;
-        private readonly string _strCurrentVersion;
         private readonly Version _objCurrentVersion = Assembly.GetExecutingAssembly().GetName().Version;
         private string _strTempPath = string.Empty;
         private readonly string _strTempUpdatePath;
-        private readonly string _strAppPath = Application.StartupPath;
+        private readonly string _strAppPath = Utils.GetStartupPath;
         private readonly bool _blnPreferNightly;
         private bool _blnIsConnected = true;
         private readonly bool _blnChangelogDownloaded = false;
@@ -53,7 +52,7 @@ namespace Chummer
             Log.Info("frmUpdate");
             InitializeComponent();
             LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
-            _strCurrentVersion = $"{_objCurrentVersion.Major}.{_objCurrentVersion.Minor}.{_objCurrentVersion.Build}";
+            CurrentVersion = $"{_objCurrentVersion.Major}.{_objCurrentVersion.Minor}.{_objCurrentVersion.Build}";
             _blnPreferNightly = GlobalOptions.PreferNightlyBuilds;
             _strTempUpdatePath = Path.Combine(Path.GetTempPath(), "changelog.txt");
 
@@ -372,7 +371,7 @@ namespace Chummer
         /// <summary>
         /// Latest release build number located on Github.
         /// </summary>
-        public string CurrentVersion => _strCurrentVersion;
+        public string CurrentVersion { get; }
 
         public void DoVersionTextUpdate()
         {
@@ -393,12 +392,12 @@ namespace Chummer
             if (intResult > 0)
             {
                 lblUpdaterStatus.Text = string.Format(LanguageManager.GetString("String_Update_Available", GlobalOptions.Language), strLatestVersion) + strSpaceCharacter +
-                                        string.Format(LanguageManager.GetString("String_Currently_Installed_Version", GlobalOptions.Language), _strCurrentVersion);
+                                        string.Format(LanguageManager.GetString("String_Currently_Installed_Version", GlobalOptions.Language), CurrentVersion);
             }
             else
             {
                 lblUpdaterStatus.Text = LanguageManager.GetString("String_Up_To_Date", GlobalOptions.Language) + strSpaceCharacter +
-                                        string.Format(LanguageManager.GetString("String_Currently_Installed_Version", GlobalOptions.Language), _strCurrentVersion) + strSpaceCharacter +
+                                        string.Format(LanguageManager.GetString("String_Currently_Installed_Version", GlobalOptions.Language), CurrentVersion) + strSpaceCharacter +
                                         string.Format(LanguageManager.GetString("String_Latest_Version", GlobalOptions.Language), LanguageManager.GetString(_blnPreferNightly ? "String_Nightly" : "String_Stable", GlobalOptions.Language), strLatestVersion);
                 if (intResult < 0)
                 {
@@ -441,13 +440,23 @@ namespace Chummer
                     string strFilePath = Path.GetDirectoryName(strFileToDelete).TrimStartOnce(_strAppPath);
                     int intSeparatorIndex = strFilePath.LastIndexOf(Path.DirectorySeparatorChar);
                     string strTopLevelFolder = intSeparatorIndex != -1 ? strFilePath.Substring(intSeparatorIndex + 1) : string.Empty;
-                    if ((!strFilePath.StartsWith("data") && !strFilePath.StartsWith("export") && !strFilePath.StartsWith("lang") && !strFilePath.StartsWith("sheets") && !strFilePath.StartsWith("Utils") && !string.IsNullOrEmpty(strFilePath.TrimEndOnce(strFileName))) ||
-                        strFileName?.EndsWith(".old") != false ||
-                        strFileName.StartsWith("custom") ||
-                        strFileName.StartsWith("override") ||
+                    if ((!strFilePath.StartsWith("data") && !strFilePath.StartsWith("export") &&
+                         !strFilePath.StartsWith("lang") && !strFilePath.StartsWith("sheets") &&
+                         !strFilePath.StartsWith("saves") && !strFilePath.StartsWith("Utils") &&
+                         !string.IsNullOrEmpty(strFilePath.TrimEndOnce(strFileName))) ||
+                        strFileName?.EndsWith(".old") != false || strFileName.EndsWith(".chum5") ||
+                        strFileName.StartsWith("custom") || strFileName.StartsWith("override") ||
                         strFileName.StartsWith("amend") ||
-                        (strFilePath.Contains("sheets") && strTopLevelFolder != "de" && strTopLevelFolder != "fr" && strTopLevelFolder != "jp" && strTopLevelFolder != "zh") ||
-                        (strTopLevelFolder == "lang" && strFileName != "de.xml" && strFileName != "fr.xml" && strFileName != "jp.xml" && strFileName != "zh.xml" && strFileName != "de_data.xml" && strFileName != "fr_data.xml" && strFileName != "jp_data.xml" && strFileName != "zh_data.xml"))
+                        (strFilePath.Contains("sheets") && strTopLevelFolder != "de" && strTopLevelFolder != "fr" &&
+                         strTopLevelFolder != "jp" && strTopLevelFolder != "zh") || (strTopLevelFolder == "lang" &&
+                                                                                     strFileName != "de.xml" &&
+                                                                                     strFileName != "fr.xml" &&
+                                                                                     strFileName != "jp.xml" &&
+                                                                                     strFileName != "zh.xml" &&
+                                                                                     strFileName != "de_data.xml" &&
+                                                                                     strFileName != "fr_data.xml" &&
+                                                                                     strFileName != "jp_data.xml" &&
+                                                                                     strFileName != "zh_data.xml"))
                         lstFilesToNotDelete.Add(strFileToDelete);
                 }
                 lstFilesToDelete.RemoveWhere(x => lstFilesToNotDelete.Contains(x));
@@ -480,15 +489,16 @@ namespace Chummer
                 {
                     string strFileName = Path.GetFileName(strFileToDelete);
                     string strFilePath = Path.GetDirectoryName(strFileToDelete).TrimStartOnce(_strAppPath);
-                    if ((!strFilePath.StartsWith("customdata") &&
+                    if (!strFilePath.StartsWith("customdata") &&
                         !strFilePath.StartsWith("data") &&
                         !strFilePath.StartsWith("export") &&
                         !strFilePath.StartsWith("lang") &&
+                        !strFilePath.StartsWith("saves") &&
                         !strFilePath.StartsWith("settings") &&
                         !strFilePath.StartsWith("sheets") &&
                         !strFilePath.StartsWith("Utils") &&
-                        !string.IsNullOrEmpty(strFilePath.TrimEndOnce(strFileName))) ||
-                        strFileName?.EndsWith(".old") != false)
+                        !string.IsNullOrEmpty(strFilePath.TrimEndOnce(strFileName)) ||
+                        strFileName?.EndsWith(".old") != false || strFileName.EndsWith(".chum5"))
                         lstFilesToNotDelete.Add(strFileToDelete);
                 }
                 lstFilesToDelete.RemoveWhere(x => lstFilesToNotDelete.Contains(x));
@@ -596,8 +606,11 @@ namespace Chummer
             {
                 foreach (string strFileToDelete in lstFilesToDelete)
                 {
-                    if (File.Exists(strFileToDelete))
+                    //TODO: This will quite likely leave some wreckage behind. Introduce a sleep and scream after x seconds. 
+                    if (!IsFileLocked(strFileToDelete))
                         File.Delete(strFileToDelete);
+                    else
+                        Utils.BreakIfDebug();
                 }
                 Utils.RestartApplication(GlobalOptions.Language, string.Empty);
             }
@@ -648,6 +661,30 @@ namespace Chummer
                 MessageBox.Show(string.Format(LanguageManager.GetString("Warning_Update_CouldNotConnectException", GlobalOptions.Language), strException), Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 cmdUpdate.Enabled = true;
             }
+        }
+
+        /// <summary>
+        /// Test if the file at a given path is accessible to write operations. 
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns>File is locked if True.</returns>
+        protected virtual bool IsFileLocked(string path)
+        {
+            try
+            {
+                File.OpenText(path);
+            }
+            catch (IOException)
+            {
+                //the file is unavailable because it is:
+                //still being written to
+                //or being processed by another thread
+                //or does not exist (has already been processed)
+                return true;
+            }
+
+            //file is not locked
+            return false;
         }
 
         #region AsyncDownload Events

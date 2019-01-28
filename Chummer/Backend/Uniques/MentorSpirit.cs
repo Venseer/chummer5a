@@ -23,6 +23,7 @@ using System.Xml;
 
 namespace Chummer
 {
+    [HubClassTag("SourceID", true, "Name", "Extra")]
     [DebuggerDisplay("{DisplayNameShort(GlobalOptions.DefaultLanguage)}")]
     public class MentorSpirit : IHasInternalId, IHasName, IHasXmlNode, IHasSource
     {
@@ -161,10 +162,30 @@ namespace Chummer
                     _strNotes = CommonFunctions.GetTextFromPDF($"{Source} {Page(GlobalOptions.Language)}", DisplayName(GlobalOptions.Language));
                 }
             }*/
-            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
-        public SourceString SourceDetail { get; set; }
+        private SourceString _objCachedSourceDetail;
+        public SourceString SourceDetail
+        {
+            get
+            {
+                if (_objCachedSourceDetail == null)
+                {
+                    string strSource = Source;
+                    string strPage = Page(GlobalOptions.Language);
+                    if (!string.IsNullOrEmpty(strSource) && !string.IsNullOrEmpty(strPage))
+                    {
+                        _objCachedSourceDetail = new SourceString(strSource, strPage, GlobalOptions.Language);
+                    }
+                    else
+                    {
+                        Utils.BreakIfDebug();
+                    }
+                }
+
+                return _objCachedSourceDetail;
+            }
+        }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -196,12 +217,13 @@ namespace Chummer
                 objWriter.WriteElementString("choice2", string.Empty);
             objWriter.WriteElementString("notes", _strNotes);
 
-            if (!string.IsNullOrEmpty(SourceID))
+            if (!string.IsNullOrEmpty(strSourceID))
             {
-                objWriter.WriteElementString("id", SourceID);
+                objWriter.WriteElementString("id", strSourceID);
             }
 
             objWriter.WriteEndElement();
+
             _objCharacter.SourceProcess(_strSource);
         }
 
@@ -235,7 +257,6 @@ namespace Chummer
                 XmlNode objNewNode = XmlManager.Load("qualities.xml").SelectSingleNode("/chummer/mentors/mentor[name = \"" + Name + "\"]");
                 objNewNode?.TryGetField("id", Guid.TryParse, out _sourceID);
             }
-            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
         /// <summary>
@@ -262,6 +283,9 @@ namespace Chummer
         #endregion
 
         #region Properties
+
+        public Guid SourceID { get { return _guiID; } }
+
         /// <summary>
         /// Name of the Mentor Spirit or Paragon.
         /// </summary>
@@ -390,7 +414,7 @@ namespace Chummer
         /// <summary>
         /// Guid of the Xml Node containing data on this Mentor Spirit or Paragon.
         /// </summary>
-        public string SourceID => _sourceID.Equals(Guid.Empty) ? string.Empty : _sourceID.ToString("D");
+        public string strSourceID => _sourceID.Equals(Guid.Empty) ? string.Empty : _sourceID.ToString("D");
 
         private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
@@ -416,19 +440,9 @@ namespace Chummer
 
         public void SetSourceDetail(Control sourceControl)
         {
-            if (SourceDetail != null)
-            {
-                SourceDetail.SetControl(sourceControl);
-            }
-            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
-            {
-                SourceDetail = new SourceString(_strSource, _strPage);
-                SourceDetail.SetControl(sourceControl);
-            }
-            else
-            {
-                Utils.BreakIfDebug();
-            }
+            if (_objCachedSourceDetail?.Language != GlobalOptions.Language)
+                _objCachedSourceDetail = null;
+            SourceDetail.SetControl(sourceControl);
         }
     }
 }

@@ -33,7 +33,7 @@ namespace Chummer.Backend.Equipment
     /// Vehicle Modification.
     /// </summary>
     [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
-    public class WeaponMount : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanSell, ICanEquip, IHasSource
+    public class WeaponMount : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanSell, ICanEquip, IHasSource, ICanSort
     {
 		private Guid _guiID;
 		private decimal _decMarkup;
@@ -55,13 +55,13 @@ namespace Chummer.Backend.Equipment
         private string _strSourceId = string.Empty;
         private string _strLocation = string.Empty;
         private string _strAllowedWeapons = string.Empty;
+        private int _intSortOrder;
 
         private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
         private readonly TaggedObservableCollection<VehicleMod> _lstMods = new TaggedObservableCollection<VehicleMod>();
 
-        private readonly Vehicle _vehicle;
-	    private readonly Character _objCharacter;
+        private readonly Character _objCharacter;
 
         #region Constructor, Create, Save, Load, and Print Methods
 		public WeaponMount(Character character, Vehicle vehicle)
@@ -69,7 +69,7 @@ namespace Chummer.Backend.Equipment
 			// Create the GUID for the new VehicleMod.
 			_guiID = Guid.NewGuid();
 		    _objCharacter = character;
-			_vehicle = vehicle;
+			Parent = vehicle;
         }
 
         /// Create a Vehicle Modification from an XmlNode and return the TreeNodes for it.
@@ -112,7 +112,7 @@ namespace Chummer.Backend.Equipment
                             decMax = 1000000;
                         frmPickNumber.Minimum = decMin;
                         frmPickNumber.Maximum = decMax;
-                        frmPickNumber.Description = LanguageManager.GetString("String_SelectVariableCost", GlobalOptions.Language).Replace("{0}", DisplayNameShort(GlobalOptions.Language));
+                        frmPickNumber.Description = string.Format(LanguageManager.GetString("String_SelectVariableCost", GlobalOptions.Language), DisplayNameShort(GlobalOptions.Language));
                         frmPickNumber.AllowCancel = false;
                         frmPickNumber.ShowDialog();
                         _strCost = frmPickNumber.SelectedValue.ToString(GlobalOptions.InvariantCultureInfo);
@@ -123,10 +123,30 @@ namespace Chummer.Backend.Equipment
 
             objXmlMod.TryGetStringFieldQuickly("source", ref _strSource);
             objXmlMod.TryGetStringFieldQuickly("page", ref _strPage);
-            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
-        public SourceString SourceDetail { get; set; }
+        private SourceString _objCachedSourceDetail;
+        public SourceString SourceDetail
+        {
+            get
+            {
+                if (_objCachedSourceDetail == null)
+                {
+                    string strSource = Source;
+                    string strPage = Page(GlobalOptions.Language);
+                    if (!string.IsNullOrEmpty(strSource) && !string.IsNullOrEmpty(strPage))
+                    {
+                        _objCachedSourceDetail = new SourceString(strSource, strPage, GlobalOptions.Language);
+                    }
+                    else
+                    {
+                        Utils.BreakIfDebug();
+                    }
+                }
+
+                return _objCachedSourceDetail;
+            }
+        }
 
         /// <summary>
 		/// Save the object's XML to the XmlWriter.
@@ -170,8 +190,11 @@ namespace Chummer.Backend.Equipment
             objWriter.WriteEndElement();
             objWriter.WriteElementString("notes", _strNotes);
 			objWriter.WriteElementString("discountedcost", _blnDiscountCost.ToString());
+            objWriter.WriteElementString("sortorder", _intSortOrder.ToString());
 			objWriter.WriteEndElement();
-			_objCharacter.SourceProcess(_strSource);
+
+            if (!IncludedInVehicle)
+			    _objCharacter.SourceProcess(_strSource);
 		}
 
 		/// <summary>
@@ -260,7 +283,7 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
 			objNode.TryGetBoolFieldQuickly("discountedcost", ref _blnDiscountCost);
 			objNode.TryGetStringFieldQuickly("extra", ref _strExtra);
-		    SourceDetail = new SourceString(_strSource, _strPage);
+            objNode.TryGetInt32FieldQuickly("sortorder", ref _intSortOrder);
         }
 
         /// <summary>
@@ -273,7 +296,8 @@ namespace Chummer.Backend.Equipment
 		{
 			objWriter.WriteStartElement("mod");
 			objWriter.WriteElementString("name", DisplayNameShort(strLanguageToPrint));
-			objWriter.WriteElementString("category", DisplayCategory(strLanguageToPrint));
+		    objWriter.WriteElementString("fullname", DisplayName(strLanguageToPrint));
+            objWriter.WriteElementString("category", DisplayCategory(strLanguageToPrint));
 			objWriter.WriteElementString("limit", Limit);
 			objWriter.WriteElementString("slots", Slots.ToString());
 			objWriter.WriteElementString("avail", TotalAvail(objCulture, strLanguageToPrint));
@@ -533,9 +557,18 @@ namespace Chummer.Backend.Equipment
         }
 
         /// <summary>
+        /// Used by our sorting algorithm to remember which order the user moves things to
+        /// </summary>
+        public int SortOrder
+        {
+            get => _intSortOrder;
+            set => _intSortOrder = value;
+        }
+
+        /// <summary>
         /// Vehicle that the Mod is attached to.
         /// </summary>
-        public Vehicle Parent => _vehicle;
+        public Vehicle Parent { get; }
 
         /// <summary>
         /// 
@@ -548,7 +581,7 @@ namespace Chummer.Backend.Equipment
         /// <summary>
         /// The number of Slots the Mount consumes, including all child items.
         /// </summary>
-        public int CalculatedSlots => Slots + WeaponMountOptions.Sum(w => w.Slots) + Mods.Sum(m => m.CalculatedSlots);
+        public int CalculatedSlots => Slots + WeaponMountOptions.Sum(w => w.Slots) + Mods.AsParallel().Sum(m => m.CalculatedSlots);
 
         /// <summary>
         /// Total Availability.
@@ -614,10 +647,10 @@ namespace Chummer.Backend.Equipment
                 // Run through the Vehicle Mods and add in their availability.
                 foreach (VehicleMod objVehicleMod in Mods)
                 {
-                    if (!objVehicleMod.IncludedInVehicle)
+                    if (!objVehicleMod.IncludedInVehicle && objVehicleMod.Equipped)
                     {
                         AvailabilityValue objLoopAvailTuple = objVehicleMod.TotalAvailTuple();
-                        //if (objLoopAvailTuple.Item3)
+                        if (objLoopAvailTuple.AddToParent)
                             intAvail += objLoopAvailTuple.Value;
                         if (objLoopAvailTuple.Suffix == 'F')
                             chrLastAvailChar = 'F';
@@ -828,10 +861,15 @@ namespace Chummer.Backend.Equipment
         #endregion
         #endregion
 
-        public bool Remove(Character characterObject)
+        public bool Remove(Character characterObject, bool blnConfirmDelete = true)
         {
-            if (!characterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteWeaponMount", GlobalOptions.Language)))
-                return false;
+            if (blnConfirmDelete)
+            {
+                if (!characterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteWeaponMount",
+                    GlobalOptions.Language)))
+                    return false;
+            }
+
             DeleteWeaponMount();
             return Parent.WeaponMounts.Remove(this);
         }
@@ -854,19 +892,9 @@ namespace Chummer.Backend.Equipment
 
         public void SetSourceDetail(Control sourceControl)
         {
-            if (SourceDetail != null)
-            {
-                SourceDetail.SetControl(sourceControl);
-            }
-            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
-            {
-                SourceDetail = new SourceString(_strSource, _strPage);
-                SourceDetail.SetControl(sourceControl);
-            }
-            else
-            {
-                Utils.BreakIfDebug();
-            }
+            if (_objCachedSourceDetail?.Language != GlobalOptions.Language)
+                _objCachedSourceDetail = null;
+            SourceDetail.SetControl(sourceControl);
         }
     }
 
@@ -931,7 +959,7 @@ namespace Chummer.Backend.Equipment
                         intMax = 1000000;
                     frmPickNumber.Minimum = intMin;
                     frmPickNumber.Maximum = intMax;
-                    frmPickNumber.Description = LanguageManager.GetString("String_SelectVariableCost", GlobalOptions.Language).Replace("{0}", DisplayName(GlobalOptions.Language));
+                    frmPickNumber.Description = string.Format(LanguageManager.GetString("String_SelectVariableCost", GlobalOptions.Language), DisplayName(GlobalOptions.Language));
                     frmPickNumber.AllowCancel = false;
                     frmPickNumber.ShowDialog();
                     _strCost = frmPickNumber.SelectedValue.ToString(GlobalOptions.InvariantCultureInfo);

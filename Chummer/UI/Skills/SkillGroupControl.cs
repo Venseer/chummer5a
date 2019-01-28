@@ -20,7 +20,6 @@ using System;
 using System.Diagnostics;
 using System.Windows.Forms;
 using Chummer.Backend.Skills;
-using System.ComponentModel;
 
 namespace Chummer.UI.Skills
 {
@@ -31,6 +30,8 @@ namespace Chummer.UI.Skills
         {
             _skillGroup = skillGroup;
             InitializeComponent();
+
+            LanguageManager.TranslateWinForm(GlobalOptions.Language, this);
 
             //This is apparently a factor 30 faster than placed in load. NFI why
             Stopwatch sw = Stopwatch.StartNew();

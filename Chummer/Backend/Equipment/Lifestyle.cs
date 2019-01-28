@@ -43,7 +43,7 @@ namespace Chummer.Backend.Equipment
     /// Lifestyle.
     /// </summary>
     [DebuggerDisplay("{DisplayName(GlobalOptions.DefaultLanguage)}")]
-    public class Lifestyle : IHasInternalId, IHasXmlNode, IHasNotes, ICanRemove, IHasCustomName, IHasSource
+    public class Lifestyle : IHasInternalId, IHasXmlNode, IHasNotes, ICanRemove, IHasCustomName, IHasSource, ICanSort
     {
         // ReSharper disable once InconsistentNaming
         private Guid _guiID;
@@ -77,6 +77,7 @@ namespace Chummer.Backend.Equipment
         private readonly ObservableCollection<LifestyleQuality> _lstLifestyleQualities = new ObservableCollection<LifestyleQuality>();
         private readonly ObservableCollection<LifestyleQuality> _lstFreeGrids = new ObservableCollection<LifestyleQuality>();
         private string _strNotes = string.Empty;
+        private int _intSortOrder;
         private readonly Character _objCharacter;
 
         #region Helper Methods
@@ -154,8 +155,7 @@ namespace Chummer.Backend.Equipment
             string strTemp = string.Empty;
             if (objXmlLifestyle.TryGetStringFieldQuickly("increment", ref strTemp))
                 _eIncrement = ConvertToLifestyleIncrement(strTemp);
-
-            SourceDetail = new SourceString(_strSource, _strPage);
+            
             using (XmlNodeList lstGridNodes = objXmlLifestyle.SelectNodes("freegrids/freegrid"))
             {
                 if (lstGridNodes?.Count > 0)
@@ -180,7 +180,28 @@ namespace Chummer.Backend.Equipment
             }
         }
 
-        public SourceString SourceDetail { get; set; }
+        private SourceString _objCachedSourceDetail;
+        public SourceString SourceDetail
+        {
+            get
+            {
+                if (_objCachedSourceDetail == null)
+                {
+                    string strSource = Source;
+                    string strPage = DisplayPage(GlobalOptions.Language);
+                    if (!string.IsNullOrEmpty(strSource) && !string.IsNullOrEmpty(strPage))
+                    {
+                        _objCachedSourceDetail = new SourceString(strSource, strPage, GlobalOptions.Language);
+                    }
+                    else
+                    {
+                        Utils.BreakIfDebug();
+                    }
+                }
+
+                return _objCachedSourceDetail;
+            }
+        }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -229,7 +250,9 @@ namespace Chummer.Backend.Equipment
             }
             objWriter.WriteEndElement();
             objWriter.WriteElementString("notes", _strNotes);
+            objWriter.WriteElementString("sortorder", _intSortOrder.ToString());
             objWriter.WriteEndElement();
+
             _objCharacter.SourceProcess(_strSource);
         }
 
@@ -274,6 +297,7 @@ namespace Chummer.Backend.Equipment
             objNode.TryGetInt32FieldQuickly("roommates", ref _intRoommates);
             objNode.TryGetDecFieldQuickly("percentage", ref _decPercentage);
             objNode.TryGetStringFieldQuickly("baselifestyle", ref _strBaseLifestyle);
+            objNode.TryGetInt32FieldQuickly("sortorder", ref _intSortOrder);
             if (XmlManager.Load("lifestyles.xml").SelectSingleNode($"/chummer/lifestyles/lifestyle[name =\"{_strBaseLifestyle}\"]") == null && XmlManager.Load("lifestyles.xml").SelectSingleNode($"/chummer/lifestyles/lifestyle[name =\"{_strName}\"]") != null)
             {
                 string baselifestyle = _strName;
@@ -296,7 +320,7 @@ namespace Chummer.Backend.Equipment
                         frmSelectItem frmSelect = new frmSelectItem
                         {
                             GeneralItems = lstQualities,
-                            Description = LanguageManager.GetString("String_CannotFindLifestyle", GlobalOptions.Language).Replace("{0}", _strName)
+                            Description = string.Format(LanguageManager.GetString("String_CannotFindLifestyle", GlobalOptions.Language), _strName)
                         };
                         frmSelect.ShowDialog();
                         if (frmSelect.DialogResult == DialogResult.Cancel)
@@ -559,14 +583,19 @@ namespace Chummer.Backend.Equipment
             get => _strPage;
             set => _strPage = value;
         }
-
+        
+        /// <summary>
+        /// Sourcebook Page Number using a given language file.
+        /// Returns Page if not found or the string is empty. 
+        /// </summary>
+        /// <param name="strLanguage">Language file keyword to use.</param>
+        /// <returns></returns>
         public string DisplayPage(string strLanguage)
         {
-            // Get the translated name if applicable.
             if (strLanguage == GlobalOptions.DefaultLanguage)
                 return Page;
-
-            return GetNode(strLanguage)?["altpage"]?.InnerText ?? Page;
+            string s = GetNode(strLanguage)?["altpage"]?.InnerText ?? Page;
+            return !string.IsNullOrWhiteSpace(s) ? s : Page;
         }
 
         /// <summary>
@@ -848,6 +877,15 @@ namespace Chummer.Backend.Equipment
             set => _decCostForSecurity = value;
         }
 
+        /// <summary>
+        /// Used by our sorting algorithm to remember which order the user moves things to
+        /// </summary>
+        public int SortOrder
+        {
+            get => _intSortOrder;
+            set => _intSortOrder = value;
+        }
+
         private XmlNode _objCachedMyXmlNode;
         private string _strCachedXmlNodeLanguage = string.Empty;
 
@@ -878,11 +916,20 @@ namespace Chummer.Backend.Equipment
             get
             {
                 decimal d = (Roommates + Area + Comforts + Security) * 10;
-                d += Convert.ToDecimal(ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.LifestyleCost), GlobalOptions.InvariantCultureInfo);
+                d += Convert.ToDecimal(ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.LifestyleCost, false, BaseLifestyle, true, true), GlobalOptions.InvariantCultureInfo);
                 if (_eType == LifestyleType.Standard)
-                   d += Convert.ToDecimal(ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.BasicLifestyleCost), GlobalOptions.InvariantCultureInfo);
+                {
+                    d += Convert.ToDecimal(
+                        ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.BasicLifestyleCost),
+                        GlobalOptions.InvariantCultureInfo);
+                    d += Convert.ToDecimal(
+                        ImprovementManager.ValueOf(_objCharacter, Improvement.ImprovementType.BasicLifestyleCost, false,
+                            BaseLifestyle), GlobalOptions.InvariantCultureInfo);
+                }
+
                 d += LifestyleQualities.Sum(lq => lq.Multiplier);
-                return d / 100;
+                d += 100M;
+                return Math.Max(d / 100, 0);
             }
         }
 
@@ -904,7 +951,7 @@ namespace Chummer.Backend.Equipment
         /// <summary>
         /// Base cost of the Lifestyle itself, including all multipliers from Improvements, qualities and upgraded attributes.
         /// </summary>
-        public decimal BaseCost => Cost * Math.Max(CostMultiplier + BaseCostMultiplier, 1);
+        public decimal BaseCost => Cost * (CostMultiplier + BaseCostMultiplier);
 
         /// <summary>
         /// Base Cost Multiplier from any Lifestyle Qualities the Lifestyle has.
@@ -919,6 +966,12 @@ namespace Chummer.Backend.Equipment
             get
             {
                 decimal decReturn = 0;
+
+                if (!TrustFund)
+                {
+                    decReturn += BaseCost;
+                }
+
                 decReturn += Area * CostForArea;
                 decReturn += Comforts * CostForComforts;
                 decReturn += Security * CostForSecurity;
@@ -934,12 +987,11 @@ namespace Chummer.Backend.Equipment
                         decExtraAssetCost += objQuality.Cost;
                 }
 
-                if (!TrustFund)
-                {
-                    decReturn += BaseCost;
-                }
                 decReturn += decExtraAssetCost;
-                decReturn *= CostMultiplier + 1.0m;
+
+                //Qualities may have reduced the cost below zero. No spooky mansion payouts here, so clamp it to zero or higher. 
+                decReturn = Math.Max(decReturn, 0);
+
                 if (!PrimaryTenant)
                 {
                     decReturn /= _intRoommates + 1.0m;
@@ -1046,26 +1098,17 @@ namespace Chummer.Backend.Equipment
         #endregion
         #endregion
 
-        public bool Remove(Character characterObject)
+        public bool Remove(Character characterObject, bool blnConfirmDelete = true)
         {
+            if (!blnConfirmDelete) return characterObject.Lifestyles.Remove(this);
             return characterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteLifestyle", GlobalOptions.Language)) && characterObject.Lifestyles.Remove(this);
         }
 
         public void SetSourceDetail(Control sourceControl)
         {
-            if (SourceDetail != null)
-            {
-                SourceDetail.SetControl(sourceControl);
-            }
-            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
-            {
-                SourceDetail = new SourceString(_strSource, _strPage);
-                SourceDetail.SetControl(sourceControl);
-            }
-            else
-            {
-                Utils.BreakIfDebug();
-            }
+            if (_objCachedSourceDetail?.Language != GlobalOptions.Language)
+                _objCachedSourceDetail = null;
+            SourceDetail.SetControl(sourceControl);
         }
     }
 }

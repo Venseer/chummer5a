@@ -27,6 +27,7 @@ namespace Chummer
     /// <summary>
     /// An AI Program or Advanced Program.
     /// </summary>
+    [HubClassTag("SourceID", true, "Name", "Extra")]
     [DebuggerDisplay("{DisplayNameShort(GlobalOptions.DefaultLanguage)}")]
     public class AIProgram : IHasInternalId, IHasName, IHasXmlNode, IHasNotes, ICanRemove, IHasSource
     {
@@ -68,10 +69,30 @@ namespace Chummer
             string strCategory = string.Empty;
             if (objXmlProgramNode.TryGetStringFieldQuickly("category", ref strCategory))
                 _boolIsAdvancedProgram = strCategory == "Advanced Programs";
-            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
-        public SourceString SourceDetail { get; set; }
+        private SourceString _objCachedSourceDetail;
+        public SourceString SourceDetail
+        {
+            get
+            {
+                if (_objCachedSourceDetail == null)
+                {
+                    string strSource = Source;
+                    string strPage = Page(GlobalOptions.Language);
+                    if (!string.IsNullOrEmpty(strSource) && !string.IsNullOrEmpty(strPage))
+                    {
+                        _objCachedSourceDetail = new SourceString(strSource, strPage, GlobalOptions.Language);
+                    }
+                    else
+                    {
+                        Utils.BreakIfDebug();
+                    }
+                }
+
+                return _objCachedSourceDetail;
+            }
+        }
 
         /// <summary>
         /// Save the object's XML to the XmlWriter.
@@ -107,7 +128,6 @@ namespace Chummer
             objNode.TryGetStringFieldQuickly("extra", ref _strExtra);
             objNode.TryGetStringFieldQuickly("notes", ref _strNotes);
             _boolIsAdvancedProgram = objNode["isadvancedprogram"]?.InnerText == bool.TrueString;
-            SourceDetail = new SourceString(_strSource, _strPage);
         }
 
         /// <summary>
@@ -119,6 +139,7 @@ namespace Chummer
         {
             objWriter.WriteStartElement("aiprogram");
             objWriter.WriteElementString("name", DisplayNameShort(strLanguageToPrint));
+            objWriter.WriteElementString("fullname", DisplayName);
             objWriter.WriteElementString("name_english", Name);
             if (string.IsNullOrEmpty(_strRequiresProgram) || _strRequiresProgram == LanguageManager.GetString("String_None", strLanguageToPrint))
                 objWriter.WriteElementString("requiresprogram", LanguageManager.GetString("String_None", strLanguageToPrint));
@@ -133,6 +154,9 @@ namespace Chummer
         #endregion
 
         #region Properties
+
+        public Guid SourceID { get { return _guiID; } }
+
         /// <summary>
         /// Internal identifier which will be used to identify this AI Program in the Improvement system.
         /// </summary>
@@ -307,11 +331,15 @@ namespace Chummer
         }
         #endregion
 
-        public bool Remove(Character characterObject)
+        public bool Remove(Character characterObject, bool blnConfirmDelete = true)
         {
             if (!CanDelete) return false;
-            if (!characterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteAIProgram", GlobalOptions.Language)))
-                return false;
+            if (blnConfirmDelete)
+            {
+                if (!characterObject.ConfirmDelete(LanguageManager.GetString("Message_DeleteAIProgram",
+                    GlobalOptions.Language)))
+                    return false;
+            }
 
             ImprovementManager.RemoveImprovements(characterObject, Improvement.ImprovementSource.AIProgram,
                 InternalId);
@@ -321,19 +349,9 @@ namespace Chummer
 
         public void SetSourceDetail(Control sourceControl)
         {
-            if (SourceDetail != null)
-            {
-                SourceDetail.SetControl(sourceControl);
-            }
-            else if (!string.IsNullOrWhiteSpace(_strPage) && !string.IsNullOrWhiteSpace(_strSource))
-            {
-                SourceDetail = new SourceString(_strSource, _strPage);
-                SourceDetail.SetControl(sourceControl);
-            }
-            else
-            {
-                Utils.BreakIfDebug();
-            }
+            if (_objCachedSourceDetail?.Language != GlobalOptions.Language)
+                _objCachedSourceDetail = null;
+            SourceDetail.SetControl(sourceControl);
         }
     }
 }
